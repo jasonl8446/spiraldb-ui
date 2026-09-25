@@ -10,11 +10,11 @@ SpiralDB UI is a web tool for extracting, reviewing, editing, and verifying Spir
 
 Read these before making changes, **in this order**:
 
-1. `Docs/spec-implementation-details.md` — ⚠️ **READ FIRST**. Resolves every ambiguity: packet format, CLI wrapper spec, WAD paths, name fields, git strategy, file naming, complete type enumerations, validation rules. An autonomous agent MUST follow this exactly.
-2. `Docs/spec-spiraldb-ui.md` — Full application specification (architecture, workflows, verification system, API endpoints, implementation phases)
-3. `Docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
-4. `Docs/spec-friendly-names.md` — Friendly name resolution subsystem (WAD parsing, sync script, SQLite schema)
-5. `Docs/spiraldb-reference.md` — SpiralDB JSON schemas and directory structure for all 9 object types
+1. `Docs/spec-domain-reference.md` — ⚠️ **READ FIRST**. Complete SpiralDB domain reference: JSON schemas for all 9 object types, goal/requirement/result type enumerations, NPCDialogEntry fields, validation rules, CLI wrapper spec, WAD/string-table details. An autonomous agent MUST follow this exactly.
+2. `Docs/spec-architecture.md` — System architecture, tech stack, data flow diagrams, external dependencies, server configuration
+3. `Docs/spec-data-model.md` — SQLite schemas, verification lifecycle, file naming conventions, git branch strategy, JSON parsing rules, sync strategy
+4. `Docs/spec-api.md` — Complete REST API reference (all endpoints with request/response shapes), frontend URL routes
+5. `Docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
 
 ## External Dependencies
 
@@ -78,10 +78,10 @@ All agent-authored commits must end with the DeepSeek Harness watermark trailer.
 
 ## Implementation Phases
 
-See `Docs/spec-spiraldb-ui.md` § Implementation Phases for the ordered build plan:
+The ordered build plan:
 
-1. Foundation (scaffolding, friendly names, status tracking)
-2. Quest Extraction (packet import, review view, save)
-3. Quest Editing (goal editors, flowchart, dialog)
-4. Other Object Editors
-5. Dashboard & Polish
+1. **Foundation** — Project scaffolding (React + Express + SQLite), friendly name sync script + SQLite schema, basic API endpoints for names, sidebar navigation shell, status tracking schema + API
+2. **Quest Extraction** — Imview.PacketReader CLI wrapper, quest import/upload UI, quest review view (read-only structured display), save to SpiralDB + auto-commit + metadata generation, status transitions with notes
+3. **Quest Editing** — Goal editors (all 5 types), goal logic visual flowchart, requirement tree editor, result editors, full dialog editor (all NPCDialogEntry fields)
+4. **Other Object Editors** — DropTable, NpcInventory, NpcSpellInventory, CreatureSpellbook, NpcDropTable, TreasureCardInventory, ZoneTransfer, GlobalRegistry editors
+5. **Dashboard & Polish** — Verification dashboard with progress bars, status filtering on all list views, search across all object types, activity feed, error handling and validation

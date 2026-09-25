@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the visual design, layout, component patterns, and interaction models for SpiralDB UI. It complements the [application spec](./spec-spiraldb-ui.md) which covers architecture and data flow.
+This document defines the visual design, layout, component patterns, and interaction models for SpiralDB UI. It complements the [architecture spec](./spec-architecture.md) which covers system design and data flow.
 
 ## Design System
 
@@ -171,7 +171,7 @@ Title: "Recent Activity". Last 10 status changes as a timeline.
   "Goal logic chain verified against live game"
 
 ● DropTable KT-SPH3-C02-003 extracted     1 day ago
-  Imported from packet capture session_2026-09-24.pcap
+  Imported from packet capture session_2026-09-24.json
 ```
 
 Each entry: colored dot (status color), object key in monospace, action text, relative timestamp. Notes in italic `text-zinc-400` below if present. Click entry to navigate to that object.
@@ -196,7 +196,7 @@ Centered content area (max-width 640px).
 │    Drag & drop packet capture file here     │
 │              or click to browse             │
 │                                             │
-│    Supported formats: .pcap, .bin, .pcapng  │
+│    Supported format: JSON packet capture (.json) │
 │                                             │
 └─────────────────────────────────────────────┘
 ```
@@ -206,15 +206,14 @@ Drop zone: dashed `zinc-700` border, `zinc-900/50` background, rounded-xl. On dr
 After file selected:
 ```
 ┌─────────────────────────────────────────────┐
-│  📄 session_2026-09-24.pcap    12.4 MB     │
-│  ████████████████████░░░░  78% parsing...  │
+│  📄 session_2026-09-24.json    12.4 MB     │
+│  ⠋ Extracting quests...                     │
 │                                             │
-│  Found 14 quests so far...                  │
 │                                    [Cancel] │
 └─────────────────────────────────────────────┘
 ```
 
-Progress bar: `blue-500` fill, animated. Live count updates. Cancel button: destructive variant.
+Indeterminate spinner (no progress bar or live count — the CLI wrapper is a blocking subprocess). Cancel button: destructive variant.
 
 On complete: transition to results phase.
 
@@ -403,8 +402,8 @@ Recursive tree structure for nested AND/OR requirements.
 │  │  │  School: Fire  [dropdown]                         │ │ │
 │  │  └───────────────────────────────────────────────────┘ │ │
 │  │                                                        │ │
-│  │  ┌─ ReqHasGoal ──────────────────────────────────────┐ │ │
-│  │  │  Quest: [...]   Goal: [...]                       │ │ │
+│  │  ┌─ ReqHasEntry ─────────────────────────────────────┐ │ │
+│  │  │  Quest: [...]   Entry: [...]                      │ │ │
 │  │  └───────────────────────────────────────────────────┘ │ │
 │  │                                      [+ Add Condition] │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -545,3 +544,10 @@ Sync button shows loading state during sync. Success/error toast on completion.
 - Color contrast: WCAG AA minimum (4.5:1 for text, 3:1 for large text)
 - Status conveyed by both color AND text/icon (not color alone)
 - Reduced motion: respect `prefers-reduced-motion` for transitions/animations
+
+## Related Documentation
+
+- [Architecture](./spec-architecture.md) — System overview, tech stack, data flow
+- [API Reference](./spec-api.md) — All REST endpoints
+- [Data Model](./spec-data-model.md) — SQLite schemas, verification lifecycle, file naming
+- [Domain Reference](./spec-domain-reference.md) — SpiralDB JSON schemas, type enumerations, validation rules
