@@ -502,6 +502,7 @@ All editors share:
 
 ## References
 
+- **[Implementation Details](./spec-implementation-details.md)** — ⚠️ REQUIRED READING. Resolves all ambiguities: packet format (JSON not pcap), CLI wrapper spec, WAD source, name fields, git branch strategy, user identity, file naming, existing data import, complete result/requirement/goal type enumerations, full NPCDialogEntry field list, API endpoint completeness, validation rules
 - [UI Design Spec](./spec-ui-design.md) — Visual design, layout, component patterns, interaction models
 - [Friendly Name Resolution Spec](./spec-friendly-names.md) — Detailed friendly name sync design
 - [SpiralDB Reference](./spiraldb-reference.md) — JSON schemas and directory structure

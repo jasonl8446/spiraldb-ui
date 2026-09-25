@@ -8,12 +8,13 @@ SpiralDB UI is a web tool for extracting, reviewing, editing, and verifying Spir
 
 ## Key Documentation
 
-Read these before making changes:
+Read these before making changes, **in this order**:
 
-- `Docs/spec-spiraldb-ui.md` — Full application specification (architecture, workflows, verification system, API endpoints, implementation phases)
-- `Docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
-- `Docs/spec-friendly-names.md` — Friendly name resolution subsystem (WAD parsing, sync script, SQLite schema)
-- `Docs/spiraldb-reference.md` — SpiralDB JSON schemas and directory structure for all 9 object types
+1. `Docs/spec-implementation-details.md` — ⚠️ **READ FIRST**. Resolves every ambiguity: packet format, CLI wrapper spec, WAD paths, name fields, git strategy, file naming, complete type enumerations, validation rules. An autonomous agent MUST follow this exactly.
+2. `Docs/spec-spiraldb-ui.md` — Full application specification (architecture, workflows, verification system, API endpoints, implementation phases)
+3. `Docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
+4. `Docs/spec-friendly-names.md` — Friendly name resolution subsystem (WAD parsing, sync script, SQLite schema)
+5. `Docs/spiraldb-reference.md` — SpiralDB JSON schemas and directory structure for all 9 object types
 
 ## External Dependencies
 
