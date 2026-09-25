@@ -2,6 +2,8 @@
 
 A web-based tool for extracting, reviewing, editing, and verifying [SpiralDB](https://github.com/Revive101/spiraldb) content entries for the [Imlight](https://github.com/Revive101/Imlight) game server.
 
+> ⚠️ **Unofficial project:** SpiralDB UI is not an official [Revive101](https://github.com/Revive101) project. It is an independent tool, not endorsed by or affiliated with Revive101. All referenced projects and game data belong to their respective owners.
+
 > **Project status (2026-09-25):** specifications and the phased implementation plan are complete; no code has been written yet. The build plan of record is [Docs/plan-overview.md](Docs/plan-overview.md) (execution model + owner-approved decisions D1–D27) with per-phase tasks in `Docs/plan-phase-{1..5}-*.md`.
 
 ## Purpose
