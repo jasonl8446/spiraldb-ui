@@ -1,0 +1,17 @@
+# Local orchestration state (not part of the project)
+.omd/
+
+# Application data (Phase 1+: SQLite db, test clone of the SpiralDB fork)
+data/
+
+# Dependencies & build output
+node_modules/
+client/dist/
+
+# .NET tooling (kept inside the workspace per plan decision D18)
+tools/bin/
+tools/.obj/
+tools/.nuget/
+
+# Evidence artifacts are committed selectively under Docs/evidence/; scratch stays out
+*.log

@@ -2,6 +2,8 @@
 
 A web-based tool for extracting, reviewing, editing, and verifying [SpiralDB](https://github.com/Revive101/spiraldb) content entries for the [Imlight](https://github.com/Revive101/Imlight) game server.
 
+> **Project status (2026-09-25):** specifications and the phased implementation plan are complete; no code has been written yet. The build plan of record is [Docs/plan-overview.md](Docs/plan-overview.md) (execution model + owner-approved decisions D1–D27) with per-phase tasks in `Docs/plan-phase-{1..5}-*.md`.
+
 ## Purpose
 
 SpiralDB is the static world data store for Imlight. It contains JSON files defining quests, drop tables, NPC inventories, spellbooks, zone transfers, and more. This tool provides a friendly interface for working with that data.
@@ -41,6 +43,8 @@ SQLite local database (verification status + friendly names)
 
 ## Getting Started
 
+> These commands become functional as Phase 1 (Foundation) lands; the repository currently contains specs and the plan only.
+
 ```bash
 # Clone with dependencies available locally
 git clone git@github.com:jasonl8446/spiraldb-ui.git
@@ -58,9 +62,20 @@ npm run dev
 
 ## Documentation
 
-- [Full Application Spec](Docs/spec-spiraldb-ui.md) — Architecture, workflows, verification system, API design
-- [Friendly Name Resolution](Docs/spec-friendly-names.md) — WAD parsing, SQLite schema, sync script design
-- [SpiralDB Reference](Docs/spiraldb-reference.md) — JSON schemas and directory structure for all object types
+**Specifications** (authoritative):
+
+- [Domain Reference](Docs/spec-domain-reference.md) — SpiralDB JSON schemas, type enumerations, validation rules, CLI wrapper spec, WAD/string-table details
+- [Architecture](Docs/spec-architecture.md) — System design, tech stack, data flow, external dependencies
+- [Data Model](Docs/spec-data-model.md) — SQLite schemas, verification lifecycle, file naming, git branch strategy
+- [API Reference](Docs/spec-api.md) — REST endpoints and frontend URL routes
+- [UI Design](Docs/spec-ui-design.md) — Layout, components, color palette, interaction patterns
+
+**Implementation plan** (how the specs get built):
+
+- [Plan Overview](Docs/plan-overview.md) — Roadmap, environment baseline, execution model, decisions D1–D27
+- [Phase 1 — Foundation](Docs/plan-phase-1-foundation.md) · [Phase 2 — Quest Extraction](Docs/plan-phase-2-quest-extraction.md) · [Phase 3 — Quest Editing](Docs/plan-phase-3-quest-editing.md) · [Phase 4 — Object Editors](Docs/plan-phase-4-object-editors.md) · [Phase 5 — Dashboard & Polish](Docs/plan-phase-5-dashboard-polish.md)
+
+Agent instructions: [AGENTS.md](AGENTS.md).
 
 ## Related Projects
 

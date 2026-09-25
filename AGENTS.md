@@ -15,6 +15,7 @@ Read these before making changes, **in this order**:
 3. `Docs/spec-data-model.md` — SQLite schemas, verification lifecycle, file naming conventions, git branch strategy, JSON parsing rules, sync strategy
 4. `Docs/spec-api.md` — Complete REST API reference (all endpoints with request/response shapes), frontend URL routes
 5. `Docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
+6. `Docs/plan-overview.md` — **Before implementing any phase, read this.** The executable build plan: verified environment baseline, execution model (autopilot, phase branches + PRs, chaining with regression gates), and owner-approved decisions **D1–D27** that refine the specs (test-clone policy D17, sandbox-safe .NET builds D18, content-keyed file index D19, metadata pairing by content D20, corpus-derived quests/zones sync D21, GlobalRegistry consolidate-and-replace D22, Playwright evidence protocol D23). Per-phase tasks and acceptance criteria: `Docs/plan-phase-{1..5}-*.md`.
 
 ## External Dependencies
 
@@ -40,7 +41,7 @@ This project integrates with several sibling repositories. Do NOT modify these d
 
 1. **Verification status lives in local SQLite only** — Never add status/tracking fields to SpiralDB JSON files or metadata. The SpiralDB repo stays clean.
 2. **Friendly names are synced, not hardcoded** — All ID-to-name mappings come from the sync script parsing WAD files. Never hardcode name lookups.
-3. **Save = file write + metadata + git commit** — Every save operation must produce both the template JSON and its companion metadata JSON, then auto-commit.
+3. **Save = file write + metadata + git commit** — Every save writes the template JSON, updates its metadata (companion `QuestMetadatas/` file for quests — located by the `Name` field inside existing files, not by filename; embedded audit fields for all other types), then auto-commits.
 4. **Packet parsing goes through CLI wrapper** — Node.js never parses packet captures directly. Always call the .NET CLI wrapper as a subprocess.
 5. **Form editors use friendly name dropdowns** — All ID fields in editors must show human-readable names via the FriendlyNameDropdown component, storing the raw ID in a hidden field.
 
@@ -58,7 +59,7 @@ Status transitions require optional notes. Full history is preserved in `status_
 
 ## SpiralDB Object Types
 
-All 9 types need editors and verification tracking:
+All 9 types need editors. The 8 types below **except GlobalRegistry** also carry verification tracking; GlobalRegistry is editor-only (a single merged dictionary of global flags has no meaningful per-entry lifecycle — owner decision Q1, see `Docs/plan-overview.md`):
 
 | Type | Directory | Key Field | Complexity |
 |------|-----------|-----------|------------|
@@ -70,7 +71,7 @@ All 9 types need editors and verification tracking:
 | NpcDropTable | NpcDropTable/ | TemplateID | Low |
 | TreasureCardInventory | TreasureCardInventory/ | TemplateID | Low |
 | WizardZoneData | ZoneTransfer/ | ZoneName | Medium |
-| GlobalRegistry | GlobalRegistry/ | dictionary key | Low |
+| GlobalRegistry | GlobalRegistry/ | dictionary key | Low (editor-only, no status tracking) |
 
 ## Commit Messages
 
@@ -78,7 +79,7 @@ All agent-authored commits must end with the DeepSeek Harness watermark trailer.
 
 ## Implementation Phases
 
-The ordered build plan:
+The ordered build plan (detailed tasks, acceptance criteria, and risks per phase live in `Docs/plan-phase-{n}-*.md`; execution model and binding decisions in `Docs/plan-overview.md`):
 
 1. **Foundation** — Project scaffolding (React + Express + SQLite), friendly name sync script + SQLite schema, basic API endpoints for names, sidebar navigation shell, status tracking schema + API
 2. **Quest Extraction** — Imview.PacketReader CLI wrapper, quest import/upload UI, quest review view (read-only structured display), save to SpiralDB + auto-commit + metadata generation, status transitions with notes
