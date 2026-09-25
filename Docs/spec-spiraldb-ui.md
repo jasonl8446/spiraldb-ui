@@ -502,6 +502,7 @@ All editors share:
 
 ## References
 
+- [UI Design Spec](./spec-ui-design.md) — Visual design, layout, component patterns, interaction models
 - [Friendly Name Resolution Spec](./spec-friendly-names.md) — Detailed friendly name sync design
 - [SpiralDB Reference](./spiraldb-reference.md) — JSON schemas and directory structure
 - [Imview QuestBuilder](../../Imview/src/Imview.PacketReader/QuestBuilder.cs) — Packet capture parsing logic
