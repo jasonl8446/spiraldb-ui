@@ -1,7 +1,7 @@
 # Phase 2 — Quest Extraction
 
 **Status:** pending approval
-**Depends on:** Phase 1 complete; **owner prerequisites from [plan-overview.md](./plan-overview.md): .NET 9 SDK installed (verify `dotnet --version` ≥ 9 — if absent, STOP and report; this is the run's only hard block) and real packet captures dropped in `server/test/fixtures/captures/`**
+**Depends on:** Phase 1 complete; **owner prerequisite from [plan-overview.md](./plan-overview.md): .NET 9 SDK installed system-wide (verify `dotnet --version` ≥ 9 — if absent, STOP and report; this is the run's only hard block). Real packet captures are NOT required — task 2.1a manufactures them (D28).**
 **Spec reading order before starting:** [spec-domain-reference.md](./spec-domain-reference.md) (CLI wrapper L551–633, metadata L189–204) → [spec-data-model.md](./spec-data-model.md) (file naming, git strategy) → [spec-api.md](./spec-api.md) (extraction + quest CRUD) → [spec-ui-design.md](./spec-ui-design.md) (extraction page L183–235, browse L238–271)
 
 ## Requirements Summary
@@ -11,14 +11,22 @@ The primary workflow end to end: upload a JSON packet capture → `imview-packet
 ## Tasks
 
 ### 2.0 Prerequisite checks + test-target setup — S
-- **Verify owner prerequisites** ([plan-overview.md](./plan-overview.md)): `dotnet --version` ≥ 9 — if missing, halt the run and report (D18: no agent-side install). Captures present in `server/test/fixtures/captures/` — if absent, build a synthetic fixture from `Imview/src/Imview.PacketReader/Packets.cs` + `QuestBuilder.cs` (captures are JSON arrays of `{ "data": { "name": "MSG_...", ... } }` objects, [spec-domain-reference.md](./spec-domain-reference.md) L614–623) and **flag the substitution prominently in the Phase 2 PR**.
+- **Verify the owner prerequisite** ([plan-overview.md](./plan-overview.md)): `dotnet --version` ≥ 9 — if missing, halt the run and report (D18: no agent-side install). No capture files are needed from the owner (D28 — task 2.1a generates them).
 - **Create the test clone (D17)**: `git clone /home/jason/Documents/git-projects/spiraldb data/test-spiraldb` (disposable clone of the owner's fork; gitignored). Dev/test settings point `spiraldb_path` at it; all acceptance criteria below run against the clone. Provide an `npm run test:reset-clone` script to delete and re-clone fresh.
 - **Smoke-build Imview.PacketReader** with sandbox-safe flags (D18) to surface dependency problems before the wrapper exists. Never write into the Imview tree; escalate to owner if the build fails (Imview is read-only for us per AGENTS.md).
 
 ### 2.1 PacketReaderCli wrapper (.NET) — M
 - `tools/PacketReaderCli/PacketReaderCli.csproj` + `Program.cs` exactly per [spec-domain-reference.md](./spec-domain-reference.md) L553–595: `net9.0`, `AssemblyName=imview-packet-reader`, ProjectReference `../../../Imview/src/Imview.PacketReader/Imview.PacketReader.csproj` (path verified to exist from `tools/PacketReaderCli/`).
 - Behavior: parse `--input <path>` and optional `--output <path|->`; call `QuestBuilder.BuildQuestsFromPacketCaptureAsync(inputPath)` (signature verified: `QuestBuilder.cs` L33, returns `Task<List<QuestTemplate>>`); serialize as a JSON array; write to output path or stdout; on error write to stderr and exit 1 (spec L576–588).
-- `npm run build:cli` → `dotnet build tools/PacketReaderCli/PacketReaderCli.csproj -c Release` **with sandbox-safe artifact redirection (D18)**: `-p:BaseIntermediateOutputPath=$PWD/tools/.obj -p:BaseOutputPath=$PWD/tools/bin` and env `NUGET_PACKAGES=$PWD/tools/.nuget` — no writes into the Imview tree or `$HOME`. `tools/bin/`, `tools/.obj/`, `tools/.nuget/` gitignored (task 1.1).
+- `npm run build:cli` → `dotnet build tools/PacketReaderCli/PacketReaderCli.csproj -c Release -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts` with env `NUGET_PACKAGES=$PWD/tools/.nuget` (**proven D18 flags — never `BaseIntermediateOutputPath/BaseOutputPath`, which break multi-project builds with CS0579**), then symlink `tools/.artifacts/bin/PacketReaderCli/release/imview-packet-reader` → `tools/bin/imview-packet-reader` so the spec's CLI path holds ([spec-domain-reference.md](./spec-domain-reference.md) L595–602). `tools/bin/`, `tools/.artifacts/`, `tools/.nuget/` gitignored (task 1.1).
+
+### 2.1a Capture fixture generator (.NET, D28) — M
+Manufactures valid packet-capture files from **real fork quests** — no recorded captures exist anywhere (verified), and none are needed.
+- `tools/FixtureGen/` — .NET 9 console tool, same ProjectReference pattern as 2.1 (`Imview.PacketReader` + transitively `Imcodec.ObjectProperty`), same sandbox-safe build with a `tools/bin/fixturegen` symlink (`npm run build:fixturegen`).
+- Pipeline: load a corpus quest (`data/test-spiraldb/QuestTemplates/questtemplates_*.json`) → deserialize into Imcodec TypeCache objects (the corpus `$type` format **is** Imcodec's ObjectProperty JSON) → serialize the structures QuestBuilder consumes back into hex blobs — `GoalCompilation` (QuestBuilder.cs L183–186, offset 1), `ActorDialog` (L245–253, offset 16), `ClientTagList` (L164, offset 1), `MadlibBlock` (L509, offset 1) → emit the envelope `[{"data":{"name":"MSG_QUESTOFFER","fields":{MobileID, QuestName, QuestTitle, QuestInfo, Level, Rewards, GoalData, Mainline}}}, …MSG_SENDQUEST, …MSG_SENDGOAL per goal, …MSG_ACTORDIALOG]` per `PacketReaderService.cs` L100–130 and `Packets.cs` field definitions.
+- CLI: `fixturegen --quest <path-to-questtemplate.json> --output <capture.json>`; generates fixtures for a chosen acceptance set: **≥3 diverse corpus quests** (one multi-goal mainline, one dialog-heavy, one exercising the rarest goal types present in the corpus) into `server/test/fixtures/captures/` (committed — they are reproducible build artifacts of the generator, pinned for CI).
+- **Fallback ladder** (timeboxed): if blob layouts resist exact regeneration, degrade to a minimal valid envelope (correct packet names/fields, thin or empty `GoalData`/`Rewards`) that still proves upload→CLI→review→save→commit end-to-end, and flag "deep goal reconstruction pending" prominently in the Phase 2 PR.
+- Symmetry check: the generator's serializer and QuestBuilder's deserializer are the same Imcodec ObjectProperty serializer — what one writes, the other reads. First milestone of this task: generate → run CLI → get ≥1 quest back.
 
 ### 2.2 Extraction service — M
 - `server/src/services/extraction.ts`: `execFile` wrapper per [spec-domain-reference.md](./spec-domain-reference.md) L597–612 — CLI path `tools/bin/imview-packet-reader`, `maxBuffer: 50 MB`, parse stdout as JSON array.
@@ -60,8 +68,9 @@ Shared by extraction saves **and** all later object saves; build it generically.
 
 ## Acceptance Criteria
 
-- [ ] `npm run build:cli` produces `tools/bin/imview-packet-reader`; running it on the 2.0 fixture prints a JSON array of QuestTemplate objects to stdout; on a corrupt/non-capture file it exits 1 with a message on stderr.
-- [ ] `POST /api/extract/quests` (multipart, fixture file) → `{ quests: [...], count: N }` matching [spec-api.md](./spec-api.md) L216–222; invalid file → `{ "error": "Failed to parse packet capture: ..." }`; server stays healthy after CLI failure.
+- [ ] `npm run build:cli` produces `tools/bin/imview-packet-reader`; running it on a 2.1a-generated capture prints a JSON array of QuestTemplate objects to stdout; on a corrupt/non-capture file it exits 1 with a message on stderr.
+- [ ] **Closed-loop round-trip (D28)**: for each of ≥3 diverse corpus quests — quest file → `fixturegen` → capture → CLI extraction → quest′; quest′ matches the source quest on quest name, title, level, mainline flag, goal count/names/types, and dialog entry count. (Fallback tier, if invoked: plumbing-level round-trip on the minimal envelope + prominent PR flag.)
+- [ ] `POST /api/extract/quests` (multipart, generated capture) → `{ quests: [...], count: N }` matching [spec-api.md](./spec-api.md) L216–222; invalid file → `{ "error": "Failed to parse packet capture: ..." }`; server stays healthy after CLI failure.
 - [ ] Cancel mid-extraction kills the CLI child process (verify with `ps` after aborting a large-capture request).
 - [ ] "Save All" of N extracted quests produces, **in the test clone** (`data/test-spiraldb`, D17): N files `QuestTemplates/questtemplates_{m_questName}.json` written as **clean JSON** (`node -e "JSON.parse(...)"` succeeds — no trailing commas), N metadata files in `QuestMetadatas/` with the exact shape, N commits on branch `content/{today}` (created from `main` HEAD if it did not exist), each message matching `spiraldb: extract quest {name}`, author = configured user_name; `settings.git_branch` persisted.
 - [ ] Metadata pairing (D20): saving a quest that already has a UUID-named metadata file updates **that file in place** (`ModifiedAt/ModifiedBy` refreshed) and creates no `questmetadata_{name}.json` duplicate; saving a brand-new quest creates `questmetadata_{name}.json`.
@@ -80,20 +89,20 @@ Shared by extraction saves **and** all later object saves; build it generically.
 |---|---|---|
 | .NET SDK absent (verified 2026-09-25) | Phase blocked at 2.1 | Owner prerequisite 1 (pre-install once); task 2.0 verifies and halts-with-report if missing — no agent-side install, no mid-run approval |
 | `Imview.PacketReader` fails to build standalone | Wrapper unusable | 2.0 smoke-build; escalate to owner — Imview is read-only for us (AGENTS.md) |
-| Capture format variance; no real fixture exists | Extraction untestable | 2.0 fixture spike from `Packets.cs`/`QuestBuilder.cs`; request a real capture from owner for final acceptance |
+| Fixture generator can't reproduce QuestBuilder's exact blob layouts (offsets/versions) | Round-trip criterion degrades | Same-serializer symmetry (D28); timeboxed fallback to minimal-envelope plumbing proof + prominent PR flag; a real capture, if ever found, replays the full acceptance suite |
 | CLI stdout > 50 MB on huge captures | Extraction crash | maxBuffer per spec + `--output` file-mode escape hatch (2.2) |
 | Auto-commit pollutes SpiralDB history on bugs | Bad data in shared repo | D13/D14 + branch isolation (`content/*` never main) + acceptance test inspecting `git log` |
 | Overwrite of hand-edited quest | Data loss | Confirm dialog on name collision; dirty-repo guard; git history is the undo mechanism |
 
 ## Verification Steps
 
-1. `dotnet --version` → 9.x; `npm run build:cli` → binary exists.
-2. `tools/bin/imview-packet-reader --input server/test/fixtures/{capture}.json | jq 'length'` → N quests.
-3. `curl -F "file=@{capture}.json" localhost:3001/api/extract/quests | jq .count`.
+1. `dotnet --version` → 9.x; `npm run build:cli && npm run build:fixturegen` → binaries exist.
+2. `tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json --output /tmp/cap.json` → capture file; `tools/bin/imview-packet-reader --input /tmp/cap.json | jq 'length'` → ≥1 quest with the same `m_questName` (round-trip spot check).
+3. `curl -F "file=@server/test/fixtures/captures/{capture}.json" localhost:3001/api/extract/quests | jq .count`.
 4. UI: upload → results → Save All (2 quests) → confirm.
 5. In `data/test-spiraldb` (the test clone, D17): `git branch --show-current` → `content/2026-XX-XX`; `git log --format='%s (%an)' -2` → `spiraldb: extract quest ...`; `ls QuestTemplates/questtemplates_{name}.json QuestMetadatas/`.
 6. `node -e "JSON.parse(require('fs').readFileSync('QuestTemplates/questtemplates_{name}.json','utf8'))"` → no throw (clean JSON).
 7. `curl localhost:3001/api/status/quests/{name}/history | jq` → extracted row with capture filename note.
 8. `npm test` green; browser walkthrough of upload → browse → detail → mark reviewed.
 
-**Done when:** all acceptance criteria checked with evidence in the PR (Playwright evidence per D23, clone-based git evidence per D17); owner prerequisites (SDK, captures — or the flagged synthetic fallback) confirmed in the PR description.
+**Done when:** all acceptance criteria checked with evidence in the PR (Playwright evidence per D23, clone-based git evidence per D17); SDK prerequisite confirmed; any D28 fallback-tier invocation prominently flagged.

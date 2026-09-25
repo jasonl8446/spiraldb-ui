@@ -10,7 +10,7 @@ client/dist/
 
 # .NET tooling (kept inside the workspace per plan decision D18)
 tools/bin/
-tools/.obj/
+tools/.artifacts/
 tools/.nuget/
 
 # Evidence artifacts are committed selectively under Docs/evidence/; scratch stays out
