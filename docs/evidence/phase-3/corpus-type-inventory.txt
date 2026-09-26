@@ -119,9 +119,11 @@
 # Measured: strict JSON.parse succeeds on 17/322; 305/322 need JSON5. The substance (JSON5 tolerance
 # is required) holds; the 'all' was my error and is recorded here rather than smoothed over.
   strict JSON.parse OK: 17/322  |  need JSON5: 305/322
-  key-count distribution: 18 keys:2 | 36 keys:320
+  key-count distribution (D17 CLONE): 18 keys:2 | 36 keys:320
   the 2 exceptions are the Phase-2-written files: questtemplates_WC-UNICORN-MAIN-004.json, questtemplates_WC-CYCLOPS-MAIN-002.json
-  -> 320/322 corpus files carry ALL 36 keys with optionality as EXPLICIT NULLS; our pipeline-written files OMIT them.
+  -> THE REAL CHECKOUT is 322/322 files with all 36 keys (re-measured during p3-02: explicitNullDocs
+     real 322 / clone 320); the clone is 320/322 precisely because those 2 files are ours.
+  -> 320/322 of the CLONE carry ALL 36 keys with optionality as EXPLICIT NULLS; our pipeline-written files OMIT them.
   -> therefore the schema accepts null AND absent, and serialization must preserve which one was there.
   per-key: missing-in-N / null-in-N
     m_activityType               missing   0  null   0
@@ -177,5 +179,6 @@
   the GAME's 320 corpus files express absent optional values as EXPLICIT NULLs (m_clientTags: null, ...);
   OUR pipeline's 2 written files OMIT those keys (18 keys instead of 36) - NullValueHandling.Ignore on our side.
   consequence: 'parse -> serialize(unedited) -> re-parse deep-equal' over 322 files REQUIRES a writer that
-  preserves an explicit null as null. Dropping nulls would fail 320/322 (deep-equality distinguishes null from absent).
+  preserves an explicit null as null. Dropping nulls would fail ALL 322 real files (320/322 of the clone)
+  (deep-equality distinguishes null from absent).
   p3-01's schemas preserve nulls (.nullish(), no .default()/.transform()); the writer half is p3-02's to prove.
