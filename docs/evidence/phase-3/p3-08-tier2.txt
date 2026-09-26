@@ -1,0 +1,84 @@
+# p3-08 tier-2 evidence — the Dialog editor on the real stack (lead-run, D23)
+
+Subagents have no playwright-mcp, so the browser pass is the lead's (D23). Rig as p3-04…p3-07: a
+**copy** of the live DB (`cp data/spiraldb-ui.db /tmp/p308-tier2.db`), the real corpus clone
+(`SPIRALDB_PATH=data/test-spiraldb`), the freshly built `dist`, and
+`NODE_ENV=test … PORT=3216 npx tsx server/src/index.ts`. **Save was never pressed**: every value
+below is the in-memory document read back through the JSON panel's `[Copy]` (clipboard wiped and
+re-polled).
+
+The targets are the corpus's own dialog edge cases, chosen because the lead measured where they are:
+
+| Quest | Why it was chosen |
+|---|---|
+| `WC-TRITON-MAIN-002` | carries one of the **2 headless sparse entries** (60 keys, no `m_personaName`) plus 5 quest-level and 7 goal-level entries |
+| `MB-MUSEHub-C02-002` | carries one of the **5 empty-tag groups** (`m_dialogTag: ""`) |
+
+## 1. The tab, both homes, and the accordions (`WC-TRITON-MAIN-002`)
+
+Opening the Dialog tab rendered **12 entry cards** across both levels, every one named by its
+absolute document path — `Entry 1 m_dialogList.m_dialogs[0].m_dialogEntries[0]` …
+`Entry 5 m_dialogList.m_dialogs[0].m_dialogEntries[4]` and `Entry 1 m_goals[0].m_dialogList.…` — so
+the quest-level and the per-goal lists are both mounted and remain distinguishable.
+
+The AC's accordion clause, measured from the rendered `aria-expanded` state:
+`Basic=true`, `Camera=false`, `Sound=false`, `Animation=false`, `Advanced=false` — five tabs, one
+open by default, four collapsed. 775 form controls were live on the page, and every tag section
+carries a `Group fields (0 unmodelled)` summary.
+
+## 2. The headless sparse entry is rendered but never padded
+
+| Measured | Value |
+|---|---|
+| the entry's key count before | **60** (the corpus's own headless shape) |
+| `m_personaName` on it | **absent** — and still absent after the page's edits |
+| after the page's interactions, read back from the document | 60 keys, still no `m_personaName` |
+| the list wrapper | keys exactly `['$type', 'm_dialogs']`, `$type` still `…ActorDialogList, Imcodec.ObjectProperty` |
+| top-level document keys | 36 |
+| the card's raw-fields disclosure | **absent** on that card — correct, because the corpus has **0** unmodelled entry keys, so there is nothing to disclose (the declaration appears only when a legacy key exists, which is tier-1's fixture case) |
+
+The card does render a labelled control for `m_personaName` even though the entry lacks the key —
+that is ordinary form rendering, not padding, and the model's D59(c) rule (empty → no edit when the
+key is absent) is what keeps the document honest; the document above proves the key never appeared.
+
+## 3. The empty tag renders honestly (`MB-MUSEHub-C02-002`)
+
+Tag sections were named `Dialog tag 1 m_dialogList.m_dialogs[0]`,
+`Dialog tag 2 m_dialogList.m_dialogs[1]`, plus one per goal-level list, and the page showed
+**`(empty tag)`** for the `""` group — while **`(no tag key)`** did *not* appear anywhere, which is
+correct: the corpus has 5 empty tags and **0** groups missing the key, and the model keeps those two
+states as different labels.
+
+**One suspicion of mine that was wrong, recorded because acting on it would have introduced an
+error**: the page's explanatory note says `m_dialogs` is "empty in 7" for the quest list and "empty
+in 36" for goals, while my first corpus pass had counted 43 empties overall. I re-measured the
+split: **7 quest-level + 36 goal-level = 43**, so the copy is exactly right in both places. The
+lesson is the same one this run keeps teaching — measure before "fixing" a claim.
+
+## 4. Console noise
+
+`WC-TRITON-MAIN-002` logged one 404: `/api/names/npcs/0` — the sentinel `0` in
+`m_walkAwayNpcTemplateID` (present and `0` in most entries) reaching the NPC lookup. The **displayed
+behaviour is correct** (the raw `0` stays the value, never rewritten — the D59(d) miss path), but it
+is one doomed request per such entry, so it is recorded here rather than left to be discovered, and
+flagged as a Phase-5 polish candidate (skip the lookup for the measured `0` sentinel).
+
+Screenshot: `p3-08-dialog-editor.png`.
+
+## 5. Server lifecycle
+
+The rig ran as a managed background job on :3216 and was killed at the end of the pass; nothing was
+left listening on 5173, 3001 or 3216.
+
+## What this pass did **not** prove
+
+- No image input in this model, so the screenshot's **pixels** were not inspected; every claim is a
+  DOM, ARIA-name, `aria-expanded`, input-value or clipboard read.
+- The AC2 legacy-key case was **not** driven live: the corpus carries 0 unmodelled entry keys, so
+  no real quest has one. It is proven by tier-1's fixture (and by the unit tests) instead.
+- Duplicate / Delete / Add Dialog Entry / Add Dialog Tag were driven in tier-1, not in this live
+  pass — the live pass covered rendering, the accordion state, the tag labels and the
+  sparse-entry preservation.
+- No Save was pressed, so "saved" means the live document and the JSON panel, not a file on disk;
+  the save pipeline is D49's contract and this story does not change it.
+- 768px/mobile was not re-checked for this tab.
