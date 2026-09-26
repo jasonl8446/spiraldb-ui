@@ -5,34 +5,72 @@ import path from 'node:path';
  * `.lang` string-table parser — task 1.4e
  * ([plan-phase-1-foundation.md](../../../../Docs/plan-phase-1-foundation.md) §1.4e,
  * [spec-domain-reference.md](../../../../Docs/spec-domain-reference.md) L662-695,
- * decision D33(c)/(d)).
+ * decision **D33(d)/(e)**).
  *
  * Format (measured, spike 1.4a §5): **UTF-16LE with BOM `\xFF\xFE`**, header line
  * `1:{Category}`, then repeating records
  *
  * ```
- * {index}\r\n\r\n{value}\r\n
+ * {key}\r\n{middle}\r\n{value}\r\n
  * ```
  *
  * Scope is `Locale/en-US/*.lang` only — 5,132 files / 25.9 MB of the 33,932
  * files / 185 MB across all eight locales (D33(c)).
  *
- * ## Index radix — measured, and where it contradicts D33
+ * ## Key resolution is FORM-MATCHED — two earlier readings are retracted here
  *
- * D33(d) prescribes the key ladder "all-digit suffix → decimal index first, then
- * hex". Spike 1.4a implemented that ladder for the **key** but only *skipped*
- * A–F-containing index tokens while reading the file, so 3,719 real records
- * (e.g. `1ED8A` → "Forged in Fire") were dropped and only 2,238 of 5,959 records
- * survived. Applying the ladder symmetrically to the file's index tokens
- * restores the whole table and resolves **315 of 315** keyed corpus quests
- * (the spike measured 48). The real-data evidence is in `scripts/sync-dry-run.ts`.
+ * A key is `{Category}_{suffix}` and the suffix is written in one of **two
+ * lexical forms**: all-digit (`126346`, `00001717` — the form the corpus's
+ * `m_displayName` uses everywhere: `Items_00022716`, `NPCs_01749407`) or hex
+ * (`1ED8A`). Both forms index **one** numeric space, and the same numeric index
+ * can be written both ways **with different values**. Measured in the committed
+ * fixture `server/test/fixtures/en-US_QuestTitle.lang`:
  *
- * One measured caveat is preserved and reported, not silently patched: an
- * all-digit index token is read as decimal per D33(d), so a later hex token with
- * the same numeric value overwrites it (e.g. `1ED8A` = 0x1ED8A = 126346
- * overwrites the record written as `126346`). That is why this module reports
- * `decimalRecordCount`/`hexRecordCount` and why `QuestTitle_1ED8D` resolves here
- * while D33(e) recorded it as absent.
+ * ```
+ * QuestTitle_126346             (decimal token)    → "Letters of Light"
+ * QuestTitle_1ED8A  (0x1ED8A = 126346, hex token) → "Forged in Fire"
+ * QuestTitle_1ED8D  (0x1ED8D = 126349, hex token) → "Quest for Perfection"
+ * ```
+ *
+ * Two earlier readings of this file are **wrong and retracted**:
+ *
+ * 1. Spike 1.4a skipped A–F-containing index tokens while reading, saw 2,238 of
+ *    the file's 5,959 records, and concluded that `QuestTitle_1ED8D` was absent
+ *    and that `1ED8A` resolved to "Letters of Light". Both claims were artefacts
+ *    of that skip: `1ED8D` **is** present, and "Letters of Light" belongs to the
+ *    decimal token `126346`.
+ * 2. The first version of this module read **every** token through one numeric
+ *    ladder into a single `entries: Map<number, string>` ("later record wins").
+ *    That collapses the two records above onto one numeric key, so
+ *    `QuestTitle_126346` — a real `m_displayName` form — resolved to "Forged in
+ *    Fire". On today's corpus it happens to agree with the correct answer for all
+ *    315 keyed quests (0 disagreements) only because the hex record comes later
+ *    in this file; it is latently wrong for every decimal-written friendly name
+ *    whose category also writes the index in hex.
+ *
+ * The rule implemented instead — and the one `scripts/sync-dry-run.ts` is
+ * measured against:
+ *
+ *  - a suffix written in **hex form** (it contains `A–F`, so `^\d+$` fails) looks
+ *    up `hexEntries` first, then the same numeric index in `decimalEntries`;
+ *  - a suffix written in **decimal form** (`^\d+$`) looks up `decimalEntries`
+ *    first, then the same numeric index in `hexEntries`;
+ *  - a suffix that is neither (named-key tables) → `undefined` → raw-key fallback.
+ *
+ * The two forms therefore live in **two separate maps** and never overwrite each
+ * other. `entries` still exists as a *merged* numeric view (later record wins
+ * across both forms); it is for counting/reporting only — handing it to a lookup
+ * is precisely the bug above.
+ *
+ * ## The "dense block + sparse tail" model is retracted too
+ *
+ * The file used to be described as a dense `0–2237` block plus a sparse numeric
+ * tail reaching `199272`. That is the **decimal-only projection**: in the fixture
+ * the first 1,473 records are decimal-written, the first hex token appears at
+ * record 1,473, and the two forms then interleave (the last decimal record sits
+ * at position 5,408, 551 records from the end). There is one index space and one
+ * interleaved record stream; only the lexical form varies — 26 numeric indices in
+ * the fixture are written both ways with different values.
  */
 
 /** UTF-16LE byte-order mark (spike 1.4a §5). */
@@ -44,23 +82,83 @@ export const UTF16BE_BOM = Buffer.from([0xfe, 0xff]);
 /** The header line: `1:{Category}`. */
 const HEADER_PATTERN = /^\d+:(.*)$/;
 
-/** Index tokens are hex (uppercase in the corpus, accepted in any case). */
+/** The hex charset (any case) — the `A–F`-containing reading of an index token. */
 const HEX_TOKEN_PATTERN = /^[0-9A-Fa-f]+$/;
 
-/** All-digit index tokens take the decimal reading first (D33(d)). */
+/** All-digit index tokens take the decimal reading. */
 const DECIMAL_TOKEN_PATTERN = /^\d+$/;
 
-export interface LangTable {
+/** Which lexical form an index token is written in. */
+export type LangKeyForm = 'decimal' | 'hex';
+
+/** The two form-keyed maps a `{Category}` lookup needs (see the module doc). */
+export interface LangEntryMaps {
+  /** Tokens matching `^\d+$`, keyed by decimal value (`126346`, `00001717` → 1717). */
+  decimalEntries: Map<number, string>;
+  /** Tokens containing `A–F`, keyed by hex value (`1ED8A` → 126346). */
+  hexEntries: Map<number, string>;
+}
+
+/**
+ * The lexical form of an index token — the form half of the fix in one function.
+ *
+ * `^\d+$` → `'decimal'`; a token that is otherwise all hex characters (`A–F` in
+ * any case: `1ED8A`, `1ed8d`, the GUI table's `d`) → `'hex'`; anything else
+ * (`Pixie`, `ChooseFriendTitle`, the empty string) → `undefined`, i.e. a named key.
+ */
+export function langKeyForm(token: string): LangKeyForm | undefined {
+  const trimmed = token.trim();
+  if (trimmed === '') {
+    return undefined;
+  }
+  if (DECIMAL_TOKEN_PATTERN.test(trimmed)) {
+    return 'decimal';
+  }
+  if (HEX_TOKEN_PATTERN.test(trimmed)) {
+    return 'hex';
+  }
+  return undefined;
+}
+
+/** Distinct numeric indices across both form maps (the merged `entries.size`). */
+export function langEntryCount(maps: LangEntryMaps): number {
+  let count = maps.hexEntries.size;
+  for (const index of maps.decimalEntries.keys()) {
+    if (!maps.hexEntries.has(index)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+export interface LangTable extends LangEntryMaps {
   /** Category from the header (`1:QuestTitle` → `QuestTitle`). */
   category: string;
-  /** Numeric index → value. Later records win on a numeric collision. */
+  /**
+   * **Merged** numeric view: later record wins across **both** forms. Kept for
+   * counting/reporting (`entries.size`, `collisionCount`) — never use it for
+   * lookups; a decimal token and a hex token with the same numeric index and
+   * different values collapse here (see the module doc).
+   */
   entries: Map<number, string>;
   /** Records whose index token was non-empty (5,959 for `QuestTitle.lang`). */
   recordCount: number;
-  /** Records read with the decimal ladder — the spike's "2,238 entries". */
+  /** Records read with the decimal form (2,238 for `QuestTitle.lang`). */
   decimalRecordCount: number;
-  /** Records read with the hex ladder (index token contained A–F). */
+  /** Records read with the hex form — the token contained `A–F`. */
   hexRecordCount: number;
+  /** Records whose index was already present in their **own** form map. */
+  sameFormCollisionCount: number;
+  /**
+   * Distinct numeric indices written in **both** forms in this file (`126346`
+   * written as `126346` and as `1ED8A` counts once) — the cross-form exposure.
+   */
+  crossFormCollisionCount: number;
+  /**
+   * Of `crossFormCollisionCount`, the ones where the two forms carry **different
+   * values** — the cases where a merged lookup returns a wrong name.
+   */
+  crossFormValueMismatchCount: number;
   /**
    * Named-key records (`ChooseFriendTitle` → `Choose Your Friend`) — the 79
    * tables keyed by name rather than by numeric index. `string_table.key` is TEXT,
@@ -74,7 +172,7 @@ export interface LangTable {
   /**
    * Records whose **middle line is non-blank**.
    *
-   * The record shape is `{index}\r\n{middle}\r\n{value}\r\n`: the middle line
+   * The record shape is `{key}\r\n{middle}\r\n{value}\r\n`: the middle line
    * is empty in most tables (`QuestTitle`, `Items`, `GUI`, `Spell`) but carries a
    * secondary label in others (`MobDescriptions.lang` = the mob name above the
    * description, `ZoneLocName.lang` = "Quest location name (autogenerated)").
@@ -82,7 +180,12 @@ export interface LangTable {
    * parse (the stride is fixed at three lines).
    */
   nonBlankMiddleLineCount: number;
-  /** Records whose index overwrote an earlier record with the same index. */
+  /**
+   * Records whose numeric index overwrote an earlier record in the **merged**
+   * view (any form). This is the figure the dry run has always printed (26 for
+   * `QuestTitle.lang`, 298 locale-wide) — kept so runs stay comparable, not a
+   * count of lookups that can go wrong (see `crossFormCollisionCount`).
+   */
   collisionCount: number;
   /** Raw byte length of the parsed buffer. */
   byteLength: number;
@@ -115,13 +218,18 @@ export function decodeLangBuffer(buffer: Buffer | Uint8Array): {
 }
 
 /**
- * Pure key→index conversion — the ladder from D33(d) applied to the suffix:
- * all-digit → decimal, otherwise → hex. `undefined` when the suffix is neither.
+ * Pure suffix→index conversion — the *numeric value* of a suffix, regardless of
+ * which form was written: all-digit → decimal, otherwise → hex. `undefined` when
+ * the suffix is neither.
  *
  * ```
  * langKeyToIndex('1ED8D') === 126349   // 0x1ED8D, the spec's worked example
  * langKeyToIndex('00001717') === 1717  // padded decimal (the m_displayName form)
  * ```
+ *
+ * This is the AC#6 mapping only. It deliberately does **not** decide which record
+ * to read — form-aware resolution is `resolveLangKey`, which needs
+ * `langKeyForm(suffix)` and the two maps, never this function alone.
  */
 export function langKeyToIndex(suffix: string): number | undefined {
   const token = suffix.trim();
@@ -158,10 +266,16 @@ export function langKeyCategory(key: string): string | undefined {
 }
 
 /**
- * Inverse of the ladder: builds the canonical `{Category}_{index}` key that the
- * corpus uses in `m_displayName` values (8-digit zero-padded decimal —
- * `Items_00022716`, `QuestTitle_00001717`, `NPCs_01749407`). Pass
- * `{ style: 'hex' }` for the sparse-tail form (`QuestTitle_1ED8D`).
+ * Inverse of `langKeyToIndex`: builds a canonical `{Category}_{index}` key. The
+ * default style is the 8-digit zero-padded decimal the corpus uses in
+ * `m_displayName` values (`Items_00022716`, `QuestTitle_00001717`); pass
+ * `{ style: 'hex' }` for the hex-written form (`QuestTitle_1ED8D`).
+ *
+ * Caveat: an index whose hex spelling happens to be all digits (`0x1234` →
+ * `1234`) is indistinguishable from the decimal form — `langKeyForm('1234')` is
+ * `'decimal'`. The corpus's hex tokens are ≥ 5 digits with an `A–F`, so this does
+ * not bite the measured data, but it is why the form is read from the token, not
+ * inferred from the number.
  */
 export function formatLangKey(
   category: string,
@@ -176,38 +290,53 @@ export function formatLangKey(
   return `${category}_${token}`;
 }
 
-/** A lookup table or a lookup function, both accepted (decision-friendly). */
-export type LangLookup = Map<number, string> | ((index: number) => string | undefined);
+/**
+ * A form-aware lookup: either the two maps themselves (any `LangEntryMaps` —
+ * including a whole `LangTable`) or a function `(index, form) => value`.
+ */
+export type LangLookup = LangEntryMaps | ((index: number, form: LangKeyForm) => string | undefined);
 
-function asLookupFn(lookup: LangLookup): (index: number) => string | undefined {
-  return typeof lookup === 'function' ? lookup : (index) => lookup.get(index);
+function asLookupFn(lookup: LangLookup): (index: number, form: LangKeyForm) => string | undefined {
+  if (typeof lookup === 'function') {
+    return lookup;
+  }
+  return (index, form) =>
+    (form === 'decimal' ? lookup.decimalEntries : lookup.hexEntries).get(index);
 }
 
 /**
- * Resolves `{Category}_{suffix}` through the D33(d) ladder: decimal first for an
- * all-digit suffix, then hex, then `undefined` (the caller shows the raw key —
- * a miss is normal, [spec-domain-reference.md] L694-695).
+ * Resolves `{Category}_{suffix}` **form-matched**: a hex-written suffix reads the
+ * hex map first and a decimal-written suffix the decimal map first; only when the
+ * token's own form is absent is the other form's numeric equivalent tried (a real
+ * fallback — some records exist in only one form). Neither → `undefined`, and the
+ * caller shows the raw key (a miss is normal, [spec-domain-reference.md] L694-695).
+ *
+ * ```
+ * resolveLangKey('QuestTitle_126346', table) → "Letters of Light"   // decimal
+ * resolveLangKey('QuestTitle_1ED8A',  table) → "Forged in Fire"     // hex, same index
+ * resolveLangKey('QuestTitle_1ED8D',  table) → "Quest for Perfection"
+ * resolveLangKey('QuestTitle_FFFFFF', table) → undefined            // absent
+ * ```
  */
 export function resolveLangKey(key: string, lookup: LangLookup): string | undefined {
   const suffix = langKeySuffix(key);
   if (suffix === undefined) {
     return undefined;
   }
+  const form = langKeyForm(suffix);
+  if (form === undefined) {
+    return undefined;
+  }
+  const index = form === 'decimal' ? Number(suffix) : Number.parseInt(suffix, 16);
+  if (!Number.isSafeInteger(index)) {
+    return undefined;
+  }
   const get = asLookupFn(lookup);
-
-  if (DECIMAL_TOKEN_PATTERN.test(suffix)) {
-    const value = get(Number(suffix));
-    if (value !== undefined) {
-      return value;
-    }
+  const primaryForm = get(index, form);
+  if (primaryForm !== undefined) {
+    return primaryForm;
   }
-  if (HEX_TOKEN_PATTERN.test(suffix)) {
-    const value = get(Number.parseInt(suffix, 16));
-    if (value !== undefined) {
-      return value;
-    }
-  }
-  return undefined;
+  return get(index, form === 'decimal' ? 'hex' : 'decimal');
 }
 
 /**
@@ -217,7 +346,8 @@ export function resolveLangKey(key: string, lookup: LangLookup): string | undefi
  * `{key}\r\n{middle}\r\n{value}\r\n`:
  *
  *  - zero-padded decimal (`00000000`, `QuestTitle.lang` and ~5,050 more);
- *  - hex (`1ED8D`, the sparse tail of `QuestTitle.lang`);
+ *  - hex (`1ED8D`, interleaved with the decimal tokens from record 1,473 on in
+ *    `QuestTitle.lang`);
  *  - **named** (`ChooseFriendTitle` in `ChooseFriendSWF.lang`, `CLASS_ANSWER_1_A_1`
  *    in `CharCreation.lang`, `QuestFinder` in `QuestTitle.lang`) — 79 tables are
  *    named-keyed and would be dropped entirely by a numeric-only rule.
@@ -238,12 +368,19 @@ function isIndexToken(line: string): boolean {
  * Parses one `.lang` buffer.
  *
  * The record layout is positional and three lines wide —
- * `{index}\r\n{middle}\r\n{value}\r\n` — because an empty value would otherwise
- * swallow the next index (spike 1.4a §5: "indices are not always zero-padded";
+ * `{key}\r\n{middle}\r\n{value}\r\n` — because an empty value would otherwise
+ * swallow the next key (spike 1.4a §5: "indices are not always zero-padded";
  * `QuestTitle.lang` has records with an empty value). Reading starts at the first
  * line after the header that parses as an index token and then strides by three;
  * the middle line is a secondary label (empty in most tables, a name/description
  * in others) and is reported through `nonBlankMiddleLineCount`.
+ *
+ * Each numeric record lands in its **form** map (`decimalEntries` for `^\d+$`
+ * tokens, `hexEntries` for `A–F`-containing ones) and the two maps are merged
+ * into `entries` only for counting. Collisions are reported at three levels: a
+ * record overwriting its own form, a numeric index written in both forms, and —
+ * the dangerous subset — the same index written in both forms with different
+ * values.
  *
  * The three-line shape is verified against real cross-references: a Wizard City
  * tutorial quest (`Tutorials/WC-PreCel-MAIN-001`) carries
@@ -277,6 +414,8 @@ export function parseLangBuffer(
     start += 1;
   }
 
+  const decimalEntries = new Map<number, string>();
+  const hexEntries = new Map<number, string>();
   const entries = new Map<number, string>();
   const namedEntries = new Map<string, string>();
   let namedCollisionCount = 0;
@@ -284,6 +423,7 @@ export function parseLangBuffer(
   let decimalRecordCount = 0;
   let hexRecordCount = 0;
   let nonBlankMiddleLineCount = 0;
+  let sameFormCollisionCount = 0;
   let collisionCount = 0;
 
   for (let i = start; i + 1 < body.length; i += 3) {
@@ -297,31 +437,72 @@ export function parseLangBuffer(
     if (separator.trim() !== '') {
       nonBlankMiddleLineCount += 1;
     }
-    if (DECIMAL_TOKEN_PATTERN.test(token)) {
-      decimalRecordCount += 1;
-    } else if (HEX_TOKEN_PATTERN.test(token)) {
-      hexRecordCount += 1;
-    }
-    const index = langKeyToIndex(token);
-    if (index === undefined) {
+    const form = langKeyForm(token);
+    if (form === undefined) {
       if (namedEntries.has(token)) {
         namedCollisionCount += 1;
       }
       namedEntries.set(token, value);
       continue;
     }
+    const index = form === 'decimal' ? Number(token) : Number.parseInt(token, 16);
+    if (!Number.isSafeInteger(index)) {
+      // Numeric-looking but too large for a JS number (defensive; the real corpus
+      // is far below 2^53). Keep it in the named map rather than dropping the
+      // record, so `recordCount` stays fully accounted for.
+      if (namedEntries.has(token)) {
+        namedCollisionCount += 1;
+      }
+      namedEntries.set(token, value);
+      continue;
+    }
+    if (form === 'decimal') {
+      decimalRecordCount += 1;
+      if (decimalEntries.has(index)) {
+        sameFormCollisionCount += 1;
+      }
+      decimalEntries.set(index, value);
+    } else {
+      hexRecordCount += 1;
+      if (hexEntries.has(index)) {
+        sameFormCollisionCount += 1;
+      }
+      hexEntries.set(index, value);
+    }
+    // Merged view (counting only): a record that lands on an index any form has
+    // already written is the collision figure the dry run reports.
     if (entries.has(index)) {
       collisionCount += 1;
     }
     entries.set(index, value);
   }
 
+  // Cross-form collisions are counted per numeric index, so a pair counts once
+  // regardless of how many records each form wrote for that index.
+  let crossFormCollisionCount = 0;
+  let crossFormValueMismatchCount = 0;
+  for (const [index, value] of decimalEntries) {
+    const hexValue = hexEntries.get(index);
+    if (hexValue === undefined) {
+      continue;
+    }
+    crossFormCollisionCount += 1;
+    if (hexValue !== value) {
+      crossFormValueMismatchCount += 1;
+    }
+  }
+
   return {
     category,
+    decimalEntries,
+    hexEntries,
     entries,
     recordCount,
     decimalRecordCount,
     hexRecordCount,
+    sameFormCollisionCount,
+    crossFormCollisionCount,
+    crossFormValueMismatchCount,
     namedEntries,
     namedRecordCount: namedEntries.size + namedCollisionCount,
     namedCollisionCount,
@@ -349,7 +530,11 @@ export interface ScanLangDirResult {
   fileCount: number;
   /** Total bytes of those files. */
   byteCount: number;
-  /** Sum of `entries.size` across tables — the `string_table` row count. */
+  /**
+   * Sum of `entries.size` across tables — the **merged** numeric `string_table`
+   * row count (a numeric index written in both forms counts once). Kept as the
+   * comparable figure; the two form maps together hold every row.
+   */
   rowCount: number;
   /** Same, counting only non-empty values (empty strings are corpus noise). */
   nonEmptyRowCount: number;
@@ -357,10 +542,16 @@ export interface ScanLangDirResult {
   namedRowCount: number;
   /** Records whose middle line carried a secondary label (a third column). */
   namedRecordCount: number;
-  /** Records whose index overwrote an earlier record with the same index. */
+  /** Merged-view overwrites, summed per file (298 locale-wide). */
   collisionCount: number;
-  /** `entries` merged per category (the lookup the templates need). */
-  byCategory: Map<string, Map<number, string>>;
+  /** Own-form overwrites, summed per file (270 locale-wide). */
+  sameFormCollisionCount: number;
+  /** Distinct cross-form indices, summed per file (28 locale-wide: 26 + 2). */
+  crossFormCollisionCount: number;
+  /** Of those, the ones whose two values differ (28 locale-wide). */
+  crossFormValueMismatchCount: number;
+  /** `decimalEntries`/`hexEntries` merged per category — the maps lookups need. */
+  byCategory: Map<string, LangEntryMaps>;
   /** `namedEntries` merged per category. */
   namedByCategory: Map<string, Map<string, string>>;
   /** Files that could not be parsed. A corrupt locale file must not abort a sync. */
@@ -375,7 +566,7 @@ export interface ScanLangDirOptions {
 
 /**
  * Parses every `*.lang` in a locale directory (production:
- * `{tempDir}/Locale/en-US`) and merges the entries per category.
+ * `{tempDir}/Locale/en-US`) and merges the two form maps per category.
  *
  * Injected filesystem so unit tests run against tiny synthetic directories and
  * so nothing in the test suite reads the real unpack tree.
@@ -406,6 +597,9 @@ export async function scanLangDir(
   let namedRecordCount = 0;
   let namedRowCount = 0;
   let collisionCount = 0;
+  let sameFormCollisionCount = 0;
+  let crossFormCollisionCount = 0;
+  let crossFormValueMismatchCount = 0;
 
   for (let offset = 0; offset < names.length; offset += concurrency) {
     const batch = names.slice(offset, offset + concurrency);
@@ -434,6 +628,9 @@ export async function scanLangDir(
       namedRecordCount += entry.table.nonBlankMiddleLineCount;
       namedRowCount += entry.table.namedEntries.size;
       collisionCount += entry.table.collisionCount;
+      sameFormCollisionCount += entry.table.sameFormCollisionCount;
+      crossFormCollisionCount += entry.table.crossFormCollisionCount;
+      crossFormValueMismatchCount += entry.table.crossFormValueMismatchCount;
       for (const value of entry.table.entries.values()) {
         if (value !== '') {
           nonEmptyRowCount += 1;
@@ -442,12 +639,18 @@ export async function scanLangDir(
     }
   }
 
-  const byCategory = new Map<string, Map<number, string>>();
+  const byCategory = new Map<string, LangEntryMaps>();
   const namedByCategory = new Map<string, Map<string, string>>();
   for (const table of tables) {
-    const merged = byCategory.get(table.category) ?? new Map<number, string>();
-    for (const [index, value] of table.entries) {
-      merged.set(index, value);
+    const merged = byCategory.get(table.category) ?? {
+      decimalEntries: new Map<number, string>(),
+      hexEntries: new Map<number, string>(),
+    };
+    for (const [index, value] of table.decimalEntries) {
+      merged.decimalEntries.set(index, value);
+    }
+    for (const [index, value] of table.hexEntries) {
+      merged.hexEntries.set(index, value);
     }
     byCategory.set(table.category, merged);
 
@@ -467,6 +670,9 @@ export async function scanLangDir(
     namedRowCount,
     namedRecordCount,
     collisionCount,
+    sameFormCollisionCount,
+    crossFormCollisionCount,
+    crossFormValueMismatchCount,
     byCategory,
     namedByCategory,
     errors,
@@ -475,14 +681,15 @@ export async function scanLangDir(
 
 /**
  * Builds the `key → value` resolver the template/quest parsers need: splits the
- * key into `{Category}_{suffix}`, runs the D33(d) numeric ladder, and — when the
- * named tables are supplied — falls back to a named-key lookup.
+ * key into `{Category}_{suffix}`, runs the **form-matched** rule
+ * (`resolveLangKey`) against that category's two maps, and — when the named
+ * tables are supplied — falls back to a named-key lookup.
  *
  * Named keys may themselves contain underscores (`CLASS_ANSWER_1_A_1`), so the
  * named path splits on the **first** underscore instead of the last.
  */
 export function createKeyLookup(
-  byCategory: Map<string, Map<number, string>>,
+  byCategory: Map<string, LangEntryMaps>,
   namedByCategory?: Map<string, Map<string, string>>,
 ): (key: string) => string | undefined {
   return (key) => {

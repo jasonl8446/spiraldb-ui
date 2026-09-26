@@ -37,6 +37,7 @@ import {
   buildQuestRows,
   buildZoneRows,
   createKeyLookup,
+  langEntryCount,
   resolveRevision,
   runUnpack,
   scanLangDir,
@@ -166,9 +167,9 @@ heading('[1.4e] .lang string tables — Locale/en-US/*.lang');
 const lang = await scanLangDir(path.join(treeDir, 'Locale', 'en-US'));
 const headerOnly = lang.tables.filter((table) => table.recordCount === 0).length;
 const topCategories = [...lang.byCategory.entries()]
-  .sort((a, b) => b[1].size - a[1].size)
+  .sort((a, b) => langEntryCount(b[1]) - langEntryCount(a[1]))
   .slice(0, 5)
-  .map(([category, entries]) => `${category}=${n(entries.size)}`)
+  .map(([category, maps]) => `${category}=${n(langEntryCount(maps))}`)
   .join(', ');
 field('files', n(lang.fileCount));
 field('bytes', bytes(lang.byteCount));
@@ -184,6 +185,12 @@ field(
   `${n(lang.namedRecordCount)} (middle line non-blank — a third column, e.g. MobDescriptions)`,
 );
 field('index collisions', n(lang.collisionCount));
+field(
+  'form collisions',
+  `same-form ${n(lang.sameFormCollisionCount)} record(s); cross-form ${n(
+    lang.crossFormCollisionCount,
+  )} index(es) in both forms, ${n(lang.crossFormValueMismatchCount)} with different values`,
+);
 field('parse errors', n(lang.errors.length));
 field('top categories', topCategories);
 field('elapsed', step());

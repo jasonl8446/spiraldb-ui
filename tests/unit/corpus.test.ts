@@ -92,7 +92,7 @@ describe('buildQuestRows — corpus-derived quests (D21)', () => {
     const guide = parseLangBuffer(readFileSync(path.join(FIXTURES, 'en-US_QuestTitle.lang')));
     const result = await buildQuestRows({
       questTemplatesDir: dir,
-      lookupTitle: (key) => resolveLangKey(key, guide.entries),
+      lookupTitle: (key) => resolveLangKey(key, guide),
     });
 
     expect(result.files).toBe(3);

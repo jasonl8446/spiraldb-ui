@@ -18,10 +18,11 @@ parsers:
    ([spec-domain-reference.md](../../spec-domain-reference.md) L654–660) describes only the spell family.
 
 Additionally, the spec's worked example `QuestTitle_1ED8D → 126349`
-([spec-domain-reference.md](../../spec-domain-reference.md) L687–691) **does not resolve in this revision** — that
-index does not exist in any `.lang` file here (its neighbours `126346`/`126347` do). The *mechanism* is sound and
-was verified with real keys of both forms (decimal `00001717`→"Grim Tales", hex `1ED8A`→126346→"Letters of
-Light"); the raw-key fallback remains the common path for quest titles (267 of 315 keyed corpus quests).
+([spec-domain-reference.md](../../spec-domain-reference.md) L687–691) **does resolve** — to "Quest for
+Perfection" — but only under a **form-matched** lookup: `QuestTitle.lang` writes the same numeric index both as a
+decimal token and as a hex token, with *different* values (e.g. `126346` → "Letters of Light" while `1ED8A` →
+"Forged in Fire"), so a lookup that normalises both sides to a number returns the wrong title. With
+form-matched resolution **315 of 315 keyed corpus quests resolve and none fall back to a raw key**.
 
 ---
 
@@ -373,8 +374,12 @@ All is Revealed
 Recover the Goods
 ```
 
-**Record layout is `{index}\r\n\r\n{value}\r\n`** — index **before** value, 8-digit zero-padded, and the index is
-**decimal** (not hex).
+**Record layout is three lines — `{key}\r\n{middle}\r\n{value}` — the key before the value**, and the key is
+written **either** as 8-digit zero-padded decimal **or** as a bare hex token (see the form-matched rule below; the
+first 1,473 records of `QuestTitle.lang` happen to be decimal-only, which is why the two forms are easy to miss).
+The middle line is usually blank, but **8,879 records locale-wide carry a label there** (`MobDescriptions` reads
+name / description), so a hard-coded "key, blank, value" stride mis-parses those files. ~79 tables — 10,105 rows —
+are keyed by **name** rather than a number (`Chat.lang`, `CharCreation.lang`, `QFChooseFriend.lang`, …).
 
 ### Caveat for the 1.4e parser: indices are not always zero-padded
 
@@ -396,29 +401,52 @@ A survey of the second line across a random sample of 300 en-US `.lang` files fo
 must not assume the first data line is 8 characters. A robust rule: split on blank lines; alternating tokens are
 index/value; skip any leading token that is not numeric.
 
-### Hex→decimal verification (the spec's example does not resolve)
+### Hex→decimal verification — the resolution rule is FORM-MATCHED (final, lead-verified)
 
-`0x1ED8D = 126349` (zero-padded `00126349`) — arithmetic verified. But the key itself is **not present in this
-revision's data**:
+**The spec's example resolves after all.** `QuestTitle_1ED8D` (hex form) → `126349` → **"Quest for Perfection"**.
+Two earlier versions of this section were wrong; the retraction is recorded at the end of this block so later
+readers can trust the numbers below.
 
-- `QuestTitle.lang`, parsed as index/blank/value triples, holds **2,238 entries in two blocks**: a dense
-  **0–2237** block (1,473 entries, 1,440 non-empty) and a **sparse tail** of 765 entries (611 non-empty) reaching
-  index **199272** — `125639`, `125777`, `126346`, `126347`, `199157`, `199272` are real members.
-- The literal UTF-16LE byte sequence `00126349` appears in **0** of the 5,132 en-US `.lang` files — while its
-  immediate neighbours **`00126346` → "Letters of Light"** and **`00126347` → "Calling the Council"** do exist.
+What `QuestTitle.lang` actually contains — 17,879 lines, i.e. **5,960 key records** (2,240 with an all-digit token,
+3,720 with a hex/A–F token), each record being three lines `key \r\n middle \r\n value`:
 
-> **Correction (lead verification, 2026-09-26):** an earlier revision of this section reported the dense block
-> (1,473 entries, max `2236`) as if it were the whole file and concluded that hex-form quest titles cannot
-> resolve. That was wrong: the sparse tail above `2237` is exactly where the hex-form `m_questTitle` keys land.
-> Measured over all 322 corpus quest files: **7** have no `m_questTitle`; of the **315** keyed files, **18 resolve
-> via the hex reading** (e.g. `QuestTitle_1ED8A` → 126346 → "Letters of Light"), **30 resolve via the decimal
-> reading**, and **267 resolve by neither** (raw-key fallback). The tail must be parsed and hex keys must be tried.
+| Token (as written) | line | value |
+|---|---|---|
+| `126346` | 4462 | Letters of Light |
+| `1ED8A` | 12556 | **Forged in Fire** |
+| `1ED8D` | 12565 | **Quest for Perfection** |
+| `1ED89` | — | Headless Rider |
 
-⇒ The mechanism is real; **`QuestTitle_1ED8D` specifically cannot resolve** (its neighbours can), so it exercises
-the raw-key fallback ([spec L694–695](../../spec-domain-reference.md)). 267 of 315 quest titles still fall back to
-raw keys in this revision — worth flagging to the owner, but 48 are human-readable today.
+⇒ The same *numeric* index is often written **both ways in the same file with different values**
+(298 such collisions across the locale). A lookup that normalises both sides to a number and keeps "last wins"
+silently returns the wrong title (`QuestTitle_1ED8A` would come back "Letters of Light" instead of "Forged in
+Fire"). **The rule is form-matched:** a hex-written key must be looked up as the hex token, a decimal-written key
+as the decimal token; only if the same-form token is absent may the other form be tried, and then the raw key.
 
-The mechanism **was** verified end-to-end with real in-range keys. `QuestTitle.lang` + the SpiralDB corpus:
+Lead verification over all 322 corpus quest files with form-matched resolution:
+
+```
+decimal-form tokens: 2238 | hex-form tokens: 3719
+corpus quests: 322 | no m_questTitle: 7 | resolved: 315 | missed: 0
+resolution paths: { 'hex-form': 287, 'decimal-form': 28 } | misses: []
+ questtemplates_DS-ACAD-C01-001.json: QuestTitle_298DE -> "Wizard Tours"
+ questtemplates_DS-ACAD-C01-003.json: QuestTitle_1ED8A -> "Forged in Fire"
+ questtemplates_DS-ACAD1-C01-001.json: QuestTitle_1ED8D -> "Quest for Perfection"
+```
+
+**315 of 315 keyed quests resolve — there is no raw-key-fallback population among real quest titles** (only the 7
+files with no `m_questTitle` fall back, and they have no title at all). P1 AC#5 is comfortably met with a real hex
+case; P1 AC#6's `QuestTitle_1ED8D → 126349` remains valid as a pure-function test *and* now has a real data
+counterpart.
+
+> **Retraction (2026-09-26).** (i) The spike's first version reported the file as "1,473 entries, max index 2236"
+> and concluded hex-form titles cannot resolve. (ii) The lead's mid-flight correction kept only the **all-digit**
+> tokens (2,238 of them) and then tried `parseInt(suffix, 16)` against that partial decimal-keyed map, which
+> produced "18 hex-resolvable / 30 decimal / 267 unresolved" and the false mapping `1ED8A → "Letters of Light"`.
+> Both are superseded by the form-matched measurement above; neither the dense/sparse split nor a "dense block +
+> sparse tail" model describes this file — it holds two **lexical forms** of keys, interleaved, with collisions.
+
+The decimal-path keys are additionally verified end-to-end. `QuestTitle.lang` + the SpiralDB corpus:
 
 | Corpus key | Decimal index | `QuestTitle.lang` value |
 |---|---|---|
@@ -566,7 +594,7 @@ eb298ceef067623c94d77c25e0c441e7f80d6fa80a63cd7cd095f5ff27fd7caf  server/test/fi
 |---|---|---|---|
 | `spell_pixie_deser.json` | `Spells/Pixie_deser.json` | 2,631 | `SpellTemplate` — the `m_name` family. `m_name="Pixie"`, `m_displayName="Spells_00000424"` → `Spells.lang` idx 424 = **"Pixie"** (self-consistent, so a parser test can assert the round-trip) |
 | `npc_judge_eddie_deser.json` | `ObjectData/WL/WL-StandIn-JudgeEddie_deser.json` | 2,053 | `WizGameObjectTemplate` — the NPC family and the `m_templateID`/`m_objectName`/`m_displayName` shape. `m_templateID=1608380`, `m_displayName="NPCs_01749407"` → **"Judge Eddie"** (matches the file's own name) |
-| `en-US_QuestTitle.lang` | `Locale/en-US/QuestTitle.lang` | 313,632 | Real `.lang`: UTF-16LE+BOM, the 5,132-file en-US locale, **2,238 entries** (dense 0–2237 block + sparse tail to 199272). Contains the decimal-path keys (`00001717`→"Grim Tales", `00001718`→"To Ravenwood!", `00001813`→"The Cure", `00001814`→"Oh Me, Oh Minotaur") **and** the hex-path keys from the sparse tail (`1ED8A`→"Letters of Light", `1ED8B`→"Calling the Council"), and demonstrates that `00126349` is absent — so 1.4e can unit-test the decimal hit, the hex hit (`1ED8A`, which only exists above the dense block) and the raw-key fallback against genuine data |
+| `en-US_QuestTitle.lang` | `Locale/en-US/QuestTitle.lang` | 313,632 | Real `.lang`: UTF-16LE+BOM, the 5,132-file en-US locale, **5,960 key records in two lexical forms** (2,240 all-digit tokens + 3,720 hex/A–F tokens) with 298 numeric collisions across the two forms. Contains the decimal path (`00001717`→"Grim Tales", `00001718`→"To Ravenwood!", `00001813`→"The Cure", `00001814`→"Oh Me, Oh Minotaur") **and** the hex path (`1ED8A`→"Forged in Fire", `1ED8D`→"Quest for Perfection"), plus the collision pair `126346`→"Letters of Light" vs `1ED8A`→"Forged in Fire" — so 1.4e can unit-test the decimal hit, the hex hit, the **form-matched** rule (which the collision makes falsifiable) and a genuine raw-key miss |
 
 Only one `.lang` is needed: a single real file exercises BOM handling, CRLF, the header line, sparse indices and
 the decimal key mapping. `Items.lang` (2.26 MB) was rejected as it alone would exceed the size budget.
@@ -635,23 +663,30 @@ against.
   `*.lang` would pull in 33,932 files across 8 locales (185 MB) — 6.6× the work for unused data.
 - Decode UTF-16LE, strip the leading BOM `\xFF\xFE`, split on `\r\n`.
 - Line 1 = `1:{CategoryName}`; the category equals the basename.
-- Then repeating records: **index, blank, value** (index *before* value). Indices are normally 8-digit
-  zero-padded **decimal**, but must be parsed leniently (bare `0`/`1` occur — see `Mobs.lang`). The index space is
-  sparse; a trailing lone index with no value is possible.
-- Key mapping for `{Category}_{suffix}`:
-  1. all-digits suffix → **decimal** index (this is the `m_displayName` form — the common case, ~100 % hit);
-  2. any suffix → **hex** → decimal as the second attempt (`m_questTitle` uses this form: 18 of 315 corpus quests
-     resolve here and only here, e.g. `1ED8A` → 126346);
-  3. `Locale/en-US/{Category}.lang` missing, non-numeric suffix, or index absent in both readings → **raw-key
-     fallback**.
+- Then repeating records of **three lines: `key \r\n middle \r\n value`** (the key precedes the value; the middle
+  line is *usually* blank but is not always — 8,879 records locale-wide carry a label there, e.g. `MobDescriptions`
+  has a name above the description — so a fixed "key, blank, value" stride mis-parses those files).
+- Indices are normally 8-digit zero-padded **decimal** but must be parsed leniently (bare `0`/`1` occur — see
+  `Mobs.lang`); a trailing lone key with no value is possible. ~79 tables are keyed by **name** instead of a
+  number (10,105 rows locale-wide, e.g. `Chat.lang`, `CharCreation.lang`, `QuestFinder`) — accept those keys
+  verbatim.
+- Key mapping for `{Category}_{suffix}` — **form-matched, this is the rule**:
+  1. suffix is hex-written (contains `A–F`) → look up the **hex token** (uppercased) first;
+  2. suffix is all digits → look up the **decimal token** first (the `m_displayName` form, ~100 % hit);
+  3. only if the same-form token is absent → try the other form's numeric equivalent;
+  4. `Locale/en-US/{Category}.lang` missing, non-numeric suffix, or absent in both forms → **raw-key fallback**.
+  Collisions are real (298 locale-wide, incl. `126346`→"Letters of Light" vs `1ED8A`→"Forged in Fire"), so
+  normalising both sides to a number and taking "last wins" returns wrong titles — do not do it.
 - Store `(key, value, category)` into `string_table`.
 - **Measured resolution (lead-verified over all 322 corpus quest files):** 7 files carry no `m_questTitle`; of the
-  315 keyed files **18 resolve via hex**, **30 via decimal**, **267 via neither** (raw-key fallback). A miss is
-  normal, not an error ([spec L694–695](../../spec-domain-reference.md)).
+  315 keyed files **all 315 resolve** — 287 via the hex form, 28 via the decimal form, **0 raw-key fallbacks**. A
+  miss is normal, not an error ([spec L694–695](../../spec-domain-reference.md)), but it should not occur for
+  quest titles in this revision.
 - Unit-test against `server/test/fixtures/en-US_QuestTitle.lang`: assert the header parses to `QuestTitle`;
-  assert `00001717` → `"Grim Tales"` (decimal path) and `1ED8A` → `"Letters of Light"` (hex path — it lives in the
-  sparse tail; the 1,473 dense entries are not the whole file); assert `00126349` is **absent** (documents the
-  fallback).
+  assert `00001717` → `"Grim Tales"` (decimal path) and `1ED8D` → `"Quest for Perfection"` / `1ED8A` → `"Forged in
+  Fire"` (hex path); assert the collision pair resolves form-matched (`126346` → `"Letters of Light"`, i.e. the
+  hex token must NOT be returned for the decimal key and vice versa); assert a genuinely absent key (e.g.
+  `QuestTitle_FFFFFF`) returns `undefined` and falls back to the raw key.
 
 ### Reproducing this spike
 
