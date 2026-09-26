@@ -1,0 +1,9 @@
+{
+  "_fileName": "ObjectData/SyntheticActor.xml",
+  "_className": "ActorTemplate",
+  "_object": {
+    "m_objectName": "SyntheticActor",
+    "m_templateID": 9000002,
+    "m_displayName": "Mobs_00000001"
+  }
+}

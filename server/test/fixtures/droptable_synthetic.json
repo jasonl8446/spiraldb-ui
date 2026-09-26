@@ -1,0 +1,7 @@
+{
+  "Name": "SYNTHETIC-DROP-001",
+  "Description": "Synthetic drop table used by the 1.4d corpus tests",
+  "RollChance": 1.0,
+  "Weight": 100,
+  "Items": []
+}

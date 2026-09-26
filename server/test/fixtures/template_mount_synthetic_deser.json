@@ -1,0 +1,13 @@
+{
+  "_fileName": "ObjectData/SyntheticMount.xml",
+  "_flags": 7,
+  "_className": "WizMountTemplate",
+  "_hash": 1259413685,
+  "_deserializedOn": "2026-09-25 21:55:43",
+  "_imcodecVersion": "1.0.0.0",
+  "_object": {
+    "m_objectName": "SyntheticMount",
+    "m_templateID": "9000001",
+    "m_displayName": ""
+  }
+}

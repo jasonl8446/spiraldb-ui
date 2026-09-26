@@ -1,0 +1,21 @@
+{
+  "ZoneName": "WizardCity/WC_Synthetic_Hub",
+  "Events": [
+    {
+      "TriggerName": "SyntheticEvent",
+      "Event": {
+        "m_eventName": "SyntheticEventName"
+      }
+    }
+  ],
+  "Teleports": [
+    {
+      "TriggerName": "SyntheticTeleport",
+      "Teleport": {
+        "m_teleportType": "TELEPORT_STATIC",
+        "m_transitionID": 0,
+        "m_destinationZone": "WizardCity/WC_Synthetic_Interior"
+      }
+    }
+  ]
+}

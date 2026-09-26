@@ -16,6 +16,7 @@
     "build:client": "tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts",
     "start": "node server/dist/server/src/index.js",
     "sync": "tsx scripts/sync-names.ts",
+    "sync:dry-run": "tsx scripts/sync-dry-run.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . && prettier --check .",
