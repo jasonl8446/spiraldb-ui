@@ -1,0 +1,35 @@
+# p3-01 ac2 — live HTTP proof that POST /api/quests validates with the shared schemas
+# server: npx tsx server/src/index.ts on :3211, throwaway DB /tmp/p301-live-y6n5/probe.db, SPIRALDB_PATH=/tmp/p301-live-y6n5/spiraldb (temp)
+# every request below is a REJECTION, so no write path is exercised and nothing real is touched.
+# run 2026-09-26T13:59:26Z at commit b4e0cbe
+
+### POST — unknown goal $type
+  body      : {"quest":{"m_questName":"PROBE-1","m_goals":[{"$type":"Imcodec.ObjectProperty.TypeCache.NopeGoalTemplate, Imcodec.ObjectProperty"}]}}
+  HTTP      : 400
+  response  : {"error":"Invalid quest payload: quest.m_goals.0.$type: Invalid discriminator value. Expected 'Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty'."}
+
+### POST — goal with no $type
+  body      : {"quest":{"m_questName":"PROBE-2","m_goals":[{"m_goalName":"1_A"}]}}
+  HTTP      : 400
+  response  : {"error":"Invalid quest payload: quest.m_goals.0.$type: Invalid discriminator value. Expected 'Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty' | 'Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty'."}
+
+### POST — empty m_questName
+  body      : {"quest":{"m_questName":""}}
+  HTTP      : 400
+  response  : {"error":"Invalid quest payload: quest.m_questName: String must contain at least 1 character(s)."}
+
+### POST — wrong-typed m_questTitle
+  body      : {"quest":{"m_questName":"PROBE-3","m_questTitle":5}}
+  HTTP      : 400
+  response  : {"error":"Invalid quest payload: quest.m_questTitle: Expected string, received number."}
+
+### POST — unknown requirement $type
+  body      : {"quest":{"m_questName":"PROBE-4","m_requirements":{"m_requirements":[{"$type":"Nope"}]}}}
+  HTTP      : 400
+  response  : {"error":"Invalid quest payload: quest.m_requirements.m_requirements.0: Invalid input."}
+
+### POST — numeric m_questName (the tightening)
+  body      : {"quest":{"m_questName":42}}
+  HTTP      : 400
+  response  : {"error":"Invalid quest payload: quest.m_questName: Expected string, received number."}
+

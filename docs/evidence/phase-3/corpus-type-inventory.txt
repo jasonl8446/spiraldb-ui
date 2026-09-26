@@ -1,0 +1,181 @@
+# p3-01 — the corpus $type inventory (P3 AC#1's audit input), measured 2026-09-26T13:13:46Z
+# The plan's specified command, run against BOTH the real SpiralDB repo and the test clone (D17).
+
+## counts
+  real  /home/jason/Documents/git-projects/spiraldb/QuestTemplates: 322 files
+  clone data/test-spiraldb/QuestTemplates: 322 files
+
+## the plan's exact grep (real SpiralDB path)
+  $ grep -rho '"\$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates/ | sort -u
+  "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.MadlibArgT_ByteString, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ReqHasEntry, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ReqHasQuest, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ReqSchoolOfFocus, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.RequirementList, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResAddDynaMod, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResAddHealth, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResAddMana, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResAddSpell, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResDespawn, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResDrawHand, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResDropTable, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResGiveSpell, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResLearnSpell, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResModifyEntry, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResPlaySound, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResPostEvent, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResTeleport, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ResWait, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty"
+  "$type": "Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty"
+
+  distinct real : 26
+  distinct clone: 26
+  the two greps are identical: YES
+
+## occurrences per $type string (clone, all 322 files)
+     3685 "$type": "Imcodec.ObjectProperty.TypeCache.MadlibArgT_ByteString, Imcodec.ObjectProperty"
+     1706 "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty"
+      761 "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty"
+      405 "$type": "Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty"
+      314 "$type": "Imcodec.ObjectProperty.TypeCache.ResDropTable, Imcodec.ObjectProperty"
+      306 "$type": "Imcodec.ObjectProperty.TypeCache.RequirementList, Imcodec.ObjectProperty"
+      277 "$type": "Imcodec.ObjectProperty.TypeCache.ReqHasQuest, Imcodec.ObjectProperty"
+      194 "$type": "Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty"
+      100 "$type": "Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty"
+       47 "$type": "Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty"
+       38 "$type": "Imcodec.ObjectProperty.TypeCache.ReqHasEntry, Imcodec.ObjectProperty"
+       26 "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty"
+       10 "$type": "Imcodec.ObjectProperty.TypeCache.ResGiveSpell, Imcodec.ObjectProperty"
+        9 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddDynaMod, Imcodec.ObjectProperty"
+        8 "$type": "Imcodec.ObjectProperty.TypeCache.ResDrawHand, Imcodec.ObjectProperty"
+        7 "$type": "Imcodec.ObjectProperty.TypeCache.ResLearnSpell, Imcodec.ObjectProperty"
+        7 "$type": "Imcodec.ObjectProperty.TypeCache.ReqSchoolOfFocus, Imcodec.ObjectProperty"
+        2 "$type": "Imcodec.ObjectProperty.TypeCache.ResPostEvent, Imcodec.ObjectProperty"
+        2 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddSpell, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResWait, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResTeleport, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResPlaySound, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResModifyEntry, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResDespawn, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddMana, Imcodec.ObjectProperty"
+        1 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddHealth, Imcodec.ObjectProperty"
+
+## context per $type (which path carries it) — from the whole-tree walk
+  x2080  .m_goals[].m_dialogList.m_dialogs[].m_madlibs[].m_madlibBlock.m_madlibs[] :: MadlibArgT_ByteString, Imcodec.ObjectProperty  (3 fields)
+  x1605  .m_dialogList.m_dialogs[].m_madlibs[].m_madlibBlock.m_madlibs[] :: MadlibArgT_ByteString, Imcodec.ObjectProperty  (3 fields)
+  x1029  .m_dialogList.m_dialogs[].m_dialogEntries[] :: NPCDialogEntry, Imcodec.ObjectProperty  (66 fields)
+  x 677  .m_goals[].m_dialogList.m_dialogs[].m_dialogEntries[] :: NPCDialogEntry, Imcodec.ObjectProperty  (66 fields)
+  x 439  .m_goals[].m_dialogList :: ActorDialogList, Imcodec.ObjectProperty  (2 fields)
+  x 405  .m_goals[] :: PersonaGoalTemplate, Imcodec.ObjectProperty  (27 fields)
+  x 322  .m_dialogList :: ActorDialogList, Imcodec.ObjectProperty  (2 fields)
+  x 314  .m_endResults.m_results[] :: ResDropTable, Imcodec.ObjectProperty  (3 fields)
+  x 306  .m_requirements :: RequirementList, Imcodec.ObjectProperty  (4 fields)
+  x 277  .m_requirements.m_requirements[] :: ReqHasQuest, Imcodec.ObjectProperty  (4 fields)
+  x 194  .m_goals[] :: WaypointGoalTemplate, Imcodec.ObjectProperty  (29 fields)
+  x 100  .m_goals[] :: BountyGoalTemplate, Imcodec.ObjectProperty  (28 fields)
+  x  47  .m_goals[] :: ScavengeGoalTemplate, Imcodec.ObjectProperty  (26 fields)
+  x  38  .m_requirements.m_requirements[] :: ReqHasEntry, Imcodec.ObjectProperty  (7 fields)
+  x  26  .m_goals[] :: AchieveRankGoalTemplate, Imcodec.ObjectProperty  (26 fields)
+  x  10  .m_goals[].m_completeResults.m_results[] :: ResGiveSpell, Imcodec.ObjectProperty  (3 fields)
+  x   8  .m_goals[].m_completeResults.m_results[] :: ResDrawHand, Imcodec.ObjectProperty  (2 fields)
+  x   7  .m_goals[].m_completeResults.m_results[] :: ResLearnSpell, Imcodec.ObjectProperty  (3 fields)
+  x   7  .m_goals[].m_completeResults.m_results[].m_requirements.m_requirements[] :: ReqSchoolOfFocus, Imcodec.ObjectProperty  (4 fields)
+  x   6  .m_goals[].m_completeResults.m_results[] :: ResAddDynaMod, Imcodec.ObjectProperty  (6 fields)
+  x   3  .m_startResults.m_results[] :: ResAddDynaMod, Imcodec.ObjectProperty  (6 fields)
+  x   2  .m_goals[].m_completeResults.m_results[] :: ResAddSpell, Imcodec.ObjectProperty  (2 fields)
+  x   2  .m_goals[].m_completeResults.m_results[] :: ResPostEvent, Imcodec.ObjectProperty  (2 fields)
+  x   1  .m_goals[].m_completeResults.m_results[] :: ResAddHealth, Imcodec.ObjectProperty  (1 fields)
+  x   1  .m_goals[].m_completeResults.m_results[] :: ResAddMana, Imcodec.ObjectProperty  (1 fields)
+  x   1  .m_goals[].m_activateResults.m_results[] :: ResTeleport, Imcodec.ObjectProperty  (7 fields)
+  x   1  .m_startResults.m_results[] :: ResModifyEntry, Imcodec.ObjectProperty  (5 fields)
+  x   1  .m_goals[].m_completeResults.m_results[] :: ResPlaySound, Imcodec.ObjectProperty  (5 fields)
+  x   1  .m_goals[].m_completeResults.m_results[] :: ResDespawn, Imcodec.ObjectProperty  (4 fields)
+  x   1  .m_goals[].m_completeResults.m_results[] :: ResWait, Imcodec.ObjectProperty  (2 fields)
+
+## the enum axis: values actually present (measured, all 322 files)
+  goal $type class      : "PersonaGoalTemplate" x405 | "WaypointGoalTemplate" x194 | "BountyGoalTemplate" x100 | "ScavengeGoalTemplate" x47 | "AchieveRankGoalTemplate" x26
+  m_goalType            : "GOAL_TYPE_PERSONA" x405 | "GOAL_TYPE_WAYPOINT" x194 | "GOAL_TYPE_BOUNTYCOLLECT" x96 | "GOAL_TYPE_SCAVENGE" x43 | "GOAL_TYPE_ACHIEVERANK" x26 | "GOAL_TYPE_BOUNTY" x4 | "GOAL_TYPE_USAGE" x4
+  m_operator            : "ROP_AND" x322
+  m_activityType        : "ACTIVITY_NotActivity" x322
+  result $type          : "ResDropTable" x314 | "ResGiveSpell" x10 | "ResAddDynaMod" x9 | "ResDrawHand" x8 | "ResLearnSpell" x7 | "ResAddSpell" x2 | "ResPostEvent" x2 | "ResAddHealth" x1 | "ResAddMana" x1 | "ResModifyEntry" x1 | "ResTeleport" x1 | "ResPlaySound" x1 | "ResDespawn" x1 | "ResWait" x1
+  requirement $type     : "ReqHasQuest" x277 | "ReqHasEntry" x38 | "ReqSchoolOfFocus" x7
+  m_magicSchool         : "Storm" x1 | "Ice" x1 | "Fire" x1 | "Death" x1 | "Myth" x1 | "Life" x1 | "Balance" x1
+  m_magicSchoolName     : 
+  m_targetType          : 
+  m_teleportType        : "TELEPORT_STATIC" x1
+  ResultList keys       : "m_results" x640 | "(absent)" x4
+  RequirementList keys  : "$type,m_applyNOT,m_operator,m_requirements" x306 | "m_applyNOT,m_operator,m_requirements" x13
+  m_dialogTag           : "Completion" x418 | "Prep" x316 | "" x5
+  goals[].m_dialogList  : "present" x439 | "null" x327 | "absent" x6
+
+## top-level shape: the 36-key union, explicit nulls vs absence (measured 2026-09-26T13:24:53Z)
+# CORRECTION TO MY OWN BRIEF: I told the executor that 'all 322 files contain trailing commas'. WRONG.
+# Measured: strict JSON.parse succeeds on 17/322; 305/322 need JSON5. The substance (JSON5 tolerance
+# is required) holds; the 'all' was my error and is recorded here rather than smoothed over.
+  strict JSON.parse OK: 17/322  |  need JSON5: 305/322
+  key-count distribution: 18 keys:2 | 36 keys:320
+  the 2 exceptions are the Phase-2-written files: questtemplates_WC-UNICORN-MAIN-004.json, questtemplates_WC-CYCLOPS-MAIN-002.json
+  -> 320/322 corpus files carry ALL 36 keys with optionality as EXPLICIT NULLS; our pipeline-written files OMIT them.
+  -> therefore the schema accepts null AND absent, and serialization must preserve which one was there.
+  per-key: missing-in-N / null-in-N
+    m_activityType               missing   0  null   0
+    m_behaviors                  missing   2  null 320
+    m_checkInventoryForCrafting  missing   0  null   0
+    m_clientTags                 missing   2  null 320
+    m_defaultDialogAnimation     missing   2  null 320
+    m_dialogList                 missing   0  null   0
+    m_dynaMods                   missing   2  null 320
+    m_endResults                 missing   2  null   0
+    m_forceInteraction           missing   0  null   0
+    m_goalLogic                  missing   2  null   0
+    m_goals                      missing   0  null   0
+    m_isHidden                   missing   0  null   0
+    m_mainline                   missing   0  null   0
+    m_missionDoors               missing   2  null 320
+    m_noQuestHelper              missing   0  null   0
+    m_onEndQuestScript           missing   2  null   0
+    m_onStartQuestScript         missing   2  null   0
+    m_outdated                   missing   0  null   0
+    m_playAsYourPetNPC           missing   0  null   0
+    m_prepAlways                 missing   0  null   0
+    m_prepRequirements           missing   2  null 320
+    m_pruneRequirements          missing   2  null 320
+    m_questComplete              missing   2  null 320
+    m_questEffectInfoList        missing   2  null 320
+    m_questInfo                  missing   2  null 320
+    m_questLevel                 missing   0  null   0
+    m_questName                  missing   0  null   0
+    m_questNameID                missing   0  null   0
+    m_questPrep                  missing   2  null 320
+    m_questRepeat                missing   0  null   0
+    m_questTitle                 missing   0  null   0
+    m_questUnderway              missing   2  null 320
+    m_requirements               missing   2  null   8
+    m_skipQHAutoSelect           missing   0  null   0
+    m_startGoals                 missing   0  null   0
+    m_startResults               missing   2  null   0
+
+## WHERE the counts come from: real repo vs the D17 test clone (measured 2026-09-26T13:33:09Z)
+# Resolving a discrepancy I created: 'identical: YES' above compared DISTINCT $type sets, which are equal.
+# The OCCURRENCE counts differ, and the difference is our own gate-2 test-setup, not the corpus.
+  real  /home/jason/Documents/git-projects/spiraldb/QuestTemplates/ : 7956 $type keys, 26 distinct
+  clone data/test-spiraldb/QuestTemplates/                      : 7911 $type keys, 26 distinct
+  whole real SpiralDB repo (all *.json)                         : 8021 $type keys, 27 distinct
+  why the clone is 45 short: it is on branch content/2026-09-26 where our own test-setup (f3f8b5c) deleted
+  2 templates + metadata and our save pipeline re-created them from reader output (b94b60f, 18dc924).
+  the real repo is CLEAN and untouched at c55ccab.
+  the repo-wide 27th distinct type is ReqIsSchool, and it lives in DropTables/droptables_test.json -
+  a DropTables fixture, NOT a quest file. QuestTemplates has 26 distinct in both repos.
+
+## The structural difference that matters for the p3-02 round-trip (D5 / NullValueHandling.Ignore)
+  the GAME's 320 corpus files express absent optional values as EXPLICIT NULLs (m_clientTags: null, ...);
+  OUR pipeline's 2 written files OMIT those keys (18 keys instead of 36) - NullValueHandling.Ignore on our side.
+  consequence: 'parse -> serialize(unedited) -> re-parse deep-equal' over 322 files REQUIRES a writer that
+  preserves an explicit null as null. Dropping nulls would fail 320/322 (deep-equality distinguishes null from absent).
+  p3-01's schemas preserve nulls (.nullish(), no .default()/.transform()); the writer half is p3-02's to prove.
