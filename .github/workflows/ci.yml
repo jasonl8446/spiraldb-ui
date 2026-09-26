@@ -6,14 +6,34 @@
 # The npm/playwright steps are gated on package.json existing so the workflow
 # is live (and green) from the preflight PR onward, before Phase 1 scaffolding
 # lands. Task 1.9 makes the full pipeline run for real on the Phase 1 PR.
+#
+# The job key `ci` is a required status-check context (branch protection), and
+# GitHub derives that context from the job key when the job declares no `name:`.
+# Do NOT add a job-level `name:` — it would silently change the context, so no
+# check run would ever satisfy the protection and every gate-story merge would
+# fail with HTTP 405.
 name: CI
 
 on:
   pull_request:
 
+# Cancel superseded runs for the same PR ref: a run against an older head commit
+# can no longer be the self-merge signal, and PR pushes here come in bursts.
+# This does not change the check-run context (`ci`), only whether stale runs keep
+# burning runner minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # Pinned, not `ubuntu-latest`: `playwright install` resolves the browser
+    # build per OS release, and a floating runner label could silently swap the
+    # downloaded chromium revision under the suite. Measured on this project —
+    # "BEWARE: your OS is not officially supported by Playwright; downloading
+    # fallback build for ubuntu24.04-x64" — so the label is fixed to the release
+    # the installed browser build was actually measured against.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -40,9 +60,24 @@ jobs:
         if: steps.proj.outputs.exists == 'true'
         run: npm test
 
+      # `npm run build` typechecks both projects (`tsc -p server/tsconfig.json`
+      # emits, `tsc -p client/tsconfig.json --noEmit` checks), so those two
+      # typechecks need no separate steps here. `npm run typecheck:tests` is a
+      # third tsconfig (tests/** + playwright.config.ts) that no other step runs.
       - name: Build
         if: steps.proj.outputs.exists == 'true'
         run: npm run build
+
+      # Both extra gates run before the browser download so a style or test-type
+      # failure fails fast, and before `npm run test:ui` so nothing they leave
+      # behind (playwright-report/, test-results/) can perturb them.
+      - name: Lint and formatting
+        if: steps.proj.outputs.exists == 'true'
+        run: npm run lint
+
+      - name: Typecheck tests
+        if: steps.proj.outputs.exists == 'true'
+        run: npm run typecheck:tests
 
       # Must go through the npm script: it is the only place that sets
       # PLAYWRIGHT_BROWSERS_PATH (workspace-local, D23). A bare
