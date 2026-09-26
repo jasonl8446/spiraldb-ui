@@ -1,0 +1,365 @@
+
+> spiraldb-ui@0.1.0 sync:spotcheck
+> tsx scripts/sync-spotcheck.ts --tree /tmp/wad-spike --sample 5 --seed 20260927
+
+=== SpiralDB UI — sync spot-check (p1-06 AC#2) ===
+  db file          : /home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db
+  tree             : /tmp/wad-spike
+  spiraldb corpus  : /home/jason/Documents/git-projects/spiraldb
+  sample / seed    : 5 rows per table / seed 20260927
+  string_table rows: 216991
+
+[manifest] TemplateManifest_deser.json — the authoritative id space (D35)
+  file             : /tmp/wad-spike/TemplateManifest_deser.json
+  entries          : 137,423 → 137,423 ids / 137,423 files
+  rejected/dupes   : rejected 0; duplicate ids 0, duplicate files 0
+
+[items / npcs / spells] re-read the source _deser.json for each sampled row
+  scanned 123,042 template files; items=79,835 spells=18,173 npcs=23,033
+  manifest ids used: 121,041 / fallback 0 / missing 0 / mismatches 0
+
+[items] 5 random rows
+  - items id=1537614  db name="Supreme Jungle Deck"
+     source      : /tmp/wad-spike/ObjectData/LM Equipment/Decks/Deck-LM-L148-Life-01_deser.json
+     manifest    : ObjectData/LM Equipment/Decks/Deck-LM-L148-Life-01.xml → m_id 1537614 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1537614  m_displayName="Items_00023435"  m_objectName="Deck-LM-L148-Life-01"
+     ladder      : m_displayName → string_table (Items_00023435)
+     OK   id equals the manifest m_id (1537614)
+     OK   embedded m_templateID agrees (1537614)
+     OK   name matches the source-derived name "Supreme Jungle Deck" (db "Supreme Jungle Deck")
+  - items id=1369577  db name="Rasputin's Set of Fortitude"
+     source      : /tmp/wad-spike/ObjectData/Polaris Equipment/Decks/Deck-PL-L110-Life-03_deser.json
+     manifest    : ObjectData/Polaris Equipment/Decks/Deck-PL-L110-Life-03.xml → m_id 1369577 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1369577  m_displayName="Items_00017228"  m_objectName="Deck-PL-L110-Life-03"
+     ladder      : m_displayName → string_table (Items_00017228)
+     OK   id equals the manifest m_id (1369577)
+     OK   embedded m_templateID agrees (1369577)
+     OK   name matches the source-derived name "Rasputin's Set of Fortitude" (db "Rasputin's Set of Fortitude")
+  - items id=1360856  db name="Bonebreaker Shoes of Strife"
+     source      : /tmp/wad-spike/ObjectData/Ultra Dungeons/Shoes/Shoes-RB-L40-006_deser.json
+     manifest    : ObjectData/Ultra Dungeons/Shoes/Shoes-RB-L40-006.xml → m_id 1360856 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1360856  m_displayName="Items_00015971"  m_objectName="Shoes-RB-L40-006"
+     ladder      : m_displayName → string_table (Items_00015971)
+     OK   id equals the manifest m_id (1360856)
+     OK   embedded m_templateID agrees (1360856)
+     OK   name matches the source-derived name "Bonebreaker Shoes of Strife" (db "Bonebreaker Shoes of Strife")
+  - items id=179811  db name="Duelist's Firegrave Boots"
+     source      : /tmp/wad-spike/ObjectData/CraftedEquipment/Shoes/Shoe-Craft-T5-089_deser.json
+     manifest    : ObjectData/CraftedEquipment/Shoes/Shoe-Craft-T5-089.xml → m_id 179811 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=179811  m_displayName="Items_00002165"  m_objectName="Shoe-Craft-T5-089"
+     ladder      : m_displayName → string_table (Items_00002165)
+     OK   id equals the manifest m_id (179811)
+     OK   embedded m_templateID agrees (179811)
+     OK   name matches the source-derived name "Duelist's Firegrave Boots" (db "Duelist's Firegrave Boots")
+  - items id=1462283  db name="Choice Kalamar Amulet"
+     source      : /tmp/wad-spike/ObjectData/EM Equipment/Amulets/Amulet-EM-L127-All-01_deser.json
+     manifest    : ObjectData/EM Equipment/Amulets/Amulet-EM-L127-All-01.xml → m_id 1462283 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1462283  m_displayName="Items_00020513"  m_objectName="Amulet-EM-L127-All-01"
+     ladder      : m_displayName → string_table (Items_00020513)
+     OK   id equals the manifest m_id (1462283)
+     OK   embedded m_templateID agrees (1462283)
+     OK   name matches the source-derived name "Choice Kalamar Amulet" (db "Choice Kalamar Amulet")
+
+[spells] 10 random rows: template_id → manifest file → _deser.json → name
+  - spells id=1609839607  db name="Hex"
+     manifest    : Spells/1P Hex - Amulet.xml
+     source      : /tmp/wad-spike/Spells/1P Hex - Amulet_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000149)
+     triple      : 1609839607 -> Spells/1P Hex - Amulet.xml -> "Hex"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Hex"
+  - spells id=1523253058  db name="Monster Magic Defeat"
+     manifest    : Spells/MonsterMagicTC/KillPlatedDefenderTC126691.xml
+     source      : /tmp/wad-spike/Spells/MonsterMagicTC/KillPlatedDefenderTC126691_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001582)
+     triple      : 1523253058 -> Spells/MonsterMagicTC/KillPlatedDefenderTC126691.xml -> "Monster Magic Defeat"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Monster Magic Defeat"
+  - spells id=2044043052  db name="Rebirth"
+     manifest    : Spells/Mobs/Rebirth - Thoth.xml
+     source      : /tmp/wad-spike/Spells/Mobs/Rebirth - Thoth_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000750)
+     triple      : 2044043052 -> Spells/Mobs/Rebirth - Thoth.xml -> "Rebirth"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Rebirth"
+  - spells id=694799301  db name="Monster Magic Defeat"
+     manifest    : Spells/MonsterMagicTC/KillSilasDoubtTC1489277.xml
+     source      : /tmp/wad-spike/Spells/MonsterMagicTC/KillSilasDoubtTC1489277_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001582)
+     triple      : 694799301 -> Spells/MonsterMagicTC/KillSilasDoubtTC1489277.xml -> "Monster Magic Defeat"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Monster Magic Defeat"
+  - spells id=327579195  db name="Reshuffle"
+     manifest    : Spells/Reshuffle - Amulet.xml
+     source      : /tmp/wad-spike/Spells/Reshuffle - Amulet_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000053)
+     triple      : 327579195 -> Spells/Reshuffle - Amulet.xml -> "Reshuffle"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Reshuffle"
+  - spells id=268274742  db name="Gobblestone"
+     manifest    : Spells/TreasureCards/Gobblestone TC.xml
+     source      : /tmp/wad-spike/Spells/TreasureCards/Gobblestone TC_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spell_00000170)
+     triple      : 268274742 -> Spells/TreasureCards/Gobblestone TC.xml -> "Gobblestone"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Gobblestone"
+  - spells id=761536941  db name="Monster Magic Defeat"
+     manifest    : Spells/MonsterMagicTC/KillBleysFlamerenderTC468488.xml
+     source      : /tmp/wad-spike/Spells/MonsterMagicTC/KillBleysFlamerenderTC468488_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001582)
+     triple      : 761536941 -> Spells/MonsterMagicTC/KillBleysFlamerenderTC468488.xml -> "Monster Magic Defeat"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Monster Magic Defeat"
+  - spells id=184461238  db name="Dark Fiend"
+     manifest    : Spells/Fight Specific/SKBs/General Lightbane/Dark Fiend - DOTs.xml
+     source      : /tmp/wad-spike/Spells/Fight Specific/SKBs/General Lightbane/Dark Fiend - DOTs_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001294)
+     triple      : 184461238 -> Spells/Fight Specific/SKBs/General Lightbane/Dark Fiend - DOTs.xml -> "Dark Fiend"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Dark Fiend"
+  - spells id=1726689667  db name="Natural Attack"
+     manifest    : Spells/NA AZ-Dino-Undead-A.xml
+     source      : /tmp/wad-spike/Spells/NA AZ-Dino-Undead-A_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000055)
+     triple      : 1726689667 -> Spells/NA AZ-Dino-Undead-A.xml -> "Natural Attack"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Natural Attack"
+  - spells id=475582785  db name="Monster Magic Defeat"
+     manifest    : Spells/MonsterMagicTC/KillMetalHeadTC81367.xml
+     source      : /tmp/wad-spike/Spells/MonsterMagicTC/KillMetalHeadTC81367_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001582)
+     triple      : 475582785 -> Spells/MonsterMagicTC/KillMetalHeadTC81367.xml -> "Monster Magic Defeat"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Monster Magic Defeat"
+
+[npcs] 5 random rows
+  - npcs id=675134  db name="Kishiro"
+     source      : /tmp/wad-spike/ObjectData/Gauntlet/MSP/MSC-PAGODA-NPC05_deser.json
+     manifest    : ObjectData/Gauntlet/MSP/MSC-PAGODA-NPC05.xml → m_id 675134 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=675134  m_displayName="WC-NPCs_00002131"  m_objectName="MSC-PAGODA-NPC05"
+     ladder      : m_displayName → string_table (WC-NPCs_00002131)
+     OK   id equals the manifest m_id (675134)
+     OK   embedded m_templateID agrees (675134)
+     OK   name matches the source-derived name "Kishiro" (db "Kishiro")
+  - npcs id=701641  db name="Urn"
+     source      : /tmp/wad-spike/ObjectData/AQ/AQ-TART-UrnComplete_deser.json
+     manifest    : ObjectData/AQ/AQ-TART-UrnComplete.xml → m_id 701641 (D35 id source)
+     _className  : GameObjectTemplate (family npc)  m_templateID=701641  m_displayName="WizardGameObjects_00000640"  m_objectName="AQ-TART-UrnComplete"
+     ladder      : m_displayName → string_table (WizardGameObjects_00000640)
+     OK   id equals the manifest m_id (701641)
+     OK   embedded m_templateID agrees (701641)
+     OK   name matches the source-derived name "Urn" (db "Urn")
+  - npcs id=1548663  db name="Cyclops Seeker"
+     source      : /tmp/wad-spike/ObjectData/Minion-Myth-02-1-T02-B_deser.json
+     manifest    : ObjectData/Minion-Myth-02-1-T02-B.xml → m_id 1548663 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=1548663  m_displayName="WizardMobs_00004039"  m_objectName="Minion-Myth-02-1-T02-B"
+     ladder      : m_displayName → string_table (WizardMobs_00004039)
+     OK   id equals the manifest m_id (1548663)
+     OK   embedded m_templateID agrees (1548663)
+     OK   name matches the source-derived name "Cyclops Seeker" (db "Cyclops Seeker")
+  - npcs id=527159  db name="Mago Onetusk"
+     source      : /tmp/wad-spike/ObjectData/ZF/ZF-STONE-NPC13_deser.json
+     manifest    : ObjectData/ZF/ZF-STONE-NPC13.xml → m_id 527159 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=527159  m_displayName="WC-NPCs_00001914"  m_objectName="ZF-STONE-NPC13"
+     ladder      : m_displayName → string_table (WC-NPCs_00001914)
+     OK   id equals the manifest m_id (527159)
+     OK   embedded m_templateID agrees (527159)
+     OK   name matches the source-derived name "Mago Onetusk" (db "Mago Onetusk")
+  - npcs id=1569475  db name="Standard Bears"
+     source      : /tmp/wad-spike/ObjectData/NV/NV_Flag_Monster_A_03_deser.json
+     manifest    : ObjectData/NV/NV_Flag_Monster_A_03.xml → m_id 1569475 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=1569475  m_displayName="WizardMobs_00004165"  m_objectName="NV_Flag_Monster_A_03"
+     ladder      : m_displayName → string_table (WizardMobs_00004165)
+     OK   id equals the manifest m_id (1569475)
+     OK   embedded m_templateID agrees (1569475)
+     OK   name matches the source-derived name "Standard Bears" (db "Standard Bears")
+
+[corpus spell coverage] spell ids referenced by /home/jason/Documents/git-projects/spiraldb (p1-06b-ac2)
+  NpcSpellInventory   : +584 new id(s)
+  CreatureSpellbook   : +201 new id(s)
+  QuestTemplates      : +10 new id(s)
+  referenced ids     : 795
+  in the manifest    : 792 (716 point at Spells/*.xml)
+  resolved in spells : 716/795 (90.1%) — was 0 before D35, expect ≥700
+  triple             : 78544 -> Spells/Pwn.xml -> "Pwn" (referenced by NpcSpellInventory/NPCSpellInventories_257-A.json)
+  triple             : 84361 -> Spells/Tiered Spells/Imp.xml -> "Imp" (referenced by NpcSpellInventory/NPCSpellInventories_129-A.json)
+  triple             : 92296 -> Spells/Hex.xml -> "Hex" (referenced by NpcSpellInventory/NPCSpellInventories_609-A.json)
+  triple             : 1174487 -> Spells/Tiered Spells/Mashup_Storm_KrakenShark.xml -> "Catch of the Day" (referenced by CreatureSpellbook/CreatureSpellbooks_227-A.json)
+  triple             : 2141733 -> Spells/Epic.xml -> "Epic" (referenced by NpcSpellInventory/NPCSpellInventories_1089-A.json)
+  triple             : 2306189 -> Spells/Mend.xml -> "Mend" (referenced by NpcSpellInventory/NPCSpellInventories_1089-A.json)
+  triple             : 2404620 -> Spells/Link.xml -> "Link" (referenced by CreatureSpellbook/CreatureSpellbooks_291-A.json)
+  triple             : 2514611 -> Spells/Stun.xml -> "Stun" (referenced by NpcSpellInventory/NPCSpellInventories_481-A.json)
+  triple             : 2537945 -> Spells/Yolo.xml -> "Ultra Dark" (referenced by NpcSpellInventory/NPCSpellInventories_257-A.json)
+  triple             : 2563718 -> Spells/Fuel.xml -> "Fuel" (referenced by NpcSpellInventory/NPCSpellInventories_610-A.json)
+  triple             : 2603011 -> Spells/Calm.xml -> "Calm" (referenced by NpcSpellInventory/NPCSpellInventories_961-A.json)
+  triple             : 2832525 -> Spells/Melt.xml -> "Melt" (referenced by NpcSpellInventory/NPCSpellInventories_195-A.json)
+     OK   the corpus references at least one spell id
+     OK   ≥700 of the referenced spell ids resolve to a name through the database (716/795)
+     OK   every referenced id that points at a Spells/ file resolves (716 vs 716)
+
+[quests] 5 random rows against /home/jason/Documents/git-projects/spiraldb/QuestTemplates/*.json
+  - quest KT-PYM2-C01-002  db title="Payback" level=17
+     source      : /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_KT-PYM2-C01-002.json
+     corpus      : m_questTitle="QuestTitle_992B" m_questLevel=17 m_mainline=true
+     string_table: lookupString("QuestTitle_992B") = "Payback"
+     OK   title resolves through string_table ("Payback")
+     OK   level matches (17)
+  - quest DS-LIB3-C01-003  db title="One Good Deed" level=1
+     source      : /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DS-LIB3-C01-003.json
+     corpus      : m_questTitle="QuestTitle_1ED16" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_1ED16") = "One Good Deed"
+     OK   title resolves through string_table ("One Good Deed")
+     OK   level matches (1)
+  - quest DS-ACAD1-C04-004  db title="Staff Assembly" level=1
+     source      : /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C04-004.json
+     corpus      : m_questTitle="QuestTitle_1ED9A" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_1ED9A") = "Staff Assembly"
+     OK   title resolves through string_table ("Staff Assembly")
+     OK   level matches (1)
+  - quest DS-ACAD1-C04-001  db title="Sit and Spin" level=1
+     source      : /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C04-001.json
+     corpus      : m_questTitle="QuestTitle_1ED97" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_1ED97") = "Sit and Spin"
+     OK   title resolves through string_table ("Sit and Spin")
+     OK   level matches (1)
+  - quest DS-LIB1-C01-004  db title="Key to Trust" level=1
+     source      : /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DS-LIB1-C01-004.json
+     corpus      : m_questTitle="QuestTitle_1ECF8" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_1ECF8") = "Key to Trust"
+     OK   title resolves through string_table ("Key to Trust")
+     OK   level matches (1)
+
+[quests] the hex/decimal collision quest (AC#2 example)
+  corpus quest with a hex-form title key: DS-ACAD-C01-001
+  source : /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DS-ACAD-C01-001.json
+  key    : QuestTitle_298DE
+  raw SQL: {"value":"Wizard Tours "}
+  helper : "Wizard Tours "
+  db row : {"quest_name":"DS-ACAD-C01-001","title":"Wizard Tours ","level":1}
+     OK   the quest title key resolves to a human-readable value, not the raw key
+     OK   the synced quests.title equals the resolved string_table value
+
+[zones] 5 random rows against /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/*.json
+  - zone WizardCity/MS_Arena  db display_name="Wizard City / MS Arena"
+     source      : /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/WizardZoneDatas_11457-A.json (ZoneName)
+     raw         : "WizardCity/MS_Arena"
+     humanize    : "Wizard City / MS Arena"
+     OK   display_name matches humanizeZonePath ("Wizard City / MS Arena")
+  - zone Wallaru/WL_Z06_CollieRanch  db display_name="Wallaru / WL Z06 Collie Ranch"
+     source      : /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/WizardZoneDatas_14338-A.json (m_destinationZone)
+     raw         : "Wallaru/WL_Z06_CollieRanch"
+     humanize    : "Wallaru / WL Z06 Collie Ranch"
+     OK   display_name matches humanizeZonePath ("Wallaru / WL Z06 Collie Ranch")
+  - zone Empyrea/Interiors/EM_Z01_BeastmanStockade  db display_name="Empyrea / Interiors / EM Z01 Beastman Stockade"
+     source      : /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/WizardZoneDatas_4354-A.json (m_destinationZone)
+     raw         : "Empyrea/Interiors/EM_Z01_BeastmanStockade"
+     humanize    : "Empyrea / Interiors / EM Z01 Beastman Stockade"
+     OK   display_name matches humanizeZonePath ("Empyrea / Interiors / EM Z01 Beastman Stockade")
+  - zone Arcanum/Interiors/AR_Z01_IceSchool  db display_name="Arcanum / Interiors / AR Z01 Ice School"
+     source      : /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/WizardZoneDatas_2593-A.json (m_destinationZone)
+     raw         : "Arcanum/Interiors/AR_Z01_IceSchool"
+     humanize    : "Arcanum / Interiors / AR Z01 Ice School"
+     OK   display_name matches humanizeZonePath ("Arcanum / Interiors / AR Z01 Ice School")
+  - zone WizardCity/WC_Streets/Interiors/WC_PET_Park  db display_name="Wizard City / WC Streets / Interiors / WC PET Park"
+     source      : /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/WizardZoneDatas_1-A.json (m_destinationZone)
+     raw         : "WizardCity/WC_Streets/Interiors/WC_PET_Park"
+     humanize    : "Wizard City / WC Streets / Interiors / WC PET Park"
+     OK   display_name matches humanizeZonePath ("Wizard City / WC Streets / Interiors / WC PET Park")
+
+[drop_tables] 5 random rows against /home/jason/Documents/git-projects/spiraldb/DropTables/*.json
+  - drop_table KT-SPH3-C02-001  db description=null
+     source      : /home/jason/Documents/git-projects/spiraldb/DropTables/droptables_kt-sph3-c02-001.json
+     raw         : Name="KT-SPH3-C02-001" Description=""
+     OK   Name matches ("KT-SPH3-C02-001")
+     OK   Description matches
+  - drop_table WC-CYCLOPS-MAIN-005  db description=null
+     source      : /home/jason/Documents/git-projects/spiraldb/DropTables/droptables_wc-cyclops-main-005.json
+     raw         : Name="WC-CYCLOPS-MAIN-005" Description=""
+     OK   Name matches ("WC-CYCLOPS-MAIN-005")
+     OK   Description matches
+  - drop_table DS-LIB1-C01-006  db description=null
+     source      : /home/jason/Documents/git-projects/spiraldb/DropTables/droptables_ds-lib1-c01-006.json
+     raw         : Name="DS-LIB1-C01-006" Description=""
+     OK   Name matches ("DS-LIB1-C01-006")
+     OK   Description matches
+  - drop_table DS-NEC1-C05-004  db description=null
+     source      : /home/jason/Documents/git-projects/spiraldb/DropTables/droptables_ds-nec1-c05-004.json
+     raw         : Name="DS-NEC1-C05-004" Description=""
+     OK   Name matches ("DS-NEC1-C05-004")
+     OK   Description matches
+  - drop_table DS-LIB2-C02-003  db description=null
+     source      : /home/jason/Documents/git-projects/spiraldb/DropTables/droptables_ds-lib2-c02-003.json
+     raw         : Name="DS-LIB2-C02-003" Description=""
+     OK   Name matches ("DS-LIB2-C02-003")
+     OK   Description matches
+
+[string_table] re-read the exact token from the real .lang files
+  parsed 5,132 .lang files
+  string_table rows: 216,991
+  - Help_PetPage3  db value="<center>Derby Powers will help you in the Pet Derby."
+     source      : /tmp/wad-spike/Locale/en-US/Help.lang
+     raw token   : "PetPage3" → "<center>Derby Powers will help you in the Pet Derby."
+     OK   value matches the .lang file byte-for-byte
+  - WizQst1323C7_00000032  db value="I know how the Bat made the Shadow Wall: He built a machine called the Negativity Transmutator to channel the fear and hopelessness of the Alphoi."
+     source      : /tmp/wad-spike/Locale/en-US/WizQst1323C7.lang
+     raw token   : "00000032" → "I know how the Bat made the Shadow Wall: He built a machine called the Negativity Transmutator to channel the fear and hopelessness of the Alphoi."
+     OK   value matches the .lang file byte-for-byte
+  - WizQst1A0133_00000036  db value="Why do I need it? No reason. I wouldn't use it to bind your soul to endless misfortune for all eternity or anything. I'd never do that."
+     source      : /tmp/wad-spike/Locale/en-US/WizQst1A0133.lang
+     raw token   : "00000036" → "Why do I need it? No reason. I wouldn't use it to bind your soul to endless misfortune for all eternity or anything. I'd never do that."
+     OK   value matches the .lang file byte-for-byte
+  - WC-NPCs_00002546  db value="Level 130      Life      Henchman"
+     source      : /tmp/wad-spike/Locale/en-US/WC-NPCs.lang
+     raw token   : "00002546" → "Level 130      Life      Henchman"
+     OK   value matches the .lang file byte-for-byte
+  - Recipes_00009135  db value="Graysquatch"
+     source      : /tmp/wad-spike/Locale/en-US/Recipes.lang
+     raw token   : "00009135" → "Graysquatch"
+     OK   value matches the .lang file byte-for-byte
+
+[string_table] hex-key queries (AC#2 — both forms, one numeric index)
+  QuestTitle_1ED8A
+     raw SQL : {"key":"QuestTitle_1ED8A","value":"Forged in Fire","category":"QuestTitle"}
+     helper  : "Forged in Fire"
+     OK   raw SQL and helper agree
+  QuestTitle_1ED8D
+     raw SQL : {"key":"QuestTitle_1ED8D","value":"Quest for Perfection","category":"QuestTitle"}
+     helper  : "Quest for Perfection"
+     OK   raw SQL and helper agree
+  QuestTitle_126346
+     raw SQL : {"key":"QuestTitle_126346","value":"Letters of Light","category":"QuestTitle"}
+     helper  : "Letters of Light"
+     OK   raw SQL and helper agree
+
+summary
+  checks: 108  failures: 0  seed: 20260927

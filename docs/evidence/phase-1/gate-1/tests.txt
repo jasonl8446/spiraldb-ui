@@ -1,0 +1,14 @@
+# L100/L102 test suites (fresh run at the gate)
+
+## npm test
+ Test Files  20 passed (20)
+      Tests  512 passed (512)
+   Duration  1.08s (transform 1.88s, setup 0ms, collect 5.68s, tests 1.82s, environment 6ms, prepare 1.83s)
+
+## npm run test:ui
+  ✓  5 [chromium] › tests/ui/shell.spec.ts:316:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (333ms)
+  ✓  6 [chromium] › tests/ui/shell.spec.ts:357:3 › settings › renders the settings values, the last sync and the history (261ms)
+  ✓  7 [chromium] › tests/ui/shell.spec.ts:376:1 › the dev stack answers a real API request through the Vite proxy (225ms)
+  ✓  8 [chromium] › tests/ui/shell.spec.ts:388:3 › harness self-check › the console-error guard itself is live (218ms)
+
+  8 passed (6.9s)

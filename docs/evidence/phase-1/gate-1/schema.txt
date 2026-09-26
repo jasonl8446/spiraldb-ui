@@ -1,0 +1,4 @@
+# L86 fresh-DB schema (after: rm -rf data && npm run sync)
+
+tables (11): drop_tables, entry_status, items, npcs, quests, settings, spells, status_history, string_table, sync_history, zones
+indexes (3): idx_entry_status_key on entry_status, idx_entry_status_status on entry_status, idx_entry_status_type on entry_status

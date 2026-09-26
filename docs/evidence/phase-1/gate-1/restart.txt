@@ -1,0 +1,21 @@
+
+> spiraldb-ui@0.1.0 dev
+> concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+
+[server] 
+[server] > spiraldb-ui@0.1.0 dev:server
+[server] > tsx watch server/src/index.ts
+[server] 
+[client] 
+[client] > spiraldb-ui@0.1.0 dev:client
+[client] > vite --config client/vite.config.ts
+[client] 
+[client] 
+[client]   VITE v5.4.21  ready in 140 ms
+[client] 
+[client]   ➜  Local:   http://localhost:5173/
+[client]   ➜  Network: use --host to expose
+[server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db
+[server] [spiraldb-ui] first-startup import skipped (entry_status already has rows)
+[server] [spiraldb-ui] API listening on http://localhost:3001
+[server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
