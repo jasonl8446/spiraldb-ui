@@ -1,0 +1,16 @@
+LEAD INDEPENDENT VERIFICATION — story p3-04 (goals editor), step 1: the pure model
+Run: npx vitest run tests/unit/quest-goals.lead-verify.test.ts
+Date: 2026-09-26T13:55:43-04:00   HEAD: a5186e4   Model: client/src/lib/quest-goals.ts (944 lines)
+
+This spec is the lead's own check, written from the measurements and run against the
+REAL corpus (322 files / 772 goals), not against the module's fixtures. It is not committed:
+the story's own suite lives in tests/unit/quest-goals.test.ts (fixture-driven, 34 tests) and
+this file is archived at /tmp/p304-lead-verify.test.ts so it can be re-run at story close.
+
+$ npx vitest run tests/unit/quest-goals.lead-verify.test.ts
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+ ✓ tests/unit/quest-goals.lead-verify.test.ts (10 tests) 79ms
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  13:55:43
+   Duration  1.10s (transform 98ms, setup 0ms, collect 644ms, tests 79ms, environment 0ms, prepare 96ms)

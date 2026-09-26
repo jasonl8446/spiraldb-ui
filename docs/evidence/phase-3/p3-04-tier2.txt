@@ -1,0 +1,99 @@
+p3-04 tier-2 evidence — live browser against the real server (D23)
+==================================================================
+
+Rig (D23 tier 2): the app served from the built `dist/` on a **copy** of the live DB:
+    cp data/spiraldb-ui.db /tmp/p304-tier2.db
+    NODE_ENV=test SPIRALDB_UI_DB=/tmp/p304-tier2.db \
+      SPIRALDB_PATH="$PWD/data/test-spiraldb" SPIRALDB_UI_SKIP_IMPORT=1 \
+      PORT=3216 npx tsx server/src/index.ts
+Driven by the lead through playwright-mcp (Chromium 1440x1000). The live DB and the real
+SpiralDB repo were never a write target: every edit below stayed in the page's in-memory
+document, and **Save was never pressed**. The document was read through the JSON panel's own
+`[Copy]` (the panel renders a virtualised tree, so the clipboard is its serialisation).
+
+Subject: quest `DS-ACAD1-C01-001`, loaded from the API — 7 goals, `m_startGoals` holding 6
+of their names (matches the corpus survey recorded in p3-04.md §3).
+
+1. Reorder — keyboard sensor (`PointerSensor` + `KeyboardSensor`/`sortableKeyboardCoordinates`)
+---------------------------------------------------------------------------------------------
+Focused the goal-1 drag handle `button[aria-label="Reorder goal 1_WizardQuestGoals_00000058"]`
+and pressed Space · ArrowDown · Space (400 ms settle each). dnd-kit's own live region:
+
+    after Space:      "Draggable item m_goals:0 was moved over droppable area m_goals:0."
+    after ArrowDown:  "Draggable item m_goals:0 was moved over droppable area m_goals:1."
+
+and the card order became
+
+    before: 1_…58, 2_…67, 3_…58, 4_…58, 5_…58, 6_…58, 7_…TalkNPC
+    after:  2_…67, 1_…58, 3_…58, 4_…58, 5_…58, 6_…58, 7_…TalkNPC
+
+2. Reorder — pointer drag (mouse down on the handle, 20-step move, mouse up)
+----------------------------------------------------------------------------
+    target = card 2's centre      → live region "…over droppable area m_goals:1."
+                                    order: 2_…67, 1_…58, 3_…58, …
+    target = card 2's bottom edge → live region "…over droppable area m_goals:2."
+                                    order: 2_…67, 3_…58, 1_…58, …
+
+Both paths move the *array*, so the reorder is real and not a visual shuffle. The bottom-edge
+result is why the tier-1 spec aims at the centre (see §5).
+
+3. Add each of the 5 goal types through the UI's own Add Goal control
+---------------------------------------------------------------------
+Selected each type in the "New goal type" selector, pressed Add Goal, then re-read the
+document through `[Copy]`. Original goals: 7 → final: 12. `m_startGoals` unchanged by any add.
+
+    selector      $type (TypeName)         m_goalType                  name                        keys  type-specific keys added
+    Persona       PersonaGoalTemplate      GOAL_TYPE_PERSONA           8_WizardQuestGoals_00000000  27   m_personaName, m_usePatron
+    Bounty        BountyGoalTemplate       GOAL_TYPE_BOUNTYCOLLECT     9_WizardQuestGoals_00000000  28   m_npcAdjectives, m_bountyTotal, m_bountyType
+    Scavenge      ScavengeGoalTemplate     GOAL_TYPE_SCAVENGE          10_WizardQuestGoals_00000000 27   m_itemAdjectives, m_itemTotal
+    AchieveRank   AchieveRankGoalTemplate  GOAL_TYPE_ACHIEVERANK       11_WizardQuestGoals_00000000 26   m_rank
+    Waypoint      WaypointGoalTemplate     GOAL_TYPE_WAYPOINT          12_WizardQuestGoals_00000000 29   (none — the baseline goal is a Waypoint)
+
+Each new goal carries the correct `$type` literal, the **majority** `(m_goalType, $type)` pairing
+measured from the corpus (D60(a)), its type-specific fields, and a corpus-shaped unique name
+(next ordinal + 8-digit serial). The existing goals were untouched by the adds.
+
+4. Start badge / `m_startGoals` toggle
+--------------------------------------
+On the newly added Persona goal `8_WizardQuestGoals_00000000` (not a start goal):
+
+    before: m_startGoals.length = 6, "Start" badge count on the card = 0, toggle = "Set as Start Goal"
+    click:  card button "Set as Start Goal"
+    after:  m_startGoals.length = 7, name present = true, badge count = 1, toggle = "Unset as Start Goal"
+            m_goals byte-identical to before (JSON.stringify comparison) = true
+    click:  "Unset as Start Goal"
+    after:  m_startGoals identical to the original array = true
+
+5. Type badge colours (measured from the rendered class lists, not from pixels)
+------------------------------------------------------------------------------
+    WaypointGoalTemplate     border-blue-500    bg-blue-500/15    text-blue-300      (7 cards)
+    PersonaGoalTemplate      border-purple-500  bg-purple-500/15  text-purple-300    (2 cards)
+    BountyGoalTemplate       border-red-500     bg-red-500/15     text-red-300
+    ScavengeGoalTemplate     border-amber-500   bg-amber-500/15   text-amber-300
+    AchieveRankGoalTemplate  border-emerald-500 bg-emerald-500/15 text-emerald-300
+
+These are the five colours pinned in docs/spec-ui-design.md L360-365, and the badge text is
+the `$type`'s TypeName — the same text the read-only Goals panel shows (p2-07 pinned it in
+`tests/ui/extraction.spec.ts:731`).
+
+6. Shared base fields in a collapsible section (plan task 3.4 / P3 AC#5)
+------------------------------------------------------------------------
+On the Bounty card after pressing Edit:
+
+    <details> containing "Shared base fields" — open = false before the click, true after
+    the Edit panel showed the 3 Bounty type fields (m_npcAdjectives, m_bountyTotal, m_bountyType)
+    followed by the shared base fields (m_goalName … m_hideGoalFloatyText)
+
+7. Screenshots (produced, not pixel-inspected — this model has no image input)
+-------------------------------------------------------------------------------
+    p3-04-goal-cards-badges.png      the 12 cards with the five badge colours
+    p3-04-shared-base-fields.png     a Bounty card expanded with the base-fields section open
+
+8. What the tier-1 missing waits had hidden (D60(i))
+----------------------------------------------------
+The two reorder specs and `copyPanelDocument` were failing on timing, not on behaviour: the
+product reorders correctly in both sensors, and the reorder is observable in the *product's
+own* signals (dnd-kit's live region + the card order). The specs now await those signals
+instead of fixed delays; the zone dropdown's search box is addressed by
+`getByRole('combobox', { name: 'Search zones' })` because `getByLabel` does not resolve that
+input even though it carries the matching `aria-label`.
