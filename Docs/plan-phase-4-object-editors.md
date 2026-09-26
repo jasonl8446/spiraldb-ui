@@ -69,6 +69,7 @@ List/detail/create/edit/save+commit flows for the remaining 8 object types: Drop
 - [ ] TreasureCardInventory: SpellName not present in synced spells → warning (not blocking); Save succeeds.
 - [ ] Status flows: Mark Reviewed with notes on a DropTable → history endpoint + list-page dot + filter-tab counts all update.
 - [ ] Mobile (≤768px) pass evidenced via Playwright viewport (D23, screenshots in `Docs/evidence/phase-4/`): every list page renders as card list; detail forms usable; JSON panel is a full overlay.
+- [ ] **UI test suite (D23 tier 1)**: committed `tests/ui/object-editors.spec.ts` passes headless in CI for ≥2 representative types (DropTable + one simple type): list → detail → edit → save → success toast + StatusBadge unchanged; DropTable items repeater add/remove rows; NpcInventory multi-select chips add/remove.
 
 ## Risks & Mitigations
 
@@ -87,7 +88,7 @@ List/detail/create/edit/save+commit flows for the remaining 8 object types: Drop
 2. Per-type smoke loop (scripted checklist): list → open first entry → edit → save → `git -C data/test-spiraldb log -1 --format=%s` → `git -C data/test-spiraldb diff HEAD~1 --stat`.
 3. Create-one-new-entry loop per type; verify filenames against [spec-data-model.md](./spec-data-model.md) L173–187.
 4. Validation negatives (curl 400s + UI inline errors) for DropTable cases above.
-5. GlobalRegistry: `cat` merged output vs editor table; `git status` in SpiralDB shows only `globalregistry.json` changed.
-6. Browser at 375px and 768px widths for list/detail passes.
+5. GlobalRegistry: `cat` merged output vs editor table; `git -C data/test-spiraldb status` shows only `globalregistry.json` added and the legacy file deleted (D22).
+6. Playwright-driven viewport passes at 375px and 768px for list/detail (D23 tier 2) + `npm run test:ui` green (tier 1).
 
 **Done when:** all acceptance criteria checked with evidence in the PR; the owner-confirmed Q1/Q5 resolutions (recorded as D19/D22/D26 + Q1 in [plan-overview.md](./plan-overview.md)) are honored verbatim.

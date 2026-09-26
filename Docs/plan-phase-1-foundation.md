@@ -64,7 +64,11 @@ The core Phase 1 deliverable. Full re-sync strategy, no incrementals ([spec-data
 - **Settings page** (full, not stub): paths, user name, Sync Now button, last-sync summary, sync history table per [spec-ui-design.md](./spec-ui-design.md) L488–512.
 
 ### 1.9 Minimal CI workflow — S
-- `.github/workflows/ci.yml` (D24): on pull_request → `npm ci && npm test && npm run build`. Nothing else — no deploy, no matrix. Gives async PR review an objective signal.
+- `.github/workflows/ci.yml` (D24): on pull_request → `npm ci && npm test && npm run build && npx playwright install chromium && npm run test:ui`. Nothing else — no deploy, no matrix. Gives async PR review an objective signal.
+
+### 1.10 UI test harness (D23 tier 1) — S
+- `@playwright/test` pinned as a devDependency; specs in `tests/ui/`; script `test:ui` (headless chromium); `playwright.config.ts` with `webServer` auto-starting `npm run dev` and `PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers` (workspace-local browsers, gitignored — do **not** rely on the Nix store browsers; their revision is coupled to the system playwright package). Setup step documented in README: `npx playwright install chromium`.
+- First spec `tests/ui/shell.spec.ts`: every sidebar route reachable (no dead stubs), active nav highlighting, group collapse toggles, header Sync button triggers sync with spinner→toast, Settings page renders settings values.
 
 ## Acceptance Criteria
 
@@ -86,8 +90,9 @@ All checks run against the real sibling repos on this machine.
 - [ ] UI: sidebar navigates every route (stubs render), group collapse works, active highlighting correct; header Sync button triggers `POST /api/sync`, shows spinner, then success toast with counts ([spec-ui-design.md](./spec-ui-design.md) L121).
 - [ ] `FriendlyNameDropdown` renders real synced names for at least `items`, `spells`, `npcs` types; stores raw ID.
 - [ ] Unit tests green: lang parser (incl. hex→dec mapping `QuestTitle_1ED8D → 126349`, [spec-domain-reference.md](./spec-domain-reference.md) L688–689, on a real fixture from spike 1.4a), D4 type mapping, filename/key mapping table ([spec-data-model.md](./spec-data-model.md) L173–187) as a pure function, import scanner against a fixture directory tree.
-- [ ] `.github/workflows/ci.yml` exists and runs `npm ci && npm test && npm run build` on pull_request (verified by the phase PR's own check run).
-- [ ] UI criteria above evidenced per D23: Playwright MCP assertions + screenshots committed under `Docs/evidence/phase-1/`.
+- [ ] `.github/workflows/ci.yml` exists and runs `npm ci && npm test && npm run build && npm run test:ui` on pull_request (verified by the phase PR's own check run, including headless chromium install).
+- [ ] `npm run test:ui` green: `tests/ui/shell.spec.ts` passes headless against the dev server; `tools/.playwright-browsers/` gitignored.
+- [ ] UI criteria above evidenced per D23 tier 2: playwright-mcp assertions + screenshots copied from `/home/jason/.cache/playwright-mcp/` into `Docs/evidence/phase-1/` and committed (workflow validated 2026-09-25 — see D23).
 
 ## Risks & Mitigations
 
@@ -107,6 +112,7 @@ All checks run against the real sibling repos on this machine.
 3. `curl -s localhost:3001/api/status/all | jq .summary` → totals match file counts (`ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates/*.json | wc -l` → 322).
 4. PATCH then history via curl; verify `status_history` row.
 5. `npm test` → all unit tests green.
-6. Browser walkthrough: shell → settings → sync → toast; dropdown smoke test on a stub page.
+6. UI walkthrough driven by playwright-mcp (D23 tier 2, HTTP-served — `file://` is blocked): shell → settings → sync → toast; dropdown smoke test on a stub page; screenshots copied into `Docs/evidence/phase-1/`.
+7. `npm run test:ui` → shell spec green headless.
 
 **Done when:** all acceptance criteria checked with evidence recorded in the PR; decisions/deviations appended to [plan-overview.md](./plan-overview.md).

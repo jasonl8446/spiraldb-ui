@@ -58,6 +58,7 @@ Complete the verification dashboard (stats cards, per-type progress, activity fe
 - [ ] All icon-only buttons expose ARIA labels (automated query in a component test).
 - [ ] With `prefers-reduced-motion: reduce` (Playwright `emulateMedia`, D23), no CSS transitions/React Flow animations play — evidenced by before/after screenshots mid-transition.
 - [ ] Responsive checklist complete at 375/768/1440px for all routes: sidebar hamburger + swipe-close at 375px; tables→cards; JSON panel→overlay; tablet sidebar 200px.
+- [ ] **UI test suite (D23 tier 1)**: committed `tests/ui/a11y.spec.ts` (`@axe-core/playwright`, zero critical/serious violations on the four key pages) and `tests/ui/responsive.spec.ts` (375/768/1440 layout assertions across all routes) pass headless in CI.
 - [ ] `npm run build && npm start` → app fully functional on :3001 without Vite (all routes deep-linkable, refresh-safe via SPA fallback).
 - [ ] Fresh-clone dry run (5.8) completed end-to-end; evidence (commands + outcomes) attached to the PR.
 - [ ] README links resolve (`ls` check of every referenced path); Getting Started commands all work verbatim on a clean checkout.
@@ -78,7 +79,7 @@ Complete the verification dashboard (stats cards, per-type progress, activity fe
 1. `npm test` → all suites (including regression + envelope audit) green.
 2. Two-browser session: change status in one, observe feed/dashboard update in the other after refresh.
 3. `npm run build && npm start` → curl `localhost:3001/quests` returns index.html (SPA fallback); UI walkthrough.
-4. DevTools device mode at 375/768/1440 across the route checklist.
+4. Playwright viewport passes at 375/768/1440 across the route checklist (`tests/ui/responsive.spec.ts` + MCP screenshots as evidence).
 5. Playwright-driven axe scan on the four named pages (D23); reports archived under `Docs/evidence/phase-5/`.
 6. Fresh-clone dry run in `/tmp` per 5.8, timed and recorded.
 

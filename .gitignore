@@ -13,5 +13,10 @@ tools/bin/
 tools/.artifacts/
 tools/.nuget/
 
+# Playwright browsers (workspace-local per plan decision D23)
+tools/.playwright-browsers/
+test-results/
+playwright-report/
+
 # Evidence artifacts are committed selectively under Docs/evidence/; scratch stays out
 *.log

@@ -78,7 +78,7 @@ Turn the read-only quest detail page into a full editor: all 5 goal types, the g
 - [ ] `$type` audit: the constant table in `shared/` contains every distinct `$type` string found by the corpus grep; a unit test asserts the grep output ⊆ constants (test re-runs the grep against the real SpiralDB path).
 - [ ] Corpus round-trip: **322/322** QuestTemplates pass parse → serialize(unedited) → re-parse deep-equal (`npm test` output shows the count).
 - [ ] Edit-simulation tests pass for ≥1 mutation per goal type, per requirement type, and per result type present in the corpus.
-- [ ] Real-quest edit isolation: pick a corpus quest containing ≥3 goals and a dialog list; edit one goal field + one dialog field in the UI; save; `git diff` in the SpiralDB repo shows **only** those fields changed (plus trailing-comma/formatting normalization on first rewrite).
+- [ ] Real-quest edit isolation: pick a corpus quest containing ≥3 goals and a dialog list; edit one goal field + one dialog field in the UI; save; `git diff` **in the test clone** (`data/test-spiraldb`, D17) shows **only** those fields changed (plus trailing-comma/formatting normalization on first rewrite).
 - [ ] Goals tab: add each of the 5 goal types → serialized JSON carries the correct `$type` and type-specific fields; reorder via drag → `m_goals` array order changes on save; Start badge toggles `m_startGoals`.
 - [ ] Flowchart renders a multi-goal quest (e.g., one with a GoalLogicEntry chain) with solid AND / dashed OR edges and the ✓ Complete node; auto-layout produces a readable DAG; adding a GoalLogicEntry via toolbar appears in saved `m_goalLogic`; disconnecting a goal shows the warning banner.
 - [ ] Requirement tree: build `AND(ReqHasQuest{NOT}, OR(ReqSchoolOfFocus, ReqHasEntry))` → saved JSON matches the corpus polymorphic shape (verified by loading the saved file in the tree editor and by diffing against a hand-written expectation); only the 4 allowed types are offered — ReqHasGoal/ReqEntryValue absent from the selector.
@@ -87,6 +87,7 @@ Turn the read-only quest detail page into a full editor: all 5 goal types, the g
 - [ ] Validation: `m_startGoals` entry referencing a deleted goal → inline error + banner + Save disabled; direct `curl POST` with the same payload → 400 with field error map; unknown item ID → warning icon, Save still enabled.
 - [ ] JSON side panel reflects a form edit without manual refresh; toggle + mobile overlay work.
 - [ ] Unsaved-changes guard fires on navigation; discarding restores the loaded document exactly.
+- [ ] **UI test suite (D23 tier 1)**: committed `tests/ui/quest-editor.spec.ts` passes headless in CI — edit a goal field → JSON side panel reflects it; delete a referenced start goal → inline error + Save disabled; add a requirement leaf → serialized shape asserted via the panel; add a GoalLogicEntry via flowchart toolbar → appears in JSON panel.
 
 ## Risks & Mitigations
 
@@ -103,7 +104,7 @@ Turn the read-only quest detail page into a full editor: all 5 goal types, the g
 
 1. `grep -rho '"\$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates/ | sort | uniq -c | sort -rn` → compare against `shared/quest/typeConstants.ts`.
 2. `npm test` → round-trip suite reports `322 passed` (count matches `ls QuestTemplates/*.json | wc -l`).
-3. Manual: edit → save → `cd /home/jason/Documents/git-projects/spiraldb && git diff HEAD~1 -- QuestTemplates/{file}` → only intended fields.
+3. Manual: edit → save → `git -C data/test-spiraldb diff HEAD~1 -- QuestTemplates/{file}` → only intended fields.
 4. Manual: load the saved quest back (`GET /api/quests/{name}`) → form state identical to pre-save editing state.
 5. Validation negatives via UI and curl (criteria above).
 6. Flowchart/requirement/dialog walkthrough on 2–3 diverse real quests (one mainline multi-goal, one dialog-heavy) — driven and evidenced via Playwright MCP (D23): DOM assertions + screenshots into `Docs/evidence/phase-3/`.
