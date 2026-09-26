@@ -127,8 +127,6 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
 
   function onDragEnd(event: DragEndEvent): void {
     const { active, over } = event;
-    // TEMP DEBUG
-    console.log('DBG onDragEnd', String(active.id), over === null ? 'null' : String(over.id));
     if (over === null) {
       return;
     }
@@ -147,19 +145,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
       {goals.length === 0 ? (
         <p className="text-sm text-zinc-500">{NO_GOALS_TEXT}</p>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={onDragEnd}
-          onDragStart={(event) => console.log('DBG onDragStart', String(event.active.id))}
-          onDragOver={(event) =>
-            console.log(
-              'DBG onDragOver',
-              String(event.active.id),
-              event.over === null ? 'null' : String(event.over.id),
-            )
-          }
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <ul className="flex flex-col gap-3">
               {goals.map((goal, index) => (
