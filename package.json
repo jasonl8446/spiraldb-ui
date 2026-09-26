@@ -28,7 +28,8 @@
     "test:ui:install": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium",
     "typecheck:tests": "tsc -p tests/tsconfig.json --noEmit",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "audit:corpus": "node scripts/audit-corpus-roundtrip.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

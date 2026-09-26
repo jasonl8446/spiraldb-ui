@@ -1,0 +1,15 @@
+
+> spiraldb-ui@0.1.0 audit:corpus
+> node scripts/audit-corpus-roundtrip.mjs --quiet
+
+
+corpus:    /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+quests:    322 real corpus quest(s) attempted
+verified:  181/322 round-trip identically through the real reader (1810 field check(s), 0 mismatch(es), 0 known-defect row(s))
+not covered: 141 refused by the generator (a synthetic-harness coverage limit, measured in docs/evidence/phase-2/story-p2-03-diversity.txt — only a recorded live capture can cover these)
+   122  goal-level dialog on a compilation goal
+    11  quest has no goals
+     4  quest-level dialog tag not Prep/Completion
+     4  m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+
+PASS: 181/322 verified, 141 not covered by the synthetic harness, 0 failure(s) (106.8s).
