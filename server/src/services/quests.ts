@@ -1,6 +1,12 @@
 import path from 'node:path';
 
-import { SaveQuestRequestSchema, describeSchemaIssues } from '../../../shared/quest/index.js';
+import {
+  SaveQuestRequestSchema,
+  describeSchemaIssues,
+  schemaFieldErrorMap,
+} from '../../../shared/quest/index.js';
+import { validateQuest } from '../../../shared/quest/validation.js';
+import { blockingSummary, fieldErrorMap } from '../../../shared/quest/validation-messages.js';
 import type { Db } from '../db.js';
 import {
   collectionSpec,
@@ -13,6 +19,7 @@ import type { SaveObjectResult, SaveOutcome, SavePipeline } from './savePipeline
 import { isStatusValue, listStatus, type StatusSummary, type StatusValue } from './status.js';
 import { buildQuestRows } from './sync/corpus.js';
 import { isPlainObject } from './sync/json.js';
+import { loadValidationReferences } from './names.js';
 import { createStringLookup } from './sync/lookup.js';
 
 /**
@@ -41,16 +48,26 @@ import { createStringLookup } from './sync/lookup.js';
  */
 
 /**
- * A malformed `POST /api/quests` body — the route maps it to **400**. Covers the two things a
+ * A malformed `POST /api/quests` body — the route maps it to **400**. Covers the things a
  * caller can fix by resending: the narrow, hand-written checks (`quest` missing or keyless,
- * `notes` not a string, `source` not a string) and — since task 3.1 — the failure of the
- * shared Zod schemas the editor also uses (`shared/quest/request.ts`), reported as one line of
- * `path: message` pairs. Pipeline problems are **not** this error, so they still map to 500.
+ * `notes` not a string, `source` not a string), the failure of the shared Zod schemas the
+ * editor also uses (`shared/quest/request.ts`), and — since task 3.9 — the failure of the
+ * shared **rule** engine (`shared/quest/validation.ts`). Pipeline problems are **not** this
+ * error, so they still map to 500.
+ *
+ * {@link fields} is the per-field error map the 400 body carries (story p3-09's AC): path →
+ * messages, keyed by the shared `formatDocPath` so a client can render each message under the
+ * control that owns it. Both passes fill it — the schema pass from Zod's issue paths, the rule
+ * pass from the engine's finding paths — and the hand-written checks leave it `undefined`,
+ * exactly as the Phase-2 body contract behaved (`{error}` only).
  */
 export class QuestRequestError extends Error {
-  constructor(message: string) {
+  readonly fields?: Record<string, string[]>;
+
+  constructor(message: string, fields?: Record<string, string[]>) {
     super(message);
     this.name = 'QuestRequestError';
+    this.fields = fields;
   }
 }
 
@@ -346,7 +363,23 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
   // type), where `objectKeyFromData` would also have accepted a finite number.
   const validation = SaveQuestRequestSchema.safeParse(body);
   if (!validation.success) {
-    throw new QuestRequestError(describeSchemaIssues(validation.error));
+    throw new QuestRequestError(
+      describeSchemaIssues(validation.error),
+      schemaFieldErrorMap(validation.error),
+    );
+  }
+
+  // Task 3.9: the **same rule engine the client runs** (`shared/quest/validation.ts`) with the
+  // friendly-name tables injected (`loadValidationReferences`, the same `NAMES_TYPE_SPECS`
+  // mapping the names API serves). Only **blocking** findings reject the request; the general
+  // rules' warnings (an unlisted zone path, an id no table holds) are deliberately not a 400 —
+  // the AC's "unknown item ID → Save still enabled" is this code path, and the corpus itself
+  // carries 94 zone warnings and 5 reachability failures the game ships. Nothing is written to
+  // the document here: the engine validates, and `pipeline.saveObject` still receives the
+  // original `body.quest` (D57).
+  const rules = validateQuest(body.quest, { references: loadValidationReferences(options.db) });
+  if (rules.blocked) {
+    throw new QuestRequestError(blockingSummary(rules.blocking), fieldErrorMap(rules.blocking));
   }
 
   const quest = body.quest;

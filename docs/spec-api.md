@@ -264,6 +264,21 @@ carries no enum conversion (the CLI already emits the corpus spelling, D48(a)).
   `settings.spiraldb_path` → `400`; dirty SpiralDB working tree (`DirtyRepoError`,
   D14) → `409` with the actionable message; any other pipeline failure → `500`.
 
+**Added by story p3-09 — a 400 body may carry a per-field error map.** A body that
+fails the shared quest schema (task 3.1) or the shared **rule** validation (task 3.9,
+`shared/quest/validation.ts` — the same engine the client editor runs) answers
+`{"error": "…", "fields": {"<path>": ["message", …]}}`. `fields` is keyed by the
+document path the finding belongs to (`m_startGoals[1]`, `m_goals[0].m_goalName`),
+with the request envelope's own `quest.` prefix stripped so the keys match the ones
+the client's own validation produces; the client renders each message under the
+control that owns it.
+
+Only **blocking** findings are a 400. The general rules' **warnings** — a zone path
+the `zones` table does not hold, an item/spell/NPC/quest reference no table holds,
+and a goal unreachable from `m_startGoals` — never reject a save (measured: the
+corpus itself carries 94 zone warnings and 5 reachability failures). The
+hand-written Phase-2 checks keep the older `{"error"}`-only body.
+
 **Added by story p2-07 (Gap B) — the request body also takes `source`.** The body
 is therefore `{ "quest": { … }, "notes"?: "commit body", "source"?: "session_1.json" }`.
 `source` is the capture file the quests were extracted from; the extraction page

@@ -543,6 +543,86 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     expect((res.body as { error: string }).error).not.toBe('');
   });
 
+  /**
+   * Story p3-09's server contract: a body that fails the **rule** pass answers 400 with the
+   * one-line `error` (unchanged) plus a `fields` map keyed by the shared document path. The
+   * fixture is the AC's own case — a `m_startGoals` entry naming a goal that does not exist —
+   * and it has **zero corpus instances**, so this is the path's only server-side proof besides
+   * the direct curl.
+   */
+  describe('rule validation → 400 with a per-field error map (story p3-09)', () => {
+    const danglingStartGoal = {
+      m_questName: 'DS-P309-RULE-001',
+      m_goals: [{ $type: TYPE_STRINGS.WaypointGoalTemplate, m_goalName: '1_A' }],
+      m_startGoals: ['1_A', '9_Deleted'],
+    };
+
+    it('400s a dangling m_startGoals entry and maps the message to its exact path', async () => {
+      const h = harness();
+      const res = await request(h.app)
+        .post('/api/quests')
+        .send({ quest: danglingStartGoal })
+        .expect(400);
+
+      const body = res.body as { error: string; fields: Record<string, string[]> };
+      expect(body.error).toContain('validation error');
+      expect(body.error).toContain('Unknown start goal');
+      expect(Object.keys(body.fields)).toEqual(['m_startGoals[1]']);
+      expect(body.fields['m_startGoals[1]']).toHaveLength(1);
+      expect(body.fields['m_startGoals[1]'][0]).toBe(
+        'The start goal "9_Deleted" is not defined in m_goals. Set another start goal or restore the deleted goal.',
+      );
+    });
+
+    it('reaches the pipeline for a body whose only findings are warnings', async () => {
+      // A synced zones table with one *other* path, so the payload's zone really is unknown.
+      // The reference sets come from the same `NAMES_TYPE_SPECS` mapping the names API serves.
+      const h = harness();
+      h.db
+        .prepare('INSERT INTO zones (zone_path, display_name, world) VALUES (?, ?, ?)')
+        .run('WizardCity/WC_Hub', 'Wizard City / Hub', 'WizardCity');
+
+      const quest = {
+        m_questName: 'DS-P309-WARN-001',
+        m_goals: [
+          {
+            $type: TYPE_STRINGS.WaypointGoalTemplate,
+            m_goalName: '1_A',
+            m_destinationZone: 'DragonSpire/DS_A3_Kings/Interiors/DS_School_Fire',
+          },
+        ],
+      };
+      // The direct service call proves the decision (warnings never block); the route call
+      // proves the mapping (a resolved save, not a 4xx).
+      const pipeline = recordingPipeline();
+      const index = createSpiraldbIndex(h.root);
+      index.rebuild();
+      const saved = await saveQuest({ db: h.db, index, pipeline, body: { quest } });
+      expect(saved.quest_name).toBe('DS-P309-WARN-001');
+      expect(pipeline.requests).toHaveLength(1);
+    });
+
+    it('maps a schema failure to the same field-key shape, and leaves the Phase-2 checks map-free', async () => {
+      const h = harness();
+      const schemaFailure = await request(h.app)
+        .post('/api/quests')
+        .send({ quest: { m_questName: 'DS-P309-SCHEMA-001', m_questTitle: 5 } })
+        .expect(400);
+      const schemaBody = schemaFailure.body as { fields?: Record<string, string[]> };
+      expect(Object.keys(schemaBody.fields ?? {})).toEqual(['m_questTitle']);
+
+      // The narrow hand-written checks keep the Phase-2 body exactly: `{error}` only.
+      const handWritten = await request(h.app)
+        .post('/api/quests')
+        .send({ quest: 'nope' })
+        .expect(400);
+      expect(handWritten.body).toEqual({
+        error: expect.stringContaining('Missing quest') as unknown as string,
+      });
+      expect((handWritten.body as { fields?: unknown }).fields).toBeUndefined();
+    });
+  });
+
   it('creates the file, the metadata, the commit and the extracted row (real pipeline)', async () => {
     const repo = gitRepo();
     const quest = {

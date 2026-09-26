@@ -51,6 +51,9 @@ import {
 import { shouldLookupStringKey } from '../../lib/quest-info';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import type { ValidationMessage } from '../../lib/quest-validation';
+import { withValidationBorder } from '../../lib/quest-validation';
+import { FieldMessages, useFieldMessages } from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
 
@@ -435,7 +438,16 @@ function DialogFieldControl({
 }): JSX.Element {
   const id = useId();
   const describedBy = `${id}-help`;
+  const messagesId = `${id}-messages`;
   const path = fieldView.path;
+  // Story p3-09: this field's findings at its own path — the real data here is the 31 unlisted
+  // `m_cameraZoneName` values in the corpus, plus an unknown `m_actorTemplateID`. They render
+  // below the control (L547) and never block the save.
+  const messages = useFieldMessages(path);
+  // A red border on the offending input, a warning's amber one when nothing blocks (the same
+  // split the inline list shows).
+  const controlClass = withValidationBorder(CONTROL_CLASS, messages);
+  const ariaInvalid = messages.some((message) => message.severity === 'error') ? true : undefined;
 
   if (field.kind === 'friendly-name') {
     const sources = field.nameSources ?? [];
@@ -444,13 +456,21 @@ function DialogFieldControl({
         ? String(fieldView.value)
         : '';
     return (
-      <Labelled id={id} label={field.key} help={field.help} helpId={describedBy}>
+      <Labelled
+        id={id}
+        label={field.key}
+        help={field.help}
+        helpId={describedBy}
+        messages={messages}
+        messagesId={messagesId}
+      >
         <FriendlyNameDropdown
           type={sources[0] ?? 'npcs'}
           name={`${view.address}-${field.key}`}
           aria-label={field.key}
           value={raw === '' ? null : raw}
           allowEmpty
+          invalid={ariaInvalid}
           onChange={(rawId) =>
             state.edit(
               setEntryIdFieldEdit(
@@ -543,11 +563,19 @@ function DialogFieldControl({
   }
 
   return (
-    <Labelled id={id} label={field.key} help={field.help} helpId={describedBy}>
+    <Labelled
+      id={id}
+      label={field.key}
+      help={field.help}
+      helpId={describedBy}
+      messages={messages}
+      messagesId={messagesId}
+    >
       {field.kind === 'boolean' ? (
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="checkbox"
           checked={fieldView.value === true}
           className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -567,8 +595,9 @@ function DialogFieldControl({
         <select
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           value={dialogNumberSelectValue(fieldView.value)}
-          className={CONTROL_CLASS}
+          className={controlClass}
           onChange={(event) =>
             state.edit(
               setEntryNumberSelectEdit(
@@ -592,9 +621,10 @@ function DialogFieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="number"
           value={dialogScalarText(fieldView.value)}
-          className={CONTROL_CLASS}
+          className={controlClass}
           onChange={(event) =>
             state.edit(
               setEntryNumberFieldEdit(
@@ -612,9 +642,10 @@ function DialogFieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="text"
           value={dialogScalarText(fieldView.value)}
-          className={CONTROL_CLASS}
+          className={controlClass}
           onChange={(event) =>
             state.edit(
               setEntryTextFieldEdit(
@@ -789,12 +820,17 @@ function Labelled({
   label,
   help,
   helpId,
+  messages = [],
+  messagesId,
   children,
 }: {
   id: string;
   label: string;
   help?: string;
   helpId?: string;
+  /** Story p3-09: this field's findings, rendered below the control (L547). */
+  messages?: readonly ValidationMessage[];
+  messagesId?: string;
   children: JSX.Element;
 }): JSX.Element {
   return (
@@ -808,6 +844,7 @@ function Labelled({
           {help}
         </p>
       )}
+      <FieldMessages messages={messages} id={messagesId} />
     </div>
   );
 }

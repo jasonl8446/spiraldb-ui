@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId } from 'react';
 
+import {
+  FieldMessages,
+  fieldAriaInvalid,
+  fieldDescribedBy,
+  useFieldMessages,
+} from '../shared/FieldValidation';
+import type { ValidationMessage } from '../../lib/quest-validation';
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { getName, nameLookupQueryKey } from '../../lib/api';
 import { relativeTime } from '../../lib/display';
@@ -19,6 +26,7 @@ import {
   textFieldEdit,
   type QuestFieldSpec,
 } from '../../lib/quest-info';
+import { withValidationBorder } from '../../lib/quest-validation';
 import { cn } from '../../lib/utils';
 
 /**
@@ -105,9 +113,14 @@ function FieldEditor({
 }): JSX.Element {
   const id = useId();
   const helpId = `${id}-help`;
+  const messagesId = `${id}-messages`;
   const path = [field.key];
   const value = state.value(path);
   const present = state.has(path);
+  // Story p3-09: the field's own findings, at its own document path. Only the six blocking
+  // quest rules can target this tab (`m_questName`), and a warning on a scalar here would be
+  // the general rules'.
+  const messages = useFieldMessages(path);
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
@@ -118,11 +131,14 @@ function FieldEditor({
         field={field}
         id={id}
         helpId={helpId}
+        messagesId={messagesId}
+        messages={messages}
         value={value}
         present={present}
         state={state}
       />
       {field.key === 'm_questTitle' ? <TitleResolution value={value} /> : null}
+      <FieldMessages messages={messages} id={messagesId} />
       {field.help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-500">
           {field.help}
@@ -136,6 +152,8 @@ function FieldControl({
   field,
   id,
   helpId,
+  messagesId,
+  messages,
   value,
   present,
   state,
@@ -143,13 +161,22 @@ function FieldControl({
   field: QuestFieldSpec;
   id: string;
   helpId: string;
+  messagesId: string;
+  messages: readonly ValidationMessage[];
   value: unknown;
   present: boolean;
   state: QuestDocumentState;
 }): JSX.Element {
-  const inputClass =
-    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
-  const describedBy = field.help === '' ? undefined : helpId;
+  const inputClass = withValidationBorder(
+    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+    messages,
+  );
+  const describedBy = fieldDescribedBy(
+    messages,
+    messagesId,
+    field.help === '' ? undefined : helpId,
+  );
+  const ariaInvalid = fieldAriaInvalid(messages);
   const edit = state.edit;
 
   switch (field.kind) {
@@ -161,10 +188,14 @@ function FieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="text"
           readOnly
           value={scalarText(value)}
-          className="min-w-0 cursor-default rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-sm text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className={withValidationBorder(
+            'min-w-0 cursor-default rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-sm text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+            messages,
+          )}
         />
       );
     case 'boolean':
@@ -172,6 +203,7 @@ function FieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="checkbox"
           checked={value === true}
           className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -183,6 +215,7 @@ function FieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="number"
           value={scalarText(value)}
           className={inputClass}
@@ -194,6 +227,7 @@ function FieldControl({
         <select
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           value={activityTypeSelectValue(value)}
           className={inputClass}
           onChange={(event) => edit(textFieldEdit(field.key, present, event.target.value))}
@@ -210,6 +244,7 @@ function FieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="text"
           value={clientTagsToText(value)}
           placeholder="comma, separated, tags"
@@ -222,6 +257,7 @@ function FieldControl({
         <input
           id={id}
           aria-describedby={describedBy}
+          aria-invalid={ariaInvalid}
           type="text"
           value={scalarText(value)}
           className={inputClass}

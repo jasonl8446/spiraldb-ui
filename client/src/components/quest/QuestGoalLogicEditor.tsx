@@ -63,6 +63,7 @@ import {
   type GoalLogicValidation,
 } from '../../lib/quest-goal-logic';
 import { cn } from '../../lib/utils';
+import { FieldMessages, fieldAriaInvalid, useFieldMessages } from '../shared/FieldValidation';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -107,8 +108,14 @@ export const OR_HANDLE_LABEL = 'OR dependency';
 export const TARGET_HANDLE_LABEL = 'Goal dependency input';
 export const START_BADGE_LABEL = 'Start';
 
+/** One entry inspector field: its document key and the control kind it renders. */
+interface GoalLogicEntryFieldSpec {
+  key: string;
+  kind: 'names' | 'count' | 'bool';
+}
+
 /** The entry inspector's five fields, in the corpus's key order (D57: exactly these five). */
-const ENTRY_FIELDS: Array<{ key: string; kind: 'names' | 'count' | 'bool' }> = [
+const ENTRY_FIELDS: GoalLogicEntryFieldSpec[] = [
   { key: 'm_goalsAND', kind: 'names' },
   { key: 'm_goalsOR', kind: 'names' },
   { key: 'm_goalsToAdd', kind: 'names' },
@@ -538,51 +545,83 @@ function EntryInspector({
           aria-label={ENTRY_INSPECTOR_LABEL}
           className="flex flex-col gap-2 rounded-md border border-zinc-800 bg-zinc-900/50 p-3"
         >
-          {ENTRY_FIELDS.map((field) => {
-            const controlId = `${ENTRY_INSPECTOR_LABEL}-${field.key}`;
-            const path = goalLogicEntryPath(selected, field.key);
-            const present = state.has(path);
-            return (
-              <div key={field.key} className="flex flex-col gap-1">
-                <label htmlFor={controlId} className="font-mono text-xs text-zinc-400">
-                  {field.key}
-                </label>
-                {field.kind === 'bool' ? (
-                  <input
-                    id={controlId}
-                    type="checkbox"
-                    checked={state.value(path) === true}
-                    onChange={(event) =>
-                      state.edit(
-                        updateGoalLogicEntryEdits(
-                          selected,
-                          field.key,
-                          present,
-                          event.target.checked ? 'true' : 'false',
-                        ),
-                      )
-                    }
-                    className="h-4 w-4 accent-blue-500"
-                  />
-                ) : (
-                  <DraftInput
-                    id={controlId}
-                    kind={field.kind}
-                    value={
-                      field.kind === 'names'
-                        ? goalLogicNamesText(entry, field.key)
-                        : String(state.value(path) ?? '')
-                    }
-                    onCommit={(raw) =>
-                      state.edit(updateGoalLogicEntryEdits(selected, field.key, present, raw))
-                    }
-                  />
-                )}
-              </div>
-            );
-          })}
+          {ENTRY_FIELDS.map((field) => (
+            <GoalLogicEntryField
+              key={field.key}
+              entry={entry}
+              selected={selected}
+              field={field}
+              state={state}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * One field of the entry inspector, as its own component.
+ *
+ * Extracted in story p3-09 so the field's validation messages can come from a hook: the
+ * checklist's own rule — `goal-logic-not-completing` — lands on
+ * `m_goalLogic[<last>].m_completeQuest`, and a hook cannot be called inside the `map`. The
+ * control is unchanged otherwise; the messages render below it (L547).
+ */
+function GoalLogicEntryField({
+  entry,
+  selected,
+  field,
+  state,
+}: {
+  entry: unknown;
+  selected: number;
+  field: GoalLogicEntryFieldSpec;
+  state: QuestDocumentState;
+}): JSX.Element {
+  const controlId = `${ENTRY_INSPECTOR_LABEL}-${field.key}`;
+  const path = goalLogicEntryPath(selected, field.key);
+  const present = state.has(path);
+  const messages = useFieldMessages(path);
+  const messagesId = `${controlId}-messages`;
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={controlId} className="font-mono text-xs text-zinc-400">
+        {field.key}
+      </label>
+      {field.kind === 'bool' ? (
+        <input
+          id={controlId}
+          type="checkbox"
+          checked={state.value(path) === true}
+          aria-invalid={fieldAriaInvalid(messages)}
+          onChange={(event) =>
+            state.edit(
+              updateGoalLogicEntryEdits(
+                selected,
+                field.key,
+                present,
+                event.target.checked ? 'true' : 'false',
+              ),
+            )
+          }
+          className="h-4 w-4 accent-blue-500"
+        />
+      ) : (
+        <DraftInput
+          id={controlId}
+          kind={field.kind}
+          value={
+            field.kind === 'names'
+              ? goalLogicNamesText(entry, field.key)
+              : String(state.value(path) ?? '')
+          }
+          onCommit={(raw) =>
+            state.edit(updateGoalLogicEntryEdits(selected, field.key, present, raw))
+          }
+        />
+      )}
+      <FieldMessages messages={messages} id={messagesId} />
     </div>
   );
 }

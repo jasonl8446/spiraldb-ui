@@ -51,6 +51,13 @@ export interface FriendlyNameDropdownProps {
   'aria-label'?: string;
   /** Shown on the trigger while nothing is selected. */
   placeholder?: string;
+  /**
+   * Marks the control invalid for validation (story p3-09): a red trigger border and
+   * `aria-invalid`, so an unlisted id the validation engine warned about is visible on the
+   * control itself ([spec-domain-reference.md] L547's red border). Purely presentational —
+   * the editor still writes and keeps the raw id.
+   */
+  invalid?: boolean;
   className?: string;
 }
 
@@ -63,6 +70,7 @@ export default function FriendlyNameDropdown({
   disabled = false,
   'aria-label': ariaLabel,
   placeholder,
+  invalid = false,
   className,
 }: FriendlyNameDropdownProps): JSX.Element {
   const [open, setOpen] = useState(false);
@@ -127,7 +135,12 @@ export default function FriendlyNameDropdown({
             aria-expanded={open}
             aria-label={ariaLabel ?? `Select ${type}`}
             disabled={disabled}
-            className={cn('w-full justify-between font-normal', isPlaceholder && 'text-zinc-500')}
+            aria-invalid={invalid || undefined}
+            className={cn(
+              'w-full justify-between font-normal',
+              isPlaceholder && 'text-zinc-500',
+              invalid && 'border-red-500',
+            )}
           >
             <span className="truncate">{shown}</span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />

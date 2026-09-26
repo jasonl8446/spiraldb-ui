@@ -39,6 +39,7 @@ import {
 } from '../../lib/requirement-tree';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import { FieldMessages, useFieldMessages } from './FieldValidation';
 import { Button } from '../ui/button';
 
 /**
@@ -191,6 +192,20 @@ function NodeCard({
 }
 
 /**
+ * The findings about a requirement node itself — its path, not its fields.
+ *
+ * The only rules that reach inside a requirement tree are the general ones (`$type` must be in
+ * the 3.1 table; a `ReqHasQuest.m_questName` reference warns when the quest is unknown), and
+ * both land on the node's own path, so the node card is where they render (story p3-09). The
+ * hook lives in its own component because a card is already a component and a hook cannot be
+ * called conditionally inside one.
+ */
+function NodeMessages({ node }: { node: RequirementNodeView }): JSX.Element {
+  const messages = useFieldMessages(node.path);
+  return <FieldMessages messages={messages} className="mt-2" />;
+}
+
+/**
  * A child the model cannot read as an object (never in the corpus, but the renderer must
  * not swallow it): its JSON stays on screen and it can still be deleted, which is the only
  * honest control for a value the tree does not understand.
@@ -246,6 +261,8 @@ function GroupCard({
             <DeleteButton state={state} path={node.path} label={address} />
           </div>
         </header>
+
+        <NodeMessages node={node} />
 
         {node.children.length === 0 ? null : (
           <ul className="mt-3 flex min-w-0 flex-col gap-3 border-l border-zinc-700 pl-4">

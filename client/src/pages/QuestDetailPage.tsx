@@ -9,6 +9,11 @@ import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
 import QuestRequirementsEditor from '../components/quest/QuestRequirementsEditor';
 import QuestResultsEditor from '../components/quest/QuestResultsEditor';
+import QuestSaveButton from '../components/quest/QuestSaveButton';
+import QuestValidationBanner, {
+  VALIDATION_BANNER_ID,
+} from '../components/quest/QuestValidationBanner';
+import { FieldValidationProvider } from '../components/shared/FieldValidation';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
@@ -18,6 +23,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useQuestDocument } from '../hooks/useQuestDocument';
+import { useQuestValidation } from '../hooks/useQuestValidation';
 import { useStatusTransition } from '../hooks/useStatusTransition';
 
 /**
@@ -192,6 +198,9 @@ function LoadedQuest({
   const [jsonOpen, setJsonOpen] = useState(false);
   const transition = useStatusTransition('quests');
   const document = useQuestDocument(quest);
+  // One validation pass over the one document state (story p3-09): the same findings feed the
+  // form-level banner, every inline message, and the Save affordance's disabled state.
+  const validation = useQuestValidation(document.doc);
 
   return (
     <div className="flex flex-col gap-4">
@@ -203,36 +212,43 @@ function LoadedQuest({
         onToggleJson={() => setJsonOpen((open) => !open)}
         transitionPending={transition.isPending}
         onTransition={(target) => transition.request(questName, target)}
+        saveBlocked={validation.blocked}
       />
+
+      <QuestValidationBanner banner={validation.banner} />
 
       <div className="flex min-h-0 gap-4">
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
-          <QuestPreview
-            quest={quest}
-            className="h-[70vh]"
-            panels={{
-              Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-              Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-              'Goal Logic': (
-                <Suspense
-                  fallback={
-                    <p role="status" className="p-4 text-sm text-zinc-500">
-                      Loading flowchart…
-                    </p>
-                  }
-                >
-                  <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
-                </Suspense>
-              ),
-              Requirements: (
-                <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
-              ),
-              Results: (
-                <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />
-              ),
-              Dialog: <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-            }}
-          />
+          <FieldValidationProvider messages={validation.messages}>
+            <QuestPreview
+              quest={quest}
+              className="h-[70vh]"
+              panels={{
+                Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+                Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+                'Goal Logic': (
+                  <Suspense
+                    fallback={
+                      <p role="status" className="p-4 text-sm text-zinc-500">
+                        Loading flowchart…
+                      </p>
+                    }
+                  >
+                    <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
+                  </Suspense>
+                ),
+                Requirements: (
+                  <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
+                ),
+                Results: (
+                  <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />
+                ),
+                Dialog: (
+                  <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />
+                ),
+              }}
+            />
+          </FieldValidationProvider>
         </div>
         {/* Exactly one of the two JSON surfaces is mounted (see `QuestJsonPanel`). */}
         {jsonOpen && !isMobile ? <QuestJsonPanel quest={document.doc} /> : null}
@@ -287,6 +303,7 @@ function QuestHeader({
   onToggleJson,
   transitionPending,
   onTransition,
+  saveBlocked,
 }: {
   quest: QuestObject;
   questName: string;
@@ -295,6 +312,8 @@ function QuestHeader({
   onToggleJson: () => void;
   transitionPending: boolean;
   onTransition: (target: TransitionTarget) => void;
+  /** Story p3-09: the validation gate the Save affordance follows. */
+  saveBlocked: boolean;
 }): JSX.Element {
   const displayName = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
   return (
@@ -351,6 +370,14 @@ function QuestHeader({
           <Pencil className="h-4 w-4" aria-hidden="true" />
           Edit
         </Button>
+        {/*
+          The validation-driven Save affordance (story p3-09). Task 3.10 owns the pipeline —
+          the Edit/Save mode swap, the dirty guard and `POST /api/quests` — so this button
+          carries no `onSave` yet; it exists so the AC's "Save disabled while validation errors
+          exist" is observable now, and its disabled state is the engine's `blocked`, not a
+          second derivation.
+        */}
+        <QuestSaveButton blocked={saveBlocked} describedBy={VALIDATION_BANNER_ID} />
         <Button
           type="button"
           variant="ghost"

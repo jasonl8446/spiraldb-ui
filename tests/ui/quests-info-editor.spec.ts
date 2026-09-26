@@ -231,8 +231,18 @@ test.describe('the string-table title lookup', () => {
 
     await expect(editor(page).getByText('QuestTitle_1ED8D', { exact: true })).toBeVisible();
     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
-    // No error surface: an unresolvable key is expected content, not a failure.
-    await expect(page.getByRole('alert')).toHaveCount(0);
+    // No error surface *for this field*: an unresolvable key is expected content, not a
+    // failure. Scoped to the Info editor and to `m_questTitle` on purpose (story p3-09): the
+    // page-level validation banner is a different surface, and this fixture's final
+    // goal-logic entry does not set `m_completeQuest`, which the validation engine reports as
+    // a blocking finding outside the editor. The narrow, still-strong fact is that the title
+    // control is clean — no `aria-invalid`, no inline message list of its own.
+    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).not.toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    await expect(editor(page).getByRole('list', { name: 'Validation messages' })).toHaveCount(0);
+    await expect(editor(page).getByRole('alert')).toHaveCount(0);
   });
 
   test('the empty key is never looked up', async ({ page }) => {

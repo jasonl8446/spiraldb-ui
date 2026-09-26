@@ -56,6 +56,7 @@
 import * as dagre from 'dagre';
 
 import type { DocEdit, DocPath } from '@shared/document';
+import { goalLogicReachability } from '@shared/quest/validation';
 
 import {
   goalBadgeClass,
@@ -561,43 +562,14 @@ export function validateGoalLogic(document: unknown): GoalLogicValidation {
     }
   });
 
-  // Reachability fixpoint.
-  const reachable = new Set<string>(
-    startGoalNames(isPlainObject(document) ? document.m_startGoals : undefined).filter((name) =>
-      known.has(name),
-    ),
-  );
-  let completeReachable = false;
-  for (let pass = 0; pass <= entries.length; pass += 1) {
-    let grew = false;
-    entries.forEach((entry) => {
-      const andNames = goalLogicEntryNames(entry, 'm_goalsAND');
-      const orNames = goalLogicEntryNames(entry, 'm_goalsOR');
-      const ready =
-        andNames.every((name) => reachable.has(name)) &&
-        (orNames.length === 0 ||
-          (goalLogicEntryRequiredORCount(entry) ?? 0) <=
-            orNames.filter((name) => reachable.has(name)).length);
-      if (!ready) {
-        return;
-      }
-      if (goalLogicEntryCompletes(entry)) {
-        completeReachable = true;
-      }
-      for (const name of goalLogicEntryNames(entry, 'm_goalsToAdd')) {
-        if (known.has(name) && !reachable.has(name)) {
-          reachable.add(name);
-          grew = true;
-        }
-      }
-    });
-    if (!grew) {
-      break;
-    }
-  }
+  // Reachability: **the shared fixpoint** (story p3-09 moved the algorithm here from this
+  // module into `shared/quest/validation.ts` so the flowchart's banner and the validation
+  // engine's `goal-unreachable` rule cannot disagree). The findings are still this module's
+  // own `disconnected-goal` kind — the banner's vocabulary — built from the shared result.
+  const reachability = goalLogicReachability(document);
 
-  const reachableNames = goalNames.filter((name) => reachable.has(name));
-  const unreachableNames = goalNames.filter((name) => !reachable.has(name));
+  const reachableNames = reachability.reachable;
+  const unreachableNames = reachability.unreachable;
   for (const name of unreachableNames) {
     findings.push({
       kind: 'disconnected-goal',
@@ -623,7 +595,7 @@ export function validateGoalLogic(document: unknown): GoalLogicValidation {
     findings,
     reachable: reachableNames,
     unreachable: unreachableNames,
-    completeReachable,
+    completeReachable: reachability.completeReachable,
     hasGraphShapeFinding: findings.some(isBannerFinding),
   };
 }

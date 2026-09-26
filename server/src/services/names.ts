@@ -1,3 +1,4 @@
+import type { QuestValidationReferences } from '../../../shared/quest/validation.js';
 import type { Db } from '../db.js';
 
 /**
@@ -238,6 +239,40 @@ export function coerceNamesId(spec: NamesTypeSpec, rawId: string): string | numb
   }
   const value = Number(rawId);
   return Number.isSafeInteger(value) ? value : undefined;
+}
+
+/**
+ * The friendly-name tables as the validation engine's injected reference sets (story p3-09).
+ *
+ * The engine is pure and cannot reach SQLite, so the server hands it `Set<string>`s built from
+ * the **same** `NAMES_TYPE_SPECS` mapping the names API serves — table and column names come
+ * from that table, never from a request, and only values are bound. `items` and `strings` are
+ * deliberately excluded: no quest field references an `items.gid` (measured: 0 of 79,835
+ * values occur in the 322 quests) and `string_table` is a key/value display table, not a
+ * reference domain.
+ *
+ * An **empty** table is not a reference set and is left out, exactly as the client does: a
+ * database whose friendly names were never synced must not make every zone path and every id
+ * look unknown. The consequence is documented on the engine's own rules — an absent namespace
+ * disables that rule.
+ *
+ * Read fresh on every call (five `SELECT`s over ~42k rows, tens of milliseconds) rather than
+ * cached, because a save is already dominated by the file write and the commit, and a cache
+ * would go stale silently after a sync (D8 repopulates these tables).
+ */
+export function loadValidationReferences(db: Db): QuestValidationReferences {
+  const references: QuestValidationReferences = {};
+  for (const type of ['zones', 'npcs', 'spells', 'drop_tables', 'quests'] as const) {
+    const spec = NAMES_TYPE_SPECS[type];
+    const rows = db
+      .prepare<[], { value: unknown }>(`SELECT ${spec.idColumn} AS value FROM ${spec.table}`)
+      .all();
+    if (rows.length === 0) {
+      continue;
+    }
+    references[type] = new Set(rows.map((row) => String(row.value)));
+  }
+  return references;
 }
 
 export type NameLookup = { found: true; row: NamesRow } | { found: false; error: string };

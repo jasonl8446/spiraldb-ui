@@ -43,6 +43,8 @@ import {
 } from '../../lib/quest-results';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import type { ValidationMessage } from '../../lib/quest-validation';
+import { FieldMessages, useFieldMessages } from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
 
@@ -236,10 +238,23 @@ function ResultFieldControl({
 }): JSX.Element {
   const id = useId();
   const describedBy = `${id}-help`;
+  const messagesId = `${id}-messages`;
   const field = view.spec;
+  // Story p3-09: this field's findings at its own document path — the general rules' warnings
+  // (an unknown drop-table name, an id no table holds) and the blocking TemplateID/$type
+  // errors. Rendered below the control by `Labelled`.
+  const messages = useFieldMessages(view.path);
 
   if (field.kind === 'friendly-name') {
-    return <NameField state={state} card={card} view={view} describedBy={describedBy} />;
+    return (
+      <NameField
+        state={state}
+        card={card}
+        view={view}
+        describedBy={describedBy}
+        messagesId={messagesId}
+      />
+    );
   }
   if (field.kind === 'router') {
     return <RouterField state={state} card={card} view={view} describedBy={describedBy} />;
@@ -261,7 +276,14 @@ function ResultFieldControl({
   }
 
   return (
-    <Labelled id={id} label={field.key} help={field.help} helpId={describedBy}>
+    <Labelled
+      id={id}
+      label={field.key}
+      help={field.help}
+      helpId={describedBy}
+      messages={messages}
+      messagesId={messagesId}
+    >
       {field.kind === 'boolean' ? (
         <input
           id={id}
@@ -358,15 +380,18 @@ function NameField({
   card,
   view,
   describedBy,
+  messagesId,
 }: {
   state: ResultListDocumentState;
   card: ResultCardView;
   view: ResultFieldView;
   describedBy: string;
+  messagesId: string;
 }): JSX.Element {
   const field = view.spec;
   const sources = field.nameSources ?? [];
   const id = useId();
+  const messages = useFieldMessages(view.path);
   const raw =
     typeof view.value === 'string' || typeof view.value === 'number' ? String(view.value) : '';
 
@@ -388,18 +413,27 @@ function NameField({
         sources={sources}
         raw={raw}
         describedBy={describedBy}
+        messagesId={messagesId}
       />
     );
   }
 
   return (
-    <Labelled id={id} label={field.key} help={field.help} helpId={describedBy}>
+    <Labelled
+      id={id}
+      label={field.key}
+      help={field.help}
+      helpId={describedBy}
+      messages={messages}
+      messagesId={messagesId}
+    >
       <FriendlyNameDropdown
         type={sources[0]}
         name={`${card.address}-${field.key}`}
         aria-label={field.key}
         value={raw === '' ? null : raw}
         allowEmpty
+        invalid={messages.some((message) => message.severity === 'error')}
         onChange={(rawId) =>
           state.edit(setResultIdFieldEdit(card.listPath, card.index, field, view.present, rawId))
         }
@@ -422,6 +456,7 @@ function DualSourceNameField({
   sources,
   raw,
   describedBy,
+  messagesId,
 }: {
   state: ResultListDocumentState;
   card: ResultCardView;
@@ -429,8 +464,10 @@ function DualSourceNameField({
   sources: readonly NamesType[];
   raw: string;
   describedBy: string;
+  messagesId: string;
 }): JSX.Element {
   const field = view.spec;
+  const messages = useFieldMessages(view.path);
   const [chosen, setChosen] = useState<NamesType | null>(null);
   const spells = useNames('spells');
   const npcs = useNames('npcs');
@@ -475,6 +512,7 @@ function DualSourceNameField({
         aria-label={field.key}
         value={raw === '' ? null : raw}
         allowEmpty
+        invalid={messages.some((message) => message.severity === 'error')}
         onChange={(rawId) =>
           state.edit(setResultIdFieldEdit(card.listPath, card.index, field, view.present, rawId))
         }
@@ -482,6 +520,7 @@ function DualSourceNameField({
       <p id={describedBy} className="text-xs text-zinc-500">
         {field.help}
       </p>
+      <FieldMessages messages={messages} id={messagesId} />
     </div>
   );
 }
@@ -734,12 +773,17 @@ function Labelled({
   label,
   help,
   helpId,
+  messages = [],
+  messagesId,
   children,
 }: {
   id: string;
   label: string;
   help?: string;
   helpId?: string;
+  /** Story p3-09: this field's findings, rendered below the control. */
+  messages?: readonly ValidationMessage[];
+  messagesId?: string;
   children: JSX.Element;
 }): JSX.Element {
   return (
@@ -753,6 +797,7 @@ function Labelled({
           {help}
         </p>
       )}
+      <FieldMessages messages={messages} id={messagesId} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDocPath } from '../document.js';
 import { QuestTemplateSchema } from './questTemplate.js';
 import { passthroughObject } from './schemaKit.js';
 
@@ -34,9 +35,9 @@ export const MAX_REPORTED_ISSUES = 6;
 
 /**
  * Renders a Zod failure as one actionable line: up to {@link MAX_REPORTED_ISSUES}
- * `path: message` pairs, then "… and N more". The 400 envelope is still `{error}` only
- * (docs/spec-api.md L227) — the per-field error *map* belongs to the validation engine
- * (task 3.9), which will build on this same schema.
+ * `path: message` pairs, then "… and N more". The 400 envelope keeps `error` as its
+ * single human-readable line (docs/spec-api.md L227); the **per-field map** that
+ * accompanies it is built by {@link schemaFieldErrorMap}.
  */
 export function describeSchemaIssues(error: z.ZodError): string {
   const issues = error.issues;
@@ -51,4 +52,31 @@ export function describeSchemaIssues(error: z.ZodError): string {
   return remaining > 0
     ? `Invalid quest payload: ${detail}; … and ${remaining} more.`
     : `Invalid quest payload: ${detail}.`;
+}
+
+/**
+ * The same schema failure as a **per-field error map**: field path → messages.
+ *
+ * Story p3-09's `POST /api/quests` answers a 400 with `{ error, fields }`, where `fields`
+ * lets a client place each message under the control that owns it instead of parsing the
+ * one-line `error` string. Schema failures and rule failures share the map's shape **and its
+ * key format**, so a client renders both identically: keys are the shared `formatDocPath`,
+ * and the request envelope's own `quest.` prefix is stripped, because the schema validates
+ * `{ quest, notes?, source? }` while the rules address the quest document. A schema issue at
+ * `quest.m_questTitle` is therefore keyed `m_questTitle` — the same key the client's own
+ * engine uses — and a body-level issue (no path) is `<root>`.
+ */
+export function schemaFieldErrorMap(error: z.ZodError): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const path = issue.path[0] === 'quest' ? issue.path.slice(1) : issue.path;
+    const field = formatDocPath(path);
+    const messages = map[field];
+    if (messages === undefined) {
+      map[field] = [issue.message];
+    } else {
+      messages.push(issue.message);
+    }
+  }
+  return map;
 }

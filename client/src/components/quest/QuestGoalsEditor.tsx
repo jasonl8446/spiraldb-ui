@@ -62,6 +62,14 @@ import {
   type GoalFieldSpec,
   type GoalShortTypeName,
 } from '../../lib/quest-goals';
+import {
+  FieldMessages,
+  fieldAriaInvalid,
+  useFieldMessages,
+  useFieldMessagesUnder,
+} from '../shared/FieldValidation';
+import type { ValidationMessage } from '../../lib/quest-validation';
+import { withValidationBorder } from '../../lib/quest-validation';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Badge } from '../ui/badge';
@@ -142,6 +150,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
 
   return (
     <section aria-label={GOALS_EDITOR_LABEL} className="flex flex-col gap-3">
+      <StartGoalsValidation />
       {goals.length === 0 ? (
         <p className="text-sm text-zinc-500">{NO_GOALS_TEXT}</p>
       ) : (
@@ -182,6 +191,34 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
   );
 }
 
+/**
+ * The `m_startGoals` field's inline surface (story p3-09's AC clause).
+ *
+ * The Goals tab has no per-entry control for `m_startGoals` — membership is toggled from a goal
+ * card's `Set as Start Goal` button — so the *field* has no control to underline. This strip is
+ * the field's own surface: every finding under `m_startGoals` renders as a red-bordered inline
+ * error naming the dangling name (AC1: "m_startGoals entry referencing a deleted goal → inline
+ * error + form banner + Save disabled"). It renders nothing when every start goal resolves,
+ * which is the state of all 322 corpus quests.
+ */
+function StartGoalsValidation(): JSX.Element | null {
+  const messages = useFieldMessagesUnder([START_GOALS_PATH]);
+  if (messages.length === 0) {
+    return null;
+  }
+  return (
+    <div
+      role="group"
+      aria-label={START_GOALS_PATH}
+      data-testid="start-goals-validation"
+      className="flex flex-col gap-1 rounded-md border border-red-500/60 bg-red-950/20 p-2"
+    >
+      <p className="font-mono text-xs text-red-300">{START_GOALS_PATH}</p>
+      <FieldMessages messages={messages} />
+    </div>
+  );
+}
+
 /** One goal card: handle, name, badges, summary lines, actions, inline editor. */
 function GoalCard({
   id,
@@ -211,6 +248,9 @@ function GoalCard({
   } = useSortable({ id });
   const name = goalName(goal);
   const start = isStartGoal(goal, startGoals);
+  // The finding about the goal itself (its own path), not its fields: `goal-unreachable` is the
+  // only rule whose subject is the node, and this card is the node's surface.
+  const nodeMessages = useFieldMessages([GOALS_PATH, index]);
 
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -259,6 +299,8 @@ function GoalCard({
             </Button>
           </div>
         </header>
+
+        <FieldMessages messages={nodeMessages} className="mt-2" />
 
         <GoalSummary goal={goal} />
 
@@ -357,8 +399,16 @@ function GoalFieldControl({
   const path = [GOALS_PATH, index, field.key];
   const value = state.value(path);
   const present = state.has(path);
-  const inputClass =
-    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  // Story p3-09: this field's findings — a duplicate/absent `m_goalName`, an unknown `$type`,
+  // a bad TemplateID, or one of the general rules' warnings (the real data: an unlisted zone
+  // path). `<GoalFieldMessages>` renders them below the control.
+  const messages = useFieldMessages(path);
+  const messagesId = `${GOALS_PATH}-${index}-${field.key}-messages`;
+  const inputClass = withValidationBorder(
+    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+    messages,
+  );
+  const ariaInvalid = fieldAriaInvalid(messages);
 
   // `select` is the only kind that is not an `<input>`/checkbox; every other kind is a
   // labelled form control (or the zone combobox, labelled with `aria-label` because a
@@ -372,6 +422,7 @@ function GoalFieldControl({
         </label>
         <select
           id={id}
+          aria-invalid={ariaInvalid}
           value={goalSelectValue(value)}
           className={inputClass}
           onChange={(event) =>
@@ -384,7 +435,7 @@ function GoalFieldControl({
             </option>
           ))}
         </select>
-        {field.help === '' ? null : <p className="text-xs text-zinc-500">{field.help}</p>}
+        <GoalFieldMessages messages={messages} id={messagesId} help={field.help} />
       </div>
     );
   }
@@ -407,16 +458,25 @@ function GoalFieldControl({
           aria-label={field.key}
           value={typeof value === 'string' ? value : null}
           allowEmpty
+          invalid={ariaInvalid}
           onChange={(rawId) => state.edit(goalTextFieldEdit(index, field.key, present, rawId))}
         />
-        {field.help === '' ? null : <p className="text-xs text-zinc-500">{field.help}</p>}
+        <GoalFieldMessages messages={messages} id={messagesId} help={field.help} />
       </div>
     );
   }
 
   if (field.kind === 'npcName') {
     return (
-      <NpcNameField index={index} field={field} state={state} value={value} present={present} />
+      <NpcNameField
+        index={index}
+        field={field}
+        state={state}
+        value={value}
+        present={present}
+        messages={messages}
+        messagesId={messagesId}
+      />
     );
   }
 
@@ -429,6 +489,7 @@ function GoalFieldControl({
       {field.kind === 'boolean' ? (
         <input
           id={id}
+          aria-invalid={ariaInvalid}
           type="checkbox"
           checked={value === true}
           className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -439,6 +500,7 @@ function GoalFieldControl({
       ) : field.kind === 'number' ? (
         <input
           id={id}
+          aria-invalid={ariaInvalid}
           type="number"
           value={goalScalarText(value)}
           className={inputClass}
@@ -449,6 +511,7 @@ function GoalFieldControl({
       ) : field.kind === 'tags' ? (
         <input
           id={id}
+          aria-invalid={ariaInvalid}
           type="text"
           value={clientTagsToText(value)}
           placeholder="comma, separated, tags"
@@ -460,6 +523,7 @@ function GoalFieldControl({
       ) : (
         <input
           id={id}
+          aria-invalid={ariaInvalid}
           type="text"
           value={goalScalarText(value)}
           className={inputClass}
@@ -469,8 +533,29 @@ function GoalFieldControl({
         />
       )}
       {field.key === 'm_goalTitle' ? <GoalTitleResolution value={value} /> : null}
-      {field.help === '' ? null : <p className="text-xs text-zinc-500">{field.help}</p>}
+      <GoalFieldMessages messages={messages} id={messagesId} help={field.help} />
     </div>
+  );
+}
+
+/**
+ * A goal field's help text and its inline validation messages, in that order — the one place
+ * the Goals tab renders a field's findings (L547's "message below" the control).
+ */
+function GoalFieldMessages({
+  messages,
+  id,
+  help,
+}: {
+  messages: readonly ValidationMessage[];
+  id: string;
+  help: string;
+}): JSX.Element {
+  return (
+    <>
+      {help === '' ? null : <p className="text-xs text-zinc-500">{help}</p>}
+      <FieldMessages messages={messages} id={id} />
+    </>
   );
 }
 
@@ -491,12 +576,16 @@ function NpcNameField({
   state,
   value,
   present,
+  messages,
+  messagesId,
 }: {
   index: number;
   field: GoalFieldSpec;
   state: QuestDocumentState;
   value: unknown;
   present: boolean;
+  messages: readonly ValidationMessage[];
+  messagesId: string;
 }): JSX.Element {
   const id = useId();
   const [query, setQuery] = useState('');
@@ -522,7 +611,11 @@ function NpcNameField({
         list={listId}
         value={current}
         placeholder="NPC name"
-        className="min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        aria-invalid={fieldAriaInvalid(messages)}
+        className={withValidationBorder(
+          'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+          messages,
+        )}
         onChange={(event) => {
           setQuery(event.target.value);
           state.edit(goalTextFieldEdit(index, field.key, present, event.target.value));
@@ -533,7 +626,7 @@ function NpcNameField({
           <option key={name} value={name} />
         ))}
       </datalist>
-      {field.help === '' ? null : <p className="text-xs text-zinc-500">{field.help}</p>}
+      <GoalFieldMessages messages={messages} id={messagesId} help={field.help} />
     </div>
   );
 }
