@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { getDb } from '../db.js';
 import { createDashboardRouter } from './dashboard.js';
+import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
@@ -88,3 +89,14 @@ apiRouter.use('/dashboard', (req, res, next) => {
   dashboardRouter ??= createDashboardRouter({ db: getDb() });
   dashboardRouter(req, res, next);
 });
+
+/**
+ * Quest extraction (tasks 2.2/2.3, story p2-04) — `POST /api/extract/quests`.
+ *
+ * Mounted **directly**, not lazily like the five routers above: the extraction
+ * router holds no database handle (architecture rule 4 — the CLI is the only
+ * capture reader), so a request never needs `data/spiraldb-ui.db`. It is still
+ * free of import-time side effects: the service, the upload directory and
+ * multer's `mkdirp` all resolve on the first request (`./extract.ts` header).
+ */
+apiRouter.use('/extract', createExtractRouter());

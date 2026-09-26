@@ -1,0 +1,28 @@
+# p2-04 gate — the six standard checks (D40), lead-run
+# 2026-09-26T08:03:52Z branch=phase-2-quest-extraction
+
+## 1. npm test
+ Test Files  22 passed (22)
+      Tests  555 passed (555)
+   Duration  1.23s (transform 2.65s, setup 0ms, collect 7.94s, tests 2.20s, environment 4ms, prepare 2.08s)
+
+## 2. npm run test:ui
+  8 passed (8.7s)
+
+## 3. npm run lint
+eslint exit=0
+Checking formatting...
+All matched files use Prettier code style!
+prettier exit=0
+
+## 4. npm run typecheck:tests
+exit=0
+
+## 5. tsc server + client
+server exit=0
+client exit=0
+
+## 6. npm run build
+dist/assets/index-BQHBZPTe.js   392.09 kB │ gzip: 125.02 kB
+✓ built in 1.55s
+exit=0

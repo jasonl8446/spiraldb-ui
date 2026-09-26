@@ -1,0 +1,61 @@
+# p2-04 — LEAD independent verification (real CLI, real server, real abort)
+# 2026-09-26T08:02:11Z branch=phase-2-quest-extraction HEAD=93f08a8 p2-03: FixtureGen + closed-loop quest round-trip (task 2.1a, D28 + D46)
+# NOTE: DOTNET_ROOT deliberately NOT exported here (proving the service derives it itself)
+DOTNET_ROOT in my shell: [<unset>]
+
+## build + boot the real server on :3141 against a throwaway DB
+build:server exit=0
+server pid=1333010
+health: {"status":"ok"}
+server log (DB line): [spiraldb-ui] database ready at /tmp/p204-lead/lead.db
+[spiraldb-ui] API listening on http://localhost:3141
+
+## ac1 — the real committed p2-03 fixture through the real CLI
+http=200 bytes=33262 time=0.257514s
+keys: quests,count
+count: 1 | quests.length: 1
+name: MB-YARD1-C01-001 | level: 1 | goals: 15
+goal names: 1_WizardQuestGoals_Explore,2_WizardQuestGoals_TalkNPC,3_WizardQuestGoals_Explore,4_WizardQuestGoals_TalkNPC,5_WizardQuestGoals_Explore,6_WizardQuestGoals_TalkNPC,7_WizardQuestGoals_Explore,8_WizardQuestGoals_TalkNPC,9_WizardQuestGoals_Explore,10_WizardQuestGoals_Kill,11_WizardQuestGoals_Explore,12_WizardQuestGoals_TalkNPC,13_WizardQuestGoals_Explore,14_WizardQuestGoals_Kill,15_WizardQuestGoals_TalkNPC
+
+## ac1 — invalid inputs + health after failure
+notcapture.json    {"error":"Failed to parse packet capture: error: '/home/jason/Documents/git-projects/spiraldb-ui/data/uploads/762e3b7e-74ab-4ac0-b290-0215a601e986.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {\"data\":{\"name\":\"MSG_QUESTOFFER\",\"fields\":{...}}}."} http=400
+
+notcapture.txt     {"error":"Unsupported file type \".txt\" — only .json packet captures are accepted. Supported format: JSON packet capture files (.json)"} http=400
+
+(no file)          {"error":"No file uploaded — attach a .json packet capture in the \"file\" field"} http=400
+
+health after failures: {"status":"ok"}
+extraction still works after failures: count=1 name=WC-UNICORN-MAIN-007
+
+## ac3 — CLI missing names npm run build:cli
+response: {"error":"Packet capture CLI not found at /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/imview-packet-reader. Build it with: npm run build:cli"} http=500
+restored: ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+after restore: http=200
+
+## ac2 — real abort: a capture big enough to take seconds
+fixture bytes: 32958
+big capture bytes: 13182801
+full-extraction control run (no abort):
+  http=200 time=1.729193s
+now abort mid-flight and watch the child:
+curl exit=0 wall=1.617723s
+curl-done
+child sightings (pid lines only):
+  pid=1333160 etime=00:00
+  pid=1333160 etime=00:01
+last 3 watcher samples:
+  --- t=58 (23.258)
+  --- t=59 (23.378)
+  --- t=60 (23.497)
+ps AFTER the abort: []  (exit=1)
+3 further samples over 1s: |||
+server stderr tail:
+  [spiraldb-ui] import duplicate keys (first file wins): WizardCity/Tutorial_Exterior, WizardCity/Tutorial_Interior
+  [spiraldb-ui] API listening on http://localhost:3141
+  [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+## left-behind uploads / temp dirs
+data/uploads: []
+/tmp/spiraldb-extract-*: []
+server killed; health now: unreachable (expected)
+stray CLI children after everything: []

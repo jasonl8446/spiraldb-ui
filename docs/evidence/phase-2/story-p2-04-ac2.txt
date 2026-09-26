@@ -1,0 +1,78 @@
+story p2-04 — ac2: aborting a large-capture request kills the CLI child process (D9)
+date:   2026-09-26T03:58:38-04:00
+branch: phase-2-quest-extraction   HEAD: 93f08a8
+
+The capture is the committed D28 fixture MB-YARD1-C01-001.json with its packet
+list repeated 3200x (a pure textual repeat of the array's inner text — no JSON
+parsing of a capture happens anywhere in Node; the CLI remains the only reader):
+$ wc -c /tmp/p204-evidence/big-capture.json
+  105462401 /tmp/p204-evidence/big-capture.json
+
+## 0. control: how long a *full* extraction of that capture takes
+($ DOTNET_ROOT=... tools/bin/imview-packet-reader --input <big> --output <file>)
+  exit=0   wall=13.84s   output=55177495 bytes
+  (55 MB of stdout — above the spec's 50 MB cap, which is what the ac3 run exercises)
+
+
+## 1. boot the server (again WITHOUT DOTNET_ROOT) against a throwaway DB
+$ env -u DOTNET_ROOT SPIRALDB_UI_DB=/tmp/p204-evidence/ac2.db SPIRALDB_UI_SKIP_IMPORT=1 PORT=3138 node server/dist/server/src/index.js &
+server pid: 1330932
+  | [spiraldb-ui] database ready at /tmp/p204-evidence/ac2.db
+  | [spiraldb-ui] API listening on http://localhost:3138
+  | [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+$ curl -s http://localhost:3138/api/health
+{"status":"ok"}
+
+## 2. start watching for the CLI child while the request runs
+$ ( while flag; do ps -o pid=,cmd= -C imview-packet-reader; sleep 0.1; done ) > /tmp/p204-evidence/ac2-watch.log &
+  (ps -C matches the process *name* 'imview-packet-r' (15-char comm), so the
+   watcher's own bash can never self-match the pattern the way 'pgrep -f' would.)
+
+## 3. POST the big capture with a 3 s client timeout (abort mid-extraction)
+$ curl -s --max-time 3 -o /dev/null -w 'HTTP %{http_code} after %{time_total}s' -F "file=@/tmp/p204-evidence/big-capture.json" http://localhost:3138/api/extract/quests
+  HTTP 100 after 3.001665s
+  curl exit=28   (28 = 'Operation timed out' — the abort)
+  wall=3.01s
+
+## 4. the child was alive, then gone — raw watcher log (deduplicated pids)
+$ cat /tmp/p204-evidence/ac2-watch.log   (pid/cmd lines only, timestamps added by the watcher)
+  03:58:53.748 1330966 /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/imview-packet-reader --input /home/jason/Documents/git-projects/spiraldb-ui/data/uploads/3364ac3a-3d04-41f3-9b0f-bb4fdac357e8.json
+  distinct pids seen: 1330966 
+  first seen: 03:58:53.748 1330966 /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/imview-packet-reader --input /home/jason/Documents/git-projects/spiraldb-ui/data/uploads/3364ac3a-3d04-41f3-9b0f-bb4fdac357e8.json
+  last seen:  03:58:56.428 1330966 /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/imview-packet-reader --input /home/jason/Documents/git-projects/spiraldb-ui/data/uploads/3364ac3a-3d04-41f3-9b0f-bb4fdac357e8.json
+
+## 5. $ ps -o pid,cmd -C imview-packet-reader   (immediately after the abort)
+    PID CMD
+exit=1 (1 = the CLI child is gone)
+$ for i in 1..20: poll ps again for 2 s
+  no process appeared in 2 s of polling
+
+## 6. the aborted request is not answered (the client is gone) and the server stays healthy
+$ curl -s -i http://localhost:3138/api/health
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 15
+ETag: W/"f-VaSQ4oDUiZblZNAEkkN+sX+q3Sg"
+Date: Sat, 26 Sep 2026 07:58:59 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ok"}
+## 7. the temp capture was cleaned up and no child leaked
+$ ls -la data/uploads
+  total 8
+  drwxr-xr-x 2 jason users 4096 Sep 26 03:58 .
+  drwxr-xr-x 5 jason users 4096 Sep 26 03:57 ..
+$ ps -o pid,cmd -C imview-packet-reader
+    PID CMD
+exit=1 (1 = none)
+server stderr (warnings are expected only if cleanup failed):
+  (none)
+
+## 8. shut the server down
+connection refused (server is down)
+$ ps -o pid,cmd -C imview-packet-reader
+    PID CMD
+exit=1 (1 = none)
