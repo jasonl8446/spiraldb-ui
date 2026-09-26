@@ -1,0 +1,2 @@
+# D1 reserves server/src/services/ for the domain services of later phases
+# (sync pipeline, packet-reader wrapper, SpiralDB file/git writers).

@@ -1,0 +1,11 @@
+node_modules
+.npm-cache
+client/dist
+server/dist
+coverage
+data
+tools
+.omd
+Docs
+package-lock.json
+*.md
