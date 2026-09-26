@@ -6,14 +6,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_AURORIUM_PATH,
   DEFAULT_IMCODEC_PATH,
+  DB_FILE_ENV_VAR,
   DEFAULT_SPIRALDB_PATH,
   MEMORY_DB,
   buildSeedSettings,
   closeDb,
+  defaultDbFile,
   formatLocalDate,
   initSchema,
+  getDb,
   openDb,
   readSettings,
+  resolveDbFile,
   resolveRepoRoot,
   seedSettings,
   testSpiraldbPath,
@@ -395,5 +399,48 @@ describe('repo root resolution', () => {
   it('throws when no package.json with the project name exists above the start directory', () => {
     // `/` is its own parent, so the upward walk terminates there.
     expect(() => resolveRepoRoot('/')).toThrow(/Could not locate the spiraldb-ui project root/);
+  });
+});
+
+/**
+ * Decision D44: the tier-1 UI harness boots the real server against its own
+ * throwaway database. The point is the D17 guarantee — a spec that writes must not
+ * be able to reach the developer's database, and through its `spiraldb_path` the
+ * owner's real SpiralDB fork.
+ */
+describe('database-file resolution (decision D44)', () => {
+  it('prefers SPIRALDB_UI_DB and falls back to the default file', () => {
+    expect(resolveDbFile({ [DB_FILE_ENV_VAR]: '/tmp/isolated.db' })).toBe('/tmp/isolated.db');
+    // An empty value counts as unset — the same rule the settings env vars follow.
+    expect(resolveDbFile({ [DB_FILE_ENV_VAR]: '' })).toBe(defaultDbFile());
+    expect(resolveDbFile({})).toBe(defaultDbFile());
+    expect(defaultDbFile()).toBe(path.join(resolveRepoRoot(), 'data', 'spiraldb-ui.db'));
+  });
+
+  it('getDb opens the override file and seeds it for tests (clone, not the owner fork)', () => {
+    const file = path.join(makeTempDir(), 'test-ui.db');
+    const previous = { override: process.env[DB_FILE_ENV_VAR], nodeEnv: process.env.NODE_ENV };
+    process.env[DB_FILE_ENV_VAR] = file;
+    process.env.NODE_ENV = 'test';
+
+    try {
+      const db = getDb();
+
+      expect(fs.existsSync(file)).toBe(true);
+      // The two halves of the isolation: a throwaway file, seeded with the D17 clone.
+      expect(readSettings(db).spiraldb_path).toBe(testSpiraldbPath());
+      expect(readSettings(db).spiraldb_path).not.toBe(DEFAULT_SPIRALDB_PATH);
+    } finally {
+      if (previous.override === undefined) {
+        delete process.env[DB_FILE_ENV_VAR];
+      } else {
+        process.env[DB_FILE_ENV_VAR] = previous.override;
+      }
+      if (previous.nodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = previous.nodeEnv;
+      }
+    }
   });
 });

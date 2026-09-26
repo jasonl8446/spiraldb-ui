@@ -1,0 +1,53 @@
+# p2-01 — prerequisite raw outputs (dotnet, D17 clone + reset script, test settings, D44 harness isolation)
+# 2026-09-26T06:52:49Z
+
+## ac1: dotnet --version (>= 9 required; run HALTS if missing)
+9.0.318
+path: /run/current-system/sw/bin/dotnet
+
+## ac2a: the disposable clone (D17)
+$ git clone /home/jason/Documents/git-projects/spiraldb data/test-spiraldb
+origin	/home/jason/Documents/git-projects/spiraldb (fetch)
+origin	/home/jason/Documents/git-projects/spiraldb (push)
+c55ccab fix: give the Olivia goal a quest helper tag
+status: []
+size: 22M
+$ git check-ignore -v data/test-spiraldb
+.gitignore:5:data/	data/test-spiraldb
+
+## ac2b: npm run test:reset-clone (fresh delete + re-clone)
+  script: "test:reset-clone": "rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb"
+> rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb
+  npm exit code: 0   (measured directly, not through a pipe)
+HEAD after: c55ccab fix: give the Olivia goal a quest helper tag
+status after: []
+
+## ac2c: test settings resolve to the clone
+$ NODE_ENV=test npx tsx -e "buildSeedSettings({env: process.env}).spiraldb_path"
+NODE_ENV=test -> /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+default      -> /home/jason/Documents/git-projects/spiraldb
+testSpiraldbPath() -> /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+
+## ac2d/D44: the tier-1 harness gets its own database (playwright.config.ts)
+  command: rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 npm run dev
+  reuseExistingServer: false
+  boot line from the run: (see the 'after' section below)
+
+## D44 isolation proof
+live DB sha256 prefix : 03e37e43ca9f8692   (identical before and after a full UI-suite run)
+live DB mtime         : 2026-09-26 02:30:20.022949881 -0400
+isolated DB           : 98304 bytes
+isolated DB settings  :
+  aurorium_path = /home/jason/Documents/git-projects/Aurorium
+  git_branch = content/2026-09-26
+  imcodec_path = /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec
+  spiraldb_path = /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  user_name = 
+owner fork            : c55ccab fix: give the Olivia goal a quest helper tag / dirty: []
+
+## the harness boot line now names the file it opened
+[spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[spiraldb-ui] API listening on http://localhost:3001
+
+## tier-1 suite result with the isolated stack
+  8 passed (9.0s)

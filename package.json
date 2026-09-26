@@ -20,6 +20,7 @@
     "sync:spotcheck": "tsx scripts/sync-spotcheck.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:reset-clone": "rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb",
     "test:ui": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test",
     "test:ui:install": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium",
     "typecheck:tests": "tsc -p tests/tsconfig.json --noEmit",

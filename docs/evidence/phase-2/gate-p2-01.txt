@@ -1,0 +1,33 @@
+# p2-01 gate — the six standard checks (D40)
+# 2026-09-26T06:53:15Z  head=041e7dd
+
+## 1. npm test
+ Test Files  20 passed (20)
+      Tests  514 passed (514)
+   Duration  1.22s (transform 2.11s, setup 0ms, collect 6.31s, tests 1.84s, environment 5ms, prepare 2.44s)
+
+## 2. npm run test:ui
+  8 passed (8.4s)
+
+## 3. npm run lint
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+## 4. npm run typecheck:tests
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+
+## 5. tsc server + client
+server exit=0
+client exit=0
+
+## 6. npm run build
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-CFVJSuLY.css   24.88 kB │ gzip:   5.34 kB
+dist/assets/index-BQHBZPTe.js   392.09 kB │ gzip: 125.02 kB
+✓ built in 1.53s
+exit=0

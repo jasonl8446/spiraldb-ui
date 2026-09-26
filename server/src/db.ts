@@ -237,16 +237,39 @@ export function seedSettings(db: Db, options: SeedSettingsOptions = {}): SeedSet
   return { seeded: true, settings: readSettings(db) };
 }
 
+/**
+ * Env override for the application's database file (decision D44). Only the app's
+ * own connection honours it — `openDb()` callers keep passing a path explicitly.
+ */
+export const DB_FILE_ENV_VAR = 'SPIRALDB_UI_DB';
+
+/**
+ * The database file the app opens: `SPIRALDB_UI_DB` when set (an empty value counts
+ * as unset, the same rule the settings env vars follow), else `data/spiraldb-ui.db`.
+ * Pure so the tier-1 harness's isolation is testable without opening either file.
+ */
+export function resolveDbFile(
+  env: NodeJS.ProcessEnv = process.env,
+  repoRoot: string = resolveRepoRoot(),
+): string {
+  return env[DB_FILE_ENV_VAR] || defaultDbFile(repoRoot);
+}
+
 /** Process-wide connection (synchronous, single-user tool — no pooling). */
 let connection: Db | undefined;
 
 /**
  * The application's single connection to `data/spiraldb-ui.db`, initialised and
  * seeded on first use. Created lazily so importing a router never touches disk.
+ *
+ * `SPIRALDB_UI_DB` points it at another file: the tier-1 UI harness boots this real
+ * server against a throwaway database seeded for tests (decision D44), so a spec can
+ * never write to the developer's database and, through its `spiraldb_path`, to the
+ * owner's real SpiralDB fork (decision D17).
  */
 export function getDb(): Db {
   if (!connection) {
-    const db = openDb();
+    const db = openDb({ file: resolveDbFile() });
     seedSettings(db);
     connection = db;
   }

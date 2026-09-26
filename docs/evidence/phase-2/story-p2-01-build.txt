@@ -1,0 +1,281 @@
+# p2-01 ac3 — Imview.PacketReader smoke build with the D18 artifacts flags (raw output)
+# 2026-09-26T06:51:27Z on nixos; tools/.artifacts + tools/.nuget were deleted first, so this is a cold restore+build
+# command: NUGET_PACKAGES=$PWD/tools/.nuget dotnet build /home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts
+# NOTE: no -p:BaseIntermediateOutputPath / -p:BaseOutputPath anywhere (D18: global props -> CS0579)
+
+  Determining projects to restore...
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Math/Imcodec.Math.csproj (in 50 ms).
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/netstandard.library/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_netstandard.library.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/newtonsoft.json/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_newtonsoft.json.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/sharpziplib/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_sharpziplib.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.text.json/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.text.json.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.analyzers/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.analyzers.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/ionic.zlib.core/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_ionic.zlib.core.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.csharp.dat-new' is denied.
+    Permission denied
+  Failed to download package 'NETStandard.Library.2.0.3' from 'https://api.nuget.org/v3-flatcontainer/netstandard.library/2.0.3/netstandard.library.2.0.3.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_netstandard.library.2.0.3.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Newtonsoft.Json.13.0.3' from 'https://api.nuget.org/v3-flatcontainer/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_newtonsoft.json.13.0.3.dat-new' is denied.
+    Permission denied
+  Failed to download package 'SharpZipLib.1.4.2' from 'https://api.nuget.org/v3-flatcontainer/sharpziplib/1.4.2/sharpziplib.1.4.2.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_sharpziplib.1.4.2.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Text.Json.9.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.text.json/9.0.0/system.text.json.9.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.text.json.9.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Ionic.Zlib.Core.1.0.0' from 'https://api.nuget.org/v3-flatcontainer/ionic.zlib.core/1.0.0/ionic.zlib.core.1.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_ionic.zlib.core.1.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.Analyzers.3.3.4' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.analyzers/3.3.4/microsoft.codeanalysis.analyzers.3.3.4.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.analyzers.3.3.4.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis/4.8.0/microsoft.codeanalysis.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.4.8.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.CSharp.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp/4.8.0/microsoft.codeanalysis.csharp.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.csharp.4.8.0.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp.workspaces/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.csharp.workspaces.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.visualbasic.workspaces/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.visualbasic.workspaces.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.netcore.platforms/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.netcore.platforms.dat-new' is denied.
+    Permission denied
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj (in 8.16 sec).
+  Restored /home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj (in 8.16 sec).
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj (in 8.16 sec).
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj (in 8.16 sec).
+  Failed to download package 'Microsoft.CodeAnalysis.CSharp.Workspaces.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp.workspaces/4.8.0/microsoft.codeanalysis.csharp.workspaces.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.csharp.workspaces.4.8.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.NETCore.Platforms.1.1.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.netcore.platforms/1.1.0/microsoft.netcore.platforms.1.1.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.netcore.platforms.1.1.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.VisualBasic.Workspaces.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.visualbasic.workspaces/4.8.0/microsoft.codeanalysis.visualbasic.workspaces.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.visualbasic.workspaces.4.8.0.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.bcl.asyncinterfaces/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.bcl.asyncinterfaces.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.runtime.compilerservices.unsafe/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.runtime.compilerservices.unsafe.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.io.pipelines/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.io.pipelines.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.memory/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.memory.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.text.encodings.web/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.text.encodings.web.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.common/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.common.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.buffers/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.buffers.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.threading.tasks.extensions/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.threading.tasks.extensions.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/humanizer.core/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_humanizer.core.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.workspaces.common/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.workspaces.common.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.visualbasic/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_microsoft.codeanalysis.visualbasic.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Memory.4.5.5' from 'https://api.nuget.org/v3-flatcontainer/system.memory/4.5.5/system.memory.4.5.5.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.memory.4.5.5.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.IO.Pipelines.9.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.io.pipelines/9.0.0/system.io.pipelines.9.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.io.pipelines.9.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.Common.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.common/4.8.0/microsoft.codeanalysis.common.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.common.4.8.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.Bcl.AsyncInterfaces.9.0.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.bcl.asyncinterfaces/9.0.0/microsoft.bcl.asyncinterfaces.9.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.bcl.asyncinterfaces.9.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Humanizer.Core.2.14.1' from 'https://api.nuget.org/v3-flatcontainer/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_humanizer.core.2.14.1.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Buffers.4.5.1' from 'https://api.nuget.org/v3-flatcontainer/system.buffers/4.5.1/system.buffers.4.5.1.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.buffers.4.5.1.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Runtime.CompilerServices.Unsafe.6.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.runtime.compilerservices.unsafe.6.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Text.Encodings.Web.9.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.text.encodings.web/9.0.0/system.text.encodings.web.9.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.text.encodings.web.9.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Threading.Tasks.Extensions.4.5.4' from 'https://api.nuget.org/v3-flatcontainer/system.threading.tasks.extensions/4.5.4/system.threading.tasks.extensions.4.5.4.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.threading.tasks.extensions.4.5.4.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.Workspaces.Common.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.workspaces.common/4.8.0/microsoft.codeanalysis.workspaces.common.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.workspaces.common.4.8.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.CodeAnalysis.VisualBasic.4.8.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.visualbasic/4.8.0/microsoft.codeanalysis.visualbasic.4.8.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.codeanalysis.visualbasic.4.8.0.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.collections.immutable/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.collections.immutable.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.reflection.metadata/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.reflection.metadata.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.text.encoding.codepages/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.text.encoding.codepages.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.numerics.vectors/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.numerics.vectors.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Runtime.CompilerServices.Unsafe.4.5.3' from 'https://api.nuget.org/v3-flatcontainer/system.runtime.compilerservices.unsafe/4.5.3/system.runtime.compilerservices.unsafe.4.5.3.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.runtime.compilerservices.unsafe.4.5.3.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.IO.Pipelines.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.io.pipelines/7.0.0/system.io.pipelines.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.io.pipelines.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'Microsoft.Bcl.AsyncInterfaces.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/microsoft.bcl.asyncinterfaces/7.0.0/microsoft.bcl.asyncinterfaces.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_microsoft.bcl.asyncinterfaces.7.0.0.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.composition/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.composition.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.threading.channels/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.threading.channels.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Reflection.Metadata.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.reflection.metadata/7.0.0/system.reflection.metadata.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.reflection.metadata.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Collections.Immutable.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.collections.immutable/7.0.0/system.collections.immutable.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.collections.immutable.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Text.Encoding.CodePages.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.text.encoding.codepages/7.0.0/system.text.encoding.codepages.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.text.encoding.codepages.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Numerics.Vectors.4.4.0' from 'https://api.nuget.org/v3-flatcontainer/system.numerics.vectors/4.4.0/system.numerics.vectors.4.4.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.numerics.vectors.4.4.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Composition.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.composition/7.0.0/system.composition.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.composition.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Threading.Channels.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.threading.channels/7.0.0/system.threading.channels.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.threading.channels.7.0.0.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.composition.runtime/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.composition.runtime.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.composition.convention/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.composition.convention.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.composition.typedparts/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.composition.typedparts.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.composition.attributedmodel/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.composition.attributedmodel.dat-new' is denied.
+    Permission denied
+  Retrying 'FindPackagesByIdAsync' for source 'https://api.nuget.org/v3-flatcontainer/system.composition.hosting/index.json'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/list_system.composition.hosting.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Composition.Convention.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.composition.convention/7.0.0/system.composition.convention.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.composition.convention.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Composition.AttributedModel.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.composition.attributedmodel/7.0.0/system.composition.attributedmodel.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.composition.attributedmodel.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Composition.Runtime.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.composition.runtime/7.0.0/system.composition.runtime.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.composition.runtime.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Composition.TypedParts.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.composition.typedparts/7.0.0/system.composition.typedparts.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.composition.typedparts.7.0.0.dat-new' is denied.
+    Permission denied
+  Failed to download package 'System.Composition.Hosting.7.0.0' from 'https://api.nuget.org/v3-flatcontainer/system.composition.hosting/7.0.0/system.composition.hosting.7.0.0.nupkg'.
+  Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/nupkg_system.composition.hosting.7.0.0.dat-new' is denied.
+    Permission denied
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj (in 30.88 sec).
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.Types -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Types/debug/Imcodec.Types.dll
+  Imcodec.Math -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Math/debug/Imcodec.Math.dll
+  Imcodec.IO -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.IO/debug/Imcodec.IO.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/JSON/JsonToCsharpCompiler.cs(73,66): warning CS8604: Possible null reference argument for parameter 'input' in 'string NameSanitizer.SanitizeIdentifier(string input)'. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/ExternToCsharpCompiler.cs(122,29): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+  Imcodec.ObjectProperty.CodeGen -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty.CodeGen/debug/Imcodec.ObjectProperty.CodeGen.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(557,54): warning CS0109: The member 'ResDespawn.m_templateID' does not hide an accessible member. The new keyword is not required. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/debug/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneTriggers.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/debug/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneVolumes.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(257,49): warning CS8618: Non-nullable property 'm_lootTable' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+  Imcodec.ObjectProperty -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty/debug/Imcodec.ObjectProperty.dll
+  Imview.PacketReader -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imview.PacketReader/debug/Imview.PacketReader.dll
+
+Build succeeded.
+
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj]
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/JSON/JsonToCsharpCompiler.cs(73,66): warning CS8604: Possible null reference argument for parameter 'input' in 'string NameSanitizer.SanitizeIdentifier(string input)'. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/ExternToCsharpCompiler.cs(122,29): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(557,54): warning CS0109: The member 'ResDespawn.m_templateID' does not hide an accessible member. The new keyword is not required. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/debug/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneTriggers.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/debug/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneVolumes.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(257,49): warning CS8618: Non-nullable property 'm_lootTable' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+    16 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:40.63
+EXIT=0 duration=41s
+
+## POST-build isolation proof
+Imview HEAD: 0c9e186 docs: document the BYOD source-generator inputs
+Imview git dirty: []
+Imview files modified in the last 5 minutes (excluding .git):
+  (count: 0)
+Imview obj/ or bin/ dirs anywhere: 30
+~/.nuget: 2.2G, files 5044, touched in the last 5 min: 0
+workspace outputs: tools/.artifacts 140M, tools/.nuget 287M
+artifacts produced:
+  tools/.artifacts/bin/Imcodec.Types/debug/Imcodec.Types.dll
+  tools/.artifacts/bin/Imview.PacketReader/debug/Imcodec.IO.dll
+  tools/.artifacts/bin/Imview.PacketReader/debug/Imcodec.Types.dll
+  tools/.artifacts/bin/Imview.PacketReader/debug/Imcodec.Math.dll
+  tools/.artifacts/bin/Imview.PacketReader/debug/Imcodec.ObjectProperty.dll
+  tools/.artifacts/bin/Imview.PacketReader/debug/Imview.PacketReader.dll
