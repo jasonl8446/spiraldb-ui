@@ -9,6 +9,7 @@ import StubPage from './pages/StubPage';
 import { UserNameGateProvider } from './hooks/useUserNameGate';
 import { APP_ROUTES } from './lib/routes';
 import {
+  TOASTER_CLASS_NAMES,
   TOASTER_CLOSE_BUTTON,
   TOASTER_POSITION,
   TOASTER_THEME,
@@ -59,12 +60,14 @@ export default function App(): JSX.Element {
           </Routes>
         </BrowserRouter>
       </UserNameGateProvider>
-      {/* Toasts: bottom-right, at most 3 visible, dark (spec-ui-design L111-123). */}
+      {/* Toasts: bottom-right, at most 3 visible, dark, per-type left border
+          accent (spec-ui-design L111-123). */}
       <Toaster
         position={TOASTER_POSITION}
         visibleToasts={TOASTER_VISIBLE_TOASTS}
         closeButton={TOASTER_CLOSE_BUTTON}
         theme={TOASTER_THEME}
+        toastOptions={{ classNames: TOASTER_CLASS_NAMES }}
       />
     </QueryClientProvider>
   );

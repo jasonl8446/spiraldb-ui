@@ -32,9 +32,13 @@ import {
   syncErrorMessage,
   syncSuccessMessage,
   SYNC_SUCCESS_ICON_MS,
+  TOAST_ACCENT_CLASSES,
+  TOAST_ACCENT_WIDTH,
   TOAST_DURATIONS,
+  TOASTER_CLASS_NAMES,
   TOASTER_POSITION,
   TOASTER_VISIBLE_TOASTS,
+  type ToastAccentType,
 } from '../../client/src/lib/toast';
 import {
   SWIPE_CLOSE_THRESHOLD_PX,
@@ -472,6 +476,57 @@ describe('toast policy (docs/spec-ui-design.md L111-123)', () => {
 
   it('uses 5s/10s/5s auto-dismiss durations', () => {
     expect(TOAST_DURATIONS).toEqual({ success: 5000, error: 10000, info: 5000 });
+  });
+
+  it('gives each spec type its exact left border (spec L115-117)', () => {
+    expect(TOAST_ACCENT_WIDTH).toBe('border-l-4');
+    expect(TOAST_ACCENT_CLASSES.success).toBe('border-l-4 border-l-emerald-500');
+    expect(TOAST_ACCENT_CLASSES.error).toBe('border-l-4 border-l-red-500');
+    expect(TOAST_ACCENT_CLASSES.info).toBe('border-l-4 border-l-blue-500');
+  });
+
+  it('accent-covers every type sonner can emit — no silent gap', () => {
+    // sonner's own `ToastClassnames` keys (node_modules/sonner/dist/index.d.ts).
+    const SONNER_TOAST_TYPES = [
+      'success',
+      'error',
+      'info',
+      'warning',
+      'loading',
+      'default',
+    ] as const satisfies readonly ToastAccentType[];
+
+    expect(Object.keys(TOAST_ACCENT_CLASSES).sort()).toEqual([...SONNER_TOAST_TYPES].sort());
+    for (const type of SONNER_TOAST_TYPES) {
+      expect(TOAST_ACCENT_CLASSES[type], type).toContain('border-l-4 ');
+      // A real Tailwind colour token, not just the width.
+      expect(TOAST_ACCENT_CLASSES[type], type).toMatch(
+        /border-l-(emerald|red|blue|amber|zinc)-\d00$/,
+      );
+    }
+  });
+
+  it('wires the accents into sonner so no two colours can share one toast', () => {
+    // The width is on `toast` (sonner adds it to every toast); each type key adds
+    // only its colour, so no element ever carries two competing colour utilities.
+    expect(TOASTER_CLASS_NAMES.toast).toBe(TOAST_ACCENT_WIDTH);
+    // `default` is deliberately absent — sonner merges `classNames.default` into
+    // every toast, typed or not, so a colour there would fight the type colour.
+    expect(Object.keys(TOASTER_CLASS_NAMES)).toEqual([
+      'toast',
+      'success',
+      'error',
+      'info',
+      'warning',
+      'loading',
+    ]);
+
+    for (const type of ['success', 'error', 'info', 'warning', 'loading'] as const) {
+      // The wired colour is exactly the one the accent map holds for that type.
+      expect(TOASTER_CLASS_NAMES[type], type).toBe(
+        TOAST_ACCENT_CLASSES[type].replace(`${TOAST_ACCENT_WIDTH} `, ''),
+      );
+    }
   });
 
   it('keeps the success checkmark visible briefly', () => {
