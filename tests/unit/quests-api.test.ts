@@ -28,6 +28,7 @@ import {
   type SavePipeline,
 } from '@server/services/savePipeline';
 import { createSpiraldbIndex } from '@server/services/spiraldbIndex';
+import { TYPE_STRINGS } from '@shared/quest';
 import { applyStatusChange, getStatusHistory, listStatus } from '@server/services/status';
 import {
   commitSubjects,
@@ -503,6 +504,26 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     ['non-string notes', { quest: { m_questName: 'X' }, notes: 5 }],
     ['a non-string source', { quest: { m_questName: 'X' }, source: 5 }],
     ['a non-string source and notes', { quest: { m_questName: 'X' }, notes: null, source: ['a'] }],
+    // Since task 3.1 the shared quest schemas validate the document too, so a value of the
+    // wrong type, or a goal without the `$type` Imlight deserializes on, is now a 400 as
+    // well — the API is no longer looser than the editor's own model.
+    ['a non-string m_questTitle', { quest: { m_questName: 'X', m_questTitle: 5 } }],
+    ['a goal with no $type', { quest: { m_questName: 'X', m_goals: [{ m_goalName: '1_A' }] } }],
+    [
+      'an unknown goal $type',
+      {
+        quest: {
+          m_questName: 'X',
+          m_goals: [
+            { $type: 'Imcodec.ObjectProperty.TypeCache.NopeGoalTemplate, Imcodec.ObjectProperty' },
+          ],
+        },
+      },
+    ],
+    [
+      'a requirement node with an unknown $type',
+      { quest: { m_questName: 'X', m_requirements: { m_requirements: [{ $type: 'Nope' }] } } },
+    ],
   ])('400s %s before the pipeline is reached', async (_label, body) => {
     const root = corpusRoot();
     const h = harness({ root });
@@ -527,7 +548,9 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     const quest = {
       m_questName: 'DS-P206-NEW-001',
       m_questInfo: null,
-      m_goals: [{ m_goalName: '1_A' }],
+      // A real goal carries its assembly-qualified `$type` — the extraction reader always
+      // writes it (verified against a live CLI run), and task 3.1's schemas require it.
+      m_goals: [{ $type: TYPE_STRINGS.WaypointGoalTemplate, m_goalName: '1_A' }],
     };
 
     const h = harness({ root: repo.dir, spiraldbPath: repo.dir });

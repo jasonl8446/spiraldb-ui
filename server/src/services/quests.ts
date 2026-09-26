@@ -1,5 +1,6 @@
 import path from 'node:path';
 
+import { SaveQuestRequestSchema, describeSchemaIssues } from '../../../shared/quest/index.js';
 import type { Db } from '../db.js';
 import {
   collectionSpec,
@@ -40,10 +41,11 @@ import { createStringLookup } from './sync/lookup.js';
  */
 
 /**
- * A malformed `POST /api/quests` body — the route maps it to **400**. Deliberately
- * narrow: it covers only what the caller can fix by resending (`quest` missing or
- * keyless, `notes` not a string, `source` not a string). Pipeline problems are
- * **not** this error, so they still map to 500.
+ * A malformed `POST /api/quests` body — the route maps it to **400**. Covers the two things a
+ * caller can fix by resending: the narrow, hand-written checks (`quest` missing or keyless,
+ * `notes` not a string, `source` not a string) and — since task 3.1 — the failure of the
+ * shared Zod schemas the editor also uses (`shared/quest/request.ts`), reported as one line of
+ * `path: message` pairs. Pipeline problems are **not** this error, so they still map to 500.
  */
 export class QuestRequestError extends Error {
   constructor(message: string) {
@@ -329,6 +331,22 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
         body.source === null ? 'null' : typeof body.source
       }.`,
     );
+  }
+
+  // Task 3.1 / p3-01: the **same** Zod schemas the editor uses validate the document's
+  // shape here (the goal/result/requirement unions on the assembly-qualified `$type`, the
+  // dialog tree, the 36 top-level fields) — one source of truth, no second definition of a
+  // quest. The checks above keep their exact, actionable messages and still run first.
+  //
+  // This pass **validates only**. `pipeline.saveObject` is handed `body.quest` (the original
+  // object), never the parse output: Zod reorders keys, and D5's merge-not-replace rule
+  // writes the loaded document, not one rebuilt from a schema. Two consequences worth
+  // knowing: (a) an unknown-but-present *field* passes through untouched — nothing here
+  // strips it; (b) `m_questName` is now required to be a non-empty **string** (the spec's
+  // type), where `objectKeyFromData` would also have accepted a finite number.
+  const validation = SaveQuestRequestSchema.safeParse(body);
+  if (!validation.success) {
+    throw new QuestRequestError(describeSchemaIssues(validation.error));
   }
 
   const quest = body.quest;
