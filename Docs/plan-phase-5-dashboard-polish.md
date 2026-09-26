@@ -1,6 +1,6 @@
 # Phase 5 — Dashboard & Polish
 
-**Status:** pending approval
+**Status:** approved (2026-09-26, via plan-overview rev 3 / D29)
 **Depends on:** Phases 1–4 (dashboard aggregates all tracked types; search spans all editors; polish audits every page)
 **Spec reading order before starting:** [spec-ui-design.md](./spec-ui-design.md) L127–180 (dashboard), L516–546 (responsive, loading, error, a11y) → [spec-api.md](./spec-api.md) L144–164 (dashboard endpoint, built in Phase 1)
 

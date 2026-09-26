@@ -1,6 +1,6 @@
 # Phase 2 — Quest Extraction
 
-**Status:** pending approval
+**Status:** approved (2026-09-26, via plan-overview rev 3 / D29)
 **Depends on:** Phase 1 complete; **owner prerequisite from [plan-overview.md](./plan-overview.md): .NET 9 SDK installed system-wide (verify `dotnet --version` ≥ 9 — if absent, STOP and report; this is the run's only hard block). Real packet captures are NOT required — task 2.1a manufactures them (D28).**
 **Spec reading order before starting:** [spec-domain-reference.md](./spec-domain-reference.md) (CLI wrapper L551–633, metadata L189–204) → [spec-data-model.md](./spec-data-model.md) (file naming, git strategy) → [spec-api.md](./spec-api.md) (extraction + quest CRUD) → [spec-ui-design.md](./spec-ui-design.md) (extraction page L183–235, browse L238–271)
 
