@@ -253,7 +253,8 @@ function DialogPanel({ quest }: { quest: QuestObject }): JSX.Element {
   return (
     <section aria-label="Dialog" className="flex flex-col gap-4">
       <p className="text-xs text-zinc-500">
-        Read-only JSON — the full dialog editor arrives in Phase 3.
+        Read-only JSON — this preview is the extraction page’s; the structured dialog editor is in
+        the Dialog tab of the quest detail page.
       </p>
       <JsonBlock label="m_dialogList" value={quest.m_dialogList} />
     </section>

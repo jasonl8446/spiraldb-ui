@@ -96,7 +96,7 @@ test.describe('header', () => {
 });
 
 test.describe('tabs', () => {
-  test('renders the six tabs through QuestPreview, one of them read-only', async ({ page }) => {
+  test('renders the six tabs through QuestPreview, all six live editors', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -105,10 +105,10 @@ test.describe('tabs', () => {
       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
     }
 
-    // Info is the landing tab and, since p3-03, the live editor — Dialog is the last tab
-    // still on p2-07's read-only body, which is what the end of this test checks; the other
-    // four became live editors in p3-04 (Goals), p3-05 (Goal Logic), p3-06 (Requirements)
-    // and p3-07 (Results).
+    // Info is the landing tab and, since p3-03, the live editor; the other five became live
+    // editors in p3-04 (Goals), p3-05 (Goal Logic), p3-06 (Requirements), p3-07 (Results) and
+    // p3-08 (Dialog) — so no tab on the detail page is read-only any more. The extraction
+    // page's preview keeps the read-only bodies and `extraction.spec.ts` still asserts that.
     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
     await expect(main.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
 
@@ -170,15 +170,20 @@ test.describe('tabs', () => {
     await main.getByRole('tab', { name: 'Dialog' }).click();
     await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
 
-    // Dialog is the only tab left on the read-only preview. This assertion was narrowed
-    // when Results became an editor (p3-07) — a phase transition, not a weakened check.
-    for (const tab of ['Dialog'] as const) {
-      await main.getByRole('tab', { name: tab }).click();
-      await expect(
-        main.getByRole('tabpanel').locator('input, select, textarea'),
-        `${tab} is read-only`,
-      ).toHaveCount(0);
-    }
+    // The Dialog tab became the sixth live editor in p3-08, which is why the "Dialog is
+    // read-only" loop that stood here has been replaced rather than weakened: its own spec
+    // (`quests-dialog-editor.spec.ts`) drives the tag sections and the accordions, so this
+    // pins that the detail page really mounts it and that the shared list editor rendered.
+    // The extraction page's preview still renders the read-only `m_dialogList` JSON block.
+    await expect(main.getByRole('region', { name: 'Quest dialog editor' })).toBeVisible();
+    await expect(
+      main.getByRole('region', { name: 'Quest dialog list', exact: true }),
+    ).toBeVisible();
+    await expect(
+      main
+        .getByRole('region', { name: 'Quest dialog list', exact: true })
+        .getByRole('button', { name: 'Add Dialog Tag', exact: true }),
+    ).toBeVisible();
   });
 });
 

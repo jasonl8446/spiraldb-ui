@@ -351,8 +351,10 @@ test.describe('edits and the JSON panel', () => {
   });
 });
 
-test.describe('the other tabs stay read-only', () => {
-  test('the tabs still on the read-only preview render no control at all', async ({ page }) => {
+test.describe('the detail page’s tabs are all live editors', () => {
+  test('mounts every editor, and the one tab whose controls are conditional renders none until used', async ({
+    page,
+  }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -376,15 +378,22 @@ test.describe('the other tabs stay read-only', () => {
     await main_(page).getByRole('tab', { name: 'Results' }).click();
     await expect(main_(page).getByRole('region', { name: 'Quest results editor' })).toBeVisible();
 
-    // …and the rest are still the read-only preview (p2-08's contract). The Goal Logic
-    // flowchart is a live editor too (p3-05) and stays in this list on purpose: it renders
-    // no plain form control until a node or an edge is opened, which is exactly what this
-    // assertion is about. Dialog is the last read-only tab after p3-07.
-    for (const tab of ['Goal Logic', 'Dialog'] as const) {
+    // …and the Dialog tab is the sixth as of story p3-08 (its own spec,
+    // `quests-dialog-editor.spec.ts`, drives it). Before p3-08 this test's loop also covered
+    // Dialog; the loop is now a single tab, and the reason it stays is a real property rather
+    // than a phase boundary: the Goal Logic flowchart (p3-05) is a live editor but renders no
+    // plain form control until a node or an edge is opened.
+    await main_(page).getByRole('tab', { name: 'Dialog' }).click();
+    await expect(main_(page).getByRole('region', { name: 'Quest dialog editor' })).toBeVisible();
+    await expect(
+      main_(page).getByRole('region', { name: 'Quest dialog list', exact: true }),
+    ).toBeVisible();
+
+    for (const tab of ['Goal Logic'] as const) {
       await main_(page).getByRole('tab', { name: tab }).click();
       await expect(
         main_(page).getByRole('tabpanel').locator('input, select, textarea'),
-        `${tab} is read-only`,
+        `${tab} has no plain control until a node is opened`,
       ).toHaveCount(0);
     }
   });
