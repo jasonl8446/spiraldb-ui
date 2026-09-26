@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createApp } from './app.js';
-import { defaultDbFile, getDb } from './db.js';
+import { defaultDbFile, getDb, readSettings } from './db.js';
+import { runFirstStartupImport } from './services/import.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
@@ -37,8 +38,40 @@ const staticDir = findStaticDir(path.dirname(fileURLToPath(import.meta.url)));
 // Initialise the SQLite layer on boot (task 1.2): creates `data/` when missing,
 // applies the migrations from server/migrations (copied into the build by
 // `scripts/copy-server-assets.mjs`) and seeds `settings` on first run.
-getDb();
+const db = getDb();
 console.log(`[spiraldb-ui] database ready at ${defaultDbFile()}`);
+
+// First-startup import of the existing SpiralDB corpus (task 1.6,
+// docs/spec-data-model.md L254-279). It runs here — the real entrypoint, after
+// the connection is open — and never as a side effect of importing `app.ts`, so
+// unit tests can never scan the owner's repository (decision D17/D32).
+// `SPIRALDB_UI_SKIP_IMPORT=1` disables it outright (a test/audit escape hatch —
+// the normal skip is automatic: the table already has rows).
+if (process.env.SPIRALDB_UI_SKIP_IMPORT !== '1') {
+  const importResult = runFirstStartupImport({
+    db,
+    spiraldbPath: readSettings(db).spiraldb_path ?? '',
+  });
+
+  if (importResult.ran) {
+    // The spec's toast text, minus the toast (docs/spec-data-model.md L260).
+    console.log(`Imported ${importResult.imported} existing entries from SpiralDB`);
+    if (importResult.skipped > 0 || importResult.failed > 0) {
+      console.log(
+        `[spiraldb-ui] import detail: ${importResult.skipped} skipped, ${importResult.failed} unparsable`,
+      );
+    }
+    for (const counts of Object.values(importResult.byType)) {
+      if (counts.duplicates.length > 0) {
+        console.log(
+          `[spiraldb-ui] import duplicate keys (first file wins): ${counts.duplicates.join(', ')}`,
+        );
+      }
+    }
+  } else {
+    console.log('[spiraldb-ui] first-startup import skipped (entry_status already has rows)');
+  }
+}
 
 const app = createApp(staticDir ? { staticDir } : {});
 

@@ -1,8 +1,10 @@
 import { Router } from 'express';
 
 import { getDb } from '../db.js';
+import { createDashboardRouter } from './dashboard.js';
 import { createNamesRouter } from './names.js';
 import { createSettingsRouter } from './settings.js';
+import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
 
 /**
@@ -59,4 +61,30 @@ let namesRouter: Router | undefined;
 apiRouter.use('/names', (req, res, next) => {
   namesRouter ??= createNamesRouter({ db: getDb() });
   namesRouter(req, res, next);
+});
+
+/**
+ * Status lifecycle (task 1.6) — lazily mounted for the same reason as the three
+ * routers above: the first request is the first moment the process needs
+ * `data/spiraldb-ui.db`.
+ *
+ * `/status/:type`, `/status/:type/:key`, `/status/:type/:key/history` and the
+ * literal `/status/_import` (declared before `/:type` in the router).
+ */
+let statusRouter: Router | undefined;
+
+apiRouter.use('/status', (req, res, next) => {
+  statusRouter ??= createStatusRouter({ db: getDb() });
+  statusRouter(req, res, next);
+});
+
+/**
+ * Dashboard (task 1.6) — `GET /api/dashboard`, the aggregate read. Lazily mounted
+ * like every other feature router (decision D32).
+ */
+let dashboardRouter: Router | undefined;
+
+apiRouter.use('/dashboard', (req, res, next) => {
+  dashboardRouter ??= createDashboardRouter({ db: getDb() });
+  dashboardRouter(req, res, next);
 });
