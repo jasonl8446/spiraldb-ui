@@ -356,9 +356,13 @@ export async function getNames(type: NamesType, options?: NamesListOptions): Pro
  * `GET /api/names/:type/:id` — one bare row, or an {@link ApiError} with status
  * 404 when the id is unknown. Callers render the raw id on 404, never an error
  * (docs/spec-domain-reference.md L693-695).
+ *
+ * Generic in the type so a caller that names its type (`getName('strings', key)`,
+ * story p3-03's title lookup) gets that type's row instead of the seven-way union; a
+ * caller holding a `NamesType` variable still gets the union, exactly as before.
  */
-export function getName(type: NamesType, id: string): Promise<NameRowMap[NamesType]> {
-  return apiFetch<NameRowMap[NamesType]>(`/api/names/${type}/${encodeURIComponent(id)}`);
+export function getName<T extends NamesType>(type: T, id: string): Promise<NameRowMap[T]> {
+  return apiFetch<NameRowMap[T]>(`/api/names/${type}/${encodeURIComponent(id)}`);
 }
 
 /* ---------------------------------------------------------------------- sync */

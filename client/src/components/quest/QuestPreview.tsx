@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 
 import type { QuestObject } from '../../lib/api';
 import {
@@ -33,9 +33,22 @@ import { Badge } from '../ui/badge';
 export interface QuestPreviewProps {
   quest: QuestObject;
   className?: string;
+  /**
+   * Replaces the Info tab's read-only field list (plan task 3.3, story p3-03).
+   *
+   * The extraction page and the mobile overlay pass nothing, so they keep the
+   * read-only tab the Phase-2 specs pin; the detail page passes
+   * `QuestInfoEditor`. A prop rather than a fork because the other five tabs and the
+   * tab strip are exactly what both callers want: only the Info body differs.
+   */
+  infoPanel?: ReactNode;
 }
 
-export default function QuestPreview({ quest, className }: QuestPreviewProps): JSX.Element {
+export default function QuestPreview({
+  quest,
+  className,
+  infoPanel,
+}: QuestPreviewProps): JSX.Element {
   const [tab, setTab] = useState<PreviewTab>('Info');
   const panelId = useId();
 
@@ -82,17 +95,20 @@ export default function QuestPreview({ quest, className }: QuestPreviewProps): J
         aria-labelledby={`${panelId}-tab-${tab}`}
         className="min-h-0 flex-1 overflow-y-auto p-4"
       >
-        {renderPanel(tab, quest)}
+        {renderPanel(tab, quest, infoPanel)}
       </div>
     </div>
   );
 }
 
-/** One tab's body. Kept as a plain function so no tab pays for the others' hooks. */
-function renderPanel(tab: PreviewTab, quest: QuestObject): JSX.Element {
+/**
+ * One tab's body. Kept as a plain function so no tab pays for the others' hooks —
+ * and so the Info tab can be the caller's editor instead of the read-only list.
+ */
+function renderPanel(tab: PreviewTab, quest: QuestObject, infoPanel?: ReactNode): JSX.Element {
   switch (tab) {
     case 'Info':
-      return <InfoPanel quest={quest} />;
+      return infoPanel === undefined ? <InfoPanel quest={quest} /> : <>{infoPanel}</>;
     case 'Goals':
       return <GoalsPanel quest={quest} />;
     case 'Goal Logic':

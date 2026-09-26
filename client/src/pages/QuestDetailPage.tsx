@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, Braces, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
@@ -12,12 +13,14 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useQuestDocument } from '../hooks/useQuestDocument';
 import { useStatusTransition } from '../hooks/useStatusTransition';
 import {
   getQuest,
   listQuests,
   questDetailQueryKey,
   QUESTS_QUERY_KEY,
+  type QuestListRow,
   type QuestObject,
   type StatusValue,
 } from '../lib/api';
@@ -72,14 +75,22 @@ import { cn } from '../lib/utils';
  * preview. The actions run through the shared `useStatusTransition` flow — identity
  * gate first, then the notes dialog, then the PATCH — and the optimistically
  * rewritten row (D51(e)) is the same list row this page's badge reads, so the badge
- * flips without waiting for a refetch. The six read-only tabs and the JSON panel are
- * untouched: no seventh tab was added.
+ * flips without waiting for a refetch. No seventh tab was added.
+ *
+ * **Editing (story p3-03).** The Info tab is now the live editor and the other five
+ * stay read-only (the header Edit/Save toggle, the dirty guard and the save are task
+ * 3.10). The loaded body therefore lives in {@link LoadedQuest}, which holds the one
+ * editable document: `useQuestDocument` turns the fetched quest into local document
+ * state, `QuestInfoEditor` edits it through `shared/document.ts`, and the same live
+ * document feeds the JSON panel — so a form edit appears in the panel with no
+ * refetch and no manual refresh. The hook mounts only here, never in the page, because
+ * `loadDoc` rightly throws on "no document yet" (loading and error are not documents).
+ *
+ * The read-only timestamp the Info tab shows (spec L298) is the list row's
+ * `modified_at` — the same row the badge already reads (D51(e)), not a new API field.
  */
 export default function QuestDetailPage(): JSX.Element {
   const { questName = '' } = useParams<{ questName: string }>();
-  const isMobile = useIsMobile();
-  const [jsonOpen, setJsonOpen] = useState(false);
-  const transition = useStatusTransition('quests');
 
   const quest = useQuery({
     queryKey: questDetailQueryKey(questName),
@@ -91,8 +102,6 @@ export default function QuestDetailPage(): JSX.Element {
     queryFn: listQuests,
     staleTime: Infinity,
   });
-
-  const status = questStatus(list.data?.quests.find((row) => row.quest_name === questName));
 
   if (quest.isPending) {
     return (
@@ -139,10 +148,41 @@ export default function QuestDetailPage(): JSX.Element {
     );
   }
 
+  const row = list.data?.quests.find((entry) => entry.quest_name === questName);
+
+  return (
+    <LoadedQuest quest={quest.data} questName={questName} status={questStatus(row)} row={row} />
+  );
+}
+
+/**
+ * The loaded body: status badge, the six tabs (Info editable), the JSON surfaces, the
+ * history panel and the notes dialog.
+ *
+ * Separate from the page so the editable document is created exactly once the quest
+ * data exists — {@link useQuestDocument} is called with a real document, never with
+ * `undefined`.
+ */
+function LoadedQuest({
+  quest,
+  questName,
+  status,
+  row,
+}: {
+  quest: QuestObject;
+  questName: string;
+  status: StatusValue;
+  row: QuestListRow | undefined;
+}): JSX.Element {
+  const isMobile = useIsMobile();
+  const [jsonOpen, setJsonOpen] = useState(false);
+  const transition = useStatusTransition('quests');
+  const document = useQuestDocument(quest);
+
   return (
     <div className="flex flex-col gap-4">
       <QuestHeader
-        quest={quest.data}
+        quest={quest}
         questName={questName}
         status={status}
         jsonOpen={jsonOpen}
@@ -153,14 +193,18 @@ export default function QuestDetailPage(): JSX.Element {
 
       <div className="flex min-h-0 gap-4">
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
-          <QuestPreview quest={quest.data} className="h-[70vh]" />
+          <QuestPreview
+            quest={quest}
+            className="h-[70vh]"
+            infoPanel={<QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />}
+          />
         </div>
         {/* Exactly one of the two JSON surfaces is mounted (see `QuestJsonPanel`). */}
-        {jsonOpen && !isMobile ? <QuestJsonPanel quest={quest.data} /> : null}
+        {jsonOpen && !isMobile ? <QuestJsonPanel quest={document.doc} /> : null}
       </div>
 
       {isMobile ? (
-        <QuestJsonOverlay open={jsonOpen} onOpenChange={setJsonOpen} quest={quest.data} />
+        <QuestJsonOverlay open={jsonOpen} onOpenChange={setJsonOpen} quest={document.doc} />
       ) : null}
 
       <StatusHistoryPanel questName={questName} />

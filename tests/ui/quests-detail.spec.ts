@@ -15,8 +15,11 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  * - the header: back link to `/quests`, the name in `text-xl font-mono
  *   font-semibold`, a `StatusBadge`, and the disabled Edit button carrying the
  *   exact "Editing arrives in Phase 3" tooltip;
- * - the six read-only tabs `[Info][Goals][Goal Logic][Requirements][Results]
- *   [Dialog]`, rendered by p2-07's `QuestPreview` rather than a copy of it;
+ * - the six tabs `[Info][Goals][Goal Logic][Requirements][Results][Dialog]`,
+ *   rendered by p2-07's `QuestPreview` rather than a copy of it: **five read-only,
+ *   with Info the live editor** as of story p3-03 (whose own spec,
+ *   `quests-info-editor.spec.ts`, asserts the form; this file pins that the other
+ *   five never grow an input);
  * - the JSON side panel: toggled by the header's `{ }` button, exactly 400px wide,
  *   syntax-highlighted (`react-json-view-lite`), with the spec's `[Copy]`;
  * - the same panel as a **full-screen overlay** below 768px, with no side panel
@@ -92,7 +95,7 @@ test.describe('header', () => {
 });
 
 test.describe('tabs', () => {
-  test('renders the six read-only tabs through QuestPreview', async ({ page }) => {
+  test('renders the six tabs through QuestPreview, five of them read-only', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -101,10 +104,12 @@ test.describe('tabs', () => {
       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
     }
 
-    // Info is the landing tab and shows the quest's own fields.
+    // Info is the landing tab and, since p3-03, the live editor — the other five
+    // tabs are p2-07's read-only bodies, which is what the rest of this test checks.
     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
+    await expect(main.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
 
-    // Each tab renders its section read-only (no inputs anywhere in the pane).
+    // Every other tab renders its section read-only (no inputs anywhere in the pane).
     await main.getByRole('tab', { name: 'Goals' }).click();
     // Scoped to the goal's own card: the name is also one of that goal's
     // `m_goalName` fields, so a bare text match would hit two real elements.

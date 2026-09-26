@@ -183,6 +183,15 @@ export interface QuestsMockOptions {
   /** The quest object the detail endpoint answers with. */
   detail?: unknown;
   /**
+   * The string-table rows `GET /api/names/strings/:key` answers with (story p3-03's
+   * title lookup). A key that is **absent** 404s, which is the raw-key fallback path.
+   *
+   * Default `{}`: the Info editor's lookup resolves to the raw key, and — like every
+   * other route here — nothing reaches the dev server, so the tier-1 run stays
+   * hermetic (D40).
+   */
+  names?: Record<string, string>;
+  /**
    * `settings.user_name`. `''` is the D38/D43 "not asked yet" state, which makes the
    * identity gate open **before** the notes dialog.
    */
@@ -229,6 +238,14 @@ export interface QuestsMockRecorded {
   historyRequests: number;
   /** The put bodies of every `PUT /api/settings` (the identity gate persists here). */
   settingsPuts: Array<Record<string, unknown>>;
+  /**
+   * Every `GET /api/names/strings/:key` id, in order (story p3-03).
+   *
+   * Load-bearing for one assertion: a quest whose `m_questTitle` is `''` must produce
+   * **no** entry here, because the empty-key URL falls through to the LIST route and
+   * answers 24 MB (measured against the live database).
+   */
+  nameLookups: string[];
 }
 
 /**
@@ -249,6 +266,7 @@ export async function mockQuestsApi(
     patchResponses: 0,
     historyRequests: 0,
     settingsPuts: [],
+    nameLookups: [],
   };
   const rows = options.rows ?? mockQuestRows();
   const history = options.history ?? [];
@@ -283,6 +301,23 @@ export async function mockQuestsApi(
   await page.route('**/api/status/_import', (route) =>
     route.fulfill({ json: { ran: false, imported: 0, imported_at: null } }),
   );
+
+  // The single string-table lookup the Info editor issues for `m_questTitle`
+  // (story p3-03). The id is the last path segment; the encoded form is decoded so a
+  // key containing a space or a slash matches the map verbatim.
+  await page.route('**/api/names/strings/*', async (route) => {
+    const id = decodeURIComponent(new URL(route.request().url()).pathname.split('/').pop() ?? '');
+    recorded.nameLookups.push(id);
+    const value = options.names?.[id];
+    if (value === undefined) {
+      await route.fulfill({
+        status: 404,
+        json: { error: `Unknown strings id "${id}"` },
+      });
+      return;
+    }
+    await route.fulfill({ json: { key: id, value, category: 'QuestTitle' } });
+  });
 
   await page.route('**/api/quests', async (route) => {
     recorded.listRequests += 1;

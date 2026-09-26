@@ -1,7 +1,6 @@
 import { collapseAllNested, darkStyles, JsonView } from 'react-json-view-lite';
 import type { Props as JsonViewProps } from 'react-json-view-lite';
 
-import type { QuestObject } from '../../lib/api';
 import {
   JSON_COPIED_MESSAGE,
   JSON_COPY_ERROR,
@@ -36,6 +35,12 @@ import 'react-json-view-lite/dist/index.css';
  * The page mounts exactly one of them (`useIsMobile`, the same breakpoint as `md:`),
  * so a phone never has a focus-trapping dialog hidden beside a visible pane.
  *
+ * It renders **any** JSON document, not only a fetched quest: story p3-03 feeds it
+ * the editor's live document so a form edit shows up here without a refresh (the
+ * spec's "JSON side panel" is the edit view's own evidence surface, L324-340). That
+ * is why the prop is `unknown` rather than `QuestObject` — the panel never reads a
+ * field, it only serialises and draws.
+ *
  * Known-and-recorded deviation: the spec's ASCII diagram also shows `[Wrap]`. That
  * affordance belongs to the Monaco option; `react-json-view-lite` wraps text
  * unconditionally, so there is nothing to toggle and the panel ships `[Copy]` only.
@@ -53,8 +58,11 @@ const JSON_STYLE: NonNullable<JsonViewProps['style']> = {
     'overflow-x-hidden whitespace-pre-wrap break-words bg-zinc-950 p-3 font-mono text-xs leading-relaxed',
 };
 
-/** Copies the quest's pretty-printed JSON, reporting either outcome as a toast. */
-async function copyQuestJson(quest: QuestObject): Promise<void> {
+/** The document this panel draws: a fetched quest, or the editor's live one. */
+export type QuestJsonData = unknown;
+
+/** Copies the document's pretty-printed JSON, reporting either outcome as a toast. */
+async function copyQuestJson(quest: QuestJsonData): Promise<void> {
   try {
     await navigator.clipboard.writeText(JSON.stringify(quest, null, 2));
     notifySuccess(JSON_COPIED_MESSAGE);
@@ -64,8 +72,16 @@ async function copyQuestJson(quest: QuestObject): Promise<void> {
 }
 
 /** The syntax-highlighted tree: top level expanded, nested nodes collapsed. */
-function QuestJsonTree({ quest }: { quest: QuestObject }): JSX.Element {
-  return <JsonView data={quest} style={JSON_STYLE} shouldExpandNode={collapseAllNested} />;
+function QuestJsonTree({ quest }: { quest: QuestJsonData }): JSX.Element {
+  // The library's own `data` type is a JSON union; `unknown` is the honest input
+  // here because the document has not been validated by this component.
+  return (
+    <JsonView
+      data={quest as JsonViewProps['data']}
+      style={JSON_STYLE}
+      shouldExpandNode={collapseAllNested}
+    />
+  );
 }
 
 /** The panel's own toolbar: the `{ }` mark and the spec's `[Copy]`. */
@@ -73,7 +89,7 @@ function QuestJsonToolbar({
   quest,
   className,
 }: {
-  quest: QuestObject;
+  quest: QuestJsonData;
   className?: string;
 }): JSX.Element {
   return (
@@ -96,7 +112,7 @@ function QuestJsonToolbar({
 }
 
 export interface QuestJsonPanelProps {
-  quest: QuestObject;
+  quest: QuestJsonData;
   className?: string;
 }
 
@@ -122,7 +138,7 @@ export function QuestJsonPanel({ quest, className }: QuestJsonPanelProps): JSX.E
 export interface QuestJsonOverlayProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  quest: QuestObject;
+  quest: QuestJsonData;
 }
 
 /** The mobile full-screen overlay (< 768px) carrying the same toolbar + tree. */
