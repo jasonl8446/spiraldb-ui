@@ -1,0 +1,77 @@
+# p3-10 gate — lead-run on 424d2ff + the story tree
+# started 2026-09-26T19:39:13-04:00
+=== 1. npm test
+$ npm test
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  826ms
+   ✓ Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)  478ms
+   ✓ updating an existing quest (ac5, server half) > updates the file in place, commits action update and confines the diff (D45(1))  416ms
+   ✓ updating an existing quest (ac5, server half) > normalises a legacy file to clean JSON on update without losing a field  330ms
+   ✓ verification status (ac4, D37) > does not re-append history when the same status is saved again  325ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  410ms
+
+ Test Files  42 passed (42)
+      Tests  1034 passed (1034)
+   Start at  19:39:13
+   Duration  5.98s (transform 5.13s, setup 0ms, collect 21.07s, tests 39.97s, environment 12ms, prepare 5.69s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+  ✓  158 [chromium] › tests/ui/quests-dialog-editor.spec.ts:917:3 › the m_requirements slot › mounts the shared tree and is labelled fixture-only (814ms)
+  ✓  153 [chromium] › tests/ui/extraction.spec.ts:945:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (5.8s)
+  ✓  159 [chromium] › tests/ui/extraction.spec.ts:976:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (479ms)
+  ✓  160 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (422ms)
+  ✓  161 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (824ms)
+  ✓  162 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (607ms)
+  ✓  163 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (551ms)
+  ✓  164 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (879ms)
+  ✓  165 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.0s)
+  ✓  166 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.0s)
+
+  166 passed (41.6s)
+--- rc=0
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-CXfIHclh.css                  33.78 kB │ gzip:   7.15 kB
+dist/assets/QuestGoalLogicEditor-DW3U0WlE.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-uAOys0OO.js                  661.43 kB │ gzip: 199.96 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.82s
+--- rc=0
+
+# finished 2026-09-26T19:40:20-04:00
