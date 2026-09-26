@@ -1,12 +1,19 @@
-import { expect, test as base, type Page, type Route } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+import { expect, test as base, type Locator, type Page, type Route } from '@playwright/test';
+
+import { questListBody, type MockQuestRow } from './quests-mocks';
 
 /**
  * Tier-1 extraction spec (plan task 2.6 / story p2-07, decision D23 tier 1).
  *
  * Drives the real `/quests/extract` page in headless chromium against the dev
  * stack the config auto-starts, with the app's API route-**mocked**: CI has no
- * .NET SDK, no built CLI, no sibling SpiralDB repo and no capture file (D23 tier
- * 1), so a spec that needed a real extraction or a real save could not run there.
+ * .NET SDK, no built CLI, no sibling SpiralDB repo and no user-supplied capture
+ * (D23 tier 1), so a spec that needed a real extraction or a real save could not
+ * run there. The **committed** D28 fixtures under
+ * `server/test/fixtures/captures/` are part of the repo, and the AC#13 chain below
+ * reads one from disk so the real artifact goes through the real dropzone input.
  * The real CLI and the real git writes are the lead's tier-2 browser pass.
  *
  * What this file proves, clause by clause of `p2-07-ac1`:
@@ -31,7 +38,13 @@ import { expect, test as base, type Page, type Route } from '@playwright/test';
  *   overlay (P2 AC#12);
  * - the identity gate (D38/D43): a blank `user_name` opens the dialog, the entered
  *   name is persisted with `PUT /api/settings` and the pending save resumes; a
- *   dismissed dialog performs no save and claims no success.
+ *   dismissed dialog performs no save and claims no success;
+ * - **the P2 AC#13 chain end to end in one spec** (`save → browse` below): the
+ *   committed D28 capture read from disk goes through the real dropzone input →
+ *   spinner → N results → Save All + confirm → success toast → the browse list
+ *   **growing by N** (M rows before the save, M+N after it), against a stateful
+ *   `/api/quests` mock that answers what the real server's per-request corpus
+ *   rescan would answer.
  *
  * The mocked bodies are the contracts the lead verified in p2-04/p2-05/p2-06
  * (`docs/spec-api.md`): `{quests, count}` for extraction, the `SaveQuestResult`
@@ -50,6 +63,22 @@ const MOCK_SETTINGS = {
 /** The capture the hidden input is fed — a tiny JSON body, so the card has a size. */
 const CAPTURE_NAME = 'session_2026-09-24.json';
 const CAPTURE_BUFFER = Buffer.from('{"packets":[]}');
+
+/**
+ * The committed D28 capture the AC#13 chain uploads (task 2.1a), read **from disk**
+ * so the real artifact goes through the real dropzone input instead of a stub:
+ * `server/test/fixtures/captures/WC-UNICORN-MAIN-004.json`.
+ *
+ * `scripts/verify-captures.mjs` asserts every committed fixture reconstructs to
+ * exactly one quest ("expected exactly 1 reconstructed quest, got N"), and
+ * `server/test/fixtures/captures/README.md` pins this file's shape (7 goals, level
+ * 0) and its SHA-256 at corpus commit `c55ccab…`. CI has no .NET CLI, so the
+ * extraction *answer* stays mocked (see {@link REAL_CAPTURE_QUEST}).
+ */
+const REAL_CAPTURE_NAME = 'WC-UNICORN-MAIN-004.json';
+const REAL_CAPTURE = readFileSync(
+  new URL(`../../server/test/fixtures/captures/${REAL_CAPTURE_NAME}`, import.meta.url),
+);
 
 const UPLOAD_FORMAT_HINT = 'Supported format: JSON packet capture files (.json)';
 const EXTRACTING_TEXT = 'Extracting quests...';
@@ -118,6 +147,61 @@ const QUEST_B = {
 
 const QUESTS = [QUEST_A, QUEST_B];
 
+/**
+ * The mocked `POST /api/extract/quests` answer for {@link REAL_CAPTURE_NAME} — the
+ * wire shape `{quests, count}` with the **one** quest the committed fixture really
+ * yields.
+ *
+ * The endpoint itself is mocked (tier 1 has no .NET CLI, D23), so this object stands
+ * in for the CLI's output. Its values are the corpus source's own, read from
+ * `data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json` at
+ * the README's pinned corpus commit `c55ccab…`: title `QuestTitle_1625CA`, level 0,
+ * mainline, and 7 goals whose names/types `verify-captures.mjs` compares in order.
+ * The chain asserts the name, the level, the goal count and the `new` badge — the
+ * fields its browse row and save body are built from.
+ */
+const REAL_CAPTURE_QUEST = {
+  m_questName: 'WC-UNICORN-MAIN-004',
+  m_questTitle: 'QuestTitle_1625CA',
+  m_questLevel: 0,
+  m_mainline: true,
+  m_goals: [
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '1_WizardQuestGoals_00000015',
+    },
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '2_WizardQuestGoals_00000015',
+    },
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '3_WizardQuestGoals_00000015',
+    },
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '4_WizardQuestGoals_00000015',
+    },
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '5_WizardQuestGoals_KillCollect',
+    },
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '6_WizardQuestGoals_Explore',
+    },
+    {
+      $type: 'Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty',
+      m_goalName: '7_WizardQuestGoals_TalkNPC',
+    },
+  ],
+  m_goalLogic: [],
+  m_requirements: null,
+  m_startResults: { m_results: [] },
+  m_endResults: { m_results: [] },
+  m_dialogList: null,
+} as const;
+
 /** A `SaveQuestResult` body (docs/spec-api.md L239-251) for one saved quest. */
 function saveResultFor(quest: Record<string, unknown>): Record<string, unknown> {
   const name = String(quest.m_questName ?? '');
@@ -168,6 +252,18 @@ interface MockOptions {
   onList?: RouteHandler;
   /** The quest names `GET /api/quests` reports as already in SpiralDB (gap A). */
   existingQuests?: string[];
+  /**
+   * A **stateful** `GET /api/quests` list: the browse list starts at these rows and
+   * every default-path save appends the saved quest's own row, because the real
+   * endpoint rescans the corpus per request (D12) — so the next `GET` really does
+   * answer one row more (P2 AC#13's "the browse list grows by N").
+   *
+   * The seed is this file's ({@link browseSeed}) and the row shape is
+   * `quests-mocks.ts`'s `MockQuestRow` + `questListBody`, so the browse specs'
+   * fixture type and summary builder are reused rather than duplicated. `onList`
+   * still wins over it; `existingQuests` is the separate name-only gap-A list.
+   */
+  browseRows?: MockQuestRow[];
 }
 
 /** A `GET /api/quests` body (docs/spec-api.md L190-208) for the given names. */
@@ -187,6 +283,54 @@ function questListResult(names: string[]): Record<string, unknown> {
     summary: { total: names.length, extracted: names.length, reviewed: 0, verified: 0 },
     skipped: [],
   };
+}
+
+/**
+ * One `quests[]` row of the stateful browse mock, derived from a just-saved quest
+ * the way the server derives it (`server/src/services/sync/corpus.ts` →
+ * `buildQuestRows`): the title is `m_questTitle`'s own raw key — an unsynced tier-1
+ * database holds no string-table entry, so `title_source` is `rawKey` (D49(g)) — and
+ * the quest name with `missing` when the file has no title; level, goal count and
+ * mainline come from the saved object; a save through this endpoint inserts
+ * `extracted` (D49(d)).
+ */
+function browseRowFor(quest: Record<string, unknown>): MockQuestRow {
+  const quest_name = String(quest.m_questName ?? '');
+  const rawKey = typeof quest.m_questTitle === 'string' ? quest.m_questTitle.trim() : '';
+  return {
+    quest_name,
+    title: rawKey === '' ? quest_name : rawKey,
+    title_key: rawKey === '' ? null : rawKey,
+    title_source: rawKey === '' ? 'missing' : 'rawKey',
+    level: typeof quest.m_questLevel === 'number' ? quest.m_questLevel : null,
+    goal_count: Array.isArray(quest.m_goals) ? quest.m_goals.length : 0,
+    is_mainline: quest.m_mainline === true,
+    modified_at: '2026-09-26T09:04:09.008Z',
+    status: 'extracted',
+  };
+}
+
+/**
+ * The M rows the browse list already holds when an AC#13 chain starts: two real
+ * corpus names, deliberately **disjoint from the capture's own quest** (so the save
+ * is a create, not the gap-A overwrite) and `reviewed`/`verified` (so the Extracted
+ * count really starts at 0). Beyond the name and the status their columns are
+ * placeholders: the chain asserts the row count, the statuses and the grown row, not
+ * these rows' own fields.
+ */
+function browseSeed(): MockQuestRow[] {
+  const row = (quest_name: string, status: MockQuestRow['status']): MockQuestRow => ({
+    quest_name,
+    title: quest_name,
+    title_key: null,
+    title_source: 'missing',
+    level: 1,
+    goal_count: 1,
+    is_mainline: false,
+    modified_at: '2026-09-26T09:04:09.008Z',
+    status,
+  });
+  return [row('MB-YARD1-C01-001', 'verified'), row('WC-CYCLOPS-MAIN-002', 'reviewed')];
 }
 
 /**
@@ -239,6 +383,10 @@ async function mockApi(page: Page, options: MockOptions = {}): Promise<Recorded>
         await options.onList(route);
         return;
       }
+      if (options.browseRows !== undefined) {
+        await route.fulfill({ json: questListBody(options.browseRows) });
+        return;
+      }
       await route.fulfill({ json: questListResult(options.existingQuests ?? []) });
       return;
     }
@@ -253,6 +401,11 @@ async function mockApi(page: Page, options: MockOptions = {}): Promise<Recorded>
       await options.onSave(route);
       return;
     }
+    // Grown **before** the 200 is answered: the client invalidates the list on
+    // success (`ExtractionPage.onSuccess`), so the browse page's refetch must
+    // already find the new row. Only this default 200 path grows the list — an
+    // `onSave` override owns its own answer (a 409 must not add a row).
+    options.browseRows?.push(browseRowFor(body.quest));
     await route.fulfill({ json: saveResultFor(body.quest) });
   });
 
@@ -291,13 +444,18 @@ async function openExtractionPage(page: Page): Promise<void> {
   await expect(page.getByText(UPLOAD_FORMAT_HINT)).toBeVisible();
 }
 
+/** Feeds the hidden file input with a named buffer — what drag & drop ultimately does. */
+async function uploadFile(page: Page, name: string, buffer: Buffer): Promise<void> {
+  await page.locator('input[type=file]').setInputFiles({
+    name,
+    mimeType: 'application/json',
+    buffer,
+  });
+}
+
 /** Feeds the hidden file input, which is what drag & drop ultimately does too. */
 async function uploadCapture(page: Page): Promise<void> {
-  await page.locator('input[type=file]').setInputFiles({
-    name: CAPTURE_NAME,
-    mimeType: 'application/json',
-    buffer: CAPTURE_BUFFER,
-  });
+  await uploadFile(page, CAPTURE_NAME, CAPTURE_BUFFER);
 }
 
 /** Opens the page, uploads the capture and waits for the results phase. */
@@ -310,6 +468,18 @@ async function openResults(page: Page): Promise<void> {
 /** One sonner toast, matched by its text (sonner marks every toast `li`). */
 function toast(page: Page, text: string) {
   return page.locator('li[data-sonner-toast]').filter({ hasText: text });
+}
+
+/** The browse page's data rows (its header row is a `<tr>` too — p2-08's surface). */
+function rows(page: Page): Locator {
+  return page.locator('tbody tr');
+}
+
+/** One browse filter tab, by label; its count badge is part of the tab's text. */
+function filterTab(page: Page, label: string): Locator {
+  return page
+    .getByRole('tablist', { name: 'Filter quests by status' })
+    .getByRole('tab', { name: new RegExp(`^${label} `) });
 }
 
 /** A one-shot gate: `open()` releases whoever is awaiting `wait`. */
@@ -941,5 +1111,174 @@ test.describe('identity gate (D38/D43)', () => {
     await expect(
       page.locator('li[data-sonner-toast]').filter({ hasText: 'saved and committed' }),
     ).toHaveCount(0);
+  });
+});
+
+/**
+ * P2 AC#13's chain, in **one** spec (D23 tier 1).
+ *
+ * The AC asks for the whole path — a D28-generated capture uploaded through the real
+ * dropzone → spinner → N results → Save All + confirm → success toast → **the browse
+ * list grows by N** — and a chain split across specs proves each clause while leaving
+ * the join unproven. The join is the part that was missing: before this story no spec
+ * visited `/quests` after a save.
+ *
+ * What is real here: the **committed** capture (read from disk, uploaded through the
+ * real hidden input), the app, the dropzone, the confirm dialogs and the browse page.
+ * What is mocked: the API — including the extraction answer, because CI has no .NET
+ * CLI (D23 tier 1). The answer's count is the one `verify-captures.mjs` measures for
+ * the uploaded fixture, so "N quests" is the real artifact's own number.
+ *
+ * The `GET /api/quests` mock is **stateful** for both specs (`browseRows`): it answers
+ * M rows before the save and M+N after it, exactly as the real endpoint's per-request
+ * corpus rescan does, so "grows by N" is asserted against rendered rows and the
+ * pagination line rather than against a constant.
+ */
+test.describe('save → browse, the P2 AC#13 chain', () => {
+  test('a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1', async ({
+    page,
+  }) => {
+    // The extraction is held open so the spinner (and the file card describing the
+    // *real* file) is asserted rather than raced.
+    const held = gate();
+    const recorded = await mockApi(page, {
+      browseRows: browseSeed(),
+      onExtract: async (route) => {
+        await held.wait;
+        await route.fulfill({ json: { quests: [REAL_CAPTURE_QUEST], count: 1 } });
+      },
+    });
+
+    // The committed artifact's on-disk length, asserted first so the file card's
+    // text below cannot be satisfied by a substituted fixture (README pins this file
+    // by SHA-256 at corpus commit `c55ccab…`).
+    expect(REAL_CAPTURE.byteLength).toBe(14_235);
+
+    // The "before": the browse list this save is about to grow, and the numbers the
+    // "after" is measured against. The capture's quest is absent from it, so the save
+    // is a create and not gap A's overwrite.
+    await page.goto('/quests');
+    await expect(rows(page)).toHaveCount(2);
+    await expect(page.getByText('Showing 1-2 of 2')).toBeVisible();
+    await expect(filterTab(page, 'All')).toContainText('2');
+    await expect(filterTab(page, 'Extracted')).toContainText('0');
+    await expect(page.getByText(REAL_CAPTURE_QUEST.m_questName)).toHaveCount(0);
+
+    // Into the extraction page the way a user gets there.
+    await page.getByRole('link', { name: 'Extract Quests' }).click();
+    await expect(page.getByText(UPLOAD_FORMAT_HINT)).toBeVisible();
+
+    // Upload the committed capture through the real dropzone input.
+    await uploadFile(page, REAL_CAPTURE_NAME, REAL_CAPTURE);
+
+    // The file card names the uploaded file and shows its real size in KB.
+    await expect(page.getByText(REAL_CAPTURE_NAME)).toBeVisible();
+    await expect(page.getByText('13.9 KB')).toBeVisible();
+    await expect(
+      page.getByRole('status').filter({ hasText: /^Extracting quests\.\.\.$/ }),
+    ).toBeVisible();
+    held.open();
+
+    // N results: 1, the count this fixture reconstructs to.
+    await expect(page.getByRole('listbox', { name: 'Extracted quests' })).toBeVisible();
+    const resultRows = page.getByRole('option');
+    await expect(resultRows).toHaveCount(1);
+    await expect(resultRows.first()).toContainText('WC-UNICORN-MAIN-004');
+    await expect(resultRows.first()).toContainText('Level 0');
+    await expect(resultRows.first()).toContainText('7 goals');
+    await expect(resultRows.first()).toContainText('new');
+
+    // Save All + confirm: the app's own sentence with the count interpolated, nothing
+    // written before the confirmation, and no overwrite list (the name is new).
+    await page.getByRole('button', { name: 'Save All to SpiralDB' }).click();
+    const confirm = page.getByRole('dialog');
+    await expect(confirm).toContainText(
+      'Save 1 quests to SpiralDB? This will create files and auto-commit.',
+    );
+    await expect(
+      confirm.getByRole('list', { name: 'Quests that will be overwritten' }),
+    ).toHaveCount(0);
+    expect(recorded.savedQuests).toEqual([]);
+    await confirm.getByRole('button', { name: 'Save', exact: true }).click();
+
+    // The success toast, and the wire contract the capture note is built from
+    // (D50(i)): the body's `source` is the uploaded capture's base name — the server
+    // turns it into `Imported from packet capture {source}` on the inserted row.
+    await expect(toast(page, 'Quest WC-UNICORN-MAIN-004 saved and committed')).toBeVisible();
+    await expect
+      .poll(() => recorded.saveBodies.map((body) => body.source))
+      .toEqual([REAL_CAPTURE_NAME]);
+
+    // "…the browse list grows by N": back to the same list, now M+N. The extraction
+    // page invalidated `QUESTS_QUERY_KEY` on success, so the list must have been
+    // refetched rather than served from the pre-save cache.
+    const listRequestsBefore = recorded.listRequests;
+    await page.getByRole('link', { name: 'Browse Quests' }).click();
+    await expect(page).toHaveURL(/\/quests$/);
+    await expect(rows(page)).toHaveCount(3);
+    await expect(page.getByText('Showing 1-3 of 3')).toBeVisible();
+    await expect(filterTab(page, 'All')).toContainText('3');
+    await expect(filterTab(page, 'Extracted')).toContainText('1');
+    expect(recorded.listRequests).toBeGreaterThan(listRequestsBefore);
+
+    // The grown row is the saved quest's own — name, level and goal count come from
+    // the saved object (see `browseRowFor`) — and exactly one row was added.
+    const grown = rows(page).filter({ hasText: REAL_CAPTURE_QUEST.m_questName });
+    await expect(grown).toHaveCount(1);
+    await expect(grown.locator('td').nth(1)).toHaveText('WC-UNICORN-MAIN-004');
+    await expect(grown.locator('td').nth(2)).toHaveText('0');
+    await expect(grown.locator('td').nth(3)).toHaveText('7');
+    await expect(grown.getByTitle('Extracted')).toHaveCount(1);
+  });
+
+  test('a multi-quest extraction grows the browse list by its own N (mocked N = 2)', async ({
+    page,
+  }) => {
+    const recorded = await mockApi(page, {
+      browseRows: browseSeed(),
+      // N > 1 comes from the mock, and only from the mock: `verify-captures.mjs`
+      // asserts **exactly one** reconstructed quest for each of the five committed
+      // fixtures, so no capture in this repo can honestly produce two. The upload is
+      // therefore the inline stub — a capture whose real answer would contradict the
+      // answer this endpoint gives.
+      onExtract: (route) => route.fulfill({ json: { quests: QUESTS, count: QUESTS.length } }),
+    });
+
+    await page.goto('/quests');
+    await expect(rows(page)).toHaveCount(2);
+    await expect(page.getByText('Showing 1-2 of 2')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Extract Quests' }).click();
+    await expect(page.getByText(UPLOAD_FORMAT_HINT)).toBeVisible();
+    await uploadCapture(page);
+    await expect(page.getByRole('listbox', { name: 'Extracted quests' })).toBeVisible();
+    await expect(page.getByRole('option')).toHaveCount(2);
+
+    await page.getByRole('button', { name: 'Save All to SpiralDB' }).click();
+    const confirm = page.getByRole('dialog');
+    await expect(confirm).toContainText(
+      'Save 2 quests to SpiralDB? This will create files and auto-commit.',
+    );
+    await confirm.getByRole('button', { name: 'Save', exact: true }).click();
+
+    await expect(toast(page, 'Quest DS-ACAD1-C01-001 saved and committed')).toBeVisible();
+    await expect(toast(page, 'Quest WC-UNICORN-MAIN-004 saved and committed')).toBeVisible();
+
+    // M + 2: four rows on one page, both counts and the pagination line agreeing.
+    await page.getByRole('link', { name: 'Browse Quests' }).click();
+    await expect(page).toHaveURL(/\/quests$/);
+    await expect(rows(page)).toHaveCount(4);
+    await expect(page.getByText('Showing 1-4 of 4')).toBeVisible();
+    await expect(filterTab(page, 'All')).toContainText('4');
+    await expect(filterTab(page, 'Extracted')).toContainText('2');
+
+    // One row per saved quest, no more: the two stub names are new to this corpus.
+    await expect(rows(page).filter({ hasText: 'DS-ACAD1-C01-001' })).toHaveCount(1);
+    await expect(rows(page).filter({ hasText: 'WC-UNICORN-MAIN-004' })).toHaveCount(1);
+
+    // The capture's name rides on every save body of the run, one POST per quest.
+    await expect
+      .poll(() => recorded.saveBodies.map((body) => body.source))
+      .toEqual([CAPTURE_NAME, CAPTURE_NAME]);
   });
 });

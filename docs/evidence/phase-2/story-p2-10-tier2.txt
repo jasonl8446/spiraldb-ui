@@ -1,0 +1,53 @@
+# p2-10 tier-2 (lead-run playwright-mcp, D23) — the AC#13 chain with the REAL CLI, the REAL server and
+# a REAL git commit, not the hermetic mocks. Screenshots: p210-01-real-extraction-results.png,
+# p210-02-browse-grown-by-one.png.
+
+## Setup that makes "grows by N" real
+npm run test:reset-clone; then the quest was made genuinely absent from the disposable clone and the
+deletion COMMITTED (otherwise the save pipeline's D14 dirty-tree guard answers 409):
+  $ git rm QuestTemplates/questtemplates_WC-UNICORN-MAIN-007.json QuestMetadatas/questmetadata_WC-UNICORN-MAIN-007.json
+  $ git commit -m "test-setup: make WC-UNICORN-MAIN-007 a not-yet-extracted quest …"
+  clone: 7e20a3e | files: 321  (was 322)
+Stack: NODE_ENV=test SPIRALDB_UI_DB=<throwaway> npm run dev with the startup import ENABLED
+({"ran":true,"imported":2270}) and user_name pre-seeded to "Lead Verify" through PUT /api/settings.
+
+## The chain, in order
+BASELINE   GET /api/quests -> 321 rows, summary {total:321,extracted:321,reviewed:0,verified:0};
+           browse page reads "Showing 1-50 of 321", tabs "All 321 | Extracted 321 | Reviewed 0 | Verified 0",
+           and WC-UNICORN-MAIN-007 is absent from the list.
+UPLOAD     the committed D28 capture was fed to the page's real hidden input[type=file]:
+           server/test/fixtures/captures/WC-UNICORN-MAIN-007.json (16357 B on disk).
+SPINNER    the indeterminate spinner + "Extracting quests..." ran while the REAL .NET CLI
+           (tools/bin/imview-packet-reader) parsed the capture for ~6 s.
+RESULTS    [role=listbox][aria-label="Extracted quests"] holds exactly one result:
+           "WC-UNICORN-MAIN-007 | Level 0 | 4 goals | new"  (4 goals matches the corpus source).
+SAVE       "Save All to SpiralDB" -> dialog "Save to SpiralDB | Save 1 quests to SpiralDB? This will
+           create files and auto-commit. | Cancel | Save | Close" with **0 POSTs recorded before the
+           confirm**; after confirming, exactly one POST /api/quests whose body is the real extracted
+           quest (WaypointGoalTemplate + BountyGoalTemplate carrying Prep/Completion ActorDialogs with
+           NPCDialogEntry rows + a PersonaGoalTemplate) and "source":"WC-UNICORN-MAIN-007.json".
+TOAST      "Quest WC-UNICORN-MAIN-007 saved and committed".
+GROWN      the browse page then reads "Showing 1-50 of 322" and tabs "All 322 | Extracted 322 |
+           Reviewed 0 | Verified 0" — the growth is real (+1), and searching the list surfaces the new
+           row: "Status: Extracted | WC-UNICORN-MAIN-007 | 0 | 4 | ✓ | Mainline | just now" with
+           rgb(245,158,11)=amber-500 dot and href="/quests/WC-UNICORN-MAIN-007".
+
+## The real artefacts behind the growth (D17 clone)
+  branch        content/2026-09-26   (created from main HEAD by the save pipeline)
+  HEAD          9708784 spiraldb: extract quest WC-UNICORN-MAIN-007   (author=Lead Verify)
+  files         Back to 322 templates; QuestTemplates/questtemplates_WC-UNICORN-MAIN-007.json created
+  clean JSON    JSON.parse OK: name=WC-UNICORN-MAIN-007 title=QuestTitle_1625CF goals=4 startGoals=1 dialogs=2
+  metadata      the existing UUID-named metadata file was updated IN PLACE (4 lines changed, D20) and no
+                name-keyed duplicate was created
+  status row    {object_type:"quest", object_key:"WC-UNICORN-MAIN-007", status:"extracted",
+                 extracted_at:"2026-09-26T12:33:43.216Z", latest_notes:"Imported from packet capture
+                 WC-UNICORN-MAIN-007.json"}
+  history       [{old_status:null, new_status:"extracted", notes:"Imported from packet capture
+                 WC-UNICORN-MAIN-007.json", changed_by:"Lead Verify", changed_at:"…"}]
+So the tier-1 mocks' model of the growth (one appended row, the list refetched, a status row written) is
+what the real server does — measured, not assumed.
+
+## Hygiene
+Owner's fork untouched at c55ccab on main with an empty status; the disposable clone was reset to
+c55ccab/main clean (322 files, no dirty state) after the pass; dev stack stopped (ports 5173/3001 free);
+0 changes under Imview.
