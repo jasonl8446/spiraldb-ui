@@ -50,4 +50,18 @@ history rows carrying the capture filename; and the browse list growing **320 �
 
 ## The PR
 
-<!-- PR SECTION: filled in after the CI-green merge -->
+| | |
+|---|---|
+| PR | **#4** — "Phase 2 — Quest Extraction (CLI wrapper, capture upload, review view, save+commit, status transitions)" |
+| Head | `fe08811` (13 commits ahead of `main`) |
+| Required check | **`ci` — pass, 1m37s** (`pull_request` event, run `36243650372`, job `108408710988`, ubuntu-24.04, all 14 steps success). Raw excerpts: [`ci-check-run-phase2.txt`](./gate-2/ci-check-run-phase2.txt) |
+| Merge | **`a62734f99294bf8f6ff8dd28819d48921945c752`** (merge style, matching Phase 1's PR #3) |
+| Branch | `phase-2-quest-extraction` deleted on both the remote and locally right after the merge |
+| Logged | `.omd/prd/progress.txt` (D29: the merge sha, the check run id and the phase totals) |
+
+Merging before the required check is green is rejected with 405 by branch protection — `ci` was polled
+until `pass` (`mergeable=MERGEABLE mergeStateStatus=CLEAN` at head `fe08811`) and only then merged.
+
+This addendum (the PR section + `ci-check-run-phase2.txt`) and the gate decisions below were written
+after the merge, so they land as the first commit of the Phase-3 branch rather than as a direct push to
+protected `main`.
