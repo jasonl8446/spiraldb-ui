@@ -19,8 +19,9 @@ parsers:
 
 Additionally, the spec's worked example `QuestTitle_1ED8D → 126349`
 ([spec-domain-reference.md](../../spec-domain-reference.md) L687–691) **does not resolve in this revision** — that
-index does not exist in any `.lang` file here. The *mechanism* is sound and was verified with real in-range keys;
-the raw-key fallback is the common path for quest titles.
+index does not exist in any `.lang` file here (its neighbours `126346`/`126347` do). The *mechanism* is sound and
+was verified with real keys of both forms (decimal `00001717`→"Grim Tales", hex `1ED8A`→126346→"Letters of
+Light"); the raw-key fallback remains the common path for quest titles (267 of 315 keyed corpus quests).
 
 ---
 
@@ -397,16 +398,25 @@ index/value; skip any leading token that is not numeric.
 
 ### Hex→decimal verification (the spec's example does not resolve)
 
-`0x1ED8D = 126349` (zero-padded `00126349`) — arithmetic verified. But:
+`0x1ED8D = 126349` (zero-padded `00126349`) — arithmetic verified. But the key itself is **not present in this
+revision's data**:
 
-- `QuestTitle.lang` in this revision has max index **`00002236`** (1,473 parsed entries).
-- The literal UTF-16 byte sequence `00126349` appears in **0** of the 5,132 en-US `.lang` files.
-- Of the 316 distinct `m_questTitle` keys in the SpiralDB corpus, 287 contain `A–F` (hex form), and **none** of
-  those has a decimal value ≤ 2236.
+- `QuestTitle.lang`, parsed as index/blank/value triples, holds **2,238 entries in two blocks**: a dense
+  **0–2237** block (1,473 entries, 1,440 non-empty) and a **sparse tail** of 765 entries (611 non-empty) reaching
+  index **199272** — `125639`, `125777`, `126346`, `126347`, `199157`, `199272` are real members.
+- The literal UTF-16LE byte sequence `00126349` appears in **0** of the 5,132 en-US `.lang` files — while its
+  immediate neighbours **`00126346` → "Letters of Light"** and **`00126347` → "Calling the Council"** do exist.
 
-⇒ The mechanism is real, but **`QuestTitle_1ED8D` specifically cannot resolve in this revision** and must use the
-raw-key fallback ([spec L694–695](../../spec-domain-reference.md)). 1.4e and the quest UI will show raw keys for
-most quests unless a newer revision's `QuestTitle.lang` is larger — this is worth flagging to the owner.
+> **Correction (lead verification, 2026-09-26):** an earlier revision of this section reported the dense block
+> (1,473 entries, max `2236`) as if it were the whole file and concluded that hex-form quest titles cannot
+> resolve. That was wrong: the sparse tail above `2237` is exactly where the hex-form `m_questTitle` keys land.
+> Measured over all 322 corpus quest files: **7** have no `m_questTitle`; of the **315** keyed files, **18 resolve
+> via the hex reading** (e.g. `QuestTitle_1ED8A` → 126346 → "Letters of Light"), **30 resolve via the decimal
+> reading**, and **267 resolve by neither** (raw-key fallback). The tail must be parsed and hex keys must be tried.
+
+⇒ The mechanism is real; **`QuestTitle_1ED8D` specifically cannot resolve** (its neighbours can), so it exercises
+the raw-key fallback ([spec L694–695](../../spec-domain-reference.md)). 267 of 315 quest titles still fall back to
+raw keys in this revision — worth flagging to the owner, but 48 are human-readable today.
 
 The mechanism **was** verified end-to-end with real in-range keys. `QuestTitle.lang` + the SpiralDB corpus:
 
@@ -556,7 +566,7 @@ eb298ceef067623c94d77c25e0c441e7f80d6fa80a63cd7cd095f5ff27fd7caf  server/test/fi
 |---|---|---|---|
 | `spell_pixie_deser.json` | `Spells/Pixie_deser.json` | 2,631 | `SpellTemplate` — the `m_name` family. `m_name="Pixie"`, `m_displayName="Spells_00000424"` → `Spells.lang` idx 424 = **"Pixie"** (self-consistent, so a parser test can assert the round-trip) |
 | `npc_judge_eddie_deser.json` | `ObjectData/WL/WL-StandIn-JudgeEddie_deser.json` | 2,053 | `WizGameObjectTemplate` — the NPC family and the `m_templateID`/`m_objectName`/`m_displayName` shape. `m_templateID=1608380`, `m_displayName="NPCs_01749407"` → **"Judge Eddie"** (matches the file's own name) |
-| `en-US_QuestTitle.lang` | `Locale/en-US/QuestTitle.lang` | 313,632 | Real `.lang`: UTF-16LE+BOM, 5,132-file locale, 1,473 entries, index range 0–2236. Contains all four corpus-resolvable keys from §5 (`00001717`→"Grim Tales", `00001718`→"To Ravenwood!", `00001813`→"The Cure", `00001814`→"Oh Me, Oh Minotaur") **and** demonstrates that `00126349` is absent — so 1.4e can unit-test both the hit and the raw-key-fallback paths against genuine data |
+| `en-US_QuestTitle.lang` | `Locale/en-US/QuestTitle.lang` | 313,632 | Real `.lang`: UTF-16LE+BOM, the 5,132-file en-US locale, **2,238 entries** (dense 0–2237 block + sparse tail to 199272). Contains the decimal-path keys (`00001717`→"Grim Tales", `00001718`→"To Ravenwood!", `00001813`→"The Cure", `00001814`→"Oh Me, Oh Minotaur") **and** the hex-path keys from the sparse tail (`1ED8A`→"Letters of Light", `1ED8B`→"Calling the Council"), and demonstrates that `00126349` is absent — so 1.4e can unit-test the decimal hit, the hex hit (`1ED8A`, which only exists above the dense block) and the raw-key fallback against genuine data |
 
 Only one `.lang` is needed: a single real file exercises BOM handling, CRLF, the header line, sparse indices and
 the decimal key mapping. `Items.lang` (2.26 MB) was rejected as it alone would exceed the size budget.
@@ -630,14 +640,18 @@ against.
   sparse; a trailing lone index with no value is possible.
 - Key mapping for `{Category}_{suffix}`:
   1. all-digits suffix → **decimal** index (this is the `m_displayName` form — the common case, ~100 % hit);
-  2. `A–F`-containing suffix → **hex** → decimal (the `m_questTitle` form, mostly misses in this revision);
-  3. `Locale/en-US/{Category}.lang` missing, non-numeric suffix, or index absent → **raw-key fallback**.
+  2. any suffix → **hex** → decimal as the second attempt (`m_questTitle` uses this form: 18 of 315 corpus quests
+     resolve here and only here, e.g. `1ED8A` → 126346);
+  3. `Locale/en-US/{Category}.lang` missing, non-numeric suffix, or index absent in both readings → **raw-key
+     fallback**.
 - Store `(key, value, category)` into `string_table`.
-- **Flag for the owner:** 287 of 316 corpus `m_questTitle` keys are hex-form and resolve to indices well beyond
-  `QuestTitle.lang`'s 0–2236 range, so nearly all quest titles will display as raw keys in this revision. The
-  parser must not treat this as an error ([spec L694–695](../../spec-domain-reference.md)).
-- Unit-test against `server/test/fixtures/en-US_QuestTitle.lang`: assert the header parses to `QuestTitle`,
-  assert `00001717` → `"Grim Tales"`, and assert `00126349` is **absent** (documents the fallback).
+- **Measured resolution (lead-verified over all 322 corpus quest files):** 7 files carry no `m_questTitle`; of the
+  315 keyed files **18 resolve via hex**, **30 via decimal**, **267 via neither** (raw-key fallback). A miss is
+  normal, not an error ([spec L694–695](../../spec-domain-reference.md)).
+- Unit-test against `server/test/fixtures/en-US_QuestTitle.lang`: assert the header parses to `QuestTitle`;
+  assert `00001717` → `"Grim Tales"` (decimal path) and `1ED8A` → `"Letters of Light"` (hex path — it lives in the
+  sparse tail; the 1,473 dense entries are not the whole file); assert `00126349` is **absent** (documents the
+  fallback).
 
 ### Reproducing this spike
 
