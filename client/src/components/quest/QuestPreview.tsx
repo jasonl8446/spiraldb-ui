@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useState, type ReactNode } from 'react';
 
 import type { QuestObject } from '../../lib/api';
 import {
@@ -44,6 +44,24 @@ export interface QuestPreviewProps {
    * has to know the tab list.
    */
   panels?: Partial<Record<PreviewTab, ReactNode>>;
+}
+
+/**
+ * How a panel asks this component to switch tabs.
+ *
+ * A tab's editor sometimes has to hand the user to another tab — the Goal Logic flowchart's
+ * `Edit Goal` context item means "open the Goals tab, that is where a goal's fields live"
+ * (story p3-05) — and the tab state is `QuestPreview`'s own. The context is the smallest
+ * channel that does not add a second tab state or a second document: the provider wraps the
+ * panel and the value is `useState`'s own stable setter. `null` outside a preview, so a panel
+ * rendered on its own (a unit-style render, a future reuse) degrades to doing nothing rather
+ * than throwing.
+ */
+export const PreviewTabSelectContext = createContext<((tab: PreviewTab) => void) | null>(null);
+
+/** The tab switch, or `null` when no preview is above this panel. */
+export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
+  return useContext(PreviewTabSelectContext);
 }
 
 export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
@@ -93,7 +111,9 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
         aria-labelledby={`${panelId}-tab-${tab}`}
         className="min-h-0 flex-1 overflow-y-auto p-4"
       >
-        {renderPanel(tab, quest, panels)}
+        <PreviewTabSelectContext.Provider value={setTab}>
+          {renderPanel(tab, quest, panels)}
+        </PreviewTabSelectContext.Provider>
       </div>
     </div>
   );

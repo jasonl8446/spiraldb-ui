@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Braces, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
@@ -16,6 +16,14 @@ import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useQuestDocument } from '../hooks/useQuestDocument';
 import { useStatusTransition } from '../hooks/useStatusTransition';
+
+/**
+ * The flowchart is loaded on demand, so the React Flow + dagre bundle (+95 kB gzip, measured)
+ * stays out of the entry chunk every other page shares. Story p3-05's own cost, contained by
+ * the story rather than deferred: the Goal Logic tab is one of six, and the canvas is only
+ * reachable by opening it.
+ */
+const QuestGoalLogicEditor = lazy(() => import('../components/quest/QuestGoalLogicEditor'));
 import {
   getQuest,
   listQuests,
@@ -201,6 +209,17 @@ function LoadedQuest({
             panels={{
               Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
               Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+              'Goal Logic': (
+                <Suspense
+                  fallback={
+                    <p role="status" className="p-4 text-sm text-zinc-500">
+                      Loading flowchart…
+                    </p>
+                  }
+                >
+                  <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
+                </Suspense>
+              ),
             }}
           />
         </div>
