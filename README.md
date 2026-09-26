@@ -62,6 +62,23 @@ npm run sync
 npm run dev
 ```
 
+## UI tests
+
+Tier-1 UI tests (plan task 1.10, decision D23) drive the real app in headless chromium against the dev stack — `playwright.config.ts` auto-starts `npm run dev` (Express :3001 + Vite :5173) with `SPIRALDB_UI_SKIP_IMPORT=1`, so no data import is attempted on a fresh database.
+
+```bash
+# one-off: download chromium into the workspace (gitignored)
+npm run test:ui:install
+
+# run tests/ui/*.spec.ts headless
+npm run test:ui
+```
+
+- **Both scripts pin the browser directory**, so the install and the run cannot disagree: they are `PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium` and `PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test`. If you run `npx playwright install chromium` by hand you must set that variable yourself; browsers never come from `~/.cache/ms-playwright` or the Nix store (whose revision is coupled to a different playwright package).
+- Artifacts, all gitignored: browsers in `tools/.playwright-browsers/`, traces and failure artifacts in `test-results/`, the HTML report in `playwright-report/` (`npx playwright show-report`).
+- The specs are **hermetic and deliberately mocked**: `tests/ui/shell.spec.ts` route-mocks `/api/settings`, `/api/sync`, `/api/sync/status`, `/api/sync/history` and the bulk name tables, because CI has no sibling repositories, no `data/spiraldb-ui.db` and no WAD data. They test the UI — routing, highlighting, collapse, spinner/toast — not the sync engine: the real sync is covered by the unit tests and the tier-2 browser evidence in [docs/evidence/phase-1/story-p1-10.md](docs/evidence/phase-1/story-p1-10.md).
+- Host note (NixOS): the downloaded generic-Linux build cannot resolve its system libraries there (`libglib-2.0.so.0`, `libnss3.so`, … — `nix-ld` does not ship them). Supply the library directories a Nix-built browser uses, either once with `patchelf --set-rpath …` on the downloaded binaries or per run via `LD_LIBRARY_PATH=… npm run test:ui`. CI (`ubuntu-latest`) ships the libraries and needs neither.
+
 ## Documentation
 
 **Specifications** (authoritative):

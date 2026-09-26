@@ -44,9 +44,14 @@ jobs:
         if: steps.proj.outputs.exists == 'true'
         run: npm run build
 
+      # Must go through the npm script: it is the only place that sets
+      # PLAYWRIGHT_BROWSERS_PATH (workspace-local, D23). A bare
+      # `npx playwright install chromium` installs into ~/.cache/ms-playwright
+      # while `npm run test:ui` looks in tools/.playwright-browsers, so the UI step
+      # would find no browser (lead decision D40 item 2).
       - name: Install headless chromium
         if: steps.proj.outputs.exists == 'true'
-        run: npx playwright install chromium
+        run: npm run test:ui:install
 
       - name: UI tests
         if: steps.proj.outputs.exists == 'true'

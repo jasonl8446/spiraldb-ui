@@ -20,6 +20,9 @@
     "sync:spotcheck": "tsx scripts/sync-spotcheck.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:ui": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test",
+    "test:ui:install": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium",
+    "typecheck:tests": "tsc -p tests/tsconfig.json --noEmit",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write ."
   },
@@ -47,6 +50,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "1.63.0",
     "@types/better-sqlite3": "^7.6.12",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
