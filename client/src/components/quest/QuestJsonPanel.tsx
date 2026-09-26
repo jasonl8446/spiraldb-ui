@@ -1,5 +1,6 @@
 import { collapseAllNested, darkStyles, JsonView } from 'react-json-view-lite';
 import type { Props as JsonViewProps } from 'react-json-view-lite';
+import { useState } from 'react';
 
 import {
   JSON_COPIED_MESSAGE,
@@ -8,6 +9,9 @@ import {
   JSON_PANEL_GLYPH,
   JSON_PANEL_TITLE,
   JSON_PANEL_WIDTH_PX,
+  JSON_WRAP_LABEL,
+  JSON_WRAP_OFF_TOOLTIP,
+  JSON_WRAP_ON_TOOLTIP,
 } from '../../lib/quests';
 import { notifyError, notifySuccess } from '../../lib/notify';
 import { cn } from '../../lib/utils';
@@ -41,22 +45,30 @@ import 'react-json-view-lite/dist/index.css';
  * is why the prop is `unknown` rather than `QuestObject` — the panel never reads a
  * field, it only serialises and draws.
  *
- * Known-and-recorded deviation: the spec's ASCII diagram also shows `[Wrap]`. That
- * affordance belongs to the Monaco option; `react-json-view-lite` wraps text
- * unconditionally, so there is nothing to toggle and the panel ships `[Copy]` only.
+ * **`[Copy] [Wrap]` (story p3-10).** The spec's ASCII diagram shows both controls (L336), and
+ * task 3.10's AC makes the Wrap half mandatory, so the p2-07 note that recorded it as "not
+ * shipped" is superseded: `react-json-view-lite` does wrap unconditionally, but the wrapping is
+ * the container class this file already owns — so the toggle swaps
+ * `whitespace-pre-wrap break-words overflow-x-hidden` for `whitespace-pre overflow-x-auto`, i.e.
+ * wrapped text versus a horizontal scrollbar. It is a real control, not a disabled one.
  */
 
 /**
  * The library's Solarized-dark container colour replaced with the app's own
- * surfaces (`zinc-950` well, mono, pre-wrap) — the syntax colours of `darkStyles`
+ * surfaces (`zinc-950` well, mono) — the syntax colours of `darkStyles`
  * are kept. The `style` prop is a map of class-name strings, so this is a class
  * merge, not a theme fork.
+ *
+ * The two wrap states are the only difference between them: the library's own CSS wraps, and
+ * `whitespace-pre-wrap` + `break-words` on a container of a fixed 400px is what "wrapped" means
+ * here, while `whitespace-pre` is what lets the panel's scroll container scroll sideways.
  */
-const JSON_STYLE: NonNullable<JsonViewProps['style']> = {
-  ...darkStyles,
-  container:
-    'overflow-x-hidden whitespace-pre-wrap break-words bg-zinc-950 p-3 font-mono text-xs leading-relaxed',
-};
+function jsonContainerClass(wrap: boolean): string {
+  return [
+    'bg-zinc-950 p-3 font-mono text-xs leading-relaxed',
+    wrap ? 'overflow-x-hidden whitespace-pre-wrap break-words' : 'overflow-x-auto whitespace-pre',
+  ].join(' ');
+}
 
 /** The document this panel draws: a fetched quest, or the editor's live one. */
 export type QuestJsonData = unknown;
@@ -72,24 +84,32 @@ async function copyQuestJson(quest: QuestJsonData): Promise<void> {
 }
 
 /** The syntax-highlighted tree: top level expanded, nested nodes collapsed. */
-function QuestJsonTree({ quest }: { quest: QuestJsonData }): JSX.Element {
+function QuestJsonTree({ quest, wrap }: { quest: QuestJsonData; wrap: boolean }): JSX.Element {
   // The library's own `data` type is a JSON union; `unknown` is the honest input
   // here because the document has not been validated by this component.
+  const style: NonNullable<JsonViewProps['style']> = {
+    ...darkStyles,
+    container: jsonContainerClass(wrap),
+  };
   return (
     <JsonView
       data={quest as JsonViewProps['data']}
-      style={JSON_STYLE}
+      style={style}
       shouldExpandNode={collapseAllNested}
     />
   );
 }
 
-/** The panel's own toolbar: the `{ }` mark and the spec's `[Copy]`. */
+/** The panel's own toolbar: the `{ }` mark and the spec's `[Copy] [Wrap]`. */
 function QuestJsonToolbar({
   quest,
+  wrap,
+  onToggleWrap,
   className,
 }: {
   quest: QuestJsonData;
+  wrap: boolean;
+  onToggleWrap: () => void;
   className?: string;
 }): JSX.Element {
   return (
@@ -97,16 +117,37 @@ function QuestJsonToolbar({
       <span className="font-mono text-xs text-zinc-500" aria-hidden="true">
         {JSON_PANEL_GLYPH}
       </span>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={() => {
-          void copyQuestJson(quest);
-        }}
-      >
-        {JSON_COPY_LABEL}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            void copyQuestJson(quest);
+          }}
+        >
+          {JSON_COPY_LABEL}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          aria-pressed={wrap}
+          title={wrap ? JSON_WRAP_ON_TOOLTIP : JSON_WRAP_OFF_TOOLTIP}
+          onClick={onToggleWrap}
+        >
+          {JSON_WRAP_LABEL}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** The scrolling body: the same element in both surfaces, tagged with its wrap state. */
+function QuestJsonBody({ quest, wrap }: { quest: QuestJsonData; wrap: boolean }): JSX.Element {
+  return (
+    <div className="min-h-0 flex-1 overflow-auto" data-wrap={wrap}>
+      <QuestJsonTree quest={quest} wrap={wrap} />
     </div>
   );
 }
@@ -118,6 +159,7 @@ export interface QuestJsonPanelProps {
 
 /** The desktop side panel: exactly {@link JSON_PANEL_WIDTH_PX} wide, slides in. */
 export function QuestJsonPanel({ quest, className }: QuestJsonPanelProps): JSX.Element {
+  const [wrap, setWrap] = useState(true);
   return (
     <aside
       aria-label={JSON_PANEL_TITLE}
@@ -127,10 +169,13 @@ export function QuestJsonPanel({ quest, className }: QuestJsonPanelProps): JSX.E
         className,
       )}
     >
-      <QuestJsonToolbar quest={quest} className="border-b border-zinc-800 px-3 py-2" />
-      <div className="min-h-0 flex-1 overflow-auto">
-        <QuestJsonTree quest={quest} />
-      </div>
+      <QuestJsonToolbar
+        quest={quest}
+        wrap={wrap}
+        onToggleWrap={() => setWrap((current) => !current)}
+        className="border-b border-zinc-800 px-3 py-2"
+      />
+      <QuestJsonBody quest={quest} wrap={wrap} />
     </aside>
   );
 }
@@ -147,6 +192,7 @@ export function QuestJsonOverlay({
   onOpenChange,
   quest,
 }: QuestJsonOverlayProps): JSX.Element {
+  const [wrap, setWrap] = useState(true);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="inset-0 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 p-0 sm:rounded-none">
@@ -156,10 +202,13 @@ export function QuestJsonOverlay({
           </DialogTitle>
           <DialogDescription className="sr-only">Read-only JSON of this quest.</DialogDescription>
         </DialogHeader>
-        <QuestJsonToolbar quest={quest} className="border-b border-zinc-800 px-3 py-2" />
-        <div className="min-h-0 flex-1 overflow-auto">
-          <QuestJsonTree quest={quest} />
-        </div>
+        <QuestJsonToolbar
+          quest={quest}
+          wrap={wrap}
+          onToggleWrap={() => setWrap((current) => !current)}
+          className="border-b border-zinc-800 px-3 py-2"
+        />
+        <QuestJsonBody quest={quest} wrap={wrap} />
       </DialogContent>
     </Dialog>
   );

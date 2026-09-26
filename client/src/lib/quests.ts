@@ -308,7 +308,7 @@ export const EMPTY_STATE_HINT =
 /* --------------------------------------------------------- page-level copy */
 
 /**
- * The disabled Edit button's tooltip (plan §2.7).
+ * The **browse row's** Edit action tooltip (plan §2.7).
  *
  * A **native `title` attribute**, not a tooltip primitive: the vendored primitives
  * under `client/src/components/ui/` have no tooltip (D39 ships only what the shell
@@ -316,6 +316,14 @@ export const EMPTY_STATE_HINT =
  * button keeps `aria-disabled="true"` rather than the `disabled` attribute so the
  * tooltip still fires on hover and the control stays focusable and announced —
  * a `disabled` button is removed from the tab order and never explains itself.
+ *
+ * **Story p3-10 changed what this constant covers, and the copy is now stale on purpose.**
+ * Until 3.10 it was the wording of *both* Edit affordances (D59(a)'s documented 3.3/3.10 split);
+ * 3.10 replaced the **detail page's** button with the real view/edit toggle
+ * (`lib/quest-edit.ts`'s `EDIT_TOGGLE_LABEL`), so this sentence is left describing only the
+ * browse table's still-disabled placeholder row action. Making that row action navigate, and
+ * retiring this sentence, is recorded as a follow-up rather than done here: p2-08's spec pins the
+ * placeholder and the 80px Actions column is not edit-mode wiring.
  */
 export const EDIT_DISABLED_TOOLTIP = 'Editing arrives in Phase 3';
 
@@ -361,12 +369,19 @@ export const JSON_COPIED_MESSAGE = 'Quest JSON copied to the clipboard';
 export const JSON_COPY_ERROR = 'Could not copy the quest JSON to the clipboard.';
 
 /**
- * The JSON panel's `[Wrap]` affordance is deliberately **not** shipped: the spec's
- * `[Copy] [Wrap]` diagram (L336) comes from the `@monaco-editor/react` option of
- * L326, where wrapping is a toggle. `react-json-view-lite` renders wrapping text
- * unconditionally (its own container CSS is `white-space: pre-wrap`), so there is
- * nothing to toggle — recorded in the story evidence as the one panel deviation.
+ * The JSON panel's `[Wrap]` toggle (spec L336's `[Copy] [Wrap]`; plan task 3.10's AC2).
+ *
+ * The note that stood here recorded `[Wrap]` as deliberately **not** shipped ("the spec draws it
+ * as a Monaco option and the chosen viewer wraps unconditionally"). Story **p3-10 supersedes
+ * it**: the AC requires the control, and the wrap state is the panel's own container class either
+ * way (`whitespace-pre-wrap break-words` versus `whitespace-pre` + horizontal scroll), so it is a
+ * working toggle rather than a disabled decoration.
  */
+export const JSON_WRAP_LABEL = 'Wrap';
+/** The Wrap toggle's tooltip in each state (the button's `aria-pressed` carries the state). */
+export const JSON_WRAP_ON_TOOLTIP =
+  'Wrap long values in the panel (pressing it scrolls sideways instead)';
+export const JSON_WRAP_OFF_TOOLTIP = 'Wrap long values in the panel instead of scrolling sideways';
 
 /* ------------------------------------------------------------- row readers */
 

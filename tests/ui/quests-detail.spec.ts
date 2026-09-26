@@ -13,8 +13,9 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  * What this file proves, clause by clause of `p2-08-ac2`:
  *
  * - the header: back link to `/quests`, the name in `text-xl font-mono
- *   font-semibold`, a `StatusBadge`, and the disabled Edit button carrying the
- *   exact "Editing arrives in Phase 3" tooltip;
+ *   font-semibold`, a `StatusBadge`, and the Edit control — a **disabled placeholder** when
+ *   p2-08 wrote this spec, the real view/edit toggle since story p3-10 (whose own spec,
+ *   `quests-edit-mode.spec.ts`, drives both modes and the Save pipeline);
  * - the six tabs `[Info][Goals][Goal Logic][Requirements][Results][Dialog]`,
  *   rendered by p2-07's `QuestPreview` rather than a copy of it: **three read-only, with
  *   Info (story p3-03), Goals (story p3-04) and Goal Logic (story p3-05) the live editors**
@@ -22,7 +23,8 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  *   `quests-goal-logic.spec.ts`, assert the forms; this file pins that the other three
  *   never grow a control);
  * - the JSON side panel: toggled by the header's `{ }` button, exactly 400px wide,
- *   syntax-highlighted (`react-json-view-lite`), with the spec's `[Copy]`;
+ *   syntax-highlighted (`react-json-view-lite`), with the spec's `[Copy]` **and `[Wrap]`**
+ *   (`[Wrap]` was a recorded deviation until story p3-10 shipped it);
  * - the same panel as a **full-screen overlay** below 768px, with no side panel
  *   beside it;
  * - loading, failure and the unknown-name 404, none of which strands the UI.
@@ -33,7 +35,11 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
 
 const SIX_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
 
-const EDIT_TOOLTIP = 'Editing arrives in Phase 3';
+/**
+ * The Edit toggle's tooltip in edit mode — the load state (`EDIT_MODE_ON_LOAD`). It replaced
+ * p2-08's 'Editing arrives in Phase 3', which story p3-10 retired from the detail page.
+ */
+const EDIT_TOOLTIP = 'Switch to view mode';
 
 /** The `<main>` region — the page, without the shell's sidebar/header. */
 function page_(page: Page): Locator {
@@ -72,7 +78,10 @@ test.describe('header', () => {
     await expect(main.getByLabel('Status: Extracted')).toBeVisible();
 
     const edit = main.getByRole('button', { name: 'Edit' });
-    await expect(edit).toBeDisabled();
+    // The real toggle since p3-10: enabled, pressed in edit mode (the load state), with the
+    // action in `title` rather than a changing label.
+    await expect(edit).toBeEnabled();
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
     await expect(edit).toHaveAttribute('title', EDIT_TOOLTIP);
 
     // The `{ }` toggle lives in the same header bar and starts unpressed.
@@ -211,10 +220,14 @@ test.describe('json side panel', () => {
     // ...and the library's own colour classes (not plain text).
     expect(await tree.innerHTML()).toMatch(/color:rgb|class="_/);
 
-    // The spec's `[Copy]` affordance works (the `[Wrap]` half is documented as not
-    // shipped in `lib/quests.ts`: this library wraps unconditionally).
+    // The spec's `[Copy]` affordance works, and `[Wrap]` is a real toggle since story p3-10
+    // (see `quests-edit-mode.spec.ts` for its wrapped/unwrapped rendering assertions).
     await panel.getByRole('button', { name: 'Copy' }).click();
     await expect(page.getByText('Quest JSON copied to the clipboard')).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Wrap' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
 
     await jsonToggle(page).click();
     await expect(sidePanel(page)).toHaveCount(0);

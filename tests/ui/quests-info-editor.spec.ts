@@ -408,14 +408,17 @@ test.describe('the detail page’s tabs are all live editors', () => {
     }
   });
 
-  test('the header Edit button keeps its Phase-3 tooltip (the toggle is task 3.10)', async ({
-    page,
-  }) => {
+  test('the header Edit button is the real view/edit toggle (story p3-10)', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
     const edit = main_(page).getByRole('button', { name: 'Edit' });
-    await expect(edit).toBeDisabled();
-    await expect(edit).toHaveAttribute('title', 'Editing arrives in Phase 3');
+    // Until p3-10 this asserted the opposite (`toBeDisabled()` plus the "Editing arrives in
+    // Phase 3" title): the toggle is real now, and edit mode is the load state, so it starts
+    // pressed. What the two modes render is `quests-edit-mode.spec.ts`'s subject.
+    await expect(edit).toBeEnabled();
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
+    await expect(edit).toHaveAttribute('title', 'Switch to view mode');
+    await expect(main_(page).getByRole('region', { name: 'Quest info editor' })).toBeVisible();
   });
 });

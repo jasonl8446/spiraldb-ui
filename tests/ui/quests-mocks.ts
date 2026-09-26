@@ -214,6 +214,8 @@ export interface QuestsMockOptions {
    * invalidation can refetch anything.
    */
   patchDelayMs?: number;
+  /** Replaces the `POST /api/quests` answer entirely (for the 400/500 cases, story p3-10). */
+  onSave?: RouteHandler;
 }
 
 /** What the mocked API recorded, so a spec can assert what was *not* requested. */
@@ -246,6 +248,14 @@ export interface QuestsMockRecorded {
    * answers 24 MB (measured against the live database).
    */
   nameLookups: string[];
+  /**
+   * The bodies of every `POST /api/quests`, in order (`{ quest, notes?, source? }` — the save
+   * contract of task 2.4 / D49(a), which story p3-10's Save drives).
+   *
+   * The `quest` object is the **live document** the editor sent, so a spec asserts the exact
+   * payload that one form edit produced — including that nothing else moved.
+   */
+  savePosts: Array<Record<string, unknown>>;
 }
 
 /**
@@ -267,6 +277,7 @@ export async function mockQuestsApi(
     historyRequests: 0,
     settingsPuts: [],
     nameLookups: [],
+    savePosts: [],
   };
   const rows = options.rows ?? mockQuestRows();
   const history = options.history ?? [];
@@ -320,6 +331,45 @@ export async function mockQuestsApi(
   });
 
   await page.route('**/api/quests', async (route) => {
+    // `POST /api/quests` is the same path as the list read (docs/spec-api.md L164-180), so the
+    // handler branches on the method. Story p3-10's Save is the only caller; the answer is the
+    // Phase-2 pipeline outcome shape (D49(a)) with the row's own status echoed back, which is
+    // what makes "an edit+save does not change the verification status" assertable.
+    if (route.request().method() === 'POST') {
+      const body = (route.request().postDataJSON() ?? {}) as Record<string, unknown>;
+      recorded.savePosts.push(body);
+      if (options.onSave !== undefined) {
+        await options.onSave(route);
+        return;
+      }
+      const quest = (body.quest ?? {}) as Record<string, unknown>;
+      const name = typeof quest.m_questName === 'string' ? quest.m_questName : 'UNKNOWN';
+      await route.fulfill({
+        json: {
+          quest_name: name,
+          outcome: 'updated',
+          action: 'update',
+          commit: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0',
+          branch: settings.git_branch,
+          commit_message: `spiraldb: update quest ${name}`,
+          file: `QuestTemplates/questtemplates_${name}.json`,
+          metadata: `QuestMetadatas/questmetadata_${name}.json`,
+          metadata_outcome: 'updated',
+          status: {
+            object_type: 'quest',
+            object_key: name,
+            status: rows.find((row) => row.quest_name === name)?.status ?? 'extracted',
+            extracted_at: '2026-09-26T12:00:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+          warnings: [],
+        },
+      });
+      return;
+    }
+
     recorded.listRequests += 1;
     recorded.urls.push(route.request().url());
     if (options.onList !== undefined) {

@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Braces, Pencil } from 'lucide-react';
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import QuestDialogEditor from '../components/quest/QuestDialogEditor';
@@ -18,6 +18,7 @@ import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonP
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import StatusBadge from '../components/StatusBadge';
+import UnsavedChangesDialog from '../components/quest/UnsavedChangesDialog';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
@@ -25,6 +26,8 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useQuestDocument } from '../hooks/useQuestDocument';
 import { useQuestValidation } from '../hooks/useQuestValidation';
 import { useStatusTransition } from '../hooks/useStatusTransition';
+import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
+import { useUserNameGate } from '../hooks/useUserNameGate';
 
 /**
  * The flowchart is loaded on demand, so the React Flow + dagre bundle (+95 kB gzip, measured)
@@ -38,14 +41,17 @@ import {
   listQuests,
   questDetailQueryKey,
   QUESTS_QUERY_KEY,
+  saveQuest,
   type QuestListRow,
   type QuestObject,
+  type SaveQuestResult,
   type StatusValue,
 } from '../lib/api';
-import { serverMessage } from '../lib/extract';
+import { savedMessage, serverMessage } from '../lib/extract';
+import { notifyError, notifySuccess, notifyWarning } from '../lib/notify';
+import { UserNameCancelledError } from '../lib/user-name';
 import {
   BACK_TO_QUESTS_LABEL,
-  EDIT_DISABLED_TOOLTIP,
   isNotFoundError,
   JSON_PANEL_LABEL,
   QUEST_LOAD_ERROR,
@@ -53,6 +59,15 @@ import {
   QUEST_NOT_FOUND_TITLE,
   questStatus,
 } from '../lib/quests';
+import {
+  DISCARD_LABEL,
+  DISCARD_TOOLTIP,
+  EDIT_MODE_ON_LOAD,
+  EDIT_OFF_TOOLTIP,
+  EDIT_ON_TOOLTIP,
+  EDIT_TOGGLE_LABEL,
+  SAVE_FAILED_FALLBACK,
+} from '../lib/quest-edit';
 import {
   isCurrentStatus,
   STATUS_TRANSITIONS,
@@ -95,9 +110,10 @@ import { cn } from '../lib/utils';
  * rewritten row (D51(e)) is the same list row this page's badge reads, so the badge
  * flips without waiting for a refetch. No seventh tab was added.
  *
- * **Editing (stories p3-03 to p3-08).** All six tabs are now live editors — Info, Goals,
- * Goal Logic, Requirements, Results and Dialog — and the header Edit/Save toggle, the dirty
- * guard and the save remain task 3.10. The loaded body therefore lives in {@link LoadedQuest},
+ * **Editing (stories p3-03 to p3-10).** All six tabs are live editors — Info, Goals,
+ * Goal Logic, Requirements, Results and Dialog — and story p3-10 added the header **Edit** toggle
+ * that swaps them for the Phase-2 read-only bodies, the unsaved-changes guard and the Save
+ * pipeline. The loaded body therefore lives in {@link LoadedQuest},
  * which holds the **one**
  * editable document: `useQuestDocument` turns the fetched quest into local document state,
  * both editors mutate it through `shared/document.ts`, and the same live document feeds the
@@ -176,8 +192,9 @@ export default function QuestDetailPage(): JSX.Element {
 }
 
 /**
- * The loaded body: status badge, the six tabs (Info editable), the JSON surfaces, the
- * history panel and the notes dialog.
+ * The loaded body: the mode toggle, the six tabs (editors in edit mode, the Phase-2 read-only
+ * bodies in view mode), the JSON surfaces, the dirty guard, the history panel and the notes
+ * dialog.
  *
  * Separate from the page so the editable document is created exactly once the quest
  * data exists — {@link useQuestDocument} is called with a real document, never with
@@ -196,14 +213,100 @@ function LoadedQuest({
 }): JSX.Element {
   const isMobile = useIsMobile();
   const [jsonOpen, setJsonOpen] = useState(false);
+  /**
+   * The view/edit mode (plan task 3.10). `QuestPreview`'s `panels` record **is** the mode:
+   * present → the 3.3-3.8 editors, absent → the p2-07 read-only bodies, with no second copy of
+   * either. See `EDIT_MODE_ON_LOAD` for why a freshly opened quest starts in edit mode.
+   */
+  const [editMode, setEditMode] = useState(EDIT_MODE_ON_LOAD);
   const transition = useStatusTransition('quests');
   const document = useQuestDocument(quest);
   // One validation pass over the one document state (story p3-09): the same findings feed the
   // form-level banner, every inline message, and the Save affordance's disabled state.
   const validation = useQuestValidation(document.doc);
+  // The unsaved-changes guard (story p3-10): in-app navigation + window close, only while dirty.
+  const guard = useUnsavedChangesGuard(document.dirty);
+  const queryClient = useQueryClient();
+  const { requireUserName } = useUserNameGate();
+  /**
+   * The live document, for the save's response handler only. A save is asynchronous and the
+   * editors stay editable while it runs, so "did the user change something after the request
+   * left?" has to be answered against the document as it is *now* — the mutation's own options
+   * are rebuilt per render, and a ref is the one place the latest value is not stale.
+   */
+  const liveDocRef = useRef(document.doc);
+  useEffect(() => {
+    liveDocRef.current = document.doc;
+  }, [document.doc]);
+
+  /**
+   * Save one quest: the identity gate (D38), then `POST /api/quests` — the Phase-2 pipeline
+   * writes the file, refreshes the metadata's `ModifiedAt`/`ModifiedBy` and commits
+   * `spiraldb: update quest {name}` (D49(a)) — then the spec's toast (spec-ui-design L120) and
+   * the D48(d) warnings.
+   *
+   * The body is the **live document** (`document.doc`), never a rebuild: D57/D58 make the
+   * editor's own object the payload, so an untouched key cannot be rewritten on the way out.
+   *
+   * The status is deliberately untouched: this mutation never turns into a `PATCH
+   * /api/status/...`, and it passes no `status` to the pipeline, so a `reviewed`/`verified`
+   * entry stays exactly where it was (plan §3.10's last clause). Invalidating the list only
+   * refetches the badge, which cannot move without a status change.
+   */
+  const save = useMutation({
+    mutationFn: async (questToSave: QuestObject): Promise<SaveQuestResult> => {
+      await requireUserName();
+      return saveQuest({ quest: questToSave });
+    },
+    onSuccess: async (result, sent) => {
+      notifySuccess(savedMessage(result.quest_name));
+      for (const warning of result.warnings) {
+        notifyWarning(warning);
+      }
+      // The baseline advances only when the saved document is still the live one: an edit made
+      // while the request was in flight is *not* on disk, so it must keep the guard armed.
+      if (liveDocRef.current === sent) {
+        document.markSaved();
+      }
+      await queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY });
+    },
+    onError: (error) => {
+      // A dismissed identity dialog is not a failure: nothing was written and nothing may
+      // claim otherwise.
+      if (error instanceof UserNameCancelledError) {
+        return;
+      }
+      notifyError(serverMessage(error, SAVE_FAILED_FALLBACK));
+    },
+  });
+
+  const panels = editMode
+    ? {
+        Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        'Goal Logic': (
+          <Suspense
+            fallback={
+              <p role="status" className="p-4 text-sm text-zinc-500">
+                Loading flowchart…
+              </p>
+            }
+          >
+            <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
+          </Suspense>
+        ),
+        Requirements: (
+          <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
+        ),
+        Results: <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        Dialog: <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+      }
+    : undefined;
 
   return (
-    <div className="flex flex-col gap-4">
+    // The two mode markers, so the state is observable without inferring it from the editors
+    // (a tier-1 spec and the browser evidence both read them).
+    <div className="flex flex-col gap-4" data-edit-mode={editMode} data-dirty={document.dirty}>
       <QuestHeader
         quest={quest}
         questName={questName}
@@ -213,6 +316,11 @@ function LoadedQuest({
         transitionPending={transition.isPending}
         onTransition={(target) => transition.request(questName, target)}
         saveBlocked={validation.blocked}
+        onSave={() => save.mutate(document.doc as QuestObject)}
+        editMode={editMode}
+        onToggleEdit={() => setEditMode((on) => !on)}
+        dirty={document.dirty}
+        onDiscard={document.reset}
       />
 
       <QuestValidationBanner banner={validation.banner} />
@@ -220,34 +328,7 @@ function LoadedQuest({
       <div className="flex min-h-0 gap-4">
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
           <FieldValidationProvider messages={validation.messages}>
-            <QuestPreview
-              quest={quest}
-              className="h-[70vh]"
-              panels={{
-                Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-                Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-                'Goal Logic': (
-                  <Suspense
-                    fallback={
-                      <p role="status" className="p-4 text-sm text-zinc-500">
-                        Loading flowchart…
-                      </p>
-                    }
-                  >
-                    <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
-                  </Suspense>
-                ),
-                Requirements: (
-                  <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
-                ),
-                Results: (
-                  <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />
-                ),
-                Dialog: (
-                  <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />
-                ),
-              }}
-            />
+            <QuestPreview quest={quest} className="h-[70vh]" panels={panels} />
           </FieldValidationProvider>
         </div>
         {/* Exactly one of the two JSON surfaces is mounted (see `QuestJsonPanel`). */}
@@ -260,6 +341,17 @@ function LoadedQuest({
 
       <StatusHistoryPanel questName={questName} />
       <StatusNotesDialog {...transition.dialog} />
+      <UnsavedChangesDialog
+        open={guard.blocked}
+        onOpenChange={(open) => {
+          // Escape, the close button and an overlay click all mean "stay": only the dialog's own
+          // destructive button leaves, and it calls `guard.discard` directly.
+          if (!open) {
+            guard.stay();
+          }
+        }}
+        onDiscard={guard.discard}
+      />
     </div>
   );
 }
@@ -287,13 +379,20 @@ function BackLink(): JSX.Element {
 
 /**
  * The spec's header bar (L281): back link, mono name, StatusBadge, the two status
- * actions (story p2-09), Edit + `{ }`.
+ * actions (story p2-09), Edit + `{ }`, and — in edit mode — Save (and Discard while dirty).
  *
  * The action for the status the entry already has is `aria-disabled` rather than
- * natively disabled, exactly like the Edit button below it: a natively disabled
+ * natively disabled, exactly like the Save affordance: a natively disabled
  * control leaves the tab order and stops explaining itself, so the pair stays
  * focusable and its `title` still works. The handler re-checks the condition, so the
  * attribute describes the behaviour instead of being the only guard.
+ *
+ * **Edit is the real mode toggle as of story p3-10** (it was an inert `aria-disabled`
+ * placeholder carrying "Editing arrives in Phase 3", D59(a)'s documented 3.3/3.10 split). It is a
+ * labelled toggle — same visible name in both modes, `aria-pressed` carrying the state, `title`
+ * explaining what pressing it does — rather than two buttons, so "Edit" keeps its one meaning.
+ * The Save affordance is rendered only in edit mode: view mode is the Phase-2 read-only
+ * rendering, and a Save button there would have nothing to save.
  */
 function QuestHeader({
   quest,
@@ -304,6 +403,11 @@ function QuestHeader({
   transitionPending,
   onTransition,
   saveBlocked,
+  onSave,
+  editMode,
+  onToggleEdit,
+  dirty,
+  onDiscard,
 }: {
   quest: QuestObject;
   questName: string;
@@ -314,6 +418,15 @@ function QuestHeader({
   onTransition: (target: TransitionTarget) => void;
   /** Story p3-09: the validation gate the Save affordance follows. */
   saveBlocked: boolean;
+  /** Story p3-10: the save action — `POST /api/quests` (D65(f)'s single-prop seam). */
+  onSave: () => void;
+  /** Story p3-10: `true` while the tabs render the editors instead of the read-only bodies. */
+  editMode: boolean;
+  onToggleEdit: () => void;
+  /** Story p3-10: `true` when the live document differs from the loaded one. */
+  dirty: boolean;
+  /** Story p3-10: discard the edits and restore the loaded document byte for byte. */
+  onDiscard: () => void;
 }): JSX.Element {
   const displayName = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
   return (
@@ -354,30 +467,46 @@ function QuestHeader({
           );
         })}
         {/*
-          Disabled with `aria-disabled` rather than the `disabled` attribute: the
-          "Editing arrives in Phase 3" tooltip is a native `title`, and a truly
-          disabled control neither shows it in every browser nor stays focusable to
-          announce why it is unavailable. There is no tooltip primitive to use —
-          see `EDIT_DISABLED_TOOLTIP`.
+          The mode toggle. `aria-pressed` (not a changing label) so the control's name stays
+          "Edit" in both modes; the `title` carries the action, and the blue accent marks the
+          active state the way the status buttons already do.
         */}
         <Button
           type="button"
           variant="outline"
-          aria-disabled="true"
-          title={EDIT_DISABLED_TOOLTIP}
-          className={cn('aria-disabled:cursor-not-allowed aria-disabled:opacity-50')}
+          aria-pressed={editMode}
+          title={editMode ? EDIT_ON_TOOLTIP : EDIT_OFF_TOOLTIP}
+          className={cn(
+            editMode ? 'border-blue-600/60 text-blue-300 hover:text-blue-200' : undefined,
+          )}
+          onClick={onToggleEdit}
         >
           <Pencil className="h-4 w-4" aria-hidden="true" />
-          Edit
+          {EDIT_TOGGLE_LABEL}
         </Button>
-        {/*
-          The validation-driven Save affordance (story p3-09). Task 3.10 owns the pipeline —
-          the Edit/Save mode swap, the dirty guard and `POST /api/quests` — so this button
-          carries no `onSave` yet; it exists so the AC's "Save disabled while validation errors
-          exist" is observable now, and its disabled state is the engine's `blocked`, not a
-          second derivation.
-        */}
-        <QuestSaveButton blocked={saveBlocked} describedBy={VALIDATION_BANNER_ID} />
+        {editMode ? (
+          <>
+            {/*
+              Only while there is something to discard: a clean edit session shows exactly the
+              spec's `[Edit] [Save] [{}]`, and the guard's dialog covers the leaving case.
+            */}
+            {dirty ? (
+              <Button type="button" variant="ghost" title={DISCARD_TOOLTIP} onClick={onDiscard}>
+                {DISCARD_LABEL}
+              </Button>
+            ) : null}
+            {/*
+              The validation-driven Save affordance (story p3-09), wired by story p3-10: the
+              disabled state stays the engine's `blocked` and is **not** re-derived here (D65(f)),
+              and the pipeline behind the click is `LoadedQuest`'s mutation.
+            */}
+            <QuestSaveButton
+              blocked={saveBlocked}
+              describedBy={VALIDATION_BANNER_ID}
+              onSave={onSave}
+            />
+          </>
+        ) : null}
         <Button
           type="button"
           variant="ghost"
