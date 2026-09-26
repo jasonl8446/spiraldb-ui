@@ -1,0 +1,89 @@
+# p2-02 — PacketReaderCli raw verification (build, contract matrix, D18/D45 env finding)
+# 2026-09-26T07:04:01Z  head=f65599c  branch=phase-2-quest-extraction
+# DOTNET_ROOT resolved for the RUN probes: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet
+# (from: dirname $(readlink -f $(command -v dotnet)) — the portable resolution adopted in D45)
+
+## ac1: npm run build:cli
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+    12 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.67
+exit=0
+
+$ ls -l tools/bin/imview-packet-reader
+lrwxrwxrwx 1 jason users 62 Sep 26 03:04 tools/bin/imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+$ readlink tools/bin/imview-packet-reader
+../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+$ readlink -f tools/bin/imview-packet-reader
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+executable: yes
+D18 flags used by build:cli (must be exactly the two):
+  -p:ArtifactsPath
+  -p:UseArtifactsOutput
+BaseIntermediate/BaseOutput in build:cli: 0 (must be 0)
+
+## ac2 matrix (each: stdout bytes / stderr bytes / exit)
+--- --help (usage on stdout, exit 0)
+    exit=0 stdout=524B stderr=0B
+    stdout: Usage: imview-packet-reader --input <path> [--output <path|->]  Reconstructs QuestTemplate objects from a JSON packet ca
+--- corrupt: not JSON (exit 1)
+    exit=1 stdout=0B stderr=173B
+    stderr: error: '/tmp/p202-notjson.txt' is not valid JSON: 'this is not json at all ' is an invalid JSON literal. Expected the literal 'true'. LineNumber: 0 | BytePositionInLine: 1. 
+--- non-capture: {"foo":1} (exit 1)
+    exit=1 stdout=0B stderr=179B
+    stderr: error: '/tmp/p202-noncapture.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {"data":{"name":"MSG_QUESTOFFER","fields":{...}}}. 
+--- valid empty capture: [] (exit 0, stdout [])
+    exit=0 stdout=2B stderr=0B
+    stdout: []
+--- envelope missing data.fields (exit 1)
+    exit=1 stdout=0B stderr=177B
+    stderr: error: '/tmp/p202-nofields.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {"data":{"name":"MSG_QUESTOFFER","fields":{...}}}. 
+--- missing --input (exit 1)
+    exit=1 stdout=0B stderr=567B
+    stderr: missing required argument: --input <path>  Usage: imview-packet-reader --input <path> [--output <path|->]  Reconstructs QuestTemplate objects from a JSON packet capture file.  Options:   --input  <path>    Packet capture
+--- unknown arg (exit 1)
+    exit=1 stdout=0B stderr=551B
+    stderr: unknown argument: --bogus  Usage: imview-packet-reader --input <path> [--output <path|->]  Reconstructs QuestTemplate objects from a JSON packet capture file.  Options:   --input  <path>    Packet capture file to read (r
+--- nonexistent input (exit 1)
+    exit=1 stdout=0B stderr=59B
+    stderr: error: input file not found: /tmp/p202-does-not-exist.json 
+
+## --output to a file (parent dir absent) and to -
+exit=0 stdout was empty: yes
+file content: []
+--- output - : stdout='[]'
+
+## the D45 environment finding (bare invocation on this NixOS host)
+bare exit=131 (stdout 0B, stderr 502B)
+    You must install .NET to run this application.
+    
+    App: /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+    Architecture: x64
+DOTNET_ROOT set: exit=0 as shown above
+
+## D18 isolation during this build
+Imview files modified in the build window: 0 (must be 0)
+Imview git status: []
+~/.nuget files touched in the build window: 0 (must be 0)
+workspace package restore: tools/.nuget/newtonsoft.json/13.0.3 
+
+## release artifacts the symlink points at
+  ICSharpCode.SharpZipLib.dll
+  Imcodec.IO.dll
+  Imcodec.IO.pdb
+  Imcodec.Math.dll
+  Imcodec.Math.pdb
+  Imcodec.ObjectProperty.dll
+  Imcodec.ObjectProperty.pdb
+  Imcodec.Types.dll
+  Imcodec.Types.pdb
+  imview-packet-reader
+  imview-packet-reader.deps.json
+  imview-packet-reader.dll
+  Imview.PacketReader.dll
+  imview-packet-reader.pdb
+  Imview.PacketReader.pdb
+  imview-packet-reader.runtimeconfig.json
+  Ionic.Zlib.Core.dll
+  Newtonsoft.Json.dll

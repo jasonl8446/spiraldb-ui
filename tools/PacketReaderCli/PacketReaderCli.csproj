@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>imview-packet-reader</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../Imview/src/Imview.PacketReader/Imview.PacketReader.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- D45: the spec snippet omits serialization; the corpus/review JSON format is
+         Newtonsoft with the type-name settings below, so Newtonsoft is required here.
+         Not transitively available from Imview.PacketReader; pinned to 13.0.3 house-wide. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>
