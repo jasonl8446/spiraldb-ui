@@ -10,8 +10,11 @@ import { USER_NAME_MAX_LENGTH, validateUserName } from '../lib/user-name';
  * promise and request errors stay in `hooks/useUserNameGate.tsx`, so this file
  * has no data layer to mock and the shell can restyle it freely.
  *
- * Plain Tailwind against the spec-ui-design dark tokens (L24-30); the real
- * shadcn init belongs to task 1.8, which replaces `App.tsx` wholesale.
+ * Plain Tailwind against the spec-ui-design dark tokens (L24-30). It stays
+ * hand-rolled after task 1.8 on purpose: its behaviour — focus into the input,
+ * Escape cancels, Enter submits, an inline error instead of a request — is already
+ * verified and evidence-backed by decision D38, while the shell's vendored Radix
+ * dialog drives the mobile navigation overlay.
  */
 export interface UserNameDialogProps {
   /** Rendered only while true. */

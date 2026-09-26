@@ -1,3 +1,73 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Dark-only theme tokens (docs/spec-ui-design.md L18-43).
+ *
+ * The app has no light mode (spec L19: "Dark only — no light mode toggle"), so
+ * every value is written once on `:root` and `client/index.html` pins
+ * `class="dark"`. The HSL triples are the spec's palette expressed for Tailwind:
+ *
+ *   background  zinc-950   #09090b     cards/panels      zinc-900   #18181b
+ *   elevated    zinc-800   #27272a     border/input      zinc-800   #27272a
+ *   primary     blue-600   #2563eb     ring/focus        blue-500   #3b82f6
+ *   foreground  zinc-50    #fafafa     muted-foreground  zinc-400   #a1a1aa
+ */
+@layer base {
+  :root {
+    --background: 240 10% 3.9%; /* zinc-950 */
+    --foreground: 0 0% 98%; /* zinc-50 */
+
+    --card: 240 5.9% 10%; /* zinc-900 */
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 5.9% 10%; /* zinc-900 */
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 221.2 83.2% 53.3%; /* blue-600 */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 3.7% 15.9%; /* zinc-800 */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%; /* zinc-800 */
+    --muted-foreground: 240 5% 64.9%; /* zinc-400 */
+
+    --accent: 240 3.7% 15.9%; /* zinc-800 */
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 72.2% 50.6%; /* red-600 */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%; /* zinc-800 */
+    --input: 240 3.7% 15.9%; /* zinc-800 */
+    --ring: 217.2 91.2% 59.8%; /* blue-500 */
+
+    --radius: 0.5rem; /* rounded-lg = 8px */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}
+
+/**
+ * Reduced motion (docs/spec-ui-design.md L549). Spinners still have to say
+ * "working", so they are slowed rather than stopped; the rule is scoped to the
+ * two utilities the app animates so it can never mask an unexpected animation.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation-duration: 2.4s;
+  }
+
+  .animate-in,
+  .animate-out {
+    animation-duration: 0.001s;
+  }
+}

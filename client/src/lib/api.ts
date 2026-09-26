@@ -12,6 +12,9 @@
  * reserved for values both halves genuinely share.
  */
 
+import type { NameRow, NameRowMap, NamesType } from './display';
+import type { SyncCounts } from './toast';
+
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
 interface ApiErrorBody {
   error?: string;
@@ -211,4 +214,141 @@ export function patchStatus(
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+}
+
+/* --------------------------------------------------------------------- names */
+
+/** Query-key prefix for every names query; one entry per type. */
+export function namesQueryKey(
+  type: NamesType,
+  options?: { q?: string; limit?: number },
+): readonly unknown[] {
+  return options === undefined ? ['names', type] : ['names', type, options];
+}
+
+/** Query key for the single-value display lookup (`GET /api/names/:type/:id`). */
+export function nameLookupQueryKey(type: NamesType, id: string): readonly unknown[] {
+  return ['name-lookup', type, id];
+}
+
+/** Optional server-side filters (decision D36; required for `strings`). */
+export interface NamesListOptions {
+  /** Case-insensitive substring over the label (key + value for `strings`). */
+  q?: string;
+  /** Max rows; the server validates it is a positive integer. */
+  limit?: number;
+}
+
+/** Builds the `?q=`/`?limit=` query string, if any. */
+function namesQueryString(options?: NamesListOptions): string {
+  if (options === undefined) {
+    return '';
+  }
+  const params = new URLSearchParams();
+  if (options.q !== undefined && options.q !== '') {
+    params.set('q', options.q);
+  }
+  if (options.limit !== undefined) {
+    params.set('limit', String(options.limit));
+  }
+  const query = params.toString();
+  return query === '' ? '' : `?${query}`;
+}
+
+/**
+ * `GET /api/names/:type` — the rows of one friendly-name table.
+ *
+ * The wire body is the spec envelope `{ "<type>": [rows] }` (decision D36); the
+ * envelope is unwrapped here so callers deal in rows only.
+ *
+ * **Never call this for `strings` without `options`**: 216,991 rows ≈ 24 MB. The
+ * `useNames` hook enforces that rule; `?q=`/`?limit=` are the supported path.
+ */
+export async function getNames(type: NamesType, options?: NamesListOptions): Promise<NameRow[]> {
+  const body = await apiFetch<Record<string, NameRow[]>>(
+    `/api/names/${type}${namesQueryString(options)}`,
+  );
+  const rows = body[type];
+  if (!Array.isArray(rows)) {
+    throw new Error(`/api/names/${type} did not return the { ${type}: [...] } envelope`);
+  }
+  return rows;
+}
+
+/**
+ * `GET /api/names/:type/:id` — one bare row, or an {@link ApiError} with status
+ * 404 when the id is unknown. Callers render the raw id on 404, never an error
+ * (docs/spec-domain-reference.md L693-695).
+ */
+export function getName(type: NamesType, id: string): Promise<NameRowMap[NamesType]> {
+  return apiFetch<NameRowMap[NamesType]>(`/api/names/${type}/${encodeURIComponent(id)}`);
+}
+
+/* ---------------------------------------------------------------------- sync */
+
+/** `POST /api/sync` success body (docs/spec-api.md L239-252). */
+export interface SyncResult {
+  status: 'success';
+  synced: SyncCounts;
+  timestamp: string;
+}
+
+/** `GET /api/sync/status` body; `status: 'never'` is the empty-history case. */
+export interface SyncStatus {
+  last_sync: string | null;
+  revision: string | null;
+  status: string;
+}
+
+/** One `sync_history` row — every column the server exposes. */
+export interface SyncHistoryEntry {
+  id: number;
+  sync_timestamp: string | null;
+  revision: string | null;
+  items_count: number | null;
+  spells_count: number | null;
+  npcs_count: number | null;
+  quests_count: number | null;
+  zones_count: number | null;
+  status: string | null;
+  error_message: string | null;
+}
+
+/** TanStack Query keys for the two sync read endpoints. */
+export const SYNC_STATUS_QUERY_KEY = ['sync', 'status'] as const;
+export const SYNC_HISTORY_QUERY_KEY = ['sync', 'history'] as const;
+
+/**
+ * `POST /api/sync` — **synchronous-blocking**: a fresh unpack takes ~20 s and the
+ * response arrives only when the sync is done (decision D39 item 9). The caller
+ * shows a spinner for the whole call; there is no job queue to poll.
+ */
+export function postSync(): Promise<SyncResult> {
+  return apiFetch<SyncResult>('/api/sync', { method: 'POST' });
+}
+
+/** `GET /api/sync/status` — last sync timestamp, revision and status. */
+export function getSyncStatus(): Promise<SyncStatus> {
+  return apiFetch<SyncStatus>('/api/sync/status');
+}
+
+/** `GET /api/sync/history` — newest first. */
+export async function getSyncHistory(): Promise<SyncHistoryEntry[]> {
+  const body = await apiFetch<{ history: SyncHistoryEntry[] }>('/api/sync/history');
+  return body.history;
+}
+
+/** `GET /api/status/_import` — this process's first-startup import report (D37). */
+export interface ImportReport {
+  ran: boolean;
+  imported: number;
+  imported_at: string | null;
+}
+
+/** Query key for the once-per-process first-startup import report. */
+export const IMPORT_REPORT_QUERY_KEY = ['status', '_import'] as const;
+
+/** Whether this server process imported pre-existing entries, and how many. */
+export function getImportReport(): Promise<ImportReport> {
+  return apiFetch<ImportReport>('/api/status/_import');
 }
