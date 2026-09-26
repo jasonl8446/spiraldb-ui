@@ -96,7 +96,7 @@ test.describe('header', () => {
 });
 
 test.describe('tabs', () => {
-  test('renders the six tabs through QuestPreview, three of them read-only', async ({ page }) => {
+  test('renders the six tabs through QuestPreview, two of them read-only', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -105,8 +105,9 @@ test.describe('tabs', () => {
       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
     }
 
-    // Info is the landing tab and, since p3-03, the live editor — three of the other five
-    // tabs are p2-07's read-only bodies, which is what the rest of this test checks.
+    // Info is the landing tab and, since p3-03, the live editor — two of the other five
+    // tabs (Results, Dialog) are still p2-07's read-only bodies, which is what the rest of
+    // this test checks; the other two became live editors in p3-05 and p3-06.
     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
     await expect(main.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
 
@@ -138,10 +139,19 @@ test.describe('tabs', () => {
     ).toBeVisible();
     await expect(main.getByText('m_goalsAND', { exact: true })).toHaveCount(0);
 
-    // `exact` on the field labels: each name also appears inside the read-only JSON
-    // block below it, as a key.
+    // The Requirements tab is the fourth live editor (story p3-06): its own spec
+    // (`quests-requirements-editor.spec.ts`) drives the tree, so this pins that the detail
+    // page really mounts it — and that each of the three quest-level slots is on screen
+    // under its own mono key (the JSON block it replaced is gone, which is what the old
+    // `m_requirements` text assertion here used to check).
     await main.getByRole('tab', { name: 'Requirements' }).click();
+    await expect(main.getByRole('region', { name: 'Quest requirements editor' })).toBeVisible();
+    // `exact`: five other regions on this tab carry a name containing "Requirements"
+    // (the prep/prune/goal slots), which is what the substring match would hit.
+    await expect(main.getByRole('region', { name: 'Requirements', exact: true })).toBeVisible();
     await expect(main.getByText('m_requirements', { exact: true })).toBeVisible();
+    await expect(main.getByText('m_prepRequirements', { exact: true })).toBeVisible();
+    await expect(main.getByText('m_pruneRequirements', { exact: true })).toBeVisible();
 
     await main.getByRole('tab', { name: 'Results' }).click();
     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();
@@ -149,7 +159,7 @@ test.describe('tabs', () => {
     await main.getByRole('tab', { name: 'Dialog' }).click();
     await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
 
-    for (const tab of ['Requirements', 'Results', 'Dialog'] as const) {
+    for (const tab of ['Results', 'Dialog'] as const) {
       await main.getByRole('tab', { name: tab }).click();
       await expect(
         main.getByRole('tabpanel').locator('input, select, textarea'),

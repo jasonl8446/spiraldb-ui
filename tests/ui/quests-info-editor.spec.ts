@@ -352,7 +352,7 @@ test.describe('edits and the JSON panel', () => {
 });
 
 test.describe('the other tabs stay read-only', () => {
-  test('the four not-yet-editable tabs render no control at all', async ({ page }) => {
+  test('the tabs still on the read-only preview render no control at all', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -364,8 +364,18 @@ test.describe('the other tabs stay read-only', () => {
     await main_(page).getByRole('tab', { name: 'Goals' }).click();
     await expect(main_(page).getByRole('region', { name: 'Quest goals editor' })).toBeVisible();
 
-    // …and the remaining four are still the read-only preview (p2-08's contract).
-    for (const tab of ['Goal Logic', 'Requirements', 'Results', 'Dialog'] as const) {
+    // …and the Requirements tab is the fourth as of story p3-06 (its own spec,
+    // `quests-requirements-editor.spec.ts`, drives it)…
+    await main_(page).getByRole('tab', { name: 'Requirements' }).click();
+    await expect(
+      main_(page).getByRole('region', { name: 'Quest requirements editor' }),
+    ).toBeVisible();
+
+    // …and the rest are still the read-only preview (p2-08's contract). The Goal Logic
+    // flowchart is a live editor too (p3-05) and stays in this list on purpose: it renders
+    // no plain form control until a node or an edge is opened, which is exactly what this
+    // assertion is about.
+    for (const tab of ['Goal Logic', 'Results', 'Dialog'] as const) {
       await main_(page).getByRole('tab', { name: tab }).click();
       await expect(
         main_(page).getByRole('tabpanel').locator('input, select, textarea'),

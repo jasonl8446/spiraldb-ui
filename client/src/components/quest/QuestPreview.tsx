@@ -214,7 +214,8 @@ function RequirementsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   return (
     <section aria-label="Requirements" className="flex flex-col gap-4">
       <p className="text-xs text-zinc-500">
-        Read-only JSON — the structured requirement tree arrives with the Phase 3 editor.
+        Read-only JSON — this preview is the extraction page's; the structured requirement tree is
+        edited in the Requirements tab of the quest detail page.
       </p>
       <JsonBlock label="m_requirements" value={quest.m_requirements} />
       <JsonBlock label="m_prepRequirements" value={quest.m_prepRequirements} />

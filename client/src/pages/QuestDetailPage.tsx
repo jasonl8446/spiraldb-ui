@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom';
 import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
 import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
+import QuestRequirementsEditor from '../components/quest/QuestRequirementsEditor';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
@@ -219,6 +220,9 @@ function LoadedQuest({
                 >
                   <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
                 </Suspense>
+              ),
+              Requirements: (
+                <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
               ),
             }}
           />
