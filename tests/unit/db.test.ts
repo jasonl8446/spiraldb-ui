@@ -362,11 +362,38 @@ describe('idempotency', () => {
 });
 
 describe('repo root resolution', () => {
-  it('finds the project root and the default/test-spiraldb paths under it', () => {
+  it('finds the project root by its package name, not by the directory name', () => {
     const repoRoot = resolveRepoRoot();
 
+    // Resolution is *content*-based (`resolveRepoRoot` walks up to the
+    // `package.json` whose `name` is `spiraldb-ui`), so this must hold for ANY
+    // checkout location. Asserting `path.basename(repoRoot)` would instead pin
+    // the directory name and fail wherever the checkout is named something else
+    // — a differently-named clone, or the c5 team-worktree layout
+    // `.omd/worktrees/{run-id}` — while proving nothing about the resolution.
     expect(fs.existsSync(path.join(repoRoot, 'package.json'))).toBe(true);
-    expect(path.basename(repoRoot)).toBe('spiraldb-ui');
+    const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')) as {
+      name?: unknown;
+    };
+    expect(manifest.name).toBe('spiraldb-ui');
+    // Structural markers only the real root has.
+    expect(fs.existsSync(path.join(repoRoot, 'server', 'migrations'))).toBe(true);
+    expect(fs.existsSync(path.join(repoRoot, 'client', 'src'))).toBe(true);
     expect(testSpiraldbPath(repoRoot)).toBe(path.join(repoRoot, 'data', 'test-spiraldb'));
+  });
+
+  it('resolves the same root from any start directory inside the project', () => {
+    const repoRoot = resolveRepoRoot();
+
+    // Start-dir independence: the walk-up is driven by the manifest, not by the
+    // caller's location, so a nested start directory must not change the answer.
+    expect(resolveRepoRoot(path.join(repoRoot, 'server', 'src'))).toBe(repoRoot);
+    expect(resolveRepoRoot(path.join(repoRoot, 'client', 'src', 'lib'))).toBe(repoRoot);
+    expect(resolveRepoRoot(repoRoot)).toBe(repoRoot);
+  });
+
+  it('throws when no package.json with the project name exists above the start directory', () => {
+    // `/` is its own parent, so the upward walk terminates there.
+    expect(() => resolveRepoRoot('/')).toThrow(/Could not locate the spiraldb-ui project root/);
   });
 });
