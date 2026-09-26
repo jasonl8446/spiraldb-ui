@@ -3,7 +3,7 @@ import { existsSync, statSync } from 'node:fs';
 import { Router } from 'express';
 
 import type { ApiError } from '../../../shared/index.js';
-import { SETTINGS_KEYS, readSettings, type Db, type SettingKey } from '../db.js';
+import { SETTINGS_KEYS, readSettings, writeSettings, type Db, type SettingKey } from '../db.js';
 
 /**
  * Settings API — `GET /api/settings` / `PUT /api/settings` (task 1.3,
@@ -133,15 +133,6 @@ export interface SettingsRouterOptions {
 export function createSettingsRouter({ db }: SettingsRouterOptions): Router {
   const router = Router();
 
-  const upsert = db.prepare(
-    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-  );
-  const upsertAll = db.transaction((entries: Array<[string, string]>) => {
-    for (const [key, value] of entries) {
-      upsert.run(key, value);
-    }
-  });
-
   router.get('/', (_req, res) => {
     res.json(readSettings(db));
   });
@@ -154,8 +145,7 @@ export function createSettingsRouter({ db }: SettingsRouterOptions): Router {
     }
 
     // An empty body is a valid no-op update: zero entries, zero writes.
-    upsertAll(Object.entries(req.body as Record<string, string>));
-    res.json(readSettings(db));
+    res.json(writeSettings(db, req.body as Record<string, string>));
   });
 
   return router;

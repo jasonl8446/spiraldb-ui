@@ -1,0 +1,42 @@
+story p2-05 — D11: no watermark trailer on the pipeline's runtime commits
+date:    2026-09-26T04:35:00-04:00   branch: phase-2-quest-extraction   HEAD: b9577d2
+clone:   data/test-spiraldb (the 7 commits this acceptance run made, before the clone is reset)
+
+$ git -C data/test-spiraldb log --format='--- %h%n%an <%ae>%n%B' -7
+--- aa2b25c
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: update drop_table DS-ACAD-C01-001
+
+--- f02366e
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: extract quest DS-P205-AC3-002
+
+--- d0594be
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: update quest WC-TUT-C08-001
+
+--- f54f22e
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: update quest WC-TUT-C05-001
+
+--- 2d416be
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: extract quest DS-P205-AC1-003
+
+--- fcb06de
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: extract quest DS-P205-AC1-002
+
+--- 141012e
+P2-05 Acceptance <P2-05-Acceptance@spiraldb-ui.local>
+spiraldb: extract quest DS-P205-AC1-001
+
+$ git -C data/test-spiraldb log --format=%B -7 | grep -c -i 'deepseek\|watermark\|co-authored'   # must be 0
+0
+
+Every message is the exact one-line header (docs/spec-data-model.md L216-232); the
+author/committer is settings.user_name, not the agent (D11 + AGENTS.md: the watermark
+rule covers agent-authored commits in this repository, and this story makes none).
+
+$ git -C /home/jason/Documents/git-projects/spiraldb log --format='%h %s' -1   # the owner's fork: untouched
+c55ccab fix: give the Olivia goal a quest helper tag

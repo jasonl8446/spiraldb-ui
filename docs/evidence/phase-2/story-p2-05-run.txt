@@ -1,0 +1,337 @@
+story p2-05 — full acceptance run (raw harness stdout, every criterion in order)
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+==============================================================================
+story p2-05 acceptance — setup and freshness guard
+==============================================================================
+clone                 : /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+throwaway database    : /home/jason/Documents/git-projects/spiraldb-ui/data/__test-scratch__/p2-05-acceptance.db
+user_name             : P2-05 Acceptance
+git_branch before save: ""
+HEAD                  : c55ccab on main
+main                  : c55ccab
+content/* branches    : ""
+working tree          : ""
+index build           : {"scanned":2597,"indexed":2587,"skipped":0,"failed":0,"missingDirectories":["NpcDropTable"],"duplicateKeys":["ZoneTransfer/WizardCity/Tutorial_Exterior","ZoneTransfer/WizardCity/Tutorial_Interior","QuestMetadatas/WC-COMMONS-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-002","QuestMetadatas/WC-UNICORN-MAIN-003","QuestMetadatas/WC-UNICORN-MAIN-004","QuestMetadatas/WC-UNICORN-MAIN-006","QuestMetadatas/WC-UNICORN-MAIN-007","QuestMetadatas/WC-UNICORN-MAIN-008"]}
+
+The run needs a fresh clone: `npm run test:reset-clone` first. A leftover
+content/* branch or a leftover DS-P205-* file would make ac1 report `update`
+instead of `created`.
+PASS  setup: the clone is fresh (clean tree, no content/* branch, no leftover save)
+
+corpus formatting survey (pristine QuestTemplates/, before this run writes anything):
+  {"files":322,"trailingCommas":306,"noFinalNewline":306,"integralFloats":317,"canonical":5}
+  → an update rewrites the file through JSON.parse + JSON.stringify, so trailing
+    commas, the missing final newline and integral-float spellings (0.0) normalise;
+    the D45(1) merge is what keeps every omitted null and every value in place.
+
+==============================================================================
+p2-05-ac1 — Save All of N extracted quests: files, metadata, commits, branch
+==============================================================================
+CLI MB-YARD1-C01-001.json → 1 quest, m_questName renamed MB-YARD1-C01-001 → DS-P205-AC1-001
+CLI WC-CYCLOPS-MAIN-002.json → 1 quest, m_questName renamed WC-CYCLOPS-MAIN-002 → DS-P205-AC1-002
+CLI WC-FIRECAT-MAIN-004.json → 1 quest, m_questName renamed WC-FIRECAT-MAIN-004 → DS-P205-AC1-003
+
+file         : QuestTemplates/questtemplates_DS-P205-AC1-001.json
+  bytes      : 52612
+  JSON.parse : OK (node -e JSON.parse exit 0)
+  outcome    : created   action: extract
+metadata     : QuestMetadatas/questmetadata_DS-P205-AC1-001.json (created)
+  body       : { "QuestTemplateId": "questtemplates/DS-P205-AC1-001", "Name": "DS-P205-AC1-001", "Description": "Quest extracted from packet capture.", "CreatedAt": "2026-09-26T08:34:10.670Z", "ModifiedAt": "2026-09-26T08:34:10.670Z", "CreatedBy": "P2-05 Acceptance", "ModifiedBy": "P2-05 Acceptance" }
+commit       : 141012e  branch: content/2026-09-26
+status row   : {"object_type":"quest","object_key":"DS-P205-AC1-001","status":"extracted","extracted_at":"2026-09-26T08:34:10.670Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture MB-YARD1-C01-001.json"}
+
+file         : QuestTemplates/questtemplates_DS-P205-AC1-002.json
+  bytes      : 101747
+  JSON.parse : OK (node -e JSON.parse exit 0)
+  outcome    : created   action: extract
+metadata     : QuestMetadatas/questmetadata_DS-P205-AC1-002.json (created)
+  body       : { "QuestTemplateId": "questtemplates/DS-P205-AC1-002", "Name": "DS-P205-AC1-002", "Description": "Quest extracted from packet capture.", "CreatedAt": "2026-09-26T08:34:11.269Z", "ModifiedAt": "2026-09-26T08:34:11.269Z", "CreatedBy": "P2-05 Acceptance", "ModifiedBy": "P2-05 Acceptance" }
+commit       : fcb06de  branch: content/2026-09-26
+status row   : {"object_type":"quest","object_key":"DS-P205-AC1-002","status":"extracted","extracted_at":"2026-09-26T08:34:11.269Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture WC-CYCLOPS-MAIN-002.json"}
+
+file         : QuestTemplates/questtemplates_DS-P205-AC1-003.json
+  bytes      : 47583
+  JSON.parse : OK (node -e JSON.parse exit 0)
+  outcome    : created   action: extract
+metadata     : QuestMetadatas/questmetadata_DS-P205-AC1-003.json (created)
+  body       : { "QuestTemplateId": "questtemplates/DS-P205-AC1-003", "Name": "DS-P205-AC1-003", "Description": "Quest extracted from packet capture.", "CreatedAt": "2026-09-26T08:34:11.855Z", "ModifiedAt": "2026-09-26T08:34:11.855Z", "CreatedBy": "P2-05 Acceptance", "ModifiedBy": "P2-05 Acceptance" }
+commit       : 2d416be  branch: content/2026-09-26
+status row   : {"object_type":"quest","object_key":"DS-P205-AC1-003","status":"extracted","extracted_at":"2026-09-26T08:34:11.855Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture WC-FIRECAT-MAIN-004.json"}
+
+--- git evidence ---
+2d416be spiraldb: extract quest DS-P205-AC1-003
+fcb06de spiraldb: extract quest DS-P205-AC1-002
+141012e spiraldb: extract quest DS-P205-AC1-001
+
+author (%an)          : P2-05 Acceptance
+commits since main    : 3
+branch                : content/2026-09-26
+git_branch persisted  : "content/2026-09-26"
+settings row          : {"value":"content/2026-09-26"}
+working tree after    : ""
+PASS  ac1: one clean-JSON file per quest, named by the convention
+PASS  ac1: one metadata file per quest with the exact 7-key spec shape
+PASS  ac1: N commits (3) with the exact message spiraldb: extract quest {name}
+PASS  ac1: branch content/{today} created from main HEAD
+PASS  ac1: author is the configured user_name
+PASS  ac1: settings.git_branch persisted as the branch used
+
+==============================================================================
+p2-05-ac2 — metadata pairing by content (D20)
+==============================================================================
+corpus reality:
+  metadata files                       : 327
+  distinct Names                        : 319
+  Names with more than one metadata file: 8
+  uniquely-named + off-convention paths : WC-TUT-C05-001, WC-TUT-C03-001
+  → the index pairs by the `Name` field inside the file (never by file name), and
+    records a duplicate key for the ambiguous Names (reported in the build stats).
+
+update target            : WC-TUT-C05-001
+  quest file             : QuestTemplates/questtemplates_WC-TUT-C05-001.json
+  paired metadata file   : QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+  not name-derived       : true
+  before: ModifiedAt=2025-12-30T20:37:06.8234824Z ModifiedBy=lol
+          CreatedAt=2025-08-30T21:10:37.8483394Z CreatedBy=jay
+          Description="This is the very first quest, force added by the tutorial script. The goals here are meant to be force triggered by the tutorial script. The player never knows they actually have a quest.\nDO NOT CHANGE THE NAME OF THIS QUEST: The client itself has this name, and we cannot change it."
+  edited field m_activityType = "ACTIVITY_NotActivity" → + " (p2-05)"
+
+outcome updated / action update
+file updated in place    : QuestTemplates/questtemplates_WC-TUT-C05-001.json
+  after : ModifiedAt=2026-09-26T08:34:12.674Z ModifiedBy=P2-05 Acceptance
+  CreatedAt/CreatedBy unchanged: true
+  Description unchanged      : true
+  name-derived metadata files for "WC-TUT-C05-001": []
+  key order preserved        : true
+PASS  ac2: the off-convention metadata file was updated in place
+PASS  ac2: no questmetadata_{name}.json duplicate was created (metadata file count unchanged)
+PASS  ac2: ModifiedAt/ModifiedBy refreshed, CreatedAt/CreatedBy/Description preserved
+PASS  ac2: a brand-new quest got one name-derived metadata file (from ac1)
+
+==============================================================================
+p2-05-ac5 — saving an existing name updates it and commits action update
+==============================================================================
+part A — a quest with existing metadata (the ac2 target above):
+commit     : f54f22e spiraldb: update quest WC-TUT-C05-001
+git show --name-only --format=  (this commit touched only these paths):
+QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+QuestTemplates/questtemplates_WC-TUT-C05-001.json
+
+git diff --unified=0 HEAD~1 HEAD  (the changed field plus the legacy-file
+normalisation: the corpus file has trailing commas and no trailing newline):
+diff --git a/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json b/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+index 9c32c39..f7dadef 100644
+--- a/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
++++ b/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+@@ -6 +6 @@
+-  "ModifiedAt": "2025-12-30T20:37:06.8234824Z",
++  "ModifiedAt": "2026-09-26T08:34:12.674Z",
+@@ -8 +8 @@
+-  "ModifiedBy": "lol"
++  "ModifiedBy": "P2-05 Acceptance"
+diff --git a/QuestTemplates/questtemplates_WC-TUT-C05-001.json b/QuestTemplates/questtemplates_WC-TUT-C05-001.json
+index 3a2ac9e..95449e5 100644
+--- a/QuestTemplates/questtemplates_WC-TUT-C05-001.json
++++ b/QuestTemplates/questtemplates_WC-TUT-C05-001.json
+@@ -25,3 +25,3 @@
+-              "m_locX": 0.0,
+-              "m_locY": 0.0,
+-              "m_locZ": 0.0,
++              "m_locX": 0,
++              "m_locY": 0,
++              "m_locZ": 0,
+@@ -34 +34 @@
+-            "m_reinteractTime": 0.0
++            "m_reinteractTime": 0
+@@ -286 +286 @@
+-  "m_activityType": "ACTIVITY_NotActivity",
++  "m_activityType": "ACTIVITY_NotActivity (p2-05)",
+
+diff lines: 5 removed / 5 added
+textual normalisation measured on this legacy file: spelling of integral floats and
+spelling and the trailing newline — every *value* is unchanged (the writer emits
+JSON.stringify output, and JSON.parse cannot tell 0.0 from 0).
+  edited field m_activityType → "ACTIVITY_NotActivity (p2-05)"
+
+part B — WC-TUT-C08-001 (byte-identical corpus file, 19 explicit nulls):
+outcome updated / action update  commit: d0594be spiraldb: update quest WC-TUT-C08-001
+git diff --unified=0 HEAD~1 HEAD:
+diff --git a/QuestTemplates/questtemplates_WC-TUT-C08-001.json b/QuestTemplates/questtemplates_WC-TUT-C08-001.json
+index 81ab7bb..4fd4273 100644
+--- a/QuestTemplates/questtemplates_WC-TUT-C08-001.json
++++ b/QuestTemplates/questtemplates_WC-TUT-C08-001.json
+@@ -79 +79 @@
+-  "m_activityType": "ACTIVITY_NotActivity",
++  "m_activityType": "ACTIVITY_NotActivity (p2-05)",
+null literals before/after: 19 / 19
+PASS  ac5: saving an existing key commits action update
+PASS  ac5: the file is updated in place (original path, every explicit null preserved)
+PASS  ac5/D45(1): on a byte-identical corpus file the diff is exactly the edited line
+PASS  ac5: the metadata refresh rode in the same single commit
+PASS  ac5: on a legacy-formatted corpus file only the edited field changes in value
+integral-float spellings before/after: 4 / 0
+final newline before/after: true / true
+PASS  ac5: the legacy file is normalised to clean JSON (floats respelled, no trailing commas, final newline)
+
+NOTE (honest split): the confirmation dialog that asks the user before
+overwriting an existing quest belongs to the Save All UI, i.e. story p2-07.
+This story owns the server half: detect the existing key through the
+content-keyed index (D19), report outcome=updated/action=update (D13) and
+never bypass a dirty tree (D14).
+
+==============================================================================
+p2-05-ac3 — dirty tree: actionable error (D14), nothing written
+==============================================================================
+git status --porcelain : "?? P2-05-acceptance-dirty.txt"
+HEAD before the attempt: 44 commits
+
+thrown: DirtyRepoError
+SpiralDB repo at /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb has uncommitted changes — resolve them first. The save pipeline never stashes or discards your work. git status --porcelain (1): ?? P2-05-acceptance-dirty.txt
+
+file written?                false
+metadata written?            false
+commits unchanged?           true
+status row?                  undefined
+stash list (must stay empty): ""
+the deliberate edit is still on disk: true
+PASS  ac3: DirtyRepoError with the actionable message
+PASS  ac3: nothing written — no file, no metadata, no commit, no status row
+PASS  ac3: never auto-stashed
+
+after removing the deliberate edit the same save succeeds: QuestTemplates/questtemplates_DS-P205-AC3-002.json (created)
+PASS  ac3: the guard was the only blocker (same save succeeds on a clean tree)
+
+==============================================================================
+p2-05-ac4 — status rows, history notes and dashboard counts
+==============================================================================
+entry_status:
+  {"object_type":"quest","object_key":"DS-P205-AC1-001","status":"extracted","extracted_at":"2026-09-26T08:34:10.670Z","reviewed_at":null,"verified_at":null}
+  {"object_type":"quest","object_key":"DS-P205-AC1-002","status":"extracted","extracted_at":"2026-09-26T08:34:11.269Z","reviewed_at":null,"verified_at":null}
+  {"object_type":"quest","object_key":"DS-P205-AC1-003","status":"extracted","extracted_at":"2026-09-26T08:34:11.855Z","reviewed_at":null,"verified_at":null}
+  {"object_type":"quest","object_key":"WC-TUT-C05-001","status":"extracted","extracted_at":"2026-09-26T08:34:12.674Z","reviewed_at":null,"verified_at":null}
+  {"object_type":"quest","object_key":"WC-TUT-C08-001","status":"extracted","extracted_at":"2026-09-26T08:34:13.311Z","reviewed_at":null,"verified_at":null}
+  {"object_type":"quest","object_key":"DS-P205-AC3-002","status":"extracted","extracted_at":"2026-09-26T08:34:13.967Z","reviewed_at":null,"verified_at":null}
+status_history:
+  {"old_status":null,"new_status":"extracted","notes":"Imported from packet capture MB-YARD1-C01-001.json","changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:10.670Z"}
+  {"old_status":null,"new_status":"extracted","notes":"Imported from packet capture WC-CYCLOPS-MAIN-002.json","changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:11.269Z"}
+  {"old_status":null,"new_status":"extracted","notes":"Imported from packet capture WC-FIRECAT-MAIN-004.json","changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:11.855Z"}
+  {"old_status":null,"new_status":"extracted","notes":"Imported from packet capture session_2026-06-01.json","changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:12.674Z"}
+  {"old_status":null,"new_status":"extracted","notes":null,"changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:13.311Z"}
+  {"old_status":null,"new_status":"extracted","notes":null,"changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:13.967Z"}
+
+GET /api/status/dashboard (readDashboard):
+  {"types":{"quest":{"total":6,"extracted":6,"reviewed":0,"verified":0},"drop_table":{"total":0,"extracted":0,"reviewed":0,"verified":0},"npc_inventory":{"total":0,"extracted":0,"reviewed":0,"verified":0},"npc_spell_inventory":{"total":0,"extracted":0,"reviewed":0,"verified":0},"creature_spellbook":{"total":0,"extracted":0,"reviewed":0,"verified":0},"npc_drop_table":{"total":0,"extracted":0,"reviewed":0,"verified":0},"treasure_card_inventory":{"total":0,"extracted":0,"reviewed":0,"verified":0},"zone_transfer":{"total":0,"extracted":0,"reviewed":0,"verified":0}},"overall":{"total":6,"extracted":6,"reviewed":0,"verified":0,"percent_verified":0}}
+
+history for DS-P205-AC1-001: {"found":true,"history":[{"old_status":null,"new_status":"extracted","notes":"Imported from packet capture MB-YARD1-C01-001.json","changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:10.670Z"}]}
+history for WC-TUT-C05-001: {"found":true,"history":[{"old_status":null,"new_status":"extracted","notes":"Imported from packet capture session_2026-06-01.json","changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:12.674Z"}]}
+history for DS-P205-AC3-002: {"found":true,"history":[{"old_status":null,"new_status":"extracted","notes":null,"changed_by":"P2-05 Acceptance","changed_at":"2026-09-26T08:34:13.967Z"}]}
+PASS  ac4: every saved quest has an entry_status row marked extracted
+PASS  ac4: each row has a history entry naming the capture file
+PASS  ac4: dashboard counts the additions
+
+==============================================================================
+p2-05-ac6 — content-keyed index (D19): resolve and write back by content
+==============================================================================
+index after all saves: {"scanned":2606,"indexed":2596,"skipped":0,"failed":0,"missingDirectories":["NpcDropTable"],"duplicateKeys":["ZoneTransfer/WizardCity/Tutorial_Exterior","ZoneTransfer/WizardCity/Tutorial_Interior","QuestMetadatas/WC-COMMONS-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-002","QuestMetadatas/WC-UNICORN-MAIN-003","QuestMetadatas/WC-UNICORN-MAIN-004","QuestMetadatas/WC-UNICORN-MAIN-006","QuestMetadatas/WC-UNICORN-MAIN-007","QuestMetadatas/WC-UNICORN-MAIN-008"]}
+
+DropTables/: 317 of 317 files are off-convention, e.g.:
+  droptables_ds-acad-c01-001.json
+  droptables_ds-acad-c01-002.json
+  droptables_ds-acad-c01-003.json
+
+key                        : DS-ACAD-C01-001
+name derived from the key  : droptable_DS-ACAD-C01-001.json
+index.pathFor(droptable)   : DropTables/droptables_ds-acad-c01-001.json
+resolved == the real file  : true
+editing field              : CreatedAt = "2026-06-01T00:57:40.516730Z" → + " (p2-05 update)"
+
+outcome updated / action update
+wrote to                   : DropTables/droptables_ds-acad-c01-001.json
+name-derived file created? : false
+metadata companion         : null  (quests only in p2-05)
+commit                     : aa2b25c spiraldb: update drop_table DS-ACAD-C01-001
+files in that commit:
+DropTables/droptables_ds-acad-c01-001.json
+working tree               : ""
+
+git diff --unified=0 HEAD~1 HEAD (field change + legacy normalisation):
+diff --git a/DropTables/droptables_ds-acad-c01-001.json b/DropTables/droptables_ds-acad-c01-001.json
+index 631d4f0..436f5e2 100644
+--- a/DropTables/droptables_ds-acad-c01-001.json
++++ b/DropTables/droptables_ds-acad-c01-001.json
+@@ -4 +4 @@
+-  "RollChance": 1.0,
++  "RollChance": 1,
+@@ -6,2 +6,2 @@
+-  "NoneChance": 0.0,
+-  "PityCounter": 0.0,
++  "NoneChance": 0,
++  "PityCounter": 0,
+@@ -13 +13 @@
+-  "CreatedAt": "2026-06-01T00:57:40.516730Z",
++  "CreatedAt": "2026-06-01T00:57:40.516730Z (p2-05 update)",
+@@ -17 +17 @@
+-}
+\ No newline at end of file
++}
+status row for drop_table/DS-ACAD-C01-001: {"object_type":"drop_table","object_key":"DS-ACAD-C01-001","status":"extracted","extracted_at":"2026-09-26T08:34:14.993Z","reviewed_at":null,"verified_at":null,"latest_notes":null}
+dashboard after all saves: overall={"total":7,"extracted":7,"reviewed":0,"verified":0,"percent_verified":0}
+PASS  ac6: the index resolves a key to the file that holds it, not to a derived name
+PASS  ac6: the update wrote back to the original path and created no name-derived file
+PASS  ac6: rebuilds scan the type directories and JSON5-parse the key field
+
+==============================================================================
+context — why the ac5 update payload is a null-stripped corpus copy
+==============================================================================
+CLI WC-UNICORN-MAIN-004.json vs corpus QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json — value differences:
+  m_activityType:
+    CLI   =0
+    corpus="ACTIVITY_NotActivity"
+(the CLI also drops every null-valued key: the corpus file has 75 null literals)
+
+==============================================================================
+result
+==============================================================================
+PASS  setup: the clone is fresh (clean tree, no content/* branch, no leftover save)
+PASS  ac1: one clean-JSON file per quest, named by the convention
+PASS  ac1: one metadata file per quest with the exact 7-key spec shape
+PASS  ac1: N commits (3) with the exact message spiraldb: extract quest {name}
+PASS  ac1: branch content/{today} created from main HEAD
+PASS  ac1: author is the configured user_name
+PASS  ac1: settings.git_branch persisted as the branch used
+PASS  ac2: the off-convention metadata file was updated in place
+PASS  ac2: no questmetadata_{name}.json duplicate was created (metadata file count unchanged)
+PASS  ac2: ModifiedAt/ModifiedBy refreshed, CreatedAt/CreatedBy/Description preserved
+PASS  ac2: a brand-new quest got one name-derived metadata file (from ac1)
+PASS  ac5: saving an existing key commits action update
+PASS  ac5: the file is updated in place (original path, every explicit null preserved)
+PASS  ac5/D45(1): on a byte-identical corpus file the diff is exactly the edited line
+PASS  ac5: the metadata refresh rode in the same single commit
+PASS  ac5: on a legacy-formatted corpus file only the edited field changes in value
+PASS  ac5: the legacy file is normalised to clean JSON (floats respelled, no trailing commas, final newline)
+PASS  ac3: DirtyRepoError with the actionable message
+PASS  ac3: nothing written — no file, no metadata, no commit, no status row
+PASS  ac3: never auto-stashed
+PASS  ac3: the guard was the only blocker (same save succeeds on a clean tree)
+PASS  ac4: every saved quest has an entry_status row marked extracted
+PASS  ac4: each row has a history entry naming the capture file
+PASS  ac4: dashboard counts the additions
+PASS  ac6: the index resolves a key to the file that holds it, not to a derived name
+PASS  ac6: the update wrote back to the original path and created no name-derived file
+PASS  ac6: rebuilds scan the type directories and JSON5-parse the key field
+
+27/27 checks passed
+clone state: content/2026-09-26 with 7 new commits — reset with: npm run test:reset-clone

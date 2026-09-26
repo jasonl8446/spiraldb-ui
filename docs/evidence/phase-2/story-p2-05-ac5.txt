@@ -1,0 +1,82 @@
+story p2-05 — ac5: saving an existing name updates the file, refreshes metadata, commits action update (server half)
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+part A — a quest with existing metadata (the ac2 target above):
+commit     : f54f22e spiraldb: update quest WC-TUT-C05-001
+git show --name-only --format=  (this commit touched only these paths):
+QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+QuestTemplates/questtemplates_WC-TUT-C05-001.json
+
+git diff --unified=0 HEAD~1 HEAD  (the changed field plus the legacy-file
+normalisation: the corpus file has trailing commas and no trailing newline):
+diff --git a/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json b/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+index 9c32c39..f7dadef 100644
+--- a/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
++++ b/QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+@@ -6 +6 @@
+-  "ModifiedAt": "2025-12-30T20:37:06.8234824Z",
++  "ModifiedAt": "2026-09-26T08:34:12.674Z",
+@@ -8 +8 @@
+-  "ModifiedBy": "lol"
++  "ModifiedBy": "P2-05 Acceptance"
+diff --git a/QuestTemplates/questtemplates_WC-TUT-C05-001.json b/QuestTemplates/questtemplates_WC-TUT-C05-001.json
+index 3a2ac9e..95449e5 100644
+--- a/QuestTemplates/questtemplates_WC-TUT-C05-001.json
++++ b/QuestTemplates/questtemplates_WC-TUT-C05-001.json
+@@ -25,3 +25,3 @@
+-              "m_locX": 0.0,
+-              "m_locY": 0.0,
+-              "m_locZ": 0.0,
++              "m_locX": 0,
++              "m_locY": 0,
++              "m_locZ": 0,
+@@ -34 +34 @@
+-            "m_reinteractTime": 0.0
++            "m_reinteractTime": 0
+@@ -286 +286 @@
+-  "m_activityType": "ACTIVITY_NotActivity",
++  "m_activityType": "ACTIVITY_NotActivity (p2-05)",
+
+diff lines: 5 removed / 5 added
+textual normalisation measured on this legacy file: spelling of integral floats and
+spelling and the trailing newline — every *value* is unchanged (the writer emits
+JSON.stringify output, and JSON.parse cannot tell 0.0 from 0).
+  edited field m_activityType → "ACTIVITY_NotActivity (p2-05)"
+
+part B — WC-TUT-C08-001 (byte-identical corpus file, 19 explicit nulls):
+outcome updated / action update  commit: d0594be spiraldb: update quest WC-TUT-C08-001
+git diff --unified=0 HEAD~1 HEAD:
+diff --git a/QuestTemplates/questtemplates_WC-TUT-C08-001.json b/QuestTemplates/questtemplates_WC-TUT-C08-001.json
+index 81ab7bb..4fd4273 100644
+--- a/QuestTemplates/questtemplates_WC-TUT-C08-001.json
++++ b/QuestTemplates/questtemplates_WC-TUT-C08-001.json
+@@ -79 +79 @@
+-  "m_activityType": "ACTIVITY_NotActivity",
++  "m_activityType": "ACTIVITY_NotActivity (p2-05)",
+null literals before/after: 19 / 19
+PASS  ac5: saving an existing key commits action update
+PASS  ac5: the file is updated in place (original path, every explicit null preserved)
+PASS  ac5/D45(1): on a byte-identical corpus file the diff is exactly the edited line
+PASS  ac5: the metadata refresh rode in the same single commit
+PASS  ac5: on a legacy-formatted corpus file only the edited field changes in value
+integral-float spellings before/after: 4 / 0
+final newline before/after: true / true
+PASS  ac5: the legacy file is normalised to clean JSON (floats respelled, no trailing commas, final newline)
+
+NOTE (honest split): the confirmation dialog that asks the user before
+overwriting an existing quest belongs to the Save All UI, i.e. story p2-07.
+This story owns the server half: detect the existing key through the
+content-keyed index (D19), report outcome=updated/action=update (D13) and
+never bypass a dirty tree (D14).

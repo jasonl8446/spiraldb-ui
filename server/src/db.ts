@@ -153,6 +153,35 @@ export function readSettings(db: Db): Record<string, string> {
   return Object.fromEntries(rows.map((row) => [row.key, row.value]));
 }
 
+/**
+ * Upserts a partial settings patch as one transaction: existing rows are
+ * UPDATEd, missing ones INSERTed, and a key the patch omits is left alone.
+ *
+ * The single writer for the `settings` table (task 2.4's save pipeline persists
+ * `git_branch` through it; `PUT /api/settings` uses it too). Keys are not
+ * validated here — `PUT /api/settings` validates its body before calling, and
+ * internal callers pass a `SettingKey` they own.
+ *
+ * Returns the settings as they are after the write, so a caller never re-reads.
+ */
+export function writeSettings(db: Db, patch: Record<string, string>): Record<string, string> {
+  const upsert = db.prepare(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+  );
+  const upsertAll = db.transaction((entries: Array<[string, string]>) => {
+    for (const [key, value] of entries) {
+      upsert.run(key, value);
+    }
+  });
+  upsertAll(Object.entries(patch));
+  return readSettings(db);
+}
+
+/** One-key convenience over `writeSettings` (used by the save pipeline). */
+export function writeSetting(db: Db, key: SettingKey, value: string): Record<string, string> {
+  return writeSettings(db, { [key]: value });
+}
+
 export interface SeedSettingsOptions {
   /**
    * Environment to read overrides from. Injectable so the precedence rules are

@@ -1,0 +1,46 @@
+story p2-05 — acceptance check tally (every criterion, one block)
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+PASS  setup: the clone is fresh (clean tree, no content/* branch, no leftover save)
+PASS  ac1: one clean-JSON file per quest, named by the convention
+PASS  ac1: one metadata file per quest with the exact 7-key spec shape
+PASS  ac1: N commits (3) with the exact message spiraldb: extract quest {name}
+PASS  ac1: branch content/{today} created from main HEAD
+PASS  ac1: author is the configured user_name
+PASS  ac1: settings.git_branch persisted as the branch used
+PASS  ac2: the off-convention metadata file was updated in place
+PASS  ac2: no questmetadata_{name}.json duplicate was created (metadata file count unchanged)
+PASS  ac2: ModifiedAt/ModifiedBy refreshed, CreatedAt/CreatedBy/Description preserved
+PASS  ac2: a brand-new quest got one name-derived metadata file (from ac1)
+PASS  ac5: saving an existing key commits action update
+PASS  ac5: the file is updated in place (original path, every explicit null preserved)
+PASS  ac5/D45(1): on a byte-identical corpus file the diff is exactly the edited line
+PASS  ac5: the metadata refresh rode in the same single commit
+PASS  ac5: on a legacy-formatted corpus file only the edited field changes in value
+PASS  ac5: the legacy file is normalised to clean JSON (floats respelled, no trailing commas, final newline)
+PASS  ac3: DirtyRepoError with the actionable message
+PASS  ac3: nothing written — no file, no metadata, no commit, no status row
+PASS  ac3: never auto-stashed
+PASS  ac3: the guard was the only blocker (same save succeeds on a clean tree)
+PASS  ac4: every saved quest has an entry_status row marked extracted
+PASS  ac4: each row has a history entry naming the capture file
+PASS  ac4: dashboard counts the additions
+PASS  ac6: the index resolves a key to the file that holds it, not to a derived name
+PASS  ac6: the update wrote back to the original path and created no name-derived file
+PASS  ac6: rebuilds scan the type directories and JSON5-parse the key field
+
+27/27 checks passed
+clone state: content/2026-09-26 with 7 new commits — reset with: npm run test:reset-clone
+

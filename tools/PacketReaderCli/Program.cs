@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Imcodec.ObjectProperty.TypeCache;
 using Imview.PacketReader;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace PacketReaderCli;
 
@@ -34,9 +35,15 @@ internal static class Program {
 
     // Canonical settings used by the game server (Imlight SpiralDB.cs L48-51): the corpus and
     // review JSON format relies on $type annotations and omits null fields.
+    // D48: the corpus writes every enum-valued field as its NAME (m_goalType x772,
+    // m_operator x673, m_activityType x322, ...), so the extraction output must too -
+    // otherwise every quest we save rewrites those fields as integers and the diff is
+    // noise. The game server's own settings (Imlight SpiralDB.cs) omit this converter
+    // but Newtonsoft reads both forms, so names stay loadable.
     private static readonly JsonSerializerSettings s_jsonSettings = new() {
         TypeNameHandling = TypeNameHandling.Auto,
-        NullValueHandling = NullValueHandling.Ignore
+        NullValueHandling = NullValueHandling.Ignore,
+        Converters = { new StringEnumConverter() }
     };
 
     private static async Task<int> Main(string[] args) {

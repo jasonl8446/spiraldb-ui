@@ -1,0 +1,39 @@
+story p2-05 — clone reset and sibling-repository verification
+date:    2026-09-26T04:37:00-04:00   branch: phase-2-quest-extraction   HEAD: b9577d2
+
+$ npm run test:reset-clone   # rm -rf data/test-spiraldb && git clone <owner's fork>
+exit=0
+
+--- data/test-spiraldb (the disposable clone, reset) ---
+$ git -C data/test-spiraldb log --format='%h %s' -1
+c55ccab fix: give the Olivia goal a quest helper tag
+$ git -C data/test-spiraldb branch --show-current
+main
+$ git -C data/test-spiraldb status --porcelain
+(empty)
+$ git -C data/test-spiraldb branch --list 'content/*'
+(empty — no saved-content branch left behind)
+
+--- /home/jason/Documents/git-projects/spiraldb (the OWNER'S FORK — must be untouched) ---
+$ git -C <fork> status --porcelain
+(empty)
+$ git -C <fork> branch --show-current
+main
+$ git -C <fork> log --format='%h %s' -1
+c55ccab fix: give the Olivia goal a quest helper tag
+$ git -C <fork> branch --list 'content/*'
+(empty)
+$ git -C <fork> stash list
+(empty)
+$ git -C <fork> rev-list --count HEAD
+39
+
+--- Imview — must be unchanged (0 files) ---
+$ git -C /home/jason/Documents/git-projects/Imview status --porcelain
+(empty)
+
+--- ~/.nuget (the global package cache the D18 sandbox keeps clean) ---
+$ find ~/.nuget -newermt '2026-09-26 03:00' -type f 2>/dev/null | wc -l
+0
+$ ls -d ~/.nuget 2>/dev/null || echo '(absent)'
+/home/jason/.nuget

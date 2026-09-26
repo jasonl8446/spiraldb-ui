@@ -1,0 +1,86 @@
+story p2-05 — ac1: Save All of N extracted quests — files + metadata (D20) + git (D13/D14) + status + branch
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+[setup, freshness guard and the pristine corpus formatting survey]
+
+clone                 : /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+throwaway database    : /home/jason/Documents/git-projects/spiraldb-ui/data/__test-scratch__/p2-05-acceptance.db
+user_name             : P2-05 Acceptance
+git_branch before save: ""
+HEAD                  : c55ccab on main
+main                  : c55ccab
+content/* branches    : ""
+working tree          : ""
+index build           : {"scanned":2597,"indexed":2587,"skipped":0,"failed":0,"missingDirectories":["NpcDropTable"],"duplicateKeys":["ZoneTransfer/WizardCity/Tutorial_Exterior","ZoneTransfer/WizardCity/Tutorial_Interior","QuestMetadatas/WC-COMMONS-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-002","QuestMetadatas/WC-UNICORN-MAIN-003","QuestMetadatas/WC-UNICORN-MAIN-004","QuestMetadatas/WC-UNICORN-MAIN-006","QuestMetadatas/WC-UNICORN-MAIN-007","QuestMetadatas/WC-UNICORN-MAIN-008"]}
+
+The run needs a fresh clone: `npm run test:reset-clone` first. A leftover
+content/* branch or a leftover DS-P205-* file would make ac1 report `update`
+instead of `created`.
+PASS  setup: the clone is fresh (clean tree, no content/* branch, no leftover save)
+
+corpus formatting survey (pristine QuestTemplates/, before this run writes anything):
+  {"files":322,"trailingCommas":306,"noFinalNewline":306,"integralFloats":317,"canonical":5}
+  → an update rewrites the file through JSON.parse + JSON.stringify, so trailing
+    commas, the missing final newline and integral-float spellings (0.0) normalise;
+    the D45(1) merge is what keeps every omitted null and every value in place.
+
+CLI MB-YARD1-C01-001.json → 1 quest, m_questName renamed MB-YARD1-C01-001 → DS-P205-AC1-001
+CLI WC-CYCLOPS-MAIN-002.json → 1 quest, m_questName renamed WC-CYCLOPS-MAIN-002 → DS-P205-AC1-002
+CLI WC-FIRECAT-MAIN-004.json → 1 quest, m_questName renamed WC-FIRECAT-MAIN-004 → DS-P205-AC1-003
+
+file         : QuestTemplates/questtemplates_DS-P205-AC1-001.json
+  bytes      : 52612
+  JSON.parse : OK (node -e JSON.parse exit 0)
+  outcome    : created   action: extract
+metadata     : QuestMetadatas/questmetadata_DS-P205-AC1-001.json (created)
+  body       : { "QuestTemplateId": "questtemplates/DS-P205-AC1-001", "Name": "DS-P205-AC1-001", "Description": "Quest extracted from packet capture.", "CreatedAt": "2026-09-26T08:34:10.670Z", "ModifiedAt": "2026-09-26T08:34:10.670Z", "CreatedBy": "P2-05 Acceptance", "ModifiedBy": "P2-05 Acceptance" }
+commit       : 141012e  branch: content/2026-09-26
+status row   : {"object_type":"quest","object_key":"DS-P205-AC1-001","status":"extracted","extracted_at":"2026-09-26T08:34:10.670Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture MB-YARD1-C01-001.json"}
+
+file         : QuestTemplates/questtemplates_DS-P205-AC1-002.json
+  bytes      : 101747
+  JSON.parse : OK (node -e JSON.parse exit 0)
+  outcome    : created   action: extract
+metadata     : QuestMetadatas/questmetadata_DS-P205-AC1-002.json (created)
+  body       : { "QuestTemplateId": "questtemplates/DS-P205-AC1-002", "Name": "DS-P205-AC1-002", "Description": "Quest extracted from packet capture.", "CreatedAt": "2026-09-26T08:34:11.269Z", "ModifiedAt": "2026-09-26T08:34:11.269Z", "CreatedBy": "P2-05 Acceptance", "ModifiedBy": "P2-05 Acceptance" }
+commit       : fcb06de  branch: content/2026-09-26
+status row   : {"object_type":"quest","object_key":"DS-P205-AC1-002","status":"extracted","extracted_at":"2026-09-26T08:34:11.269Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture WC-CYCLOPS-MAIN-002.json"}
+
+file         : QuestTemplates/questtemplates_DS-P205-AC1-003.json
+  bytes      : 47583
+  JSON.parse : OK (node -e JSON.parse exit 0)
+  outcome    : created   action: extract
+metadata     : QuestMetadatas/questmetadata_DS-P205-AC1-003.json (created)
+  body       : { "QuestTemplateId": "questtemplates/DS-P205-AC1-003", "Name": "DS-P205-AC1-003", "Description": "Quest extracted from packet capture.", "CreatedAt": "2026-09-26T08:34:11.855Z", "ModifiedAt": "2026-09-26T08:34:11.855Z", "CreatedBy": "P2-05 Acceptance", "ModifiedBy": "P2-05 Acceptance" }
+commit       : 2d416be  branch: content/2026-09-26
+status row   : {"object_type":"quest","object_key":"DS-P205-AC1-003","status":"extracted","extracted_at":"2026-09-26T08:34:11.855Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture WC-FIRECAT-MAIN-004.json"}
+
+--- git evidence ---
+2d416be spiraldb: extract quest DS-P205-AC1-003
+fcb06de spiraldb: extract quest DS-P205-AC1-002
+141012e spiraldb: extract quest DS-P205-AC1-001
+
+author (%an)          : P2-05 Acceptance
+commits since main    : 3
+branch                : content/2026-09-26
+git_branch persisted  : "content/2026-09-26"
+settings row          : {"value":"content/2026-09-26"}
+working tree after    : ""
+PASS  ac1: one clean-JSON file per quest, named by the convention
+PASS  ac1: one metadata file per quest with the exact 7-key spec shape
+PASS  ac1: N commits (3) with the exact message spiraldb: extract quest {name}
+PASS  ac1: branch content/{today} created from main HEAD
+PASS  ac1: author is the configured user_name
+PASS  ac1: settings.git_branch persisted as the branch used
