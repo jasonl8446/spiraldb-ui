@@ -1,0 +1,72 @@
+# p2-03 — ac1 symmetry, the D46 stdout probe, ac3 fixtures, D18 isolation
+# 2026-09-26T07:36:24Z
+
+## ac1: fixturegen -> imview-packet-reader, name symmetry
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json
+  quest            DS-ACAD1-C01-001  title=QuestTitle_1ED8D  level=1  mainline=True
+  goals            7 total = 6 in GoalCompilation (m_startGoals) + 1 via MSG_SENDGOAL
+  dialogs          2 block(s) / 7 dialog entry(ies); 1 quest-level, 1 goal-level
+  packets          5 (1 MSG_SENDGOAL, 2 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 1
+  ids              MobileID=1222694116179546111 QuestID=4790368556426464585
+  output           /tmp/p203-ac1.json
+  self-check       GoalCompilation blob (1507 bytes) decodes to 6 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2114 bytes) decodes to 5 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (964 bytes) decodes to 2 entry(ies), trailing flags intact
+fixturegen exit=0
+cli exit=0
+quests extracted: 1
+m_questName     : DS-ACAD1-C01-001 | corpus: DS-ACAD1-C01-001 | equal: true
+goals           : 7 | corpus: 7
+goal names equal: true
+startGoals      : 6
+
+## D46 stdout integrity probe: a NON-EMPTY persona (the path that used to corrupt stdout)
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+  quest            WC-CYCLOPS-MAIN-002  title=QuestTitle_17318F  level=1  mainline=True
+  goals            6 total = 0 in GoalCompilation (m_startGoals) + 6 via MSG_SENDGOAL
+  dialogs          7 block(s) / 27 dialog entry(ies); 1 quest-level, 6 goal-level
+  packets          15 (6 MSG_SENDGOAL, 7 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 6
+  ids              MobileID=7922930343523390871 QuestID=2615180561007230441
+  output           /tmp/p203-persona.json
+  self-check       GoalCompilation blob (8 bytes) decodes to 0 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2339 bytes) decodes to 5 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (2000 bytes) decodes to 4 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (1953 bytes) decodes to 4 entry(ies), trailing flags intact
+fixturegen exit=0
+cli exit=0 stdout=107608B stderr=455B
+stdout parses as JSON: yes | quests=1 name=WC-CYCLOPS-MAIN-002 level=1 goals=6 dialogBlocks=1
+reader diagnostics that stayed on stderr:
+    Could not find template ID for persona: DS-TEST_Persona
+    Could not find template ID for persona: DS-TEST_Persona
+  (stderr line count: 7)
+
+## ac3: committed fixtures + README pinning
+MB-YARD1-C01-001.json
+README.md
+WC-CYCLOPS-MAIN-002.json
+WC-FIRECAT-MAIN-004.json
+WC-UNICORN-MAIN-004.json
+WC-UNICORN-MAIN-007.json
+sha256 of README-recorded fixtures:
+  339bd29245af25a041e99592028c73c3eed320d23da90d03925cd1628c04ca87  MB-YARD1-C01-001.json
+  e2c9137b20abd621a2520104e71cc6ce2402efb31a78be30e0bf56c77bee4941  WC-CYCLOPS-MAIN-002.json
+  efaf06ab46504ea482e3e5d7b0e9978287cc1d52f78746649f00ff1d43c48d4b  WC-FIRECAT-MAIN-004.json
+  a2eae4202bc9ee0a67fe00138066c5fac2c03a387882d98f8ffa0ce8b15fd047  WC-UNICORN-MAIN-004.json
+  69af8326966595ba96abd6b097cd4efdf6319979f32cc72b08d137a11ef75b9e  WC-UNICORN-MAIN-007.json
+git: tracked-or-new (must NOT be ignored):
+  ?? server/test/fixtures/captures/MB-YARD1-C01-001.json
+  ?? server/test/fixtures/captures/README.md
+  ?? server/test/fixtures/captures/WC-CYCLOPS-MAIN-002.json
+  ?? server/test/fixtures/captures/WC-FIRECAT-MAIN-004.json
+  ?? server/test/fixtures/captures/WC-UNICORN-MAIN-004.json
+  ?? server/test/fixtures/captures/WC-UNICORN-MAIN-007.json
+check-ignore on a fixture (empty = not ignored): (not ignored - correct)
+
+## D18 isolation during build + generate + extract
+Imview files modified in the window: 0 (must be 0)
+Imview git status: []
+~/.nuget files touched: 0 (must be 0)
+
+## the D45 env check still applies (bare apphost)
+fixturegen --help with DOTNET_ROOT: exit=0
+fixturegen --help without DOTNET_ROOT: exit=131 (You must install .NET to run this application.  App: /home/j)

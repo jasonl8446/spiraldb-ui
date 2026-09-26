@@ -26,6 +26,9 @@ internal static class Program {
         Output is a JSON array of QuestTemplate objects. A capture that parses but
         contains no quest packets is a valid empty result: exit 0 with [].
 
+        The wrapper restores MSG_QUESTOFFER.Level, which the bundled reader drops
+        (decision D46), and keeps the reader's diagnostics off stdout.
+
         Exit codes: 0 = success, 1 = error (message on stderr).
         """;
 
@@ -52,9 +55,22 @@ internal static class Program {
         try {
             // Validate before handing the path to the builder: the builder silently returns an
             // empty list for anything it cannot match, so a non-capture would look like success.
-            ValidateCapture(options.InputPath);
+            var levels = ValidateCapture(options.InputPath);
 
-            var quests = await QuestBuilder.BuildQuestsFromPacketCaptureAsync(options.InputPath);
+            // The upstream builder writes diagnostics straight to Console.Out (a template-manifest
+            // warning fires as soon as a dialog carries a persona), which would corrupt the JSON
+            // payload the Node caller parses. Keep its chatter off stdout for the call.
+            List<QuestTemplate> quests;
+            var stdout = Console.Out;
+            try {
+                Console.SetOut(Console.Error);
+                quests = await QuestBuilder.BuildQuestsFromPacketCaptureAsync(options.InputPath);
+            }
+            finally {
+                Console.SetOut(stdout);
+            }
+
+            ApplyOfferLevels(quests, levels);
             var json = JsonConvert.SerializeObject(quests, Formatting.Indented, s_jsonSettings);
 
             if (options.OutputPath is null or "-") {
@@ -84,7 +100,7 @@ internal static class Program {
     /// Reads and validates the capture file, throwing <see cref="CliException"/> with a
     /// user-facing message when it is missing, unreadable, not JSON, or not a packet capture.
     /// </summary>
-    private static void ValidateCapture(string path) {
+    private static Dictionary<string, int> ValidateCapture(string path) {
         if (!File.Exists(path)) {
             throw new CliException($"input file not found: {path}");
         }
@@ -111,6 +127,8 @@ internal static class Program {
                 "envelopes shaped like {\"data\":{\"name\":\"MSG_QUESTOFFER\",\"fields\":{...}}}."
             );
         }
+
+        return ReadOfferLevels(root);
     }
 
     // An empty array is a valid capture with no packets; every entry must otherwise be an
@@ -128,6 +146,61 @@ internal static class Program {
             && name.TryGetValue<string>(out var packetName)
             && !string.IsNullOrEmpty(packetName)
             && data["fields"] is JsonObject;
+
+    /// <summary>
+    /// Collects the <c>MSG_QUESTOFFER</c> quest-name → level pairs. The bundled reader cannot
+    /// recover this field (decision D46): it reads the node through
+    /// <c>GetValue&lt;object&gt;()</c> + <c>Convert.ChangeType</c>, which throws for a JSON
+    /// number and is swallowed into <c>default(int)</c>, so every extracted quest would claim
+    /// level 0 — including on save. The wrapper restores it from the same capture it validated.
+    /// </summary>
+    private static Dictionary<string, int> ReadOfferLevels(JsonNode root) {
+        var levels = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var packet in Envelopes(root)) {
+            var fields = packet?["data"]?["fields"];
+            if (packet?["data"]?["name"]?.GetValue<string>() != "MSG_QUESTOFFER" || fields is null) {
+                continue;
+            }
+
+            var questName = ReadFieldString(fields["QuestName"]);
+            if (!string.IsNullOrEmpty(questName) && ReadFieldInt(fields["Level"]) is { } level) {
+                levels[questName] = level;
+            }
+        }
+
+        return levels;
+    }
+
+    private static IEnumerable<JsonNode?> Envelopes(JsonNode root)
+        => root is JsonArray array ? array : [root];
+
+    private static string? ReadFieldString(JsonNode? field)
+        => field?["value"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+
+    private static int? ReadFieldInt(JsonNode? field) {
+        if (field?["value"] is not JsonValue value) {
+            return null;
+        }
+
+        if (value.TryGetValue<int>(out var number)) {
+            return number;
+        }
+
+        // Tolerate a capture that wrote the level as a float (e.g. 1.0).
+        return value.TryGetValue<double>(out var floating) && floating % 1 == 0
+            ? (int) floating
+            : null;
+    }
+
+    /// <summary>Applies the levels read from the capture to the extracted quests (see D46).</summary>
+    private static void ApplyOfferLevels(List<QuestTemplate> quests, Dictionary<string, int> levels) {
+        foreach (var quest in quests) {
+            if (quest.m_questName is not null && levels.TryGetValue(quest.m_questName, out var level)) {
+                quest.m_questLevel = level;
+            }
+        }
+    }
 
     private static bool TryParseArguments(string[] args, out Options options, out string error) {
         options = new Options(string.Empty, null, false);

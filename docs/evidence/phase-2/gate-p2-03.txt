@@ -1,0 +1,33 @@
+# p2-03 gate — the six standard checks (D40)
+# 2026-09-26T07:39:08Z  branch=phase-2-quest-extraction  tree=uncommitted
+
+## 1. npm test
+ Test Files  20 passed (20)
+      Tests  514 passed (514)
+   Duration  1.13s (transform 1.97s, setup 0ms, collect 5.81s, tests 1.92s, environment 4ms, prepare 1.91s)
+
+## 2. npm run test:ui
+  8 passed (8.9s)
+
+## 3. npm run lint  (= eslint . && prettier --check .)
+eslint exit=0
+Checking formatting...
+All matched files use Prettier code style!
+prettier exit=0
+
+## 4. npm run typecheck:tests
+exit=0
+
+## 5. tsc server + client
+server exit=0
+client exit=0
+
+## 6. npm run build
+dist/assets/index-BQHBZPTe.js   392.09 kB │ gzip: 125.02 kB
+✓ built in 1.75s
+exit=0
+
+## extra: the ac2 round-trip verifier (needs the corpus clone + the .NET binaries, so NOT in the gate)
+
+PASS: 5 fixture(s), 50 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).
+verify:captures exit=0

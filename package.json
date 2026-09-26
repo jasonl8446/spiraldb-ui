@@ -15,6 +15,8 @@
     "build:server": "tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs",
     "build:client": "tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts",
     "build:cli": "NUGET_PACKAGES=$PWD/tools/.nuget dotnet build tools/PacketReaderCli/PacketReaderCli.csproj -c Release -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts && mkdir -p tools/bin && ln -sfn ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader tools/bin/imview-packet-reader",
+    "build:fixturegen": "NUGET_PACKAGES=$PWD/tools/.nuget dotnet build tools/FixtureGen/FixtureGen.csproj -c Release -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts && mkdir -p tools/bin && ln -sfn ../.artifacts/bin/FixtureGen/release/fixturegen tools/bin/fixturegen",
+    "verify:captures": "node scripts/verify-captures.mjs",
     "start": "node server/dist/server/src/index.js",
     "sync": "tsx scripts/sync-names.ts",
     "sync:dry-run": "tsx scripts/sync-dry-run.ts",

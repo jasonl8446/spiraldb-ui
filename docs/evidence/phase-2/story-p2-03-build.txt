@@ -1,0 +1,111 @@
+# p2-03 — FixtureGen raw verification: build, D18 isolation (task 2.1a, decision D28)
+# 2026-09-26T07:30:16Z  head=38d151f  branch=phase-2-quest-extraction
+# DOTNET_ROOT resolved for the RUN probes: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet
+# (from: dirname $(readlink -f $(command -v dotnet)) — the portable resolution adopted in D45)
+
+## ac1: npm run build:fixturegen
+
+> spiraldb-ui@0.1.0 build:fixturegen
+> NUGET_PACKAGES=$PWD/tools/.nuget dotnet build tools/FixtureGen/FixtureGen.csproj -c Release -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts && mkdir -p tools/bin && ln -sfn ../.artifacts/bin/FixtureGen/release/fixturegen tools/bin/fixturegen
+
+  Determining projects to restore...
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+  All projects are up-to-date for restore.
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.Math -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Math/release/Imcodec.Math.dll
+  Imcodec.Types -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Types/release/Imcodec.Types.dll
+  Imcodec.IO -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.IO/release/Imcodec.IO.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.ObjectProperty.CodeGen -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty.CodeGen/release/Imcodec.ObjectProperty.CodeGen.dll
+  Imcodec.ObjectProperty -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty/release/Imcodec.ObjectProperty.dll
+  Imview.PacketReader -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imview.PacketReader/release/Imview.PacketReader.dll
+  FixtureGen -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/FixtureGen/release/fixturegen.dll
+
+Build succeeded.
+
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+    12 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.63
+exit=0
+
+$ ls -l tools/bin/fixturegen tools/bin/imview-packet-reader
+lrwxrwxrwx 1 jason users 47 Sep 26 03:30 tools/bin/fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+lrwxrwxrwx 1 jason users 62 Sep 26 03:04 tools/bin/imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+$ readlink tools/bin/fixturegen
+../.artifacts/bin/FixtureGen/release/fixturegen
+$ test -x tools/bin/fixturegen
+executable: yes
+
+D18 flags used by build:fixturegen (must be exactly the two):
+-p:UseArtifactsOutput=true
+-p:ArtifactsPath=$PWD/tools/.artifacts
+BaseIntermediate/BaseOutput in build:fixturegen: 0 (must be 0)
+
+$ ls -l tools/.artifacts/bin/FixtureGen/release/
+total 19704
+-rwxr-xr-x 1 jason users  101744 Sep 26 03:29 fixturegen
+-rw-r--r-- 1 jason users    4082 Sep 26 03:19 fixturegen.deps.json
+-rw-r--r-- 1 jason users   43520 Sep 26 03:29 fixturegen.dll
+-rw-r--r-- 1 jason users   17664 Sep 26 03:29 fixturegen.pdb
+-rw-r--r-- 1 jason users     328 Sep 26 03:19 fixturegen.runtimeconfig.json
+-rwxr--r-- 1 jason users  258048 Jan 29  2023 ICSharpCode.SharpZipLib.dll
+-rw-r--r-- 1 jason users   13824 Sep 26 02:59 Imcodec.IO.dll
+-rw-r--r-- 1 jason users   16380 Sep 26 02:59 Imcodec.IO.pdb
+-rw-r--r-- 1 jason users  111616 Sep 26 02:59 Imcodec.Math.dll
+-rw-r--r-- 1 jason users   56872 Sep 26 02:59 Imcodec.Math.pdb
+-rw-r--r-- 1 jason users 9201664 Sep 26 02:59 Imcodec.ObjectProperty.dll
+-rw-r--r-- 1 jason users 9450408 Sep 26 02:59 Imcodec.ObjectProperty.pdb
+-rw-r--r-- 1 jason users    7168 Sep 26 02:59 Imcodec.Types.dll
+-rw-r--r-- 1 jason users   12436 Sep 26 02:59 Imcodec.Types.pdb
+-rw-r--r-- 1 jason users   32768 Sep 26 02:59 Imview.PacketReader.dll
+-rw-r--r-- 1 jason users   19972 Sep 26 02:59 Imview.PacketReader.pdb
+-rwxr--r-- 1 jason users   88064 Jul 31  2017 Ionic.Zlib.Core.dll
+-rwxr--r-- 1 jason users  712464 Mar  8  2023 Newtonsoft.Json.dll
+
+## D18 / D45 isolation (marker touched immediately before the build above)
+$ touch /tmp/d18-marker-p203; npm run build:fixturegen; fixturegen --quest … ; imview-packet-reader --input …
+fixturegen exit=0
+imview-packet-reader exit=0
+
+$ find /home/jason/Documents/git-projects/Imview -newer /tmp/d18-marker-p203 -type f | wc -l
+0
+$ find /home/jason/.nuget -newer /tmp/d18-marker-p203 -type f 2>/dev/null | wc -l
+0
+$ git -C /home/jason/Documents/git-projects/Imview status --porcelain | wc -l
+0
+$ git -C /home/jason/Documents/git-projects/Imview status --porcelain
+(empty above = sibling repo untouched)
+
+# Note: the build emits NU1900 warnings because the sandbox denies writing
+# /home/jason/.local/share/NuGet/http-cache/…/vuln_index.dat-new (the NuGet HTTP cache, not ~/.nuget).
+# That denial is a read-only-cache limitation, not a modification of the sibling repo or the package cache.
+$ find /home/jason/.local/share/NuGet -newer /tmp/d18-marker-p203 -type f 2>/dev/null | head -3
+(no output = nothing written there either)
+$ ls -la /home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4\$ps:_api.nuget.org_v3_index.json/ 2>/dev/null | head -5
+total 569460
+drwxr-xr-x 2 jason users     28672 Sep 24 20:43 .
+drwxr-xr-x 3 jason users      4096 Sep 24 12:05 ..
+-rw-r--r-- 1 jason users       243 Sep 24 12:06 list_akka.analyzers.dat
+-rw-r--r-- 1 jason users      3195 Sep 24 12:06 list_akka.dat

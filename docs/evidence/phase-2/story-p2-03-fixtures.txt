@@ -1,0 +1,141 @@
+# p2-03 — per-fixture generation + CLI extraction (task 2.1a, D28)
+# 2026-09-26T07:31:23Z  head=38d151f  branch=phase-2-quest-extraction
+# corpus clone: data/test-spiraldb @ c55ccab175440c5f676b8d5315575ccd6d550332
+# exact generator command per fixture (also recorded in server/test/fixtures/captures/README.md):
+#   tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_<QUEST>.json --output server/test/fixtures/captures/<QUEST>.json
+
+================ MB-YARD1-C01-001 ================
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_MB-YARD1-C01-001.json --output server/test/fixtures/captures/MB-YARD1-C01-001.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_MB-YARD1-C01-001.json
+  quest            MB-YARD1-C01-001  title=QuestTitle_9B62  level=1  mainline=True
+  goals            15 total = 1 in GoalCompilation (m_startGoals) + 14 via MSG_SENDGOAL
+  dialogs          7 block(s) / 9 dialog entry(ies); 1 quest-level, 6 goal-level
+  packets          23 (14 MSG_SENDGOAL, 7 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 14
+  ids              MobileID=8165076821995546999 QuestID=4817541379407232817
+  output           /home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/MB-YARD1-C01-001.json
+  self-check       GoalCompilation blob (209 bytes) decodes to 1 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (574 bytes) decodes to 1 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (613 bytes) decodes to 1 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (614 bytes) decodes to 1 entry(ies), trailing flags intact
+exit=0
+
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/MB-YARD1-C01-001.json --output /tmp/fx/cli-MB-YARD1-C01-001.json
+exit=0
+  stdout bytes: 55526  (empty = the JSON contract holds; no CLI noise on stdout)
+  quests returned: 1  m_questName=MB-YARD1-C01-001  title=QuestTitle_9B62  level=0  mainline=true
+  goals: 15 -> ["1_WizardQuestGoals_Explore","2_WizardQuestGoals_TalkNPC","3_WizardQuestGoals_Explore","4_WizardQuestGoals_TalkNPC","5_WizardQuestGoals_Explore","6_WizardQuestGoals_TalkNPC","7_WizardQuestGoals_Explore","8_WizardQuestGoals_TalkNPC","9_WizardQuestGoals_Explore","10_WizardQuestGoals_Kill","11_WizardQuestGoals_Explore","12_WizardQuestGoals_TalkNPC","13_WizardQuestGoals_Explore","14_WizardQuestGoals_Kill","15_WizardQuestGoals_TalkNPC"]
+  goal types (int as serialised): [5,4,5,4,5,4,5,4,5,2,5,4,5,2,4]
+  dialog blocks: 7  entries: 9
+  goal entries carrying data: m_goalTitle=["WizardQuestGoals_Explore","WizardQuestGoals_TalkNPC","WizardQuestGoals_Explore"] m_locationName=["ZoneLocName_138144","ZoneLocName_138144"]
+
+================ WC-CYCLOPS-MAIN-002 ================
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json --output server/test/fixtures/captures/WC-CYCLOPS-MAIN-002.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+  quest            WC-CYCLOPS-MAIN-002  title=QuestTitle_17318F  level=1  mainline=True
+  goals            6 total = 0 in GoalCompilation (m_startGoals) + 6 via MSG_SENDGOAL
+  dialogs          7 block(s) / 27 dialog entry(ies); 1 quest-level, 6 goal-level
+  packets          15 (6 MSG_SENDGOAL, 7 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 6
+  ids              MobileID=7922930343523390871 QuestID=2615180561007230441
+  output           /home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-CYCLOPS-MAIN-002.json
+  self-check       GoalCompilation blob (8 bytes) decodes to 0 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2339 bytes) decodes to 5 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (2000 bytes) decodes to 4 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (1953 bytes) decodes to 4 entry(ies), trailing flags intact
+exit=0
+
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/WC-CYCLOPS-MAIN-002.json --output /tmp/fx/cli-WC-CYCLOPS-MAIN-002.json
+exit=0
+  stdout bytes: 107608  (empty = the JSON contract holds; no CLI noise on stdout)
+  quests returned: 1  m_questName=WC-CYCLOPS-MAIN-002  title=QuestTitle_17318F  level=0  mainline=true
+  goals: 6 -> ["1_WizardQuestGoals_TalkNPC","2_WizardQuestGoals_TalkNPC","3_WizardQuestGoals_TalkNPC","4_WizardQuestGoals_TalkNPC","5_WizardQuestGoals_TalkNPC","6_WizardQuestGoals_TalkNPC"]
+  goal types (int as serialised): [4,4,4,4,4,4]
+  dialog blocks: 7  entries: 27
+  goal entries carrying data: m_goalTitle=["WizardQuestGoals_TalkNPC","WizardQuestGoals_TalkNPC","WizardQuestGoals_TalkNPC"] m_locationName=["ZoneLocName_9140","ZoneLocName_245491"]
+
+================ WC-UNICORN-MAIN-004 ================
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json --output server/test/fixtures/captures/WC-UNICORN-MAIN-004.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json
+  quest            WC-UNICORN-MAIN-004  title=QuestTitle_1625CA  level=0  mainline=True
+  goals            7 total = 5 in GoalCompilation (m_startGoals) + 2 via MSG_SENDGOAL
+  dialogs          3 block(s) / 8 dialog entry(ies); 2 quest-level, 1 goal-level
+  packets          7 (2 MSG_SENDGOAL, 3 MSG_ACTORDIALOG); tally madlib blobs: 1, client-tag blobs: 2
+  ids              MobileID=9094518287613787563 QuestID=4922063561065259485
+  output           /home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-UNICORN-MAIN-004.json
+  self-check       GoalCompilation blob (973 bytes) decodes to 5 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (1596 bytes) decodes to 4 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (884 bytes) decodes to 2 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (884 bytes) decodes to 2 entry(ies), trailing flags intact
+exit=0
+
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/WC-UNICORN-MAIN-004.json --output /tmp/fx/cli-WC-UNICORN-MAIN-004.json
+exit=0
+  stdout bytes: 32275  (empty = the JSON contract holds; no CLI noise on stdout)
+  quests returned: 1  m_questName=WC-UNICORN-MAIN-004  title=QuestTitle_1625CA  level=0  mainline=true
+  goals: 7 -> ["1_WizardQuestGoals_00000015","2_WizardQuestGoals_00000015","3_WizardQuestGoals_00000015","4_WizardQuestGoals_00000015","5_WizardQuestGoals_KillCollect","6_WizardQuestGoals_Explore","7_WizardQuestGoals_TalkNPC"]
+  goal types (int as serialised): [8,8,8,8,2,5,4]
+  dialog blocks: 3  entries: 8
+  goal entries carrying data: m_goalTitle=["WizardQuestGoals_00000015","WizardQuestGoals_00000015","WizardQuestGoals_00000015"] m_locationName=["ZoneLocName_595390","ZoneLocName_595390"]
+
+================ WC-UNICORN-MAIN-007 ================
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-007.json --output server/test/fixtures/captures/WC-UNICORN-MAIN-007.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-007.json
+  quest            WC-UNICORN-MAIN-007  title=QuestTitle_1625CF  level=0  mainline=True
+  goals            4 total = 1 in GoalCompilation (m_startGoals) + 3 via MSG_SENDGOAL
+  dialogs          5 block(s) / 8 dialog entry(ies); 2 quest-level, 3 goal-level
+  packets          10 (3 MSG_SENDGOAL, 5 MSG_ACTORDIALOG); tally madlib blobs: 2, client-tag blobs: 2
+  ids              MobileID=9094519387125415775 QuestID=4922060262530374853
+  output           /home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-UNICORN-MAIN-007.json
+  self-check       GoalCompilation blob (217 bytes) decodes to 1 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (1358 bytes) decodes to 3 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (486 bytes) decodes to 1 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Prep' blob (521 bytes) decodes to 1 entry(ies), trailing flags intact
+exit=0
+
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/WC-UNICORN-MAIN-007.json --output /tmp/fx/cli-WC-UNICORN-MAIN-007.json
+exit=0
+  stdout bytes: 31119  (empty = the JSON contract holds; no CLI noise on stdout)
+  quests returned: 1  m_questName=WC-UNICORN-MAIN-007  title=QuestTitle_1625CF  level=0  mainline=true
+  goals: 4 -> ["1_WizardQuestGoals_00000253","2_WizardQuestGoals_Kill","3_WizardQuestGoals_00000146","4_WizardQuestGoals_TalkNPC"]
+  goal types (int as serialised): [5,1,5,4]
+  dialog blocks: 5  entries: 8
+  goal entries carrying data: m_goalTitle=["WizardQuestGoals_00000253","WizardQuestGoals_Kill","WizardQuestGoals_00000146"] m_locationName=["ZoneLocName_245514","ZoneLocName_245514"]
+
+================ WC-FIRECAT-MAIN-004 ================
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json --output server/test/fixtures/captures/WC-FIRECAT-MAIN-004.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json
+  quest            WC-FIRECAT-MAIN-004  title=QuestTitle_173599  level=1  mainline=True
+  goals            5 total = 1 in GoalCompilation (m_startGoals) + 4 via MSG_SENDGOAL
+  dialogs          3 block(s) / 13 dialog entry(ies); 1 quest-level, 2 goal-level
+  packets          9 (4 MSG_SENDGOAL, 3 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 4
+  ids              MobileID=2159959560122914651 QuestID=3611814273632536621
+  output           /home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-FIRECAT-MAIN-004.json
+  self-check       GoalCompilation blob (255 bytes) decodes to 1 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2597 bytes) decodes to 6 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (1363 bytes) decodes to 3 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (1794 bytes) decodes to 4 entry(ies), trailing flags intact
+exit=0
+
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/WC-FIRECAT-MAIN-004.json --output /tmp/fx/cli-WC-FIRECAT-MAIN-004.json
+exit=0
+  stdout bytes: 50396  (empty = the JSON contract holds; no CLI noise on stdout)
+  quests returned: 1  m_questName=WC-FIRECAT-MAIN-004  title=QuestTitle_173599  level=0  mainline=true
+  goals: 5 -> ["1_WizardQuestGoals_KillCollect","2_WizardQuestGoals_TalkNPC","3_WizardQuestGoals_Explore","4_WizardQuestGoals_Kill","5_WizardQuestGoals_TalkNPC"]
+  goal types (int as serialised): [3,4,5,2,4]
+  dialog blocks: 3  entries: 13
+  goal entries carrying data: m_goalTitle=["WizardQuestGoals_KillCollect","WizardQuestGoals_TalkNPC","WizardQuestGoals_Explore"] m_locationName=["ZoneLocName_406747","ZoneLocName_114526"]
+
+================ committed fixture hashes (ac3 CI pin) ================
+$ (cd server/test/fixtures/captures && sha256sum *.json)
+339bd29245af25a041e99592028c73c3eed320d23da90d03925cd1628c04ca87  MB-YARD1-C01-001.json
+e2c9137b20abd621a2520104e71cc6ce2402efb31a78be30e0bf56c77bee4941  WC-CYCLOPS-MAIN-002.json
+efaf06ab46504ea482e3e5d7b0e9978287cc1d52f78746649f00ff1d43c48d4b  WC-FIRECAT-MAIN-004.json
+a2eae4202bc9ee0a67fe00138066c5fac2c03a387882d98f8ffa0ce8b15fd047  WC-UNICORN-MAIN-004.json
+69af8326966595ba96abd6b097cd4efdf6319979f32cc72b08d137a11ef75b9e  WC-UNICORN-MAIN-007.json
+
+================ determinism: regenerate and compare bytes ================
+$ for n in …; do fixturegen … --output /tmp/fx/again-$n.json; cmp …; done
+  MB-YARD1-C01-001: byte-identical
+  WC-CYCLOPS-MAIN-002: byte-identical
+  WC-UNICORN-MAIN-004: byte-identical
+  WC-UNICORN-MAIN-007: byte-identical
+  WC-FIRECAT-MAIN-004: byte-identical

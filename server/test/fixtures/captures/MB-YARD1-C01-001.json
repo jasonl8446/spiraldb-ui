@@ -1,0 +1,1054 @@
+[
+  {
+    "data": {
+      "name": "MSG_QUESTOFFER",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestName": {
+          "value": "MB-YARD1-C01-001"
+        },
+        "QuestTitle": {
+          "value": "QuestTitle_9B62"
+        },
+        "QuestInfo": {
+          "value": ""
+        },
+        "Level": {
+          "value": 1
+        },
+        "Rewards": {
+          "value": ""
+        },
+        "GoalData": {
+          "value": "70C7216301000000AE97AE64000000000000000000000000000000000000000000000000000000180057697A6172645175657374476F616C735F4578706C6F72650000C70D2700000005000000000000000000000000000000000000000012005A6F6E654C6F634E616D655F31333831343424004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E2D004755492F5175657374427574746F6E732F4C6F636174696F6E5F4D425F507269736F6E5F427265616B2E64647300000000000000000000"
+        },
+        "Mainline": {
+          "value": 1
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDQUEST",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "QuestTitle": {
+          "value": "QuestTitle_9B62"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566261733406016209
+        },
+        "GoalNameID": {
+          "value": 606539207
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_TalkNPC"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Seargent_Major12.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 4
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4F66634D616C6C6F6E65"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566265031940900841
+        },
+        "GoalNameID": {
+          "value": 640093639
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Explore"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Meowiarty_Red.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 5
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4D656F77436861736531"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566263932429272631
+        },
+        "GoalNameID": {
+          "value": 673648071
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_TalkNPC"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Seargent_Major09.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 4
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4F666357616C6C616365"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566267230964157263
+        },
+        "GoalNameID": {
+          "value": 707202503
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Explore"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Meowiarty_Red.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 5
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4D656F77436861736532"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566266131452529053
+        },
+        "GoalNameID": {
+          "value": 740756935
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_TalkNPC"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Bobbie03.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 4
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000120044646C5F4D425F4E505F4F666353746F6E65"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566269429987413685
+        },
+        "GoalNameID": {
+          "value": 774311367
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Explore"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Meowiarty_Red.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 5
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4D656F77436861736533"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566268330475785475
+        },
+        "GoalNameID": {
+          "value": 807865799
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_TalkNPC"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Bobbie04.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 4
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4F6663446F7273657474"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566271629010670107
+        },
+        "GoalNameID": {
+          "value": 841420231
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Explore"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_454592"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/QuestButtons/Art_Quest_Hideout_Door.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 5
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B030000001F004D425F5359315F466163746F72795F4761756E746C65745F30325F526179731E004D425F5359315F466163746F72795F4761756E746C65745F30325F57696E130044646C5F4D425F4E505F48696465686F757365"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 1566270529499041897
+        },
+        "GoalNameID": {
+          "value": 572984771
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Kill"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Rat_Thug_Blue.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 2
+        },
+        "GoalTotal": {
+          "value": 1
+        },
+        "ClientTags": {
+          "value": "15E8FF0B030000001E004D425F5359315F466163746F72795F4761756E746C65745F30325F57696E1F004D425F5359315F466163746F72795F4761756E746C65745F30325F52617973160044646C5F4D425F4E505F476962736F6E4F6C65617279"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 7153813453321331361
+        },
+        "GoalNameID": {
+          "value": 1646726595
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Explore"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Meowiarty_Red.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 5
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000140044646C5F4D425F4E505F4D656F77436861736534"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 7153814552832959571
+        },
+        "GoalNameID": {
+          "value": 1574498877
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_TalkNPC"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_138144"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Seargent_Major10.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 4
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B01000000120044646C5F4D425F4E505F4F66635061796E65"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 7153815652344587783
+        },
+        "GoalNameID": {
+          "value": 500757053
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Explore"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_147286"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Meowiarty_Red.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 5
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B0300000018004D425F5359315F436C6F636B546F7765725F31305F57696E19004D425F5359315F436C6F636B546F7765725F31305F52617973140044646C5F4D425F4E505F4D656F77436861736535"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 7153816751856215993
+        },
+        "GoalNameID": {
+          "value": 572984770
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_Kill"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_147286"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Wraith.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 2
+        },
+        "GoalTotal": {
+          "value": 1
+        },
+        "ClientTags": {
+          "value": "15E8FF0B03000000150044646C5F4D425F4E505F41676F6E7957726169746818004D425F5359315F436C6F636B546F7765725F31305F57696E19004D425F5359315F436C6F636B546F7765725F31305F52617973"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 7153817851367844205
+        },
+        "GoalNameID": {
+          "value": 1646726594
+        },
+        "GoalTitle": {
+          "value": "WizardQuestGoals_TalkNPC"
+        },
+        "GoalLocation": {
+          "value": "ZoneLocName_137200"
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": "GUI/NpcPortraits/Art_Portrait_Watson_NPC.dds"
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 4
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": "15E8FF0B04000000120044646C5F4D425F526F6F665F576174736F6E14004D425F53636F746C616E64596172645F446F6F7213004D425F53636F746C616E64596172645F57696E14004D425F53636F746C616E64596172645F52617973"
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 4817541379407232817
+        },
+        "GoalID": {
+          "value": 0
+        },
+        "CompletionType": {
+          "value": "QuestInfo"
+        },
+        "ActorDialog": {
+          "value": "ABAFE33904005072657001000000C1E98859130057697A517374394236325F30303030303030362A004755492F4E7063506F727472616974732F4172745F506F7274726169745F426F6262696530362E64647342007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F6666696365724E6573735F5153545F30342E6D7033000000001A9B000008004C4F434154494F4E0000803F64B37344ABA71044B34A06438A6BE53B0B6247C000000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E00000000010000000001020000000100000000000000000100000000010000000005000015000001000000000100000000010000000001000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330315F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303435375D01956B08004C4153544E414D45100057432D4E5043735F30303030303435385D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4C61737403004E5043378BB24E"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 0
+        },
+        "GoalID": {
+          "value": 1566261733406016209
+        },
+        "CompletionType": {
+          "value": "Completion"
+        },
+        "ActorDialog": {
+          "value": "ABAFE3390A00436F6D706C6574696F6E01000000C1E98859130057697A517374394236325F303030303030303932004755492F4E7063506F727472616974732F4172745F506F7274726169745F5365617267656E745F4D616A6F7231322E64647344007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F6666696365724D616C6F6E655F5153545F30312E6D7033000000001B9B000008004C4F434154494F4E0000803F91F33DC5C3B5E6468A99E1C19E56DB3DB9E2C6BF00000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E0000000001000000000102000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393730377C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330325F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303435395D01956B08004C4153544E414D45100057432D4E5043735F30303030303436305D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4C61737403004E5043318BB24E"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 0
+        },
+        "GoalID": {
+          "value": 1566263932429272631
+        },
+        "CompletionType": {
+          "value": "Completion"
+        },
+        "ActorDialog": {
+          "value": "ABAFE3390A00436F6D706C6574696F6E01000000C1E98859130057697A517374394236325F303030303030313032004755492F4E7063506F727472616974732F4172745F506F7274726169745F5365617267656E745F4D616A6F7230392E64647345007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F66666963657257616C6C6163655F5153545F30312E6D7033000000001C9B000008004C4F434154494F4E0000803F5228FAC566821247D94D93C3AE4657BCA2A290BE00000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E0000000001000000000102000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393730387C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330335F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303436315D01956B08004C4153544E414D45100057432D4E5043735F30303030303436325D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4C61737403004E5043338BB24E"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 0
+        },
+        "GoalID": {
+          "value": 1566266131452529053
+        },
+        "CompletionType": {
+          "value": "Completion"
+        },
+        "ActorDialog": {
+          "value": "ABAFE3390A00436F6D706C6574696F6E01000000C1E98859130057697A517374394236325F30303030303031312A004755492F4E7063506F727472616974732F4172745F506F7274726169745F426F6262696530332E64647343007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F66666963657253746F6E655F5153545F30312E6D7033000000001D9B000008004C4F434154494F4E0000803F52C762C669492A477F2B0043CF93883D4A96953F00000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E0000000001000000000102000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393730397C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330345F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303436335D01956B08004C4153544E414D45100057432D4E5043735F30303030303436345D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4C61737403004E50433D8BB24E"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 0
+        },
+        "GoalID": {
+          "value": 1566268330475785475
+        },
+        "CompletionType": {
+          "value": "Completion"
+        },
+        "ActorDialog": {
+          "value": "ABAFE3390A00436F6D706C6574696F6E03000000C1E98859130057697A517374394236325F30303030303031322A004755492F4E7063506F727472616974732F4172745F506F7274726169745F426F6262696530342E64647345007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F666669636572446F72736574745F5153545F30312E6D7033000000001E9B000008004C4F434154494F4E0000803F3583D0C517E53A47051D7AC2D2CC763EFE18F53E00000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E0000000001000000000102000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393731307C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330355F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00C1E98859130057697A517374394236325F30303030303031332A004755492F4E7063506F727472616974732F4172745F506F7274726169745F426F6262696530342E64647345007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F666669636572446F72736574745F5153545F30322E6D7033000000001E9B0000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000001000000000100000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393731307C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330355F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00C1E98859130057697A517374394236325F30303030303031342A004755492F4E7063506F727472616974732F4172745F506F7274726169745F426F6262696530342E64647345007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F666669636572446F72736574745F5153545F30332E6D7033000000001E9B0000000000004040891FCFC5EC213647E3020E44A60FC13E685C38BE00000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E0000000001000000000100000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393731307C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330355F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303436355D01956B08004C4153544E414D45100057432D4E5043735F30303030303436365D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4C61737403004E50433F8BB24E"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 0
+        },
+        "GoalID": {
+          "value": 7153814552832959571
+        },
+        "CompletionType": {
+          "value": "Completion"
+        },
+        "ActorDialog": {
+          "value": "ABAFE3390A00436F6D706C6574696F6E01000000C1E98859130057697A517374394236325F303030303030313532004755492F4E7063506F727472616974732F4172745F506F7274726169745F5365617267656E745F4D616A6F7231302E64647343007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F4F6666696365725061796E655F5153545F30312E6D7033000000001F9B000008004C4F434154494F4E0000803FA0B65F45D22166479121CCC1D25E913C060FD73F00000000000000000000000000000324004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F507269736F6E0000000001000000000102000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393731317C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040550000010000003F0000010000803F1F00000000010000000003000000000116004D422D59415244312D4E504330365F506572736F6E61000015004E5043466F726D6174735F46697273745F4C6173740000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303436375D01956B08004C4153544E414D45100057432D4E5043735F30303030303436385D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4C61737403004E5043398BB24E"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_ACTORDIALOG",
+      "fields": {
+        "MobileID": {
+          "value": 8165076821995546999
+        },
+        "QuestID": {
+          "value": 0
+        },
+        "GoalID": {
+          "value": 7153817851367844205
+        },
+        "CompletionType": {
+          "value": "Completion"
+        },
+        "ActorDialog": {
+          "value": "ABAFE3390A00436F6D706C6574696F6E01000000C1E98859130057697A517374394236325F30303030303032312C004755492F4E7063506F727472616974732F4172745F506F7274726169745F576174736F6E5F4E50432E6464733D007C536F756E645F4469616C6F6775655F4D427C576F726C64446174617C536F756E642F4469616C6F6775652F576174736F6E5F5153545F31302E6D703300000000199B000008004C4F434154494F4E0000803FFE7029C536BDC5C33E8E91C2F951383E30D703C000000000000000000000000000000322004D61726C6579626F6E652F4D425F53636F746C616E64596172642F4D425F526F6F660000000001000000000102000000010000000000000000010000000001000000000500001500000100000000010000000001010000001500307C33393730357C47656E5F4469616C5F30317C3501000000000100000000050000010000550000000001000000000100004040570000010000003F0000010000803F1F00000000010000000003000000000118004D422D594152444875622D4E504330315F506572736F6E61000015004E5043466F726D6174735F46697273745F4F6E6C790000FFFFFFFF00010000005F6099429A407C45050000005D01956B090046495253544E414D45100057432D4E5043735F30303030303337395D01956B08004C4153544E414D4500005D01956B05005449544C4500005D01956B08004E49434B4E414D4500005D01956B080046554C4C4E414D4515004E5043466F726D6174735F46697273745F4F6E6C7903004E504379331461"
+        },
+        "Persona": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": ""
+        },
+        "PersonaIcon": {
+          "value": ""
+        },
+        "RangeCheck": {
+          "value": 0
+        },
+        "IsEncounter": {
+          "value": 0
+        },
+        "DefaultDialogAnimation": {
+          "value": ""
+        }
+      }
+    }
+  }
+]
