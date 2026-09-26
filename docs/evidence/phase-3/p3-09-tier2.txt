@@ -1,0 +1,92 @@
+# p3-09 tier-2 evidence — the validation engine on the real stack (lead-run, D23)
+
+Subagents have no playwright-mcp and the lead's own HTTP proof is part of this story's AC, so both
+halves are here: the **live UI chain** and the **lead's own curl POST**.
+
+## 1. The rig, and a hazard the executor caught first
+
+Rig as p3-04…p3-08 (`cp data/spiraldb-ui.db /tmp/<x>.db`, the real corpus clone,
+`SPIRALDB_PATH="$PWD/data/test-spiraldb"`, the built `dist`, a spare port) — **with one correction
+the p3-09 executor found and the lead then applied**: the copied DB keeps its `settings` rows, and
+`seedSettings` only seeds an **empty** settings table, so `SPIRALDB_PATH` would have been **ignored**
+and a POST would have committed into the **owner's real SpiralDB fork**. The lead therefore ran
+`DELETE FROM settings` on every copy made for this story (reference tables verified intact: zones
+1241 / npcs 23033 / spells 18173 / drop_tables 317 / quests 322) and confirmed via
+`GET /api/settings` that `spiraldb_path` pointed at `data/test-spiraldb` **before** issuing any POST.
+The real fork's HEAD and working tree were checked afterwards and are untouched
+(`c55ccab`, clean).
+
+This matters beyond this story: **every earlier tier-2 pass never pressed Save**, so no previous rig
+could write anywhere — but task 3.10 posts from the UI, and its rig must clear the settings rows.
+
+## 2. The client chain, live (`DS-ACAD-C01-001`)
+
+On load the page showed the **warning** state: a banner with `role="status"` reading
+**"4 warnings: Unknown zone. Warnings never block saving."**, one warning icon
+(`data-testid="validation-warning-icon"`), and the header **Save** button with
+`aria-disabled="false"`, `data-blocked="false"`, **`data-save-wired="false"`** and the honest title
+*"Validation allows saving. The save pipeline (file, metadata and commit) arrives in task 3.10."*
+(The 4 warnings are this quest's real unlisted zone paths, consistent with the 94 measured
+corpus-wide.)
+
+Then the AC's scenario, driven through the editor itself: the Goals tab, and **`Delete
+1_WizardQuestGoals_UseItem`** — a goal that *is* a start goal, so its `m_startGoals` entry goes
+dangling (p3-04's delete deliberately does not cascade, which is exactly the AC's case). Measured
+immediately after:
+
+| Measured | Value |
+|---|---|
+| banner | `role="alert"`, `data-blocking="true"`, text **"1 validation error blocks saving: Unknown start goal."** followed by the 4 warnings |
+| Save | `aria-disabled="true"`, `data-blocked="true"`, `aria-describedby="quest-validation-banner"` |
+| inline surface | `div[data-testid="start-goals-validation"]` with **"The start goal \"1_WizardQuestGoals_UseItem\" is not defined in m_goals. Set another start goal or restore the deleted goal."** and a **computed** border `rgba(239, 68, 68, 0.6)` |
+| inline message | `{field: "m_startGoals[0]", severity: "error", kind: "start-goal-unknown"}` |
+
+Screenshot: `p3-09-validation-blocking.png`.
+
+## 3. The same payload over HTTP — the lead's own curl proof
+
+With the rig on a spare port (3218) and the settings-path check above done first, the lead issued two
+POSTs of a **real corpus quest**:
+
+**(A) a dangling `m_startGoals` reference → `HTTP 400`**
+
+```
+{"error":"Quest validation failed with 1 validation error (Unknown start goal).",
+ "fields":{"m_startGoals[4]":["The start goal \"LEAD_DELETED_GOAL\" is not defined in m_goals. Set another start goal or restore the deleted goal."]}}
+```
+
+The per-field map key is the document path, and it is the **same key shape the client's inline
+message carries** (`m_startGoals[0]` in the UI, `m_startGoals[4]` for my appended entry) — which is
+what the AC's "client renders it identically" means.
+
+**(B) a warning-only payload (an unlisted `m_zoneTag`) → `HTTP 200`, `outcome: "updated"`**
+
+Warnings do not block, so the server accepted it and wrote to the **clone** (D17) — proven by the
+clone gaining the commit `09ecabf spiraldb: update quest DS-ACAD-C01-001`. The lead then restored the
+clone (`git reset --hard 18dc924`, clean, 322 quest files) and confirmed the real fork was untouched.
+
+## 4. The reference tables are fetched by the page
+
+`performance.getEntriesByType('resource')` on the quest detail page shows the five validation
+tables fetched: **`zones`, `npcs`, `spells`, `drop_tables`, `quests`** (plus the one string-table
+lookup the Info tab needs). That is the executor's documented cost — one load per session, reusing
+the same TanStack cache `FriendlyNameDropdown` already fills — and the reason an **empty** table is
+treated as absent (so an unimported database cannot flood a real quest with false warnings).
+
+## 5. Server lifecycle
+
+Both rigs ran as managed background jobs (3216 for the UI, 3218 for the HTTP proof) and were killed
+at the end; nothing was left listening on 3216/3217/3218/3001/5173.
+
+## What this pass did **not** prove
+
+- No image input in this model, so the screenshot's **pixels** were not inspected.
+- The **six blocking rules have no corpus violation**, so the UI path for five of them
+  (empty name, duplicate name, bad `$type`, non-completing final entry, non-positive id) is proven
+  by tier-1 fixtures and by my own engine-level checks, not by a real quest. Only the dangling
+  start-goal path — the AC's own example — was driven end-to-end in the live UI.
+- The save pipeline itself is **not** wired (that is 3.10): the Save button is present and correctly
+  disabled, with `data-save-wired="false"`, and no UI POST was issued.
+- The inline-message list for deep Results/Dialog nodes and the node-level requirement-tree messages
+  are tier-1's claims; this pass measured the `m_startGoals` surface and the banner.
+- 768px/mobile was not re-checked.
