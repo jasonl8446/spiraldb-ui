@@ -418,7 +418,7 @@ What `QuestTitle.lang` actually contains — 17,879 lines, i.e. **5,960 key reco
 | `1ED89` | — | Headless Rider |
 
 ⇒ The same *numeric* index is often written **both ways in the same file with different values**
-(298 such collisions across the locale). A lookup that normalises both sides to a number and keeps "last wins"
+(28 differing-value collisions locale-wide — 26 in `QuestTitle`, 2 in `GUI`; measured by `scripts/lang-collision-survey.ts`). A lookup that normalises both sides to a number and keeps "last wins"
 silently returns the wrong title (`QuestTitle_1ED8A` would come back "Letters of Light" instead of "Forged in
 Fire"). **The rule is form-matched:** a hex-written key must be looked up as the hex token, a decimal-written key
 as the decimal token; only if the same-form token is absent may the other form be tried, and then the raw key.
@@ -594,7 +594,7 @@ eb298ceef067623c94d77c25e0c441e7f80d6fa80a63cd7cd095f5ff27fd7caf  server/test/fi
 |---|---|---|---|
 | `spell_pixie_deser.json` | `Spells/Pixie_deser.json` | 2,631 | `SpellTemplate` — the `m_name` family. `m_name="Pixie"`, `m_displayName="Spells_00000424"` → `Spells.lang` idx 424 = **"Pixie"** (self-consistent, so a parser test can assert the round-trip) |
 | `npc_judge_eddie_deser.json` | `ObjectData/WL/WL-StandIn-JudgeEddie_deser.json` | 2,053 | `WizGameObjectTemplate` — the NPC family and the `m_templateID`/`m_objectName`/`m_displayName` shape. `m_templateID=1608380`, `m_displayName="NPCs_01749407"` → **"Judge Eddie"** (matches the file's own name) |
-| `en-US_QuestTitle.lang` | `Locale/en-US/QuestTitle.lang` | 313,632 | Real `.lang`: UTF-16LE+BOM, the 5,132-file en-US locale, **5,960 key records in two lexical forms** (2,240 all-digit tokens + 3,720 hex/A–F tokens) with 298 numeric collisions across the two forms. Contains the decimal path (`00001717`→"Grim Tales", `00001718`→"To Ravenwood!", `00001813`→"The Cure", `00001814`→"Oh Me, Oh Minotaur") **and** the hex path (`1ED8A`→"Forged in Fire", `1ED8D`→"Quest for Perfection"), plus the collision pair `126346`→"Letters of Light" vs `1ED8A`→"Forged in Fire" — so 1.4e can unit-test the decimal hit, the hex hit, the **form-matched** rule (which the collision makes falsifiable) and a genuine raw-key miss |
+| `en-US_QuestTitle.lang` | `Locale/en-US/QuestTitle.lang` | 313,632 | Real `.lang`: UTF-16LE+BOM, the 5,132-file en-US locale, **5,960 key records in two lexical forms** (2,240 all-digit tokens + 3,720 hex/A–F tokens) with **28 differing-value cross-form collisions** locale-wide (26 here, 2 in `GUI`; the friendly-name categories Items/Spells/NPCs/Mobs/ZoneLocName have **none**). Contains the decimal path (`00001717`→"Grim Tales", `00001718`→"To Ravenwood!", `00001813`→"The Cure", `00001814`→"Oh Me, Oh Minotaur") **and** the hex path (`1ED8A`→"Forged in Fire", `1ED8D`→"Quest for Perfection"), plus the collision pair `126346`→"Letters of Light" vs `1ED8A`→"Forged in Fire" — so 1.4e can unit-test the decimal hit, the hex hit, the **form-matched** rule (which the collision makes falsifiable) and a genuine raw-key miss |
 
 Only one `.lang` is needed: a single real file exercises BOM handling, CRLF, the header line, sparse indices and
 the decimal key mapping. `Items.lang` (2.26 MB) was rejected as it alone would exceed the size budget.
@@ -675,7 +675,8 @@ against.
   2. suffix is all digits → look up the **decimal token** first (the `m_displayName` form, ~100 % hit);
   3. only if the same-form token is absent → try the other form's numeric equivalent;
   4. `Locale/en-US/{Category}.lang` missing, non-numeric suffix, or absent in both forms → **raw-key fallback**.
-  Collisions are real (298 locale-wide, incl. `126346`→"Letters of Light" vs `1ED8A`→"Forged in Fire"), so
+  Collisions with differing values are real (28 locale-wide: 26 `QuestTitle` + 2 `GUI`, incl. `126346`→"Letters of
+  Light" vs `1ED8A`→"Forged in Fire"), so
   normalising both sides to a number and taking "last wins" returns wrong titles — do not do it.
 - Store `(key, value, category)` into `string_table`.
 - **Measured resolution (lead-verified over all 322 corpus quest files):** 7 files carry no `m_questTitle`; of the
