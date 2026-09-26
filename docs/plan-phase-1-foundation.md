@@ -40,6 +40,13 @@ The core Phase 1 deliverable. Full re-sync strategy, no incrementals ([spec-data
 - **1.4f Transactional replace + history — S.** Within one better-sqlite3 transaction: delete all rows from the seven friendly-name tables, insert fresh rows, insert `sync_history` row (counts, revision, status `success|partial|failed`, error_message) ([spec-data-model.md](./spec-data-model.md) L139–152, L283–287).
 - **1.4g API + script — S.** `POST /api/sync`, `GET /api/sync/status`, `GET /api/sync/history` per [spec-api.md](./spec-api.md) L235–287. `npm run sync` = `tsx scripts/sync-names.ts` reusing the same service module. Sync is synchronous-blocking with response only on completion; UI shows spinner (spec L529).
 
+- **1.4h Manifest-driven template identity — M (added 2026-09-26, D35).** The unpacked tree contains `TemplateManifest_deser.json` (17 MB, 137,423 unique `{m_filename, m_id}` pairs) — the game's authoritative id space. Use it as the id source for the `items` / `spells` / `npcs` tables instead of reading `m_templateID` per file (items/NPCs) or the string-table index of `m_displayName` (spells, which collides across the `Spells_*` / `Spell_*` categories and drops 13,003 of 16,474 rows). Names still come from the `.lang` resolution ladder. Acceptance:
+  - parsing the manifest yields ≥137,000 entries and the id for a given source file is stable across runs (fixture-tested with a small synthetic manifest; the real 17 MB file is never committed);
+  - `spells` holds **≥18,000 rows with 0 dropped** and `NpcSpellInventory.Spells[].TemplateID` / `CreatureSpellbook.SpellTemplateIds` / quest `m_spellID` values resolve to real names (evidence: at least 10 concrete corpus id → file → name triples, and the measured coverage of the 794 referenced ids);
+  - items/NPCs keep or grow their counts with 0 collisions, and every row still spot-checks against its `_deser.json` source;
+  - the dedupe/dropped reporting stays in place and reads 0 for all three families;
+  - a full `npm run sync` re-run keeps all seven tables identical in count (transactional replace unaffected).
+
 ### 1.5 Names API — S
 - `GET /api/names/:type` and `GET /api/names/:type/:id` per [spec-api.md](./spec-api.md) L5–44. Types: `items`, `spells`, `npcs`, `quests`, `zones`, `drop_tables`, `strings`. Single lookup returns 404 `{ "error": ... }` when missing. Missing string-table keys display raw key client-side, never error ([spec-domain-reference.md](./spec-domain-reference.md) L693–694).
 
