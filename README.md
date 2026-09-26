@@ -4,7 +4,7 @@ A web-based tool for extracting, reviewing, editing, and verifying [SpiralDB](ht
 
 > ⚠️ **Unofficial project:** SpiralDB UI is not an official [Revive101](https://github.com/Revive101) project. It is an independent tool, not endorsed by or affiliated with Revive101. All referenced projects and game data belong to their respective owners.
 
-> **Project status (2026-09-25):** specifications and the phased implementation plan are complete; no code has been written yet. The build plan of record is [Docs/plan-overview.md](Docs/plan-overview.md) (execution model + owner-approved decisions D1–D27) with per-phase tasks in `Docs/plan-phase-{1..5}-*.md`.
+> **Project status (2026-09-25):** specifications and the phased implementation plan are complete; no code has been written yet. The build plan of record is [docs/plan-overview.md](docs/plan-overview.md) (execution model + owner-approved decisions D1–D27) with per-phase tasks in `docs/plan-phase-{1..5}-*.md`.
 
 ## Purpose
 
@@ -62,20 +62,37 @@ npm run sync
 npm run dev
 ```
 
+## UI tests
+
+Tier-1 UI tests (plan task 1.10, decision D23) drive the real app in headless chromium against the dev stack — `playwright.config.ts` auto-starts `npm run dev` (Express :3001 + Vite :5173) with `SPIRALDB_UI_SKIP_IMPORT=1`, so no data import is attempted on a fresh database.
+
+```bash
+# one-off: download chromium into the workspace (gitignored)
+npm run test:ui:install
+
+# run tests/ui/*.spec.ts headless
+npm run test:ui
+```
+
+- **Both scripts pin the browser directory**, so the install and the run cannot disagree: they are `PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium` and `PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test`. If you run `npx playwright install chromium` by hand you must set that variable yourself; browsers never come from `~/.cache/ms-playwright` or the Nix store (whose revision is coupled to a different playwright package).
+- Artifacts, all gitignored: browsers in `tools/.playwright-browsers/`, traces and failure artifacts in `test-results/`, the HTML report in `playwright-report/` (`npx playwright show-report`).
+- The specs are **hermetic and deliberately mocked**: `tests/ui/shell.spec.ts` route-mocks `/api/settings`, `/api/sync`, `/api/sync/status`, `/api/sync/history` and the bulk name tables, because CI has no sibling repositories, no `data/spiraldb-ui.db` and no WAD data. They test the UI — routing, highlighting, collapse, spinner/toast — not the sync engine: the real sync is covered by the unit tests and the tier-2 browser evidence in [docs/evidence/phase-1/story-p1-10.md](docs/evidence/phase-1/story-p1-10.md).
+- Host note (NixOS): the downloaded generic-Linux build cannot resolve its system libraries there (`libglib-2.0.so.0`, `libnss3.so`, … — `nix-ld` does not ship them). Supply the library directories a Nix-built browser uses, either once with `patchelf --set-rpath …` on the downloaded binaries or per run via `LD_LIBRARY_PATH=… npm run test:ui`. CI (`ubuntu-latest`) ships the libraries and needs neither.
+
 ## Documentation
 
 **Specifications** (authoritative):
 
-- [Domain Reference](Docs/spec-domain-reference.md) — SpiralDB JSON schemas, type enumerations, validation rules, CLI wrapper spec, WAD/string-table details
-- [Architecture](Docs/spec-architecture.md) — System design, tech stack, data flow, external dependencies
-- [Data Model](Docs/spec-data-model.md) — SQLite schemas, verification lifecycle, file naming, git branch strategy
-- [API Reference](Docs/spec-api.md) — REST endpoints and frontend URL routes
-- [UI Design](Docs/spec-ui-design.md) — Layout, components, color palette, interaction patterns
+- [Domain Reference](docs/spec-domain-reference.md) — SpiralDB JSON schemas, type enumerations, validation rules, CLI wrapper spec, WAD/string-table details
+- [Architecture](docs/spec-architecture.md) — System design, tech stack, data flow, external dependencies
+- [Data Model](docs/spec-data-model.md) — SQLite schemas, verification lifecycle, file naming, git branch strategy
+- [API Reference](docs/spec-api.md) — REST endpoints and frontend URL routes
+- [UI Design](docs/spec-ui-design.md) — Layout, components, color palette, interaction patterns
 
 **Implementation plan** (how the specs get built):
 
-- [Plan Overview](Docs/plan-overview.md) — Roadmap, environment baseline, execution model, decisions D1–D27
-- [Phase 1 — Foundation](Docs/plan-phase-1-foundation.md) · [Phase 2 — Quest Extraction](Docs/plan-phase-2-quest-extraction.md) · [Phase 3 — Quest Editing](Docs/plan-phase-3-quest-editing.md) · [Phase 4 — Object Editors](Docs/plan-phase-4-object-editors.md) · [Phase 5 — Dashboard & Polish](Docs/plan-phase-5-dashboard-polish.md)
+- [Plan Overview](docs/plan-overview.md) — Roadmap, environment baseline, execution model, decisions D1–D27
+- [Phase 1 — Foundation](docs/plan-phase-1-foundation.md) · [Phase 2 — Quest Extraction](docs/plan-phase-2-quest-extraction.md) · [Phase 3 — Quest Editing](docs/plan-phase-3-quest-editing.md) · [Phase 4 — Object Editors](docs/plan-phase-4-object-editors.md) · [Phase 5 — Dashboard & Polish](docs/plan-phase-5-dashboard-polish.md)
 
 Agent instructions: [AGENTS.md](AGENTS.md).
 

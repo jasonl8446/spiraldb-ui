@@ -1,0 +1,138 @@
+{
+  "_fileName": "ObjectData/Raids/PL_Fortress/Raid-PL-Fortress-Accompany-001.xml",
+  "_flags": 7,
+  "_className": "WizPetTemplate",
+  "_hash": 1986283116,
+  "_deserializedOn": "2026-09-25 21:55:43",
+  "_imcodecVersion": "1.0.0.0",
+  "_object": {
+    "m_lootTable": [],
+    "m_deathParticles": "",
+    "m_deathSound": "",
+    "m_hitSound": "",
+    "m_castSound": "",
+    "m_aggroSound": "",
+    "m_primarySchoolName": "",
+    "m_locationPreference": "",
+    "m_leashOffsetOverride": null,
+    "m_objectName": "Raid-PL-Fortress-Accompany-001",
+    "m_templateID": 1624035,
+    "m_visualID": 0,
+    "m_adjectiveList": [
+      "Raid-PL-Fortress-Accompany-001.AdjRef"
+    ],
+    "m_exemptFromAOI": false,
+    "m_displayName": "WizardMobs_00004586",
+    "m_description": "",
+    "m_nObjectType": "OT_UNDEFINED",
+    "m_sIcon": "|_Shared|WorldData|GUI/NpcPortraits/Portrait_Robot_Batbot_A_NPC.dds",
+    "m_behaviors": [
+      {
+        "m_behaviorName": "BasicInventoryBehavior"
+      },
+      {
+        "m_behaviorName": "BasicEffectsBehavior"
+      },
+      {
+        "m_behaviorName": "BasicMobileBehavior"
+      },
+      {
+        "m_behaviorName": "BasicEquipmentBehavior"
+      },
+      {
+        "m_skeletonID": 0,
+        "m_dataLookupAssetName": "AnimationData/MasterAnimationList.xml",
+        "m_animationAssetName": "|Mob|WorldData|Character/Robot/Robot_Batbot.kfm",
+        "m_movementScale": 1.0,
+        "m_idleAnimationName": "",
+        "m_animationEventList": [],
+        "m_assetName": "|Mob|WorldData|Character/Robot/Robot_Batbot_A.nif",
+        "m_proxyName": "",
+        "m_height": 0.0,
+        "m_bStaticObject": false,
+        "m_bCastsShadow": true,
+        "m_bFadesIn": true,
+        "m_opacity": 1.0,
+        "m_bFadesOut": true,
+        "m_bPortalExcluded": false,
+        "m_scale": 1.0,
+        "m_bCanBeHiddenByCamera": false,
+        "m_nLightType": "Char",
+        "m_shadowAssetName": null,
+        "m_enableReqs": null,
+        "m_behaviorName": "AnimationBehavior"
+      },
+      {
+        "m_fidgetStateInfo": [
+          {
+            "m_idleName": "Idle",
+            "m_fidgetName": "IdleFidget",
+            "m_fidgetsPerMinute": 1.0,
+            "m_fidgetSound": "|Sound_Dynamic|WorldData|Sound/NPC/PL_Raid_Follower_Fidget.ogg"
+          }
+        ],
+        "m_behaviorName": "FidgetBehavior"
+      },
+      {
+        "m_stateSetName": "NPCMobileStates",
+        "m_behaviorName": "BasicObjectStateBehavior"
+      },
+      {
+        "m_radius": 180.0,
+        "m_angle": 270.0,
+        "m_leashType": "LLT_Elastic",
+        "m_alwaysDisplay": true,
+        "m_despawnOnUnleash": false,
+        "m_behaviorName": "LeashBehavior"
+      },
+      {
+        "m_walkableCollisionFilename": "",
+        "m_solidCollisionFilename": "",
+        "m_clickableCollisionFilename": null,
+        "m_bAutoClickBox": true,
+        "m_bDisableCollision": false,
+        "m_bClientOnly": false,
+        "m_behaviorName": "CollisionBehavior"
+      },
+      {
+        "m_autoAdd": true,
+        "m_autoRemove": true,
+        "m_allowedQuests": [],
+        "m_allowedInZones": true,
+        "m_zoneList": [
+          "Raids/Raid_PL_Fortress"
+        ],
+        "m_otherNpcsToReplace": [],
+        "m_dontSpawnIfNpcIsPresent": [],
+        "m_questEffectTemplate": {
+          "m_startReqs": null,
+          "m_containerEffects": [
+            {
+              "m_minionType": "MT_ACCOMPANY",
+              "m_summonedTemplateID": 1659111,
+              "m_effectName": "SummonMinion"
+            }
+          ],
+          "m_accompanyID": 1624035,
+          "m_effectName": "1624035",
+          "m_effectCategory": "",
+          "m_sortOrder": 0,
+          "m_duration": -1.0,
+          "m_stackingCategories": [],
+          "m_isPersistent": false,
+          "m_bIsOnPet": false,
+          "m_isPublic": true,
+          "m_visualEffectAddName": "",
+          "m_visualEffectRemoveName": "",
+          "m_onAddFunctorName": "",
+          "m_onRemoveFunctorName": "",
+          "m_stackingRule": "STACKING_NOSTACK"
+        },
+        "m_behaviorName": ""
+      },
+      {
+        "m_behaviorName": "WizardSelectBehavior"
+      }
+    ]
+  }
+}

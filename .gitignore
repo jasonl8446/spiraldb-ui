@@ -7,9 +7,15 @@ data/
 # Dependencies & build output
 node_modules/
 client/dist/
+server/dist/
+*.tsbuildinfo
+
+# npm cache is kept workspace-local because the agent sandbox cannot write $HOME (.npmrc)
+.npm-cache/
 
 # .NET tooling (kept inside the workspace per plan decision D18)
 tools/bin/
+tools/.obj/
 tools/.artifacts/
 tools/.nuget/
 
@@ -18,5 +24,5 @@ tools/.playwright-browsers/
 test-results/
 playwright-report/
 
-# Evidence artifacts are committed selectively under Docs/evidence/; scratch stays out
+# Evidence artifacts are committed selectively under docs/evidence/; scratch stays out
 *.log

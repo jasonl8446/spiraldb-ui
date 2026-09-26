@@ -1,0 +1,15 @@
+node_modules
+.npm-cache
+client/dist
+server/dist
+coverage
+data
+tools
+.omd
+Docs
+package-lock.json
+*.md
+
+# Test fixtures are verbatim copies of real Root.wad output; reformatting them
+# would destroy the byte-exactness the sync parsers are tested against.
+server/test/fixtures

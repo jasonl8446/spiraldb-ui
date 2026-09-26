@@ -1,0 +1,69 @@
+{
+  "_fileName": "ObjectData/MountObject.xml",
+  "_flags": 7,
+  "_className": "WizMountTemplate",
+  "_hash": 1259413685,
+  "_deserializedOn": "2026-09-25 21:55:42",
+  "_imcodecVersion": "1.0.0.0",
+  "_object": {
+    "m_lootTable": [],
+    "m_deathParticles": "",
+    "m_deathSound": "",
+    "m_hitSound": "",
+    "m_castSound": "",
+    "m_aggroSound": "",
+    "m_primarySchoolName": "",
+    "m_locationPreference": "",
+    "m_leashOffsetOverride": null,
+    "m_objectName": "MountObject",
+    "m_templateID": 3,
+    "m_visualID": 0,
+    "m_adjectiveList": [
+      "MountObject.AdjRef",
+      "Mount"
+    ],
+    "m_exemptFromAOI": false,
+    "m_displayName": "",
+    "m_description": "",
+    "m_nObjectType": "OT_UNDEFINED",
+    "m_sIcon": "",
+    "m_behaviors": [
+      {
+        "m_behaviorName": "BasicMobileBehavior"
+      },
+      {
+        "m_skeletonID": 0,
+        "m_dataLookupAssetName": "AnimationData/MasterAnimationList.xml",
+        "m_animationAssetName": "Character/Players/KFMs/P_Anims.kfm",
+        "m_movementScale": 1.0,
+        "m_idleAnimationName": "",
+        "m_animationEventList": [],
+        "m_assetName": "Character/Players/NIFs/Temp_P_B_PirateCape_All.nif",
+        "m_proxyName": "",
+        "m_height": 0.0,
+        "m_bStaticObject": false,
+        "m_bCastsShadow": true,
+        "m_bFadesIn": true,
+        "m_opacity": 1.0,
+        "m_bFadesOut": true,
+        "m_bPortalExcluded": false,
+        "m_scale": 1.0,
+        "m_bCanBeHiddenByCamera": false,
+        "m_nLightType": "Char",
+        "m_shadowAssetName": null,
+        "m_enableReqs": null,
+        "m_behaviorName": "AnimationBehavior"
+      },
+      {
+        "m_behaviorName": "WizardCharacterBehavior"
+      },
+      {
+        "m_maxDeviation": 15.0,
+        "m_behaviorName": "GroundContourBehavior"
+      },
+      {
+        "m_behaviorName": "EffectsBehavior"
+      }
+    ]
+  }
+}

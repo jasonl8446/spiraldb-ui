@@ -1,0 +1,72 @@
+{
+  "_fileName": "ObjectData/mg_skullriders_start.xml",
+  "_flags": 7,
+  "_className": "WizItemTemplate",
+  "_hash": 991922385,
+  "_deserializedOn": "2026-09-25 21:55:44",
+  "_imcodecVersion": "1.0.0.0",
+  "_object": {
+    "m_numPrimaryColors": 0,
+    "m_numSecondaryColors": 0,
+    "m_numPatterns": 0,
+    "m_school": "",
+    "m_arenaPointCost": 0,
+    "m_pvpCurrencyCost": 0,
+    "m_pvpTourneyCurrencyCost": 0,
+    "m_rank": 0,
+    "m_boyIconIndex": 0,
+    "m_girlIconIndex": 0,
+    "m_leashOffsetOverride": null,
+    "m_rarity": "RT_COMMON",
+    "m_equipRequirements": {
+      "m_requirements": [],
+      "m_applyNOT": false,
+      "m_operator": "ROP_AND"
+    },
+    "m_purchaseRequirements": null,
+    "m_equipEffects": [],
+    "m_baseCost": 0.0,
+    "m_creditsCost": 0.0,
+    "m_avatarInfo": null,
+    "m_avatarFlags": [],
+    "m_itemLimit": -1,
+    "m_holidayFlag": "",
+    "m_itemSetBonusTemplateID": 0,
+    "m_objectName": "mg_skullriders_start",
+    "m_templateID": 107071,
+    "m_visualID": 0,
+    "m_adjectiveList": [
+      "mg_skullriders_start.AdjRef"
+    ],
+    "m_exemptFromAOI": false,
+    "m_displayName": "",
+    "m_description": "",
+    "m_nObjectType": "OT_UNDEFINED",
+    "m_sIcon": "",
+    "m_behaviors": [
+      {
+        "m_assetName": "",
+        "m_proxyName": "",
+        "m_height": 0.0,
+        "m_bStaticObject": true,
+        "m_bCastsShadow": true,
+        "m_bFadesIn": true,
+        "m_opacity": 1.0,
+        "m_bFadesOut": true,
+        "m_bPortalExcluded": false,
+        "m_scale": 1.0,
+        "m_bCanBeHiddenByCamera": false,
+        "m_nLightType": "Char",
+        "m_shadowAssetName": null,
+        "m_enableReqs": null,
+        "m_behaviorName": "RenderBehavior"
+      },
+      {
+        "m_scriptFilename": "SkullRiders/Server.lua",
+        "m_bDisableAutoRestart": false,
+        "m_clientScriptFilename": "",
+        "m_behaviorName": "ScriptBehavior"
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+# Phase-1 gate-1 API matrix — RAW curl outputs (re-run fresh after 'rm -rf data')
+# 2026-09-26T06:31:28Z  branch=phase-1-foundation  head=b6e2c4c
+
+## L92 GET /api/names/items (shape, spec-api L22-44)
+{"items":[{"gid":4808,"name":"Twice Stitched Boots"},{"gid":77549,"name":"Twice Stitched Hat"},{"gid":87230,"name":"Twice Stitched Robe"}]}
+## L92 GET /api/names/items/4808
+{"gid":4808,"name":"Twice Stitched Boots"}
+## L92 unknown id -> 404
+{"error":"Unknown items id \"999999999\""} [HTTP 404]
+## L92 GET /api/names/zones?q=Hub (shape)
+{"zones":[{"zone_path":"Aquila/AQ_Z00_Hub","display_name":"Aquila / AQ Z00 Hub","world":"Aquila"},{"zone_path":"Arcanum/AR_Z01_Hub","display_name":"Arcanum / AR Z01 Hub","world":"Arcanum"},{"zone_path":"Avalon/AV_Z00_Hub","display_name":"Avalon / AV Z00 Hub","world":"Avalon"},{"zone_path":"Celestia/
+## L92 GET /api/names/spells/607923 + npcs/1397242
+{"template_id":607923,"name":"Firecat Alley"}
+{"template_id":1397242,"name":"AZ-Parrot-Darkshaman-A_StandIn"}
+
+## L94 GET /api/status/quests?status=extracted (322 + summary.total)
+entries: 321 summary: {"total": 322, "extracted": 321, "reviewed": 1, "verified": 0}
+
+## L95 GET /api/status/quests/DS-ACAD-C01-001/history
+{"history":[{"old_status":"extracted","new_status":"reviewed","notes":"gate-1 attempt before identity","changed_by":"","changed_at":"2026-09-26T06:23:17.332Z"},{"old_status":"reviewed","new_status":"extracted","notes":"gate-1: backwards transition to re-run the forward path","changed_by":"Jason","changed_at":"2026-09-26T06:26:25.787Z"},{"old_status":"extracted","new_status":"reviewed","notes":"Gate-1 acceptance re-run: reviewed at the Phase 1 boundary","changed_by":"Jason","changed_at":"2026-09-26T06:26:25.798Z"}]}
+
+## L96 GET /api/dashboard
+overall: {"total": 2271, "extracted": 2270, "reviewed": 1, "verified": 0, "percent_verified": 0}
+sum(types)= 2271  eight keys: 8
+
+## L97 PUT /api/settings invalid path -> 400
+{"error":"aurorium_path \"/nope\" is not an existing directory"} [HTTP 400]
+## L97 PUT /api/settings unknown key -> 400
+{"error":"Unknown settings key: nope. Allowed keys: aurorium_path, imcodec_path, user_name, spiraldb_path, git_branch"} [HTTP 400]
+## L97 GET /api/settings (persisted identity)
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-26","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/home/jason/Documents/git-projects/spiraldb","user_name":"Jason"}
+## L95 dyadic validation: bad status 400 / unknown key 404 / bad ?status 400 / unknown type 404
+PATCH status=bogus -> 400
+PATCH unknown key -> 404
+GET ?status=bogus -> 400
+GET unknown type -> 404

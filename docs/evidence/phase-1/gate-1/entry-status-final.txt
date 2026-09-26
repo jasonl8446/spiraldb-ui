@@ -1,0 +1,1 @@
+final entry_status breakdown: [{"object_type":"creature_spellbook","c":134},{"object_type":"drop_table","c":317},{"object_type":"npc_inventory","c":215},{"object_type":"npc_spell_inventory","c":77},{"object_type":"quest","c":322},{"object_type":"treasure_card_inventory","c":1},{"object_type":"zone_transfer","c":1205}]

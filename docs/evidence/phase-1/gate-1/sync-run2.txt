@@ -1,0 +1,23 @@
+
+> spiraldb-ui@0.1.0 sync
+> tsx scripts/sync-names.ts
+
+=== SpiralDB UI — friendly-name sync ===
+  status              : SUCCESS
+  revision            : V_r806919.Wizard_1_610
+  tree                : unpacked /tmp/spiraldb-wad-IzknTF
+  items               : 79,835
+  spells              : 18,173
+  npcs                : 23,033
+  quests              : 322
+  zones               : 1,241
+  drop_tables         : 317
+  string_table        : 216,991
+  manifest entries    : 137,423 ids
+  manifest ids used   : 121,041 rows keyed by the manifest (fallback 0)
+  id mismatches       : 0 rows (embedded m_templateID vs manifest)
+  missing manifest    : 0 rows
+  dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)
+  unpack / scan / write: 16.1 s / 3.5 s / 542 ms
+  total               : 20.1 s
+  sync_history        : success row written at 2026-09-26T06:28:55Z
