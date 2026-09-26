@@ -46,8 +46,10 @@ const MOCK_SYNC_REVISION = 'V_r806919.Wizard_1_610';
  * a spec that imported `client/src/lib/routes.ts` could not catch a wrong nav
  * table, only a UI that disagreed with it.
  *
- * `phase` is the "Arrives in Phase N" text every non-Settings route renders
- * (Dashboard 5, quests 2, the eight data types 4 — `client/src/lib/routes.ts`).
+ * `phase` is the "Arrives in Phase N" text a stub route renders (Dashboard 5, the
+ * eight data types 4, `/quests` 2 — `client/src/lib/routes.ts`). `/settings`
+ * (p1-08) and `/quests/extract` (p2-07) are real pages, so the loop below asserts
+ * their own content instead of the stub text.
  */
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', title: 'Dashboard', phase: '5' },
@@ -198,10 +200,18 @@ test.describe('sidebar navigation', () => {
       await expect.poll(() => new URL(page.url()).pathname).toBe(item.path);
       await expect(page.getByRole('heading', { name: item.title, exact: true })).toBeVisible();
 
-      // No dead stubs: every route renders real content — the Settings page here,
-      // and for the rest the card that names the route and the phase that builds it.
+      // No dead stubs: every route renders real content — the Settings page and
+      // the extraction page here, and for the rest the card that names the route
+      // and the phase that builds it.
       if (item.path === '/settings') {
         await expect(page.getByRole('main').getByText('Friendly Name Sync')).toBeVisible();
+      } else if (item.path === '/quests/extract') {
+        // Story p2-07 replaced this route's stub with the real page. The literal
+        // is copied on purpose (see NAV_ITEMS above); `tests/ui/extraction.spec.ts`
+        // owns the page's full contract.
+        await expect(
+          page.getByRole('main').getByText('Supported format: JSON packet capture files (.json)'),
+        ).toBeVisible();
       } else {
         await expect(
           page.getByRole('main').getByText(`Arrives in Phase ${item.phase}`),

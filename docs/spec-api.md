@@ -264,6 +264,30 @@ carries no enum conversion (the CLI already emits the corpus spelling, D48(a)).
   `settings.spiraldb_path` → `400`; dirty SpiralDB working tree (`DirtyRepoError`,
   D14) → `409` with the actionable message; any other pipeline failure → `500`.
 
+**Added by story p2-07 (Gap B) — the request body also takes `source`.** The body
+is therefore `{ "quest": { … }, "notes"?: "commit body", "source"?: "session_1.json" }`.
+`source` is the capture file the quests were extracted from; the extraction page
+knows it (the user picked the file), and this is the only way the endpoint can —
+so it supersedes the "no history note" clause above **only when `source` is
+present in the request**:
+
+- It is sanitised before use: trimmed, reduced to its base name (every `\`/`/`
+  directory component is dropped — `../../etc/passwd` is recorded as `passwd`,
+  `/tmp/x/session_1.json` as `session_1.json`), control characters stripped and the
+  result capped at 255 characters. An absent, `null`, blank or unsafe value means
+  **no note at all** — a request without `source` behaves exactly as it did before
+  the field existed (a new entry is inserted as `extracted` with a `null` note).
+- When the save **creates** the `entry_status` row (`outcome: "created"`), one
+  `status_history` row is written with
+  `notes` = `Imported from packet capture {source}`, `old_status: null`,
+  `new_status: "extracted"` and `changed_by` = the resolved `settings.user_name`.
+- When the save **updates** an existing entry (`outcome: "updated"`) it adds **no**
+  note and does **not** touch the status: D49(d) stands — an update carries no
+  user-facing transition, so re-saving a `verified` quest keeps its history and its
+  status.
+- A `source` that is not a string → `400`, like a non-string `notes`.
+- Response shape unchanged: `source` is not echoed.
+
 ### Other Object Types
 
 Same pattern for each type:

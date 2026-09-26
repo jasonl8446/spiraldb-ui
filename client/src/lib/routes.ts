@@ -98,8 +98,9 @@ export interface AppRoute {
   /** Header page title for a match. */
   title: string;
   /**
-   * Phase that builds the page. `1` means it exists now (Settings only); every
-   * other route renders the "Arrives in Phase N" stub (decision D39 item 7).
+   * Phase that builds the page. Routes whose page exists render it (chosen by
+   * path in `App.tsx`: `/settings` from p1-08, `/quests/extract` from p2-07);
+   * every other route renders the "Arrives in Phase N" stub (decision D39 item 7).
    */
   phase: number;
 }

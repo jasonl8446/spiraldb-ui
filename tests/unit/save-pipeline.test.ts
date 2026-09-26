@@ -585,6 +585,109 @@ describe('verification status (ac4, D37)', () => {
     expect(history.found && history.history).toHaveLength(2);
   });
 
+  it('applies a create-only note on the first save and drops it on an update (gap B)', async () => {
+    const h = harness();
+    const name = 'DS-P207-GAPB-001';
+
+    const created = await h.pipeline.saveObject({
+      fileType: 'questtemplates',
+      data: questFixture(name),
+      key: name,
+      // The commit body is not the status note: on a create the create-only note wins.
+      historyNotes: 'a commit body that must not become the history note',
+      historyNotesOnCreate: 'Imported from packet capture session_1.json',
+    });
+
+    expect(created.outcome).toBe('created');
+    let history = getStatusHistory(h.db, 'quest', name);
+    expect(history.found && history.history).toEqual([
+      expect.objectContaining({
+        old_status: null,
+        new_status: 'extracted',
+        notes: 'Imported from packet capture session_1.json',
+        changed_by: USER,
+      }),
+    ]);
+
+    const updated = await h.pipeline.saveObject({
+      fileType: 'questtemplates',
+      data: questFixture(name, 7),
+      key: name,
+      historyNotesOnCreate: 'Imported from packet capture other.json',
+    });
+
+    expect(updated.outcome).toBe('updated');
+    history = getStatusHistory(h.db, 'quest', name);
+    expect(history.found && history.history).toHaveLength(1);
+    expect(history.found && history.history[0]?.notes).toBe(
+      'Imported from packet capture session_1.json',
+    );
+  });
+
+  // The live defect: the corpus already holds the file, so the save is an update —
+  // yet the entry is new to tracking, and the capture note belongs to the entry.
+  it('applies the create-only note on a file update that first tracks the entry', async () => {
+    const h = harness();
+    const name = 'WC-UNICORN-MAIN-004';
+    const EXISTING_PATH = 'QuestTemplates/questtemplates_existing_004.json';
+    writeRepoFile(h.repo, EXISTING_PATH, stringifySpiraldbJson(questFixture(name)));
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'corpus already holds this quest']);
+    h.index.rebuild();
+
+    const result = await h.pipeline.saveObject({
+      fileType: 'questtemplates',
+      data: questFixture(name, 7),
+      key: name,
+      historyNotesOnCreate: 'Imported from packet capture WC-UNICORN-MAIN-004.json',
+    });
+
+    expect(result.outcome).toBe('updated');
+    expect(result.statusCreated).toBe(true);
+    const history = getStatusHistory(h.db, 'quest', name);
+    expect(history.found && history.history).toEqual([
+      expect.objectContaining({
+        old_status: null,
+        new_status: 'extracted',
+        notes: 'Imported from packet capture WC-UNICORN-MAIN-004.json',
+        changed_by: USER,
+      }),
+    ]);
+    // The file was updated where it lives, never copied to the convention name.
+    expect(repoFileExists(h.repo, EXISTING_PATH)).toBe(true);
+  });
+
+  it('reports statusCreated false and writes nothing for an already-tracked entry', async () => {
+    const h = harness();
+    const name = 'DS-P207-GAPB-002';
+    const first = await h.pipeline.saveObject({
+      fileType: 'questtemplates',
+      data: questFixture(name),
+      key: name,
+      historyNotesOnCreate: 'Imported from packet capture first.json',
+    });
+    expect(first.statusCreated).toBe(true);
+
+    const second = await h.pipeline.saveObject({
+      fileType: 'questtemplates',
+      data: questFixture(name, 8),
+      key: name,
+      historyNotesOnCreate: 'Imported from packet capture second.json',
+    });
+
+    expect(second.outcome).toBe('updated');
+    expect(second.statusCreated).toBe(false);
+    expect(second.status?.status).toBe('extracted');
+    const history = getStatusHistory(h.db, 'quest', name);
+    expect(history.found && history.history).toEqual([
+      expect.objectContaining({
+        old_status: null,
+        new_status: 'extracted',
+        notes: 'Imported from packet capture first.json',
+      }),
+    ]);
+  });
+
   it('records no status for a family with no lifecycle', async () => {
     const h = harness();
     const result = await h.pipeline.saveObject({
@@ -594,6 +697,7 @@ describe('verification status (ac4, D37)', () => {
     });
 
     expect(result.status).toBeNull();
+    expect(result.statusCreated).toBe(false);
     expect(readDashboard(h.db).overall.total).toBe(0);
   });
 });

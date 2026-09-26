@@ -1,0 +1,72 @@
+# p2-07 evidence — tier-1 UI spec (npm run test:ui, decision D23 tier 1)
+# 2026-09-26T05:35:54-04:00 branch=phase-2-quest-extraction HEAD=8f19f87
+# tree: left UNCOMMITTED for the lead (the story says do not commit)
+# baseline before p2-07: tests/ui/shell.spec.ts only, 8 specs
+# after: + tests/ui/extraction.spec.ts (14 specs, all route-mocked: no .NET, no CLI, no sibling repo, no capture)
+
+$ npm run test:ui
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1384859) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] [WebServer] (node:1384889) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1384888) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:1384906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 219 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [WebServer] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 22 tests using 2 workers
+
+(node:1384948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1384947) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [chromium] › tests/ui/extraction.spec.ts:280:3 › upload phase › states the supported format verbatim and browses through a hidden .json input (441ms)
+  ✓   3 [chromium] › tests/ui/extraction.spec.ts:327:3 › upload phase › shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel (297ms)
+  ✓   4 [chromium] › tests/ui/extraction.spec.ts:364:3 › upload phase › an error surfaces the server message and returns to the upload phase (270ms)
+  ✓   5 [chromium] › tests/ui/extraction.spec.ts:387:3 › upload phase › a 500 from an unbuilt CLI is surfaced verbatim (273ms)
+  ✓   6 [chromium] › tests/ui/extraction.spec.ts:405:3 › upload phase › Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it (497ms)
+  ✓   7 [chromium] › tests/ui/extraction.spec.ts:479:3 › results phase › renders the split layout: a 320px list and a read-only tabbed preview (578ms)
+  ✓   8 [chromium] › tests/ui/extraction.spec.ts:539:3 › results phase › an empty extraction shows the empty state and Discard returns to upload (339ms)
+  ✓   1 [chromium] › tests/ui/shell.spec.ts:191:3 › sidebar navigation › every route is reachable, renders a real page, and highlights its item (5.1s)
+  ✓  10 [chromium] › tests/ui/shell.spec.ts:243:3 › sidebar navigation › collapsing a group hides its items and flips aria-expanded (349ms)
+  ✓  11 [chromium] › tests/ui/shell.spec.ts:268:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (432ms)
+  ✓  12 [chromium] › tests/ui/shell.spec.ts:302:3 › sidebar navigation › a non-root deep link is served the SPA shell, and an unknown path is the SPA 404 (457ms)
+  ✓  13 [chromium] › tests/ui/shell.spec.ts:326:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (398ms)
+  ✓  14 [chromium] › tests/ui/shell.spec.ts:367:3 › settings › renders the settings values, the last sync and the history (274ms)
+  ✓  15 [chromium] › tests/ui/shell.spec.ts:386:1 › the dev stack answers a real API request through the Vite proxy (245ms)
+  ✓  16 [chromium] › tests/ui/shell.spec.ts:398:3 › harness self-check › the console-error guard itself is live (240ms)
+  ✓   9 [chromium] › tests/ui/extraction.spec.ts:557:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (6.1s)
+  ✓  17 [chromium] › tests/ui/extraction.spec.ts:590:3 › results phase › Save Selected saves only the selected quest (371ms)
+  ✓  18 [chromium] › tests/ui/extraction.spec.ts:607:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (355ms)
+  ✓  19 [chromium] › tests/ui/extraction.spec.ts:626:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (331ms)
+  ✓  20 [chromium] › tests/ui/extraction.spec.ts:649:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (532ms)
+  ✓  21 [chromium] › tests/ui/extraction.spec.ts:680:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (468ms)
+  ✓  22 [chromium] › tests/ui/extraction.spec.ts:706:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (839ms)
+
+  22 passed (13.4s)
+
+exit=0

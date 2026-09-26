@@ -1,0 +1,389 @@
+story p2-07 NOTE FIX — the capture note belongs to the entry_status INSERT, not the
+file outcome.
+branch phase-2-quest-extraction, HEAD 8f19f87, tree left UNCOMMITTED for the lead.
+Nothing was reverted; no sibling repo was touched; no commit was made.
+2026-09-26T06:14:38-04:00
+
+--------------------------------------------------------------------------------
+THE DEFECT (measured live, re-measured here)
+--------------------------------------------------------------------------------
+Saving a quest that ALREADY EXISTS in the corpus through POST /api/quests with a
+valid `source` produced an entry_status row inserted as `extracted` whose history
+row had `notes: null`:
+
+  status_history: [{"old_status":null,"new_status":"extracted","notes":null,
+                    "changed_by":"Lead Verify"}]
+
+Cause: savePipeline applied `historyNotesOnCreate` only when the FILE outcome was
+`created` (`outcome === 'created'`). An existing corpus file saves as
+`outcome: 'updated'`, so the note was dropped even though the entry itself was
+appearing in tracking for the first time.
+
+--------------------------------------------------------------------------------
+THE RULE IMPLEMENTED (plan §2.4; docs/spec-api.md L122)
+--------------------------------------------------------------------------------
+The note is written when the save INSERTS the `entry_status` row — the entry's
+first appearance in tracking — regardless of whether the JSON file already existed:
+
+  | file outcome      | entry_status row | note                                  |
+  |-------------------|------------------|---------------------------------------|
+  | created           | inserted         | Imported from packet capture {source} |
+  | updated (live case)| inserted        | Imported from packet capture {source} |
+  | created / updated | already existed  | no note, no status reset (D49(d))     |
+
+An update of an already-tracked entry still touches nothing: no note, no status
+change, no history row. A reviewed/verified status is never reset.
+
+Implementation (smallest correct diff, no public shape break):
+  * `upsertEntryStatus` now returns `{ entry, created }` — it reports whether THIS
+    call inserted the row, so the fact is known where the write happens and is never
+    re-derived from the file outcome.
+  * Its input gained `notesOnCreate` (the initial-row note) next to `notes` (the
+    transition note for an already-tracked entry). The insert branch uses
+    `notesOnCreate ?? notes`; the existing-row branch still uses `notes`.
+  * The call site passes `notes: request.historyNotes` and
+    `notesOnCreate: request.historyNotesOnCreate ?? request.historyNotes` — so the
+    old `historyNotes`-on-create behaviour is preserved verbatim, and a create with
+    only `historyNotes` still records it.
+  * `SaveObjectResult` gained `statusCreated: boolean` (additive; the route's
+    response shape is unchanged) so the rule is observable and testable. Always
+    `false` for a family with no lifecycle (GlobalRegistry).
+  * `historyNotes` (the non-create variant) behaviour is unchanged.
+
+FILES TOUCHED
+  server/src/services/savePipeline.ts
+    - upsertEntryStatus -> `{ entry, created }`; new `notesOnCreate` input
+    - step 7 call site: the upsert (not `outcome`) selects the note
+    - `historyNotesOnCreate` doc comment rewritten to state the real rule
+    - `SaveObjectResult.statusCreated` added
+  server/src/services/quests.ts
+    - the now-wrong comment at the `historyNotesOnCreate` argument corrected
+      (it claimed "the pipeline applies it on `outcome === 'created'`")
+  tests/unit/quests-api.test.ts        (route level, 3 new tests; 1 fake updated)
+  tests/unit/save-pipeline.test.ts     (pipeline level, 2 new tests)
+
+TESTS ADDED (the two live-case tests fail on the pre-fix code; the three guards pass
+both before and after, pinning that nothing else moved)
+  quests-api.test.ts — "capture source note — gap B of p2-07 (plan §2.4)":
+    1. writes the capture note when an existing file is saved for an untracked
+       entry            <- the live case (WC-UNICORN-MAIN-004): outcome updated,
+                           exactly one row null -> extracted, notes ===
+                           "Imported from packet capture WC-UNICORN-MAIN-004.json"
+    2. leaves an already-tracked entry alone: no new row, no reset, notes untouched
+                       <- seeded `reviewed`; no history row, status still reviewed
+    3. still inserts the row with a null note when an existing file is saved
+       without a source  <- unchanged behaviour
+    4. the pre-existing create-path test is kept and still passes
+  save-pipeline.test.ts — "verification status (ac4, D37)":
+    5. applies the create-only note on a file update that first tracks the entry
+       (asserts outcome 'updated', statusCreated true, the note on the first row)
+    6. reports statusCreated false and writes nothing for an already-tracked entry
+
+--------------------------------------------------------------------------------
+PRE-FIX FAILURE — observed while writing the tests (raw output)
+--------------------------------------------------------------------------------
+Reproduced by temporarily reinstating the old outcome-gated note selection, running
+only the new tests, then restoring the fixed file (the fix in the tree is the one
+measured below):
+  npx vitest run tests/unit/save-pipeline.test.ts tests/unit/quests-api.test.ts
+    -t "capture note when an existing file|first tracks the entry|already-tracked entry"
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ❯ tests/unit/quests-api.test.ts (53 tests | 1 failed | 51 skipped) 367ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > writes the capture note when an existing file is saved for an untracked entry
+AssertionError: expected [ { old_status: null, …(4) } ] to deeply equal [ { old_status: null, …(4) } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "changed_at": Any<String>,
+      "changed_by": "P2-06 Tester",
+      "new_status": "extracted",
+-     "notes": "Imported from packet capture WC-UNICORN-MAIN-004.json",
++     "notes": null,
+      "old_status": null,
+    },
+  ]
+
+ ❯ tests/unit/quests-api.test.ts:823:46
+    821|     expect((res.body as { outcome: string }).outcome).toBe('updated');
+    822|     const history = getStatusHistory(h.db, 'quest', 'WC-UNICORN-MAIN-0…
+    823|     expect(history.found && history.history).toEqual([
+       |                                              ^
+    824|       {
+    825|         old_status: null,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > applies the create-only note on a file update that first tracks the entry
+AssertionError: expected [ { old_status: null, …(4) } ] to deeply equal [ ObjectContaining{…} ]
+
+- Expected
++ Received
+
+  [
+-   ObjectContaining {
++   {
++     "changed_at": "2026-09-26T12:00:00.000Z",
+      "changed_by": "P2-05 Tester",
+      "new_status": "extracted",
+-     "notes": "Imported from packet capture WC-UNICORN-MAIN-004.json",
++     "notes": null,
+      "old_status": null,
+    },
+  ]
+
+ ❯ tests/unit/save-pipeline.test.ts:648:46
+    646|     expect(result.statusCreated).toBe(true);
+    647|     const history = getStatusHistory(h.db, 'quest', name);
+    648|     expect(history.found && history.history).toEqual([
+       |                                              ^
+    649|       expect.objectContaining({
+    650|         old_status: null,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 2 passed | 70 skipped (74)
+   Start at  06:11:06
+   Duration  923ms (transform 211ms, setup 0ms, collect 399ms, tests 841ms, environment 0ms, prepare 205ms)
+
+
+--------------------------------------------------------------------------------
+POST-FIX — the new tests, by name (raw)
+--------------------------------------------------------------------------------
+$ npx vitest run --reporter=verbose tests/unit/save-pipeline.test.ts tests/unit/quests-api.test.ts -t "<the five names>"
+
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ↓ tests/unit/save-pipeline.test.ts > Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}
+ ↓ tests/unit/save-pipeline.test.ts > Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)
+ ↓ tests/unit/save-pipeline.test.ts > updating an existing quest (ac5, server half) > updates the file in place, commits action update and confines the diff (D45(1))
+ ↓ tests/unit/save-pipeline.test.ts > updating an existing quest (ac5, server half) > normalises a legacy file to clean JSON on update without losing a field
+ ↓ tests/unit/save-pipeline.test.ts > updating an existing quest (ac5, server half) > refuses to create over a file another key occupies
+ ↓ tests/unit/save-pipeline.test.ts > metadata pairing (D20) > pairs a new quest with a fresh file and leaves unrelated metadata alone
+ ↓ tests/unit/save-pipeline.test.ts > the dirty-repo guard (ac3, D14) > reports an actionable error and writes nothing at all
+ ↓ tests/unit/save-pipeline.test.ts > the dirty-repo guard (ac3, D14) > refuses every object of a Save All batch at the first dirty check
+ ↓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > does not re-append history when the same status is saved again
+ ↓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > appends a transition row when the caller requests a new status
+ ↓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > never resets a verified entry when an editor saves without a status
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > returns every table column the UI needs, resolving titles through the string table
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > falls back to the raw key with no string-table rows and to m_questName without m_questTitle
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > shows a quest with no entry_status row and its summary equals GET /api/status/quests
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > reports the corpus tally as the rows actually returned (a file added outside the tool shows as extracted)
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > skips an unparsable file and still answers 200, reporting the file
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > is a 400 while spiraldb_path is not configured (rather than an empty list)
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests — the browse list (ac1) > serves the whole payload D12 requires a client-side search to filter
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests/:name — detail (ac2, D19) > returns a legacy trailing-comma file fully parsed
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests/:name — detail (ac2, D19) > resolves an off-convention legacy filename through the content-keyed index
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests/:name — detail (ac2, D19) > 404s an unknown name with the {error} envelope
+ ↓ tests/unit/quests-api.test.ts > GET /api/quests/:name — detail (ac2, D19) > 500s (not 200) when the resolved file is not a JSON object
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > calls the pipeline with the quest, the extract action and the notes
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > maps an existing key to action update
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a non-object body before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a body without quest before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a quest that is not an object before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a quest with no m_questName before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a quest with an empty m_questName before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s non-string notes before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a non-string source before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 400s a non-string source and notes before the pipeline is reached
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > creates the file, the metadata, the commit and the extracted row (real pipeline)
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > round-trips GET → POST unmodified with no field loss (explicit nulls preserved)
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > never resets a non-extracted status on a re-save
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 409s a dirty SpiralDB tree (D14) and writes nothing
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > 500s a pipeline failure that is not the caller's body (empty user_name, D38)
+ ↓ tests/unit/quests-api.test.ts > POST /api/quests — save pipeline (ac3) > reports the D48(d) duplicate-Name ambiguity and still saves deterministically
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > builds the plan’s exact note sentence
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "/tmp/x/session_1.json" to the safe base name "session_1.json"
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "../../etc/passwd" to the safe base name "passwd"
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "/tmp/x/../../etc/passwd" to the safe base name "passwd"
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "C:\\Users\\j\\captures\\session.json" to the safe base name "session.json"
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "  session.json  " to the safe base name "session.json"
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "session_1.json" to the safe base name "session_1.json"
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "///" to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "" to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces "   " to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces null to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces undefined to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces 42 to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > reduces {"name":"x"} to the safe base name undefined
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > strips control characters and caps the note’s source at the limit
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > writes the exact note on a create: old_status null, new_status extracted, changed_by the user
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > records the sanitised base name for a path-like source
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > records no note and no history row on an update, and never resets the status (D49(d))
+ ✓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > writes the capture note when an existing file is saved for an untracked entry 200ms
+ ✓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > applies a create-only note on the first save and drops it on an update (gap B) 305ms
+ ✓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > leaves an already-tracked entry alone: no new row, no reset, notes untouched 161ms
+ ✓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > still inserts the row with a null note when an existing file is saved without a source 161ms
+ ↓ tests/unit/quests-api.test.ts > capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank
+ ↓ tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+ ↓ tests/unit/quests-api.test.ts > corpus detail collection (task 2.5 extension of buildQuestRows) > counts goals across the array and $values spellings, defaulting to 0
+ ↓ tests/unit/quests-api.test.ts > corpus detail collection (task 2.5 extension of buildQuestRows) > adds goalCount/modifiedAt/sourceFile only when collectDetails is on
+ ↓ tests/unit/quests-api.test.ts > corpus detail collection (task 2.5 extension of buildQuestRows) > listQuests reads a corpus directory and joins status rows directly
+ ✓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > applies the create-only note on a file update that first tracks the entry 158ms
+ ✓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > reports statusCreated false and writes nothing for an already-tracked entry 271ms
+ ↓ tests/unit/save-pipeline.test.ts > verification status (ac4, D37) > records no status for a family with no lifecycle
+ ↓ tests/unit/save-pipeline.test.ts > the unkeyed GlobalRegistry family > writes the single file and updates it in place on the next save
+ ↓ tests/unit/save-pipeline.test.ts > the index reflects the save immediately (ac6) > resolves a freshly saved key without an explicit rebuild
+ ↓ tests/unit/save-pipeline.test.ts > failure modes > refuses to save without a configured user name (D38)
+ ↓ tests/unit/save-pipeline.test.ts > failure modes > refuses to save a companion family directly
+ ↓ tests/unit/save-pipeline.test.ts > failure modes > requires the index to have been built on the same root
+ ↓ tests/unit/save-pipeline.test.ts > failure modes > reports a missing key field instead of writing an unnamed file
+
+ Test Files  2 passed (2)
+      Tests  6 passed | 68 skipped (74)
+   Start at  06:14:13
+   Duration  1.23s (transform 206ms, setup 0ms, collect 379ms, tests 1.26s, environment 0ms, prepare 160ms)
+
+
+--------------------------------------------------------------------------------
+THE SIX GATE CHECKS
+--------------------------------------------------------------------------------
+
+## 1. npm test   (vitest run — full suite)
+$ npm test
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/naming.test.ts (54 tests) 41ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 19ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 12ms
+ ✓ tests/unit/revision.test.ts (14 tests) 13ms
+(node:1405879) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1405879) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1405879) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1405879) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+ ✓ tests/unit/extract-ui.test.ts (26 tests) 26ms
+ ✓ tests/unit/templates.test.ts (23 tests) 23ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 35ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 77ms
+ ✓ tests/unit/import.test.ts (33 tests) 52ms
+ ✓ tests/unit/db.test.ts (22 tests) 179ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 32ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 49ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 183ms
+
+   (...721 tests; the two files this fix touches, raw:)
+ ✓ tests/unit/quests-api.test.ts (53 tests) 2381ms
+ ✓ tests/unit/save-pipeline.test.ts (21 tests) 3632ms
+
+   (full-suite summary, raw:)
+   
+    Test Files  28 passed (28)
+         Tests  721 passed (721)
+      Start at  06:11:16
+      Duration  4.56s (transform 3.23s, setup 0ms, collect 10.33s, tests 9.72s, environment 6ms, prepare 2.69s)
+   
+
+## 2. npm run test:ui   (PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test)
+$ npm run test:ui
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+Error: http://localhost:5173/api/status/_import is already used, make sure that
+nothing is running on the port/url or set reuseExistingServer:true in config.webServer.
+
+BLOCKED, and deliberately NOT worked around by killing it: the port is held by the
+lead's own isolated verification stack, whose command line is:
+
+  bash -c 'cd .../spiraldb-ui && NODE_ENV=test SPIRALDB_UI_DB=/tmp/p207b-lead/lead.db \
+    SPIRALDB_UI_SKIP_IMPORT=1 npm run dev > /tmp/p207b-lead/dev.log 2>&1'
+
+playwright.config.ts refuses to reuse a running stack by design (D44: the stack this
+harness must talk to is its own isolated one). That stack also live-reloads this fix
+(tsx watch + vite HMR) for the lead's post-fix browser re-verification, so it was
+left running untouched.
+
+Substitute, clearly labelled: the same specs, unmodified, were run against that
+already-running isolated stack using a temporary config that omits the webServer
+block (every spec is API-route-mocked, so no write reached that stack's database).
+The temporary config was deleted immediately and never entered the tree.
+
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers \
+    npx playwright test --config=playwright.tmp-reuse.config.ts
+
+   ✓  26 [chromium] › tests/ui/extraction.spec.ts:868:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (585ms)
+   ✓  27 [chromium] › tests/ui/extraction.spec.ts:899:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (515ms)
+   ✓  28 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (891ms)
+
+  28 passed (26.6s)
+
+   -> the lead should re-run the canonical `npm run test:ui` once that stack is
+      stopped, so the gate records it without the substitute.
+
+## 3. npm run lint   (eslint . && prettier --check .)
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+## 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+
+## 5a. npx tsc -p server/tsconfig.json --noEmit
+exit=0
+
+## 5b. npx tsc -p client/tsconfig.json --noEmit
+exit=0
+
+## 6. npm run build
+$ npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-DBJSpXU5.css   26.45 kB │ gzip:   5.70 kB
+dist/assets/index-BQ_LubvJ.js    411.33 kB │ gzip: 130.02 kB
+✓ built in 1.67s
+exit=0
+
+(`npm run format` — prettier --write . — ran before these checks; it changed only
+the files this fix touches and added/removed no file.)
+
+--------------------------------------------------------------------------------
+WHAT I COULD NOT CONFIRM
+--------------------------------------------------------------------------------
+  * The lead's real-browser re-verification of the fix (per the task, that is the
+    lead's own pass — nothing here claims it).
+  * The canonical `npm run test:ui` could not boot its own stack while the lead's
+    stack held :5173/:3001; the substitute run above is the honest record. The
+    specs themselves are unaffected by this fix (they are API-route-mocked and the
+    change is server-side), so the risk that this hides a regression is low — but
+    it is a substitute, not the gate command.
+  * No measured-live re-run of POST /api/quests against the real corpus was done
+    here (D17: the real corpus and the owner's fork are read-only inputs, and the
+    unit saves use throwaway git-init repositories); the defect was reproduced and
+    closed at the route level in an in-memory DB.
+
+CONFIRMATION RUN on the frozen tree (after the final `npm run format` and one
+comment-only wording edit in savePipeline.ts; no behavioural change):
+  $ npm test     -> Test Files 28 passed (28) / Tests 721 passed (721)
+  $ npm run lint -> exit=0  ("All matched files use Prettier code style!")
+  $ npx tsc -p server/tsconfig.json --noEmit -> exit=0
+  $ git status --porcelain | wc -l -> 36 (the same set as before the fix, plus this
+evidence file)

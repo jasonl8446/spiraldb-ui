@@ -28,10 +28,12 @@ import { createStringLookup } from './sync/lookup.js';
  * - `readQuest` — one quest, resolved through the **D19** content-keyed index
  *   (never by deriving the filename), read with the JSON5-tolerant reader so a
  *   legacy file with trailing commas parses.
- * - `saveQuest` — the task 2.4 pipeline with body `{ quest, notes? }`, plus the
- *   **D48(d)** ambiguity report: 8 of the 316 quest names in `QuestMetadatas/`
- *   have two metadata files, so a save of such a name proceeds deterministically
- *   (first file in name order, the index's own rule) and *says so* in `warnings`.
+ * - `saveQuest` — the task 2.4 pipeline with body `{ quest, notes?, source? }`
+ *   (`source` is the capture file, recorded as the create's history note — gap B),
+ *   plus the **D48(d)** ambiguity report: 8 of the 316 quest names in
+ *   `QuestMetadatas/` have two metadata files, so a save of such a name proceeds
+ *   deterministically (first file in name order, the index's own rule) and *says
+ *   so* in `warnings`.
  *
  * No enum conversion happens anywhere here (decision D48(a): the CLI emits enum
  * names that already match the corpus).
@@ -40,14 +42,62 @@ import { createStringLookup } from './sync/lookup.js';
 /**
  * A malformed `POST /api/quests` body — the route maps it to **400**. Deliberately
  * narrow: it covers only what the caller can fix by resending (`quest` missing or
- * keyless, `notes` not a string). Pipeline problems are **not** this error, so
- * they still map to 500.
+ * keyless, `notes` not a string, `source` not a string). Pipeline problems are
+ * **not** this error, so they still map to 500.
  */
 export class QuestRequestError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'QuestRequestError';
   }
+}
+
+/* ------------------------------------------------------- capture source (gap B) */
+
+/**
+ * The longest capture name kept in a history note. `status_history.notes` is free
+ * text, so this is hygiene rather than a schema limit: a body that carries a
+ * megabyte of "filename" must not become the note.
+ */
+export const MAX_CAPTURE_SOURCE_LENGTH = 255;
+
+/**
+ * The `status_history` note an extraction save records on a **create** — plan
+ * §2.4's save-sequence bullet, `Imported from packet capture {filename}`
+ * (docs/spec-architecture.md L97, docs/spec-api.md L122).
+ */
+export function captureSourceNote(source: string): string {
+  return `Imported from packet capture ${source}`;
+}
+
+/**
+ * Reduces a request's `source` to a safe capture file **name**, or `undefined`
+ * for "no note".
+ *
+ * Everything that is not a string, and every string that is blank after
+ * trimming, maps to `undefined` — a request without `source` (or with `null`/`""`)
+ * therefore behaves exactly as it did before this field existed. A real path is
+ * reduced to its base name: the text is split on both separators (the client is a
+ * browser, but the value is untrusted input) and only the last component is kept,
+ * so `../../etc/passwd` is recorded as `passwd` and `/tmp/x/session_1.json` as
+ * `session_1.json`. Control characters are stripped (a note stays one line) and
+ * the result is capped at {@link MAX_CAPTURE_SOURCE_LENGTH} characters.
+ */
+export function sanitizeCaptureSource(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return undefined;
+  }
+  const base = trimmed.split(/[\\/]/).pop() ?? '';
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point
+  const cleaned = base.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  if (cleaned === '') {
+    return undefined;
+  }
+  return cleaned.slice(0, MAX_CAPTURE_SOURCE_LENGTH);
 }
 
 /** One `quests[]` element of `GET /api/quests` — snake_case like the status entries. */
@@ -213,7 +263,7 @@ export interface SaveQuestOptions {
   /** The shared D19 index (the router's per-root instance). */
   index: SpiraldbIndex;
   pipeline: SavePipeline;
-  /** The raw request body, validated here: `{ quest, notes? }`. */
+  /** The raw request body, validated here: `{ quest, notes?, source? }`. */
   body: unknown;
 }
 
@@ -227,15 +277,21 @@ function metadataDuplicateKey(name: string): string {
  * Saves one quest through the task 2.4 pipeline.
  *
  * Request contract (spec-silent, so fixed and documented here): the body is
- * `{ quest: {...}, notes?: string }`; `quest` must be a JSON object carrying a
- * usable `m_questName`. The commit action is `extract` for a key that does not
- * exist yet and `update` for one that does — the pipeline decides, from the index.
+ * `{ quest: {...}, notes?: string, source?: string }`; `quest` must be a JSON
+ * object carrying a usable `m_questName`. The commit action is `extract` for a key
+ * that does not exist yet and `update` for one that does — the pipeline decides,
+ * from the index.
  *
- * The save carries **no** status change and **no** history note: this endpoint has
- * no capture-file context to record (that is the extraction flow's, D37), so the
- * pipeline's default applies — a new entry is inserted as `extracted` and an
- * existing entry's status is left alone (re-saving a `verified` quest must never
- * reset it).
+ * **Gap B (plan §2.4's save sequence).** `source` is the capture file the quest
+ * came from (the extraction page knows it; the CLI output does not carry it). It is
+ * sanitised by {@link sanitizeCaptureSource} and, when the save **creates** the
+ * `entry_status` row, becomes that first `status_history` note —
+ * `Imported from packet capture {source}`, `old_status: null`, `new_status:
+ * 'extracted'`, `changed_by` = the resolved user name. An **update** gets no note
+ * and no status reset (D49(d): no user-facing transition on an update), so
+ * re-saving a `verified` quest never rewrites its history. A request without
+ * `source` behaves exactly as it did before the field existed — a new entry is
+ * inserted as `extracted` with a `null` note.
  *
  * Before the write, the `questtemplates` **and** `questmetadata` families are
  * re-scanned through the injected index. That is what makes the create/update
@@ -254,7 +310,7 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
   if (!isPlainObject(body)) {
     throw new QuestRequestError(
       'Request body must be a JSON object with a "quest" field carrying the quest object ' +
-        'and an optional "notes" string.',
+        'and optional "notes" and "source" strings.',
     );
   }
   if (!isPlainObject(body.quest)) {
@@ -267,6 +323,13 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
       `Invalid notes: expected a string but received ${body.notes === null ? 'null' : typeof body.notes}.`,
     );
   }
+  if (body.source !== undefined && body.source !== null && typeof body.source !== 'string') {
+    throw new QuestRequestError(
+      `Invalid source: expected the capture file name as a string but received ${
+        body.source === null ? 'null' : typeof body.source
+      }.`,
+    );
+  }
 
   const quest = body.quest;
   const name = objectKeyFromData(quest, 'm_questName');
@@ -276,6 +339,9 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
         '(expected a non-empty string or a finite number).',
     );
   }
+
+  // `undefined` for an absent/blank/unsafe value — i.e. no note at all.
+  const source = sanitizeCaptureSource(body.source);
 
   // Refresh both families this save touches, and keep the metadata stats: they are
   // the only place a duplicate `Name` (D48(d)) is visible.
@@ -302,6 +368,11 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     data: quest,
     action: 'extract',
     notes: typeof body.notes === 'string' ? body.notes : undefined,
+    // Gap B: the entry's first appearance in tracking. The pipeline writes this note
+    // whenever it inserts the `entry_status` row — an existing corpus file saved as
+    // `outcome: 'updated'` still gets it. An already-tracked entry gets no note, no
+    // status change and no history row (D49(d)).
+    historyNotesOnCreate: source === undefined ? undefined : captureSourceNote(source),
   });
 
   return {

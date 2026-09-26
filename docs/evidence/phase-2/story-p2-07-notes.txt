@@ -1,0 +1,176 @@
+# p2-07 notes — clause coverage, deviations and spec-silent states
+
+Executor report for story **p2-07** (`Extraction UI: dropzone, spinner, results split layout,
+Save All confirm, cancel`, plan task 2.6). It is *not* the D23 tier-2 pass: the tier-2
+playwright-mcp evidence and the screenshots belong to the lead.
+
+- branch `phase-2-quest-extraction`, HEAD `8f19f87`, tree left **uncommitted** for the lead
+- tier-1 evidence for the AC: `docs/evidence/phase-2/story-p2-07-ac1.txt` (14/14 extraction specs)
+- tier-1 evidence, full suite: `docs/evidence/phase-2/story-p2-07-ui.txt` (22 specs), and
+  `docs/evidence/phase-2/story-p2-07-unit.txt` (28 files / 687 tests)
+- six-check gate: `docs/evidence/phase-2/gate-p2-07.txt` — all six green
+
+## 0. Verdict
+
+Implementation complete; tier-1 hermetic spec added and green (14 new specs, 8 pre-existing shell
+specs still green, 22 total); the 19 new node unit tests are green; lint, both `tsc --noEmit`
+projects, `typecheck:tests` and `npm run build` are green.
+
+Everything below is proven with a **route-mocked** API (`page.route`) — see §2 for what that
+deliberately cannot prove.
+
+## 1. Clause by clause — what tier 1 proves
+
+AC `p2-07-ac1` (verbatim): "Extraction UI matches spec states, evidenced per D23 tier 2
+(playwright-mcp assertions + screenshots copied into docs/evidence/phase-2/, including a 375px
+viewport check): dropzone copy includes "Supported format: JSON packet capture files (.json)";
+spinner is indeterminate with "Extracting quests..."; results split layout (left 320px list, right
+tabbed read-only preview) with confirm dialog before Save All; Cancel aborts (D9); mobile shows
+preview as overlay (P2 AC#12)."
+
+| # | Clause | Tier-1 assertion (`tests/ui/extraction.spec.ts`) | Result |
+|---|---|---|---|
+| 1 | dropzone copy includes the verbatim format line | `states the supported format verbatim and browses through a hidden .json input` (L280) — exact-string `getByText('Supported format: JSON packet capture files (.json)')`, plus `Drag & drop packet capture file here` / `or click to browse`, `max-w-[640px] mx-auto` column, 48px `text-zinc-500` icon, `rounded-xl border-dashed` dropzone, and that clicking really opens a file chooser for the hidden `accept=".json"` input | PASS |
+| 2 | spinner is indeterminate with "Extracting quests..." | `shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel` (L327) — exact-string message, animating `lucide-loader-circle`, `getByRole('progressbar') === 0` and no `[aria-valuenow]` anywhere (so nothing can claim a determinate value), file card with name + human size, destructive `Cancel`, and the spec-L123 info toast | PASS |
+| 3 | results split layout: left 320px list, right tabbed read-only preview | `renders the split layout: a 320px list and a read-only tabbed preview` (L479) — measured `getBoundingClientRect().width ≈ 320`, row contents (name, `Level 1`, `3 goals`, `new`), `aria-selected` + `bg-blue-600/10` selection, exactly 6 tabs (`Info` default) with each panel's own content, zero `input/textarea/select` inside `main`, selection following the clicked row, and the three exact action-bar labels | PASS |
+| 4 | confirm dialog before Save All | `Save All asks for confirmation with the exact copy, and only then POSTs` (L557) — dialog text is the exact `Save 2 quests to SpiralDB? This will create files and auto-commit.`; `recorded.savedQuests` is empty after opening **and** after cancelling; confirming POSTs both quests in list order and toasts `Quest {name} saved and committed` per quest. `Save Selected saves only the selected quest` (L590) also pins the wire body to exactly `{quest}` | PASS |
+| 5 | Cancel aborts (D9) | `Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it` (L405) — two independent observations of the same abort: Playwright reports the intercepted request failed with `ERR_ABORTED`, **and** the `AbortSignal` the page handed to `fetch` fires `abort` for `/api/extract/quests`; the UI is back on the drop zone with no error toast, and a response released *after* the cancel (the epoch guard) cannot flip the page back to results | PASS |
+| 6 | mobile shows preview as overlay (375px, P2 AC#12) | `the list is full width and tapping a quest opens the preview as an overlay` (L649) — at `375x800` the list measures >300px, the desktop pane is **not mounted** at all (`getByRole('tablist')` count 0, not merely hidden), tapping a row opens a `role=dialog` overlay carrying the same 6 tabs, `Escape` closes it | PASS |
+
+Additional states the story required, all PASS:
+
+| Story requirement | Assertion | Result |
+|---|---|---|
+| toasts: success / error / info (spec L110-123) | success: L557 + L590; error: L364 + L607; info: L327 (`[data-type="info"]` count 1) | PASS |
+| error state design | `an error surfaces the server message and returns to the upload phase` (L364) — server message verbatim in the toast **and** inline in a `role="alert"`, back to the drop zone, no leftover spinner; `a 500 from an unbuilt CLI is surfaced verbatim` (L387) covers the 500 path | PASS |
+| empty results | `an empty extraction shows the empty state and Discard returns to upload` (L539) — empty message, Save All / Save Selected disabled, Discard enabled and returning to the drop zone | PASS |
+| save failures + D48(d) warnings | `a failed save surfaces the server message (the D14 dirty tree, 409)` (L607); `a D48(d) duplicate-metadata warning is surfaced as a warning toast` (L626) | PASS |
+| identity gate D38/D43 — p2-07 is its first real caller | `a blank user_name opens the dialog, the name is saved, and the pending save resumes` (L680): dialog appears, **no** save POST yet, `PUT /api/settings` carries `{user_name}`, then the save resumes unprompted; `dismissing the dialog performs no save and claims no success` (L706): no POST, no PUT, no "saved and committed" toast | PASS |
+| no regression in the shell | all 8 pre-existing `tests/ui/shell.spec.ts` specs still green in the same run | PASS |
+| pure logic unit-tested (D10) | `tests/unit/extract-ui.test.ts` (19 tests): every spec copy literal, `formatFileSize`, the untrusted quest readers, `extractQuests` (FormData field `file`, **no** `Content-Type`, signal threaded, `ApiError` envelope) and `saveQuest` | PASS |
+
+## 2. What tier 1 CANNOT prove — the lead's tier-2 pass
+
+Tier 1 mocks `/api/settings`, `/api/extract/quests` and `/api/quests`. The following are therefore
+**not proven** and must be covered by the lead's tier-2 browser run with the real CLI, a real
+capture and the real SpiralDB clone:
+
+1. **The real extraction round-trip** — a real 200 `{quests, count}` from an actual packet capture
+   (real `m_goals[]` with corpus NAMES, D48(a)), and the 413 upload-cap message with a real
+   >512 MB file.
+2. **D9/D47 for real** — that aborting the request really kills the CLI child via `res.on('close')`
+   and cleans up its temp files. Tier 1 proves the *client* half (the signal and the visible
+   return to upload) only.
+3. **The real save** — files written to `QuestTemplates/`, the companion `QuestMetadatas/` update
+   (paired by the `Name` field, D19/D20), the git commit and `status: extracted`. Tier 1 asserts
+   only that the client POSTs `{quest}` and reads the documented response envelope.
+4. **The real 409 dirty tree and the real duplicate-metadata warning** — tier 1 replays the
+   documented bodies, not the server's own generation of them.
+5. **The identity gate against real settings** — that a fresh SQLite database really has a blank
+   `user_name` and that the gate's PUT persists (tier 1 uses a mocked settings map).
+6. **Screenshots and visual fidelity** at both widths, including real 375px mobile emulation
+   (tier 1 sets a 375px viewport, but it is not a device).
+7. The D-40 harness itself is exercised only for this new page; nothing else changed.
+
+## 3. Files added / changed
+
+Added:
+
+- `client/src/lib/extract.ts` — all extraction copy (spec literals), `formatFileSize`, the
+  untrusted quest readers (`questName`, `questLevel`, `goalCount`, `shortTypeName`,
+  `primitiveFields`), the preview tab list and the toast/confirm message builders.
+- `client/src/hooks/useExtraction.ts` — `idle → extracting → results` controller; owns the
+  `AbortController`, an epoch guard so a late resolution after cancel/discard/second start is
+  dropped, the info toast on start and the error path.
+- `client/src/hooks/useIsMobile.ts` — `(max-width: 767px)` via `useSyncExternalStore`.
+- `client/src/components/quest/ExtractDropzone.tsx`, `ExtractingCard.tsx`, `QuestListPanel.tsx`,
+  `QuestPreview.tsx`, `QuestPreviewDialog.tsx`, `SaveConfirmDialog.tsx`.
+- `client/src/pages/ExtractionPage.tsx` — the route's page: phases, selection, the save mutation
+  and the identity gate.
+- `tests/ui/extraction.spec.ts` (14 specs), `tests/unit/extract-ui.test.ts` (19 tests).
+- `docs/evidence/phase-2/story-p2-07-ui.txt`, `…-unit.txt`, `gate-p2-07.txt`, this file.
+
+Changed:
+
+- `client/src/App.tsx` + `client/src/lib/routes.ts` — `/quests/extract` now renders
+  `ExtractionPage` instead of the stub; the route doc comment says which pages are real.
+- `client/src/lib/api.ts` — `extractQuests(file, {signal})` (multipart field `file`) and
+  `saveQuest(body)`, `QuestObject`/`SaveQuestResult`/`QUESTS_QUERY_KEY`, and one genuine bug fix:
+  `apiFetch` used to stamp `Content-Type: application/json` on **every** request with a body,
+  which would have broken the multipart upload. A `FormData`/`URLSearchParams`/`Blob` body is now
+  treated as self-typed (`isSelfTypedBody`).
+- `client/src/lib/toast.ts` + `notify.ts` — added `notifyWarning` (see §5.8).
+- `tests/ui/shell.spec.ts` — the "every route renders a real page" loop asserted each route shows
+  an "Arrives in Phase N" stub; `/quests/extract` now shows the real page, so that route asserts
+  the extraction page's format line instead. Not a weakened guard: the loop still requires an
+  identifiable, route-specific string.
+
+## 4. Deviations from the spec copy, and spec-internal contradictions
+
+1. **The format line contradicts the mockup.** `docs/spec-ui-design.md` L199 (mockup) reads
+   "Supported format: JSON packet capture (.json)"; `docs/spec-domain-reference.md` L625 and
+   `p2-07-ac1` require "Supported format: JSON packet capture files (.json)". The AC and the
+   domain reference win — the longer wording is implemented and asserted. The literal is
+   duplicated in `server/src/routes/extract.ts` (its `UPLOAD_FORMAT_HINT`) because the client
+   tsconfig cannot import server modules; the server's copy is asserted by `tests/unit/extract-api.test.ts`.
+2. **The action bar is the results footer, not part of the right panel.** Spec L226 groups Save
+   All / Save Selected / Discard under the right panel. On mobile the right panel is not mounted
+   at all, so an action bar living inside it would be unreachable at 375px. It is rendered as the
+   results-level footer instead; the labels are the spec's verbatim.
+3. **Confirm-dialog internals are invented** (title `Save to SpiralDB`, buttons `Cancel`/`Save`).
+   Only the sentence is spec-fixed; the spec gives no dialog title or button copy.
+4. **One success toast per quest.** `Save All` with N quests emits N toasts (the spec's only
+   success copy is the per-quest `Quest {name} saved and committed`). A "Saved N quests" summary
+   would be invented copy; sonner stacks at most 3 at a time and scrolls the rest.
+5. **The upload error toast repeats the inline message.** The spec defines no upload-failure copy,
+   so the server's own message is used both inline (`role="alert"`) and as an error toast.
+6. **`Save All` stops at the first failure.** Remaining quests stay unsaved and retryable; the
+   spec gives no partial-failure copy, so the ordinary error toast is used.
+
+## 5. Spec-silent states — what was chosen
+
+1. **Discard** (spec names the button, never its behaviour): clears the results *and* the file and
+   returns to the upload phase, with **no** confirmation. A confirmation for a discard would be
+   invented UI; nothing has been written at that point, so there is nothing to lose.
+2. **Cancel** is the same state transition as Discard (abort + reset). Cancel is the only one
+   offered while extracting, Discard only once results exist.
+3. **Error state**: return to the upload phase with the drop zone usable again, an inline
+   `role="alert"` line carrying the server's message, and the error toast. The alternative
+   (staying on the file card with the error) was rejected as the more surprising of the two.
+4. **Mobile breakpoint** is Tailwind `md` (768px) via `useIsMobile`, not a spec value (the spec
+   only says the list takes full width). The 375px check is the AC's; the desktop pane needs
+   ~640px+ to be useful next to a 320px list.
+5. **The `new` badge persists after a successful save.** The client cannot know a quest is now in
+   SpiralDB without re-listing (p2-08's endpoint), and the spec does not define a post-save row
+   state. Deliberately left `new`.
+6. **No `notes` is sent with a save.** `POST /api/quests` (docs/spec-api.md L253-258) documents
+   only `{quest, notes?}` with no capture context, so the plan's "Imported from packet capture
+   {filename}" history note cannot be expressed by this flow — see §6.2.
+7. **The identity gate runs after the Save All confirmation, not before it.** Confirming the write
+   is the more important modal; the gate then blocks the actual POST. Dismissing the gate is
+   silent (no toast) because the user just cancelled.
+8. **`notifyWarning` and `TOAST_WARNING_DURATION_MS` are p2-07 additions.** The design spec fixes
+   only success/error/info, but `SaveQuestResult.warnings[]` (D48(d)) has to be surfaced as
+   something other than a red error. The warning toast is 10s. `TOAST_DURATIONS` was deliberately
+   left at its exact three-key shape — `tests/unit/ui-shell.test.ts` asserts that shape and the
+   spec fixes it.
+9. **The results pane has a definite height at md+** (`md:h-[70vh]`, `overflow-hidden`, both sides
+   scroll internally) so a long quest cannot push the action bar off-screen. The value is
+   spec-silent.
+10. **`QUESTS_QUERY_KEY` exists even though the quest list endpoint is p2-08's** — the save
+    invalidates it now so the future list is correct by construction.
+
+## 6. Proposed follow-ups (for the lead to record as D-items / later stories)
+
+1. **Per-overwrite confirmation (plan 2.4 L49) is not implementable in p2-07.** The UI cannot know
+   which extracted quests already exist in SpiralDB without a list/index read (p2-08). Tier 1
+   proves the save runs; whether it creates or overwrites is only visible in the server's
+   `SaveQuestResult.outcome`, which the UI currently does not surface per row. Either surface that
+   result in the results list or add the confirm in p2-08.
+2. **The capture filename cannot reach the saved entry's history.** Plan 2.4 L48 wants
+   "Imported from packet capture {filename}" recorded; `POST /api/quests` has no field for it.
+   Options: extend the endpoint with an optional `notes`-style capture context, or drop the
+   requirement. Worth a decision before p2-08 builds on the save flow.
+3. **`docs/spec-ui-design.md` L199's shortened format line should be corrected** (or annotated) so
+   the next implementer does not copy the mockup string; the domain reference and the AC are the
+   contract.

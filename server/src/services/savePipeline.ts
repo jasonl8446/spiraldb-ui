@@ -65,8 +65,25 @@ export interface SaveObjectRequest {
   notes?: string;
   /** When set and different, a `status_history` transition row is appended. */
   status?: StatusValue;
-  /** `status_history.notes` (extraction saves name the capture file here). */
+  /**
+   * `status_history.notes` for a transition of an **already-tracked** entry, and
+   * the fallback initial-row note when {@link historyNotesOnCreate} is absent.
+   */
   historyNotes?: string;
+  /**
+   * `status_history.notes` for the entry's **first row** — the note written when
+   * this save inserts the `entry_status` row, i.e. the entry's first appearance in
+   * tracking (gap B of story p2-07, `docs/plan-phase-2-quest-extraction.md` §2.4
+   * with `docs/spec-api.md` L122). The extraction save records the capture file
+   * name here.
+   *
+   * The trigger is the **row insert, not the file outcome**: an existing corpus file
+   * saved for an untracked entry is `outcome: 'updated'` yet still gets this note.
+   * An update of an already-tracked entry records nothing at all — no note, no
+   * status change, no history row (D49(d)); {@link historyNotes} covers that path's
+   * explicit transition only. Takes precedence over `historyNotes` on insert.
+   */
+  historyNotesOnCreate?: string;
   /** Overrides the quest metadata `Description` on a create. */
   metadataDescription?: string;
 }
@@ -91,6 +108,13 @@ export interface SaveObjectResult {
   commitMessage: string;
   /** The `entry_status` row after the upsert; `null` for untracked families. */
   status: StatusEntryRow | null;
+  /**
+   * Whether this save inserted the `entry_status` row — the entry's first
+   * appearance in tracking. Independent of {@link outcome}: saving a quest whose
+   * file already exists is `outcome: 'updated'` with `statusCreated: true`. Always
+   * `false` for a family with no lifecycle.
+   */
+  statusCreated: boolean;
 }
 
 export interface SavePipelineOptions {
@@ -122,7 +146,10 @@ interface StatusUpsertInput {
   objectKey: string;
   /** Absent means "do not change an existing entry's status". */
   status?: StatusValue;
+  /** Note for a transition of an entry that already exists. */
   notes?: string | null;
+  /** Note for the initial row; used only when this call inserts the entry. */
+  notesOnCreate?: string | null;
   changedBy: string;
   now: string;
 }
@@ -135,39 +162,48 @@ interface StatusUpsertInput {
  * Three cases:
  *
  * - **New entry** — inserted with `status` (default `extracted`) and
- *   `extracted_at = now`, then one history row `null → status`. `extracted_at` is
- *   set here on purpose: `applyStatusChange` deliberately leaves it alone for
- *   `extracted`, because that column records when the milestone was *first*
- *   reached (server/src/services/status.ts L288-295). The schema has no
+ *   `extracted_at = now`, then one history row `null → status` carrying
+ *   `notesOnCreate`. The insert is reported as `created: true` so the caller can
+ *   tell the entry's first appearance in tracking apart from a file update.
+ *   `extracted_at` is set here on purpose: `applyStatusChange` deliberately leaves
+ *   it alone for `extracted`, because that column records when the milestone was
+ *   *first* reached (server/src/services/status.ts L288-295). The schema has no
  *   `extracted_by` column (verified: `server/migrations/0001_init.sql` L17-36), so
  *   there is nothing to set for the actor beyond the history row's `changed_by`.
  * - **Existing entry, different status** — delegated to `applyStatusChange`, which
- *   updates the status and appends the transition row (the entry row is known to
- *   exist, so its `undefined`-for-unknown-key contract is never hit — D31(d)).
+ *   updates the status and appends the transition row (`created: false`; the entry
+ *   row is known to exist, so its `undefined`-for-unknown-key contract is never hit
+ *   — D31(d)).
  * - **Existing entry, same or absent status** — nothing to record; re-saving a
  *   quest must not append a duplicate "extracted" row, and an editor save must
  *   never reset a `verified` entry back to `extracted`.
  */
-function upsertEntryStatus(db: Db, input: StatusUpsertInput): StatusEntryRow {
+function upsertEntryStatus(
+  db: Db,
+  input: StatusUpsertInput,
+): { entry: StatusEntryRow; created: boolean } {
   const existing = getStatusEntry(db, input.objectType, input.objectKey);
 
   if (existing !== undefined) {
     if (input.status === undefined || input.status === existing.status) {
-      return existing;
+      return { entry: existing, created: false };
     }
-    return (
-      applyStatusChange(db, {
-        objectType: input.objectType,
-        objectKey: input.objectKey,
-        status: input.status,
-        notes: input.notes ?? null,
-        changedBy: input.changedBy,
-        now: input.now,
-      }) ?? existing
-    );
+    return {
+      entry:
+        applyStatusChange(db, {
+          objectType: input.objectType,
+          objectKey: input.objectKey,
+          status: input.status,
+          notes: input.notes ?? null,
+          changedBy: input.changedBy,
+          now: input.now,
+        }) ?? existing,
+      created: false,
+    };
   }
 
   const status = input.status ?? 'extracted';
+  const note = input.notesOnCreate ?? input.notes ?? null;
   const insertInitial = db.transaction((): number => {
     const inserted = db
       .prepare(
@@ -178,7 +214,7 @@ function upsertEntryStatus(db: Db, input: StatusUpsertInput): StatusEntryRow {
     db.prepare(
       `INSERT INTO status_history (entry_status_id, old_status, new_status, notes, changed_by, changed_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(inserted.lastInsertRowid, null, status, input.notes ?? null, input.changedBy, input.now);
+    ).run(inserted.lastInsertRowid, null, status, note, input.changedBy, input.now);
     return Number(inserted.lastInsertRowid);
   });
   insertInitial();
@@ -189,7 +225,7 @@ function upsertEntryStatus(db: Db, input: StatusUpsertInput): StatusEntryRow {
       `entry_status row for ${input.objectType}/${input.objectKey} disappeared right after insert`,
     );
   }
-  return created;
+  return { entry: created, created: true };
 }
 
 /**
@@ -323,7 +359,13 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     });
 
     // 7. Verification status (skipped for families with no lifecycle).
-    const status =
+    //
+    // The first-row note (gap B) belongs to the *entry*, so the upsert — not
+    // `outcome` — decides it: it is written whenever the row is inserted, including
+    // an existing corpus file saved as `outcome: 'updated'`. An update of an
+    // already-tracked entry keeps its own history and its status is never touched
+    // (D49(d)).
+    const statusUpsert =
       spec.objectType === null
         ? null
         : upsertEntryStatus(db, {
@@ -331,6 +373,7 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
             objectKey: key,
             status: request.status,
             notes: request.historyNotes,
+            notesOnCreate: request.historyNotesOnCreate ?? request.historyNotes,
             changedBy: user,
             now: nowIso,
           });
@@ -348,7 +391,8 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
       commit: committed.sha,
       branch: session.branch,
       commitMessage: committed.message,
-      status,
+      status: statusUpsert?.entry ?? null,
+      statusCreated: statusUpsert?.created ?? false,
     };
   }
 

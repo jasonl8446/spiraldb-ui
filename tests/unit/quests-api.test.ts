@@ -13,9 +13,12 @@ import { createStatusRouter } from '@server/routes/status';
 import { countQuestGoals, buildQuestRows } from '@server/services/sync/corpus';
 import { runFirstStartupImport } from '@server/services/import';
 import {
+  captureSourceNote,
   listQuests,
+  MAX_CAPTURE_SOURCE_LENGTH,
   QuestRequestError,
   readQuest,
+  sanitizeCaptureSource,
   saveQuest,
   type QuestListResult,
 } from '@server/services/quests';
@@ -25,7 +28,7 @@ import {
   type SavePipeline,
 } from '@server/services/savePipeline';
 import { createSpiraldbIndex } from '@server/services/spiraldbIndex';
-import { applyStatusChange, listStatus } from '@server/services/status';
+import { applyStatusChange, getStatusHistory, listStatus } from '@server/services/status';
 import {
   commitSubjects,
   createTempGitRepo,
@@ -424,6 +427,7 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
       branch: 'content/2026-09-26',
       commitMessage: 'spiraldb: extract quest X',
       status: null,
+      statusCreated: false,
     };
 
     async function saveObject(request: SaveObjectRequest): Promise<SaveObjectResult> {
@@ -497,6 +501,8 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     ['a quest with no m_questName', { quest: { m_questLevel: 1 } }],
     ['a quest with an empty m_questName', { quest: { m_questName: '' } }],
     ['non-string notes', { quest: { m_questName: 'X' }, notes: 5 }],
+    ['a non-string source', { quest: { m_questName: 'X' }, source: 5 }],
+    ['a non-string source and notes', { quest: { m_questName: 'X' }, notes: null, source: ['a'] }],
   ])('400s %s before the pipeline is reached', async (_label, body) => {
     const root = corpusRoot();
     const h = harness({ root });
@@ -684,6 +690,235 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
       expect(readRepoFile(repo, 'QuestMetadatas/b_legacy.json')).not.toContain(USER);
     } finally {
       warn.mockRestore();
+    }
+  });
+});
+
+describe('capture source note — gap B of p2-07 (plan §2.4)', () => {
+  it('builds the plan’s exact note sentence', () => {
+    expect(captureSourceNote('session_2026-09-24.json')).toBe(
+      'Imported from packet capture session_2026-09-24.json',
+    );
+  });
+
+  it.each([
+    ['/tmp/x/session_1.json', 'session_1.json'],
+    ['../../etc/passwd', 'passwd'],
+    ['/tmp/x/../../etc/passwd', 'passwd'],
+    ['C:\\Users\\j\\captures\\session.json', 'session.json'],
+    ['  session.json  ', 'session.json'],
+    ['session_1.json', 'session_1.json'],
+    ['///', undefined],
+    ['', undefined],
+    ['   ', undefined],
+    [null, undefined],
+    [undefined, undefined],
+    [42, undefined],
+    [{ name: 'x' }, undefined],
+  ])('reduces %j to the safe base name %j', (value, expected) => {
+    expect(sanitizeCaptureSource(value)).toBe(expected);
+  });
+
+  it('strips control characters and caps the note’s source at the limit', () => {
+    expect(sanitizeCaptureSource('ses\nsion_1.json')).toBe('session_1.json');
+    expect(sanitizeCaptureSource('a'.repeat(400))).toHaveLength(MAX_CAPTURE_SOURCE_LENGTH);
+  });
+
+  it('writes the exact note on a create: old_status null, new_status extracted, changed_by the user', async () => {
+    const repo = gitRepo();
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({
+        quest: { m_questName: 'DS-P207-SRC-001', m_questInfo: null, m_goals: [] },
+        source: 'session_2026-09-24.json',
+      })
+      .expect(200);
+    expect((res.body as { outcome: string }).outcome).toBe('created');
+
+    const history = getStatusHistory(h.db, 'quest', 'DS-P207-SRC-001');
+    expect(history.found && history.history).toEqual([
+      {
+        old_status: null,
+        new_status: 'extracted',
+        notes: 'Imported from packet capture session_2026-09-24.json',
+        changed_by: USER,
+        changed_at: expect.any(String),
+      },
+    ]);
+  });
+
+  it('records the sanitised base name for a path-like source', async () => {
+    const repo = gitRepo();
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+
+    await request(h.app)
+      .post('/api/quests')
+      .send({ quest: { m_questName: 'DS-P207-SRC-002' }, source: '/tmp/x/session_1.json' })
+      .expect(200);
+
+    const history = getStatusHistory(h.db, 'quest', 'DS-P207-SRC-002');
+    expect(history.found && history.history[0]?.notes).toBe(
+      'Imported from packet capture session_1.json',
+    );
+  });
+
+  it('records no note and no history row on an update, and never resets the status (D49(d))', async () => {
+    const repo = gitRepo();
+    writeFile(
+      repo.dir,
+      'QuestTemplates/questtemplates_DS-P207-SRC-003.json',
+      questText('DS-P207-SRC-003'),
+    );
+    repo.git(['add', '.']);
+    repo.git(['commit', '-m', 'corpus']);
+
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+    seedStatus(h.db, 'DS-P207-SRC-003', 'verified');
+
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({
+        quest: JSON.parse(questText('DS-P207-SRC-003')) as object,
+        source: 'later_capture.json',
+      })
+      .expect(200);
+
+    expect((res.body as { outcome: string; status: { status: string } }).outcome).toBe('updated');
+    expect((res.body as { status: { status: string } }).status.status).toBe('verified');
+    // The seeded row carries no history of its own: the update must have added none.
+    const history = getStatusHistory(h.db, 'quest', 'DS-P207-SRC-003');
+    expect(history.found && history.history).toEqual([]);
+    expect(h.db.prepare('SELECT notes FROM status_history').all()).toEqual([]);
+  });
+
+  // The live defect (measured in a real browser run): WC-UNICORN-MAIN-004 already
+  // exists in the corpus, so the save is `outcome: 'updated'` — but the entry's first
+  // appearance in tracking must still carry the capture note. The trigger is the
+  // `entry_status` row insert, not the file outcome (plan §2.4, spec-api L122).
+  it('writes the capture note when an existing file is saved for an untracked entry', async () => {
+    const repo = gitRepo();
+    writeFile(
+      repo.dir,
+      'QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json',
+      questText('WC-UNICORN-MAIN-004'),
+    );
+    repo.git(['add', '.']);
+    repo.git(['commit', '-m', 'corpus']);
+
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({
+        quest: JSON.parse(questText('WC-UNICORN-MAIN-004')) as object,
+        source: 'WC-UNICORN-MAIN-004.json',
+      })
+      .expect(200);
+
+    // It is a file update, yet the entry is new to tracking.
+    expect((res.body as { outcome: string }).outcome).toBe('updated');
+    const history = getStatusHistory(h.db, 'quest', 'WC-UNICORN-MAIN-004');
+    expect(history.found && history.history).toEqual([
+      {
+        old_status: null,
+        new_status: 'extracted',
+        notes: 'Imported from packet capture WC-UNICORN-MAIN-004.json',
+        changed_by: USER,
+        changed_at: expect.any(String),
+      },
+    ]);
+  });
+
+  it('leaves an already-tracked entry alone: no new row, no reset, notes untouched', async () => {
+    const repo = gitRepo();
+    writeFile(
+      repo.dir,
+      'QuestTemplates/questtemplates_DS-P207-SRC-007.json',
+      questText('DS-P207-SRC-007'),
+    );
+    repo.git(['add', '.']);
+    repo.git(['commit', '-m', 'corpus']);
+
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+    seedStatus(h.db, 'DS-P207-SRC-007', 'reviewed');
+
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({
+        quest: JSON.parse(questText('DS-P207-SRC-007')) as object,
+        source: 'WC-UNICORN-MAIN-007.json',
+      })
+      .expect(200);
+
+    expect((res.body as { outcome: string }).outcome).toBe('updated');
+    expect((res.body as { status: { status: string } }).status.status).toBe('reviewed');
+    const history = getStatusHistory(h.db, 'quest', 'DS-P207-SRC-007');
+    expect(history.found && history.history).toEqual([]);
+    expect(h.db.prepare('SELECT notes FROM status_history').all()).toEqual([]);
+    expect(
+      h.db.prepare('SELECT status FROM entry_status WHERE object_key = ?').get('DS-P207-SRC-007'),
+    ).toEqual({ status: 'reviewed' });
+  });
+
+  it('still inserts the row with a null note when an existing file is saved without a source', async () => {
+    const repo = gitRepo();
+    writeFile(
+      repo.dir,
+      'QuestTemplates/questtemplates_DS-P207-SRC-008.json',
+      questText('DS-P207-SRC-008'),
+    );
+    repo.git(['add', '.']);
+    repo.git(['commit', '-m', 'corpus']);
+
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({ quest: JSON.parse(questText('DS-P207-SRC-008')) as object })
+      .expect(200);
+
+    expect((res.body as { outcome: string }).outcome).toBe('updated');
+    const history = getStatusHistory(h.db, 'quest', 'DS-P207-SRC-008');
+    expect(history.found && history.history).toEqual([
+      {
+        old_status: null,
+        new_status: 'extracted',
+        notes: null,
+        changed_by: USER,
+        changed_at: expect.any(String),
+      },
+    ]);
+  });
+
+  it('behaves exactly as before when source is absent, null or blank', async () => {
+    const repo = gitRepo();
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+
+    for (const [name, source] of [
+      ['DS-P207-SRC-004', undefined],
+      ['DS-P207-SRC-005', null],
+      ['DS-P207-SRC-006', '   '],
+    ] as const) {
+      await request(h.app)
+        .post('/api/quests')
+        .send(
+          source === undefined
+            ? { quest: { m_questName: name } }
+            : { quest: { m_questName: name }, source },
+        )
+        .expect(200);
+      const history = getStatusHistory(h.db, 'quest', name);
+      expect(history.found && history.history).toEqual([
+        {
+          old_status: null,
+          new_status: 'extracted',
+          notes: null,
+          changed_by: USER,
+          changed_at: expect.any(String),
+        },
+      ]);
     }
   });
 });

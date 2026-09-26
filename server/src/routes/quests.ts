@@ -12,7 +12,7 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  *
  * - `GET  /api/quests`        list the corpus (D12: scan + JSON5 parse per request)
  * - `GET  /api/quests/:name`  one quest's full JSON, via the D19 content-keyed index
- * - `POST /api/quests`        save `{ quest, notes? }` through the task 2.4 pipeline
+ * - `POST /api/quests`        save `{ quest, notes?, source? }` through the task 2.4 pipeline
  *
  * The spec fixes no response shape ("List all quests" / "Single quest JSON"), so
  * the shapes the client will consume are documented on the service types

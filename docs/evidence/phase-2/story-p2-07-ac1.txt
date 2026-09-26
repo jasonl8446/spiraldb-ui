@@ -1,0 +1,72 @@
+# p2-07-ac1 evidence — the story's single acceptance criterion, tier-1 half (D23 tier 1)
+# 2026-09-26T05:39:31-04:00 branch=phase-2-quest-extraction HEAD=8f19f87  tree: uncommitted (left for the lead)
+#
+# AC p2-07-ac1 (verbatim):
+#   "Extraction UI matches spec states, evidenced per D23 tier 2 (playwright-mcp assertions +
+#    screenshots copied into docs/evidence/phase-2/, including a 375px viewport check): dropzone
+#    copy includes "Supported format: JSON packet capture files (.json)"; spinner is indeterminate
+#    with "Extracting quests..."; results split layout (left 320px list, right tabbed read-only
+#    preview) with confirm dialog before Save All; Cancel aborts (D9); mobile shows preview as
+#    overlay (P2 AC#12)."
+#
+# THIS FILE IS THE TIER-1 HALF ONLY. The AC's own "evidenced per D23 tier 2" clause (playwright-mcp
+# assertions + screenshots copied into docs/evidence/phase-2/, real CLI extraction, real saves) is
+# the lead's pass and is NOT claimed here. The clause-by-clause map of what tier 1 proves, and the
+# explicit list of what it cannot, is docs/evidence/phase-2/story-p2-07-notes.txt.
+#
+# The run below drives the real /quests/extract page in headless chromium with the API
+# route-mocked, so it needs no .NET SDK, no built CLI, no sibling SpiralDB clone and no capture.
+# Same run included in the full suite: docs/evidence/phase-2/story-p2-07-ui.txt (22 specs).
+
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers npx playwright test tests/ui/extraction.spec.ts
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1389801) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] (node:1389839) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1389833) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:1389851) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 242 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [WebServer] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 14 tests using 1 worker
+
+(node:1389874) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/ui/extraction.spec.ts:280:3 › upload phase › states the supported format verbatim and browses through a hidden .json input (800ms)
+  ✓   2 [chromium] › tests/ui/extraction.spec.ts:327:3 › upload phase › shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel (263ms)
+  ✓   3 [chromium] › tests/ui/extraction.spec.ts:364:3 › upload phase › an error surfaces the server message and returns to the upload phase (254ms)
+  ✓   4 [chromium] › tests/ui/extraction.spec.ts:387:3 › upload phase › a 500 from an unbuilt CLI is surfaced verbatim (294ms)
+  ✓   5 [chromium] › tests/ui/extraction.spec.ts:405:3 › upload phase › Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it (429ms)
+  ✓   6 [chromium] › tests/ui/extraction.spec.ts:479:3 › results phase › renders the split layout: a 320px list and a read-only tabbed preview (571ms)
+  ✓   7 [chromium] › tests/ui/extraction.spec.ts:539:3 › results phase › an empty extraction shows the empty state and Discard returns to upload (322ms)
+  ✓   8 [chromium] › tests/ui/extraction.spec.ts:557:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (6.2s)
+  ✓   9 [chromium] › tests/ui/extraction.spec.ts:590:3 › results phase › Save Selected saves only the selected quest (377ms)
+  ✓  10 [chromium] › tests/ui/extraction.spec.ts:607:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (379ms)
+  ✓  11 [chromium] › tests/ui/extraction.spec.ts:626:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (361ms)
+  ✓  12 [chromium] › tests/ui/extraction.spec.ts:649:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (675ms)
+  ✓  13 [chromium] › tests/ui/extraction.spec.ts:680:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (473ms)
+  ✓  14 [chromium] › tests/ui/extraction.spec.ts:706:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (836ms)
+
+  14 passed (13.7s)
+
+exit=0

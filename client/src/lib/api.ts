@@ -37,6 +37,27 @@ export class ApiError extends Error {
 /** REQUEST helper: the `Accept` header every call sends. */
 const JSON_HEADERS = { Accept: 'application/json' } as const;
 
+/**
+ * `true` for a body the browser encodes itself — `FormData` (multipart boundary),
+ * `URLSearchParams` (url-encoded) and `Blob` (its own type).
+ *
+ * Those must never get the JSON `Content-Type` below: a multipart upload whose
+ * header says `application/json` has no boundary and the server cannot parse it
+ * (decision D47's `POST /api/extract/quests` is the first such request).
+ */
+function isSelfTypedBody(body: BodyInit | null | undefined): boolean {
+  if (body === null || body === undefined || typeof body !== 'object') {
+    return false;
+  }
+  if (typeof FormData !== 'undefined' && body instanceof FormData) {
+    return true;
+  }
+  if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) {
+    return true;
+  }
+  return typeof Blob !== 'undefined' && body instanceof Blob;
+}
+
 /** Reads the plain-text body of a failed response before throwing. */
 async function readError(response: Response): Promise<string> {
   let text: string;
@@ -66,16 +87,18 @@ async function readError(response: Response): Promise<string> {
 /**
  * Performs one JSON request and returns the parsed body.
  *
- * A JSON `Content-Type` is added only when a `body` is present and the caller
- * has not set one. An empty success body (e.g. 204) resolves to `undefined`, and
- * any other unparsable success body throws rather than resolving to garbage.
+ * A JSON `Content-Type` is added only when a `body` is present, the caller has
+ * not set one, and the body is not self-typing (`FormData`/`URLSearchParams`/
+ * `Blob` — see {@link isSelfTypedBody}). An empty success body (e.g. 204) resolves
+ * to `undefined`, and any other unparsable success body throws rather than
+ * resolving to garbage.
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (!headers.has('Accept')) {
     headers.set('Accept', JSON_HEADERS.Accept);
   }
-  if (init.body !== undefined && !headers.has('Content-Type')) {
+  if (init.body !== undefined && !isSelfTypedBody(init.body) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -351,4 +374,158 @@ export const IMPORT_REPORT_QUERY_KEY = ['status', '_import'] as const;
 /** Whether this server process imported pre-existing entries, and how many. */
 export function getImportReport(): Promise<ImportReport> {
   return apiFetch<ImportReport>('/api/status/_import');
+}
+
+/* ---------------------------------------------------------------- extraction */
+
+/**
+ * One quest object exactly as the extraction CLI emits it.
+ *
+ * The fields named here are the ones the extraction UI reads (name, level, goal
+ * count, preview tabs); the index signature keeps the rest — the whole
+ * `QuestTemplate` schema of `docs/spec-domain-reference.md` L210-270 — reachable
+ * without redeclaring a 50-field type the client only ever renders. Enums are
+ * already the corpus's NAMES as of decision D48(a), so nothing is converted.
+ */
+export interface QuestObject {
+  m_questName?: string | number;
+  m_questTitle?: string | null;
+  m_questLevel?: number;
+  m_mainline?: boolean;
+  m_goals?: unknown[];
+  m_goalLogic?: unknown[];
+  m_requirements?: unknown;
+  m_prepRequirements?: unknown;
+  m_pruneRequirements?: unknown;
+  m_startResults?: unknown;
+  m_endResults?: unknown;
+  m_dialogList?: unknown;
+  [key: string]: unknown;
+}
+
+/** `POST /api/extract/quests` success body (docs/spec-api.md L303-307). */
+export interface ExtractQuestsResult {
+  quests: QuestObject[];
+  count: number;
+}
+
+/** The extraction endpoint and its multipart field name (docs/spec-api.md L301). */
+export const EXTRACT_QUESTS_PATH = '/api/extract/quests';
+export const EXTRACT_FILE_FIELD = 'file';
+
+/**
+ * `POST /api/extract/quests` — upload one `.json` packet capture.
+ *
+ * The `AbortSignal` is the client half of decision D9: aborting it closes the
+ * response, and the server's `res.on('close')` handler kills the CLI child and
+ * deletes the temp capture (D47). Cancelling is therefore never a client-only
+ * no-op — which is why the signal is threaded through rather than left implicit.
+ *
+ * The body is `FormData`, so the browser writes `Content-Type:
+ * multipart/form-data; boundary=…` itself (see {@link isSelfTypedBody}).
+ */
+export function extractQuests(
+  file: File,
+  options: { signal?: AbortSignal } = {},
+): Promise<ExtractQuestsResult> {
+  const body = new FormData();
+  body.append(EXTRACT_FILE_FIELD, file);
+  return apiFetch<ExtractQuestsResult>(EXTRACT_QUESTS_PATH, {
+    method: 'POST',
+    body,
+    signal: options.signal,
+  });
+}
+
+/* ------------------------------------------------------------- quests (list) */
+
+/**
+ * One `quests[]` row of `GET /api/quests` (docs/spec-api.md L190-208, decision
+ * D49). Only `quest_name` is typed here — it is the field p2-07's overwrite check
+ * (gap A) intersects against; the browse table (p2-08) narrows the rest.
+ */
+export interface QuestListRow {
+  quest_name: string;
+  [key: string]: unknown;
+}
+
+/** `GET /api/quests` success body. */
+export interface QuestsListResult {
+  quests: QuestListRow[];
+  summary: { total: number; extracted: number; reviewed: number; verified: number };
+  skipped: Array<{ file: string; message: string }>;
+}
+
+/**
+ * `GET /api/quests` — the SpiralDB quest list (p2-06's endpoint).
+ *
+ * p2-07 calls this lazily on the first save click (gap A): the extracted names are
+ * intersected with these, so the user sees which quests would be overwritten
+ * before anything is written. No endpoint was added for that — the list already
+ * carries every quest name.
+ */
+export function listQuests(): Promise<QuestsListResult> {
+  return apiFetch<QuestsListResult>('/api/quests');
+}
+
+/* ------------------------------------------------------------- quests (save) */
+
+/**
+ * `{ created, updated }` — the save pipeline's outcome word for a file and, for
+ * quests, for its companion metadata file (server `SaveOutcome`).
+ */
+export type SaveOutcome = 'created' | 'updated';
+
+/** `POST /api/quests` request body (docs/spec-api.md L236, gap B of story p2-07). */
+export interface SaveQuestBody {
+  quest: QuestObject;
+  /** Optional git commit body; the endpoint records no status note. */
+  notes?: string;
+  /**
+   * The capture file the quest was extracted from (plan §2.4, gap B). The page
+   * knows it — the user picked the file — so both save paths send it. The server
+   * reduces it to a base name and records
+   * `Imported from packet capture {source}` on a **create** only; an update adds
+   * no note and never resets the status. Absent ⇒ exactly the old behaviour.
+   */
+  source?: string;
+}
+
+/** `POST /api/quests` success body (docs/spec-api.md L239-251, decision D49(a)). */
+export interface SaveQuestResult {
+  quest_name: string;
+  outcome: SaveOutcome;
+  action: 'extract' | 'update';
+  /** This save's single commit sha (D13). */
+  commit: string;
+  branch: string;
+  commit_message: string;
+  /** Committed path relative to the SpiralDB root. */
+  file: string;
+  metadata: string | null;
+  metadata_outcome: SaveOutcome | null;
+  status: StatusEntry;
+  /** The D48(d) duplicate-metadata report; empty when there is none. */
+  warnings: string[];
+}
+
+/**
+ * Prefix key of the quest browse list (`GET /api/quests`, built by p2-08).
+ *
+ * Declared here — not in the list page — because a save invalidates it: the list
+ * is the screen that must grow by the saved quests, and both halves have to agree
+ * on one key.
+ */
+export const QUESTS_QUERY_KEY = ['quests'] as const;
+
+/**
+ * `POST /api/quests` — save one quest: file write + D20 metadata + git commit +
+ * status (tasks 2.4/2.5). One request per quest: the endpoint commits per object
+ * (D13), so a multi-quest save is a sequence of these calls, not a batch.
+ */
+export function saveQuest(body: SaveQuestBody): Promise<SaveQuestResult> {
+  return apiFetch<SaveQuestResult>('/api/quests', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
