@@ -1,15 +1,18 @@
 /**
- * Friendly-name sync pipeline — tasks 1.4b–1.4e.
+ * Friendly-name sync pipeline — tasks 1.4b–1.4g.
  *
- * Task 1.4f (transactional replace + `sync_history`) and 1.4g (API + `npm run
- * sync` wiring) are the next story (p1-06); they consume these modules, which
- * perform no I/O against the database and no writes outside a temp tree.
+ * The parsers (1.4b–1.4e) do no database I/O and write nothing outside an unpack
+ * tree. `runSync` (1.4f) orchestrates them into **one** transaction over the
+ * seven friendly-name tables plus the `success` `sync_history` row, with a
+ * separate transaction for the `failed` row; `createSyncRouter` (1.4g) and
+ * `runSyncCli` (1.4g / `npm run sync`) both drive that single orchestrator.
  *
  * Pipeline order:
  *
  * ```
  * resolveRevision()  →  runUnpack()  →  scanLangDir()  →  scanTemplateTree()
  *                                    ↘  buildQuestRows() / buildZoneRows() / buildDropTableRows()
+ *                                    →  runSync(): DELETE ×7 + bulk INSERT + sync_history
  * ```
  */
 export {
@@ -107,3 +110,35 @@ export {
 } from './corpus.js';
 
 export { isPlainObject, parseJsonLenient } from './json.js';
+
+export { buildStringTableRows, type StringTableRow } from './stringtable.js';
+
+export { createStringLookup, lookupCandidates, lookupString } from './lookup.js';
+
+export {
+  ZERO_SYNC_COUNTS,
+  ZERO_SYNC_DEDUPE,
+  defaultSyncDeps,
+  formatSyncTimestamp,
+  recordSyncFailure,
+  runSync,
+  type RunSyncOptions,
+  type RunSyncResult,
+  type SyncCounts,
+  type SyncDedupe,
+  type SyncDeps,
+  type SyncOverrides,
+  type SyncRunner,
+  type SyncStatus,
+  type SyncTimings,
+} from './execute.js';
+
+export {
+  SYNC_USAGE,
+  formatSyncSummary,
+  parseSyncArgs,
+  runSyncCli,
+  type CliSyncRunner,
+  type SyncCliArgs,
+  type SyncCliOptions,
+} from './cli.js';

@@ -187,6 +187,18 @@ export interface LangTable extends LangEntryMaps {
    * count of lookups that can go wrong (see `crossFormCollisionCount`).
    */
   collisionCount: number;
+  /**
+   * Numeric-form records keyed by the index token **exactly as written** — the
+   * map the `string_table` rows are built from.
+   *
+   * The two form maps are keyed by *number*, so they cannot tell `1717` from
+   * `00001717`; this one keeps the token text. `string_table.key` is
+   * `{Category}_{token}` (lead decision, D33(e)): `QuestTitle_126346` and
+   * `QuestTitle_1ED8A` are two rows with different values, and the corpus's own
+   * `m_displayName` spellings (`Items_00022716`) are stored verbatim so an exact
+   * primary-key lookup resolves them.
+   */
+  tokenEntries: Map<string, string>;
   /** Raw byte length of the parsed buffer. */
   byteLength: number;
   /** `true` when the buffer carried the UTF-16LE BOM. */
@@ -418,6 +430,9 @@ export function parseLangBuffer(
   const hexEntries = new Map<number, string>();
   const entries = new Map<number, string>();
   const namedEntries = new Map<string, string>();
+  // Token text → value for every numeric-form record. `1717` and `00001717` are
+  // two keys here (one record each); the maps above key both by 1717.
+  const tokenEntries = new Map<string, string>();
   let namedCollisionCount = 0;
   let recordCount = 0;
   let decimalRecordCount = 0;
@@ -456,6 +471,7 @@ export function parseLangBuffer(
       namedEntries.set(token, value);
       continue;
     }
+    tokenEntries.set(token, value);
     if (form === 'decimal') {
       decimalRecordCount += 1;
       if (decimalEntries.has(index)) {
@@ -497,6 +513,7 @@ export function parseLangBuffer(
     decimalEntries,
     hexEntries,
     entries,
+    tokenEntries,
     recordCount,
     decimalRecordCount,
     hexRecordCount,
@@ -554,6 +571,19 @@ export interface ScanLangDirResult {
   byCategory: Map<string, LangEntryMaps>;
   /** `namedEntries` merged per category. */
   namedByCategory: Map<string, Map<string, string>>;
+  /**
+   * The exact `string_table` key space, merged per category: `token → value`
+   * where the row key is `{category}_{token}`. Holds both numeric-form tokens
+   * (as written — `1717` and `00001717` are distinct) and named keys. This is
+   * the map `buildStringTableRows` consumes and it is deliberately **not** the
+   * same size as `rowCount + namedRowCount`: the merged numeric view collapses
+   * both lexical forms of one index, this map keeps them.
+   */
+  byCategoryKeys: Map<string, Map<string, string>>;
+  /** Total distinct `{category}_{token}` rows — the `string_table` row count. */
+  stringRowCount: number;
+  /** Tokens that a later file overwrote inside the same category. */
+  stringKeyCollisionCount: number;
   /** Files that could not be parsed. A corrupt locale file must not abort a sync. */
   errors: Array<{ file: string; message: string }>;
 }
@@ -641,6 +671,9 @@ export async function scanLangDir(
 
   const byCategory = new Map<string, LangEntryMaps>();
   const namedByCategory = new Map<string, Map<string, string>>();
+  const byCategoryKeys = new Map<string, Map<string, string>>();
+  let stringRowCount = 0;
+  let stringKeyCollisionCount = 0;
   for (const table of tables) {
     const merged = byCategory.get(table.category) ?? {
       decimalEntries: new Map<number, string>(),
@@ -659,6 +692,22 @@ export async function scanLangDir(
       mergedNamed.set(key, value);
     }
     namedByCategory.set(table.category, mergedNamed);
+
+    // The exact `{category}_{token}` key space — numeric tokens as written plus
+    // named keys. A later file in the same category wins, as above.
+    const mergedKeys = byCategoryKeys.get(table.category) ?? new Map<string, string>();
+    for (const entries of [table.tokenEntries, table.namedEntries]) {
+      for (const [token, value] of entries) {
+        if (mergedKeys.has(token)) {
+          stringKeyCollisionCount += 1;
+        }
+        mergedKeys.set(token, value);
+      }
+    }
+    byCategoryKeys.set(table.category, mergedKeys);
+  }
+  for (const tokens of byCategoryKeys.values()) {
+    stringRowCount += tokens.size;
   }
 
   return {
@@ -675,6 +724,9 @@ export async function scanLangDir(
     crossFormValueMismatchCount,
     byCategory,
     namedByCategory,
+    byCategoryKeys,
+    stringRowCount,
+    stringKeyCollisionCount,
     errors,
   };
 }

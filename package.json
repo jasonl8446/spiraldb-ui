@@ -17,6 +17,7 @@
     "start": "node server/dist/server/src/index.js",
     "sync": "tsx scripts/sync-names.ts",
     "sync:dry-run": "tsx scripts/sync-dry-run.ts",
+    "sync:spotcheck": "tsx scripts/sync-spotcheck.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . && prettier --check .",

@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { getDb } from '../db.js';
 import { createSettingsRouter } from './settings.js';
+import { createSyncRouter } from './sync.js';
 
 /**
  * `/api` router registry.
@@ -30,4 +31,18 @@ let settingsRouter: Router | undefined;
 apiRouter.use('/settings', (req, res, next) => {
   settingsRouter ??= createSettingsRouter({ db: getDb() });
   settingsRouter(req, res, next);
+});
+
+/**
+ * Sync + history (task 1.4g) — mounted lazily for the same reason as settings:
+ * a request is the first moment the process needs `data/spiraldb-ui.db`.
+ *
+ * `POST /` calls `runSync` (the real orchestrator) with the connection's own
+ * settings; the response is sent only when the sync has finished.
+ */
+let syncRouter: Router | undefined;
+
+apiRouter.use('/sync', (req, res, next) => {
+  syncRouter ??= createSyncRouter({ db: getDb() });
+  syncRouter(req, res, next);
 });
