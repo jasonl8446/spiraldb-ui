@@ -276,3 +276,23 @@ npm ci && npm test && npm run build && npm run lint && npm run typecheck:tests
 npm run test:ui:install        # -> tools/.playwright-browsers (gitignored, workspace-local)
 npm run test:ui                # on NixOS this doc's host workaround is required; CI needs none
 ```
+## Certification status (lead, D41)
+
+The **deliverable** is complete and pre-verified: `ci.yml` enforces the full gate
+list (the AC's five steps in order plus `npm run lint` and
+`npm run typecheck:tests`), the job key stays bare `ci` (no job-level `name:` — it
+would silently change the required check-run context), `runs-on` is pinned to
+`ubuntu-24.04`, and the runner-faithful clone simulation above is green on every
+step except the documented NixOS host library artifact.
+
+The AC's named evidence is **the Phase-1 PR's own check run**, which cannot exist
+until the `gate-1` story opens that PR. Per D41 the ledger entry therefore stays
+**open** until that run is green; `gate-1` records the run here as this story's
+evidence *before* merging, and no story is certified on a local proxy.
+
+The simulation also exposed a real defect, fixed in `5498fe1`: `tests/unit/db.test.ts`
+asserted `path.basename(resolveRepoRoot()) === 'spiraldb-ui'` although
+`resolveRepoRoot` matches on manifest content — it would have failed `npm test` for
+every story run from the c5 worktree layout (`.omd/worktrees/{run-id}`). Verified:
+1 failed before → 20 passed after in a differently-named clone, and 20 passed in the
+worktree shape.
