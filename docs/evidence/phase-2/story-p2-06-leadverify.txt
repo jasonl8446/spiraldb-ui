@@ -1,0 +1,56 @@
+# p2-06 LEAD verification — independent reproduction (fresh DB, own commands, port 3151)
+# 2026-09-26T09:14:37Z branch=phase-2-quest-extraction HEAD=97fd60e
+# clone: /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb (disposable, reset to main before this run)
+
+## boot #1 (import skipped) so the clone path can be set BEFORE the boot import
+  health: {"status":"ok"}
+  PUT /api/settings -> {"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-26","imcodec_path":"/home/j
+
+## boot #2 — the boot import now reads the CLONE
+  Imported 2271 existing entries from SpiralDB
+  [spiraldb-ui] import detail: 3 skipped, 0 unparsable
+
+## ac1 — the list and the status summary
+  count=322 summary={"total":322,"extracted":322,"reviewed":0,"verified":0} skipped=0
+  list summary   : {"total":322,"extracted":322,"reviewed":0,"verified":0}
+  status summary : {"total":322,"extracted":322,"reviewed":0,"verified":0}
+  EQUAL: true
+  a full row: {"quest_name":"DS-ACAD1-C01-001","title":"QuestTitle_1ED8D","title_key":"QuestTitle_1ED8D","title_source":"rawKey","level":1,"goal_count":7,"is_mainline":true,"modified_at":"2026-09-26T09:13:47.580Z","status":"extracted"}
+  client-side search contract (D12): substring UNICORN -> 8 | status=extracted -> 322
+  columns present on every row: true
+
+## ac2 — JSON5 tolerance on a REAL corpus file
+  file: QuestTemplates/questtemplates_DS-ACAD1-C01-001.json (36093 bytes)
+  trailing commas: 0
+  strict JSON.parse: FAILED -> Expected double-quoted property name in JSON at position 12213 (line 349 column 15)
+  GET detail -> keys=36 name=DS-ACAD1-C01-001 level=1 goals=7 firstGoal=1_WizardQuestGoals_00000058
+  explicit nulls in the parsed object: 69
+  unknown name -> 404 {"error":"Unknown quest \"NO-SUCH-QUEST-1\""}
+
+## ac3 — GET -> POST unmodified round trip on that legacy quest
+  POST -> outcome=updated action=update commit=d0844a4f file=QuestTemplates/questtemplates_DS-ACAD1-C01-001.json warnings=[]
+  git diff --numstat:
+    3	3	QuestMetadatas/questmetadata_DS-ACAD1-C01-001.json
+    147	161	QuestTemplates/questtemplates_DS-ACAD1-C01-001.json
+    d0844a4 spiraldb: update quest DS-ACAD1-C01-001
+    leaf values compared: 742 | value mismatches: 0
+    explicit nulls before/after: 69/69
+    util.isDeepStrictEqual(before, after) = true
+    VERDICT: NO FIELD LOSS
+
+## hygiene
+  owner fork: HEAD=c55ccab branch=main status=[] refs=[main ]
+  Imview files changed (60min): 0 | ~/.nuget: 0
+  server stopped; stray node on 3151: 0
+
+## two artifacts in MY commands, corrected (honesty note)
+
+1. `trailing commas: 0` above is an artifact of my own grep: `grep -oP ',\s*[}]]'` does not
+   match across the newline between the comma and the closer. The multi-line regex (node) on the
+   PRISTINE file after the clone reset reports **7 trailing commas**, and strict `JSON.parse` on it
+   FAILS — corroborating the executor's count and the endpoint's JSON5 tolerance.
+
+2. My first attempt to print that corrected count ran AFTER my own ac3 POST, which had already
+   normalised the committed file — so it printed 0 and would have been wrong for the opposite
+   reason. Both numbers are recorded here instead of only the convenient one.
+
