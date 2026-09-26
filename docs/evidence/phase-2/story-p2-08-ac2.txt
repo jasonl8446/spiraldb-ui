@@ -1,0 +1,94 @@
+# p2-08-ac2 evidence — the read-only detail page, tier-1 half (D23 tier 1 / D40)
+# 2026-09-26 branch=phase-2-quest-extraction  tree: uncommitted (left for the lead)
+#
+# AC p2-08-ac2 (verbatim):
+#   "/quests/:questName read-only detail: header (back link, mono name, StatusBadge, Edit
+#    disabled with 'Editing arrives in Phase 3' tooltip); tabs [Info][Goals][Goal Logic]
+#    [Requirements][Results][Dialog] rendered read-only; JSON side panel toggle
+#    (react-json-view-lite, 400px, syntax-highlighted)."
+#
+# THIS FILE IS THE TIER-1 HALF ONLY: no playwright-mcp screenshot pass and no real-corpus quest
+# are claimed here (the AC does not ask for tier 2, but the lead's verification is what certifies
+# the story).
+#
+# Clause-by-clause map to the specs below (tests/ui/quests-detail.spec.ts, 7 tests):
+#
+#   back link          -> 'shows the back link, the mono name, the status badge and the disabled
+#                         Edit' (href == /quests; also asserted in the loading and 404 states,
+#                         so no state strands the user)
+#   mono name          -> same test: h1 class contains text-xl + font-mono + font-semibold
+#   StatusBadge        -> same test: `Status: Extracted`, read from the shared list row
+#   Edit disabled      -> same test: toBeDisabled() + title == 'Editing arrives in Phase 3'
+#   six read-only tabs -> 'renders the six read-only tabs through QuestPreview' (all six present,
+#                         each panel's own content asserted, and `tabpanel input` count == 0 —
+#                         read-only is asserted, not assumed)
+#   JSON side panel    -> 'the { } toggle opens exactly 400px of syntax-highlighted JSON'
+#                         (aria-pressed cycle, boundingBox width == 400, library colour classes
+#                         present in the tree's innerHTML, [Copy] toasts success)
+#   mobile (<768px)    -> 'below 768px the panel is a full-screen overlay, not a side panel'
+#                         (role=dialog fills the viewport exactly, no aside beside it, Escape
+#                         closes)
+#   loading/404/500    -> 'the detail skeleton is announced while the quest is loading',
+#                         'a 404 renders the not-found state with the server message' (the
+#                         server's own `Unknown quest "NOPE"` body, no Edit/JSON affordances,
+#                         no pointless retry, back link navigates),
+#                         'a failed detail read shows the server message and retries'
+#
+# Measured while writing this spec (both are real UI facts, not test artifacts):
+#   * the vendored dialog's open animation scales its content (`zoom-in-95`), so a single
+#     boundingBox sample taken mid-flight measures the *scaled* rect (356.25 of 375 measured);
+#     the assertion polls until the animation settles.
+#   * the goal name legitimately renders twice on the Goals tab (the goal's own header and its
+#     `m_goalName` field), so that assertion is scoped to the goal's `<article>` — strict mode
+#     was telling the truth about the DOM.
+#
+# The whole API is route-mocked (tests/ui/quests-mocks.ts): `GET /api/quests/:name` answers the
+# bare quest object (D49) and `GET /api/quests` answers the one row the header's status badge
+# (and the 322-row corpus behind the browse link) comes from.
+
+$ npm run test:ui -- tests/ui/quests-detail.spec.ts --reporter=list
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/quests-detail.spec.ts --reporter=list
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1429247) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] (node:1429283) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1429276) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:1429294) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 212 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [WebServer] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 7 tests using 1 worker
+
+(node:1429311) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/quests-detail.spec.ts:48:3 › header › shows the back link, the mono name, the status badge and the disabled Edit (902ms)
+  ✓  2 [chromium] › tests/ui/quests-detail.spec.ts:80:3 › tabs › renders the six read-only tabs through QuestPreview (426ms)
+  ✓  3 [chromium] › tests/ui/quests-detail.spec.ts:118:3 › json side panel › the { } toggle opens exactly 400px of syntax-highlighted JSON (647ms)
+  ✓  4 [chromium] › tests/ui/quests-detail.spec.ts:153:3 › json panel on mobile › below 768px the panel is a full-screen overlay, not a side panel (600ms)
+  ✓  5 [chromium] › tests/ui/quests-detail.spec.ts:186:3 › loading, failure and not found › the detail skeleton is announced while the quest is loading (232ms)
+  ✓  6 [chromium] › tests/ui/quests-detail.spec.ts:210:3 › loading, failure and not found › a 404 renders the not-found state with the server message (279ms)
+  ✓  7 [chromium] › tests/ui/quests-detail.spec.ts:232:3 › loading, failure and not found › a failed detail read shows the server message and retries (281ms)
+
+  7 passed (4.7s)

@@ -143,6 +143,78 @@ function orFallback(value: string | null | undefined, fallback: string): string 
   return hasText(value) ? value : fallback;
 }
 
+/* ------------------------------------------------------------ relative time */
+
+/** Second/minute/hour/day/month lengths the thresholds below use. */
+const MINUTE_S = 60;
+const HOUR_S = 60 * MINUTE_S;
+const DAY_S = 24 * HOUR_S;
+const MONTH_S = 30 * DAY_S;
+const YEAR_S = 365 * DAY_S;
+
+/** What an absent or unparsable timestamp renders as. */
+export const RELATIVE_TIME_FALLBACK = '—';
+
+/** `"1 minute ago"` / `"5 minutes ago"` — the unit's singular form when n is 1. */
+function ago(count: number, unit: string): string {
+  return `${count} ${unit}${count === 1 ? '' : 's'} ago`;
+}
+
+/**
+ * A timestamp as relative time — the browse table's **Modified** column (40/60/
+ * 120px widths, spec-ui-design L254-262) and the mobile card's modified date.
+ *
+ * Thresholds (spec-silent; the spec only says "Relative time"):
+ *
+ * | age                       | rendered                     |
+ * |---------------------------|------------------------------|
+ * | < 45 s (also future/skew) | `just now`                   |
+ * | < 60 min                  | `N minutes ago`              |
+ * | < 24 h                    | `N hours ago`                |
+ * | < 30 days                 | `N days ago`                 |
+ * | < 365 days                | `N months ago` (30-day month)|
+ * | otherwise                 | `N years ago` (365-day year) |
+ *
+ * Every boundary is one whole unit, so the label never contradicts its own unit:
+ * at 60 minutes the column reads `1 hour ago`, not `60 minutes ago` (the failure
+ * mode of an "under 90 minutes" minutes-branch). Deliberately **never
+ * locale-formatted**: a machine-dependent date string inside a fixed 120px column
+ * (and inside the tier-1 specs) would be a moving target.
+ * A missing, empty or unparsable value — `modified_at` is `null` when a corpus
+ * file vanished before the server stat'ed it — renders {@link RELATIVE_TIME_FALLBACK}.
+ *
+ * `now` is injectable so the unit tests pin every boundary without freezing time.
+ */
+export function relativeTime(iso: string | null | undefined, now: number = Date.now()): string {
+  if (typeof iso !== 'string' || iso.trim() === '') {
+    return RELATIVE_TIME_FALLBACK;
+  }
+  const timestamp = Date.parse(iso);
+  if (Number.isNaN(timestamp)) {
+    return RELATIVE_TIME_FALLBACK;
+  }
+
+  const seconds = (now - timestamp) / 1000;
+  // A future timestamp (clock skew between the file's mtime and the browser) is
+  // "just now", never "-3 minutes ago".
+  if (seconds < 45) {
+    return 'just now';
+  }
+  if (seconds < HOUR_S) {
+    return ago(Math.max(1, Math.floor(seconds / MINUTE_S)), 'minute');
+  }
+  if (seconds < DAY_S) {
+    return ago(Math.max(1, Math.floor(seconds / HOUR_S)), 'hour');
+  }
+  if (seconds < 30 * DAY_S) {
+    return ago(Math.max(1, Math.floor(seconds / DAY_S)), 'day');
+  }
+  if (seconds < YEAR_S) {
+    return ago(Math.max(1, Math.floor(seconds / MONTH_S)), 'month');
+  }
+  return ago(Math.max(1, Math.floor(seconds / YEAR_S)), 'year');
+}
+
 /**
  * The label shown for a selected value.
  *

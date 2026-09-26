@@ -440,20 +440,45 @@ export function extractQuests(
 /* ------------------------------------------------------------- quests (list) */
 
 /**
+ * Where a row's `title` came from: a string-table hit, the raw `m_questTitle`
+ * value, or `m_questName` because the quest has no title (D49).
+ */
+export type QuestTitleSource = 'resolved' | 'rawKey' | 'missing';
+
+/**
  * One `quests[]` row of `GET /api/quests` (docs/spec-api.md L190-208, decision
- * D49). Only `quest_name` is typed here — it is the field p2-07's overwrite check
- * (gap A) intersects against; the browse table (p2-08) narrows the rest.
+ * D49) — the server's own `QuestListRow` mirrored field for field.
+ *
+ * p2-07 typed only `quest_name` (the field its overwrite check intersects); p2-08's
+ * browse table needs all seven columns and the status, so the mirror is completed
+ * here rather than left as an index signature that promises nothing.
  */
 export interface QuestListRow {
   quest_name: string;
-  [key: string]: unknown;
+  /** String-table resolved title, raw `m_questTitle` key, or `m_questName`. */
+  title: string;
+  title_key: string | null;
+  title_source: QuestTitleSource;
+  level: number | null;
+  goal_count: number;
+  is_mainline: boolean;
+  /** The source file's mtime, ISO 8601; `null` when it vanished before the stat. */
+  modified_at: string | null;
+  /** `entry_status.status`, defaulting to `extracted` when the quest has no row. */
+  status: StatusValue;
+}
+
+/** A corpus file the list could not read, reported rather than fatal. */
+export interface QuestListSkipped {
+  file: string;
+  message: string;
 }
 
 /** `GET /api/quests` success body. */
 export interface QuestsListResult {
   quests: QuestListRow[];
   summary: { total: number; extracted: number; reviewed: number; verified: number };
-  skipped: Array<{ file: string; message: string }>;
+  skipped: QuestListSkipped[];
 }
 
 /**
@@ -461,11 +486,31 @@ export interface QuestsListResult {
  *
  * p2-07 calls this lazily on the first save click (gap A): the extracted names are
  * intersected with these, so the user sees which quests would be overwritten
- * before anything is written. No endpoint was added for that — the list already
- * carries every quest name.
+ * before anything is written. p2-08's browse table and detail header read it
+ * through the shared `QUESTS_QUERY_KEY` cache.
  */
 export function listQuests(): Promise<QuestsListResult> {
   return apiFetch<QuestsListResult>('/api/quests');
+}
+
+/**
+ * TanStack Query key for one quest detail read (`GET /api/quests/:name`).
+ *
+ * The name is part of the key so two detail pages never share a cache entry.
+ */
+export function questDetailQueryKey(name: string): readonly [string, string] {
+  return ['quest-detail', name] as const;
+}
+
+/**
+ * `GET /api/quests/:name` — **the bare quest object**, not an envelope (D49).
+ *
+ * An unknown name answers `404 { error: 'Unknown quest "…"' }`, which surfaces as
+ * an {@link ApiError} with `status === 404`; the detail page renders its
+ * not-found state for exactly that, and an error state for anything else.
+ */
+export function getQuest(name: string): Promise<QuestObject> {
+  return apiFetch<QuestObject>(`/api/quests/${encodeURIComponent(name)}`);
 }
 
 /* ------------------------------------------------------------- quests (save) */

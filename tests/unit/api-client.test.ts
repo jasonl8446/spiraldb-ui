@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   apiFetch,
+  getQuest,
   getSettings,
   getStatus,
   patchStatus,
   putSettings,
+  questDetailQueryKey,
   SETTINGS_QUERY_KEY,
   statusQueryKey,
 } from '../../client/src/lib/api';
@@ -198,5 +200,40 @@ describe('status wrappers', () => {
   it('exposes stable query keys the gate and the shell share', () => {
     expect(SETTINGS_QUERY_KEY).toEqual(['settings']);
     expect(statusQueryKey('quests')).toEqual(['status', 'quests']);
+  });
+});
+
+describe('quest readers (p2-08)', () => {
+  it('getQuest GETs the bare quest object, URL-encoding the name', async () => {
+    mockJson({ m_questName: 'DS-ACAD1-C01-001', m_questLevel: 1 });
+
+    await expect(getQuest('DS ACAD/1')).resolves.toEqual({
+      m_questName: 'DS-ACAD1-C01-001',
+      m_questLevel: 1,
+    });
+
+    const sent = call();
+    expect(sent.url).toBe('/api/quests/DS%20ACAD%2F1');
+    expect(sent.method).toBeUndefined();
+    expect(sent.body).toBeUndefined();
+  });
+
+  it('getQuest rethrows the 404 envelope the detail page renders as not-found', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Unknown quest "NOPE"' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const failure = await getQuest('NOPE').catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(ApiError);
+    expect((failure as ApiError).status).toBe(404);
+    expect((failure as ApiError).message).toBe('Unknown quest "NOPE"');
+  });
+
+  it('keys one detail read per quest name', () => {
+    expect(questDetailQueryKey('DS-ACAD1-C01-001')).toEqual(['quest-detail', 'DS-ACAD1-C01-001']);
+    expect(questDetailQueryKey('A')).not.toEqual(questDetailQueryKey('B'));
   });
 });
