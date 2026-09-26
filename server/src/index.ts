@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createApp } from './app.js';
+import { defaultDbFile, getDb } from './db.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
@@ -32,6 +33,12 @@ function findStaticDir(startDir: string): string | undefined {
 }
 
 const staticDir = findStaticDir(path.dirname(fileURLToPath(import.meta.url)));
+
+// Initialise the SQLite layer on boot (task 1.2): creates `data/` when missing,
+// applies the migrations from server/migrations (copied into the build by
+// `scripts/copy-server-assets.mjs`) and seeds `settings` on first run.
+getDb();
+console.log(`[spiraldb-ui] database ready at ${defaultDbFile()}`);
 
 const app = createApp(staticDir ? { staticDir } : {});
 
