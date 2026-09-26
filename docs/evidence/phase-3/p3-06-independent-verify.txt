@@ -1,0 +1,399 @@
+# p3-06 — lead's independent verification of the requirement-tree model
+#
+# Written by the lead from the specs + the real corpus, deliberately NOT derived from the
+# executor's own tests. Every check recomputes its expectation from the raw JSON, and the
+# preservation checks are byte-level (JSON.stringify encodes insertion order, so stringify
+# equality IS key-order equality).
+# Run: npx vitest run --config /tmp/vitest.p306.config.ts
+#
+## Run output
+```
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ ../../../../../tmp/p306-lead-verify.test.ts (9 tests) 59ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  17:03:58
+   Duration  909ms (transform 63ms, setup 0ms, collect 521ms, tests 59ms, environment 0ms, prepare 56ms)
+
+```
+
+## What it independently established
+- corpus loads: 322 quests, 314 with a non-null m_requirements tree and 8 with null; 631 nodes
+  (314 groups + 317 leaves), 7 untyped wrappers; plus 65 DropTable item wrappers.
+- readRequirementTree agrees with my own walk on every one of the 314 trees: node count, group
+  count and untyped count, and every wrapper is readable (nothing hidden).
+- D57 byte-level: for all 314 trees a no-op operator write leaves the document byte-identical,
+  including every object's key order at every depth, and a NOT toggle round-trips exactly (flip,
+  re-read the FRESH value, flip back -> byte-identical). Every other top-level key of each file
+  is untouched.
+- the 40 ReqHasEntry nodes keep BOTH keys the domain reference omits (m_displayName,
+  m_isQuestRegistry) with their values, keep their 7-key order, and their NOT flips.
+- addConditionEdits appends (index = length) with the canonical new-leaf order
+  $type|m_applyNOT|m_operator|m_questName and leaves every existing child byte-identical.
+- initializeTreeEdits on the 8 null slots is exactly one `set` producing a typed RequirementList
+  wrapper holding one child, and touches no other key.
+- exactly 4 type specs (ReqHasQuest, ReqHasEntry, ReqSchoolOfFocus, ReqIsSchool) and exactly 4
+  selector options; ReqHasGoal/ReqEntryValue appear in neither.
+- the corpus operator truth my own walk computes: ROP_AND 631, ROP_OR 0, m_applyNOT true 1.
+- the 65 DropTable item wrappers (all untyped, at Items[i].Requirements) read and survive a
+  no-op edit through the same builders — the Phase-4 reuse claim, checked against real data.
+
+## Two of my expectations were wrong, and the model was right both times
+1. `addConditionEdits(nodePath, 0)` inserts AT index 0; I had expected append semantics. The
+   signature documents the index, so appending is `index = children.length`. My bug.
+2. I asserted `border-blue-500`, but the model uses PER-SIDE classes (`border-l-blue-500` etc.)
+   so the colour cannot lose a CSS-order race with the card's own `border-zinc-800`. The spec
+   asks for a coloured LEFT border, so the model's choice is the more precise reading — and the
+   live pass settled it by measuring the COMPUTED left border (blue rgb(59,130,246) for AND,
+   purple rgb(168,85,247) for OR, green rgb(34,197,94) for a leaf), which is independent of any
+   class name. I corrected my spec rather than the model.
+Recorded because an independent verifier's value is that it dares to disagree — and its
+credibility depends on reporting honestly when the disagreement is its own.
+
+## Appendix - the verification spec source
+```ts
+/**
+ * LEAD INDEPENDENT VERIFICATION — p3-06 requirement-tree model (task 3.6).
+ *
+ * Written by the lead from the specs + the real corpus, deliberately NOT derived from the
+ * executor's own test file. Each check recomputes the expectation from the raw JSON with an
+ * algorithm of its own, and the D57 checks are byte-level: `JSON.stringify` encodes insertion
+ * order, so stringify equality IS key-order equality.
+ *
+ * Run: npx vitest run --config /tmp/vitest.p306.config.ts
+ */
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { describe, expect, it } from 'vitest';
+
+import * as R from '/home/jason/Documents/git-projects/spiraldb-ui/client/src/lib/requirement-tree';
+import { applyEdits } from '/home/jason/Documents/git-projects/spiraldb-ui/shared/document';
+
+const require = createRequire('/home/jason/Documents/git-projects/spiraldb-ui/');
+const JSON5 = require('json5');
+const ROOT = '/home/jason/Documents/git-projects/spiraldb';
+
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+interface Walked {
+  nodes: number;
+  groups: number;
+  leaves: number;
+  untyped: number;
+  types: Map<string, number>;
+}
+
+/** My own walk: a node is a group iff it owns an `m_requirements` ARRAY. */
+function walk(value: unknown, acc: Walked): void {
+  if (!isObj(value)) return;
+  acc.nodes += 1;
+  const children = Array.isArray(value.m_requirements) ? value.m_requirements : null;
+  if (children) {
+    acc.groups += 1;
+    if (typeof value.$type !== 'string') acc.untyped += 1;
+    for (const child of children) walk(child, acc);
+  } else {
+    acc.leaves += 1;
+    const t = typeof value.$type === 'string' ? String(value.$type) : 'undefined';
+    acc.types.set(t, (acc.types.get(t) ?? 0) + 1);
+  }
+}
+
+const empty = (): Walked => ({ nodes: 0, groups: 0, leaves: 0, untyped: 0, types: new Map() });
+
+/** Recursively compare every object's key order (a stronger statement than deep equality). */
+function keyOrderProblems(a: unknown, b: unknown, path: string, out: string[]): void {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b)) {
+      out.push(`${path}: array/not-array`);
+      return;
+    }
+    if (a.length !== b.length) {
+      out.push(`${path}: length ${a.length} vs ${b.length}`);
+      return;
+    }
+    a.forEach((v, i) => keyOrderProblems(v, b[i], `${path}[${i}]`, out));
+    return;
+  }
+  if (!isObj(a) || !isObj(b)) {
+    if (JSON.stringify(a) !== JSON.stringify(b)) out.push(`${path}: value differs`);
+    return;
+  }
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.join('|') !== kb.join('|')) out.push(`${path}: key order ${ka.join(',')} vs ${kb.join(',')}`);
+  for (const k of ka) if (k in b) keyOrderProblems(a[k], b[k], `${path}.${k}`, out);
+}
+
+interface QuestCase {
+  file: string;
+  doc: Record<string, unknown>;
+  requirement: unknown;
+}
+const quests: QuestCase[] = readdirSync(`${ROOT}/QuestTemplates`)
+  .filter((f) => f.endsWith('.json'))
+  .sort()
+  .flatMap((file) => {
+    try {
+      const doc = JSON5.parse(readFileSync(`${ROOT}/QuestTemplates/${file}`, 'utf8')) as Record<string, unknown>;
+      return [{ file, doc, requirement: doc.m_requirements }];
+    } catch {
+      return [];
+    }
+  });
+const withTree = quests.filter((q) => isObj(q.requirement));
+const nullTrees = quests.filter((q) => q.requirement === null);
+
+/** The DropTable items that carry requirements — the Phase-4 reuse target. */
+const dropItems: Array<{ file: string; index: number; path: (string | number)[]; value: unknown }> = [];
+for (const file of readdirSync(`${ROOT}/DropTables`).filter((f) => f.endsWith('.json'))) {
+  let doc: Record<string, unknown>;
+  try {
+    doc = JSON5.parse(readFileSync(`${ROOT}/DropTables/${file}`, 'utf8')) as Record<string, unknown>;
+  } catch {
+    continue;
+  }
+  const items = Array.isArray(doc.Items) ? doc.Items : [];
+  items.forEach((item, index) => {
+    if (isObj(item) && isObj(item.Requirements)) {
+      dropItems.push({ file, index, path: ['Items', index, 'Requirements'], value: item.Requirements });
+    }
+  });
+}
+
+describe('p3-06 lead verification — the requirement model against the corpus', () => {
+  it('loads the real corpus the story rests on', () => {
+    expect(quests.length).toBe(322);
+    expect(withTree.length).toBe(314);
+    expect(nullTrees.length).toBe(8);
+    const acc = empty();
+    for (const q of withTree) walk(q.requirement, acc);
+    expect(acc.nodes).toBe(631);
+    expect(acc.groups).toBe(314);
+    expect(acc.leaves).toBe(317);
+    expect(acc.untyped).toBe(7);
+    expect([...acc.types.keys()].sort()).toEqual([
+      'Imcodec.ObjectProperty.TypeCache.ReqHasEntry, Imcodec.ObjectProperty',
+      'Imcodec.ObjectProperty.TypeCache.ReqHasQuest, Imcodec.ObjectProperty',
+    ]);
+    expect(dropItems.length).toBe(65);
+  });
+
+  it('reads every corpus tree with the same node count and classification as my own walk', () => {
+    const problems: string[] = [];
+    for (const q of withTree) {
+      const acc = empty();
+      walk(q.requirement, acc);
+      const view = R.readRequirementTree(['m_requirements'], q.requirement);
+      if (view === null) {
+        problems.push(`${q.file}: view is null`);
+        continue;
+      }
+      const count = (n: R.RequirementNodeView): number =>
+        1 + n.children.reduce((sum, c) => sum + count(c), 0);
+      const groups = (n: R.RequirementNodeView): number =>
+        (n.kind === 'group' ? 1 : 0) + n.children.reduce((s, c) => s + groups(c), 0);
+      if (count(view) !== acc.nodes) problems.push(`${q.file}: nodes ${count(view)} vs ${acc.nodes}`);
+      if (groups(view) !== acc.groups) problems.push(`${q.file}: groups ${groups(view)} vs ${acc.groups}`);
+      const untyped = (n: R.RequirementNodeView): number =>
+        (n.kind === 'group' && n.typeString === null ? 1 : 0) + n.children.reduce((s, c) => s + untyped(c), 0);
+      if (untyped(view) !== acc.untyped) problems.push(`${q.file}: untyped ${untyped(view)} vs ${acc.untyped}`);
+      if (!view.readable) problems.push(`${q.file}: wrapper unreadable`);
+    }
+    expect(problems.slice(0, 10)).toEqual([]);
+  });
+
+  it('preserves every corpus tree byte-for-byte through no-op edits (D57)', () => {
+    const problems: string[] = [];
+    let checked = 0;
+    for (const q of withTree) {
+      const base = q.requirement as Record<string, unknown>;
+      const path: (string | number)[] = ['m_requirements'];
+      const edits: ReturnType<typeof R.setOperatorEdit>[] = [];
+      // A no-op operator write and a no-op NOT toggle (twice, so the value returns).
+      const op = R.requirementOperator(base);
+      if (op !== null) edits.push(R.setOperatorEdit(path, op));
+      const childPath = R.requirementChildPath(path, 0);
+      const child = Array.isArray(base.m_requirements) ? base.m_requirements[0] : undefined;
+      if (isObj(child)) edits.push(R.setOperatorEdit(path, op ?? 'ROP_AND'));
+      if (edits.length === 0) continue;
+      checked += 1;
+      const after = applyEdits(q.doc as never, edits) as Record<string, unknown>;
+      if (JSON.stringify(after.m_requirements) !== JSON.stringify(q.requirement)) {
+        problems.push(`${q.file}: bytes changed`);
+      }
+      const order: string[] = [];
+      keyOrderProblems(q.requirement, after.m_requirements, q.file, order);
+      if (order.length) problems.push(...order.slice(0, 2));
+      // A NOT toggle is round-trippable: flip it, then flip it back with the FRESH value.
+      if (isObj(child)) {
+        const once = applyEdits(q.doc as never, [R.toggleApplyNOTEdit(childPath, child)]) as Record<string, unknown>;
+        const nowChild = (once.m_requirements as Record<string, unknown>).m_requirements;
+        const flipped = Array.isArray(nowChild) ? nowChild[0] : undefined;
+        if (!isObj(flipped)) problems.push(`${q.file}: child vanished after NOT`);
+        else {
+          if (flipped.m_applyNOT === child.m_applyNOT) problems.push(`${q.file}: NOT did not flip`);
+          const back = applyEdits(once as never, [
+            R.toggleApplyNOTEdit(childPath, flipped),
+          ]) as Record<string, unknown>;
+          if (JSON.stringify(back.m_requirements) !== JSON.stringify(q.requirement)) {
+            problems.push(`${q.file}: NOT did not round-trip`);
+          }
+          const backOrder: string[] = [];
+          keyOrderProblems(q.requirement, back.m_requirements, `${q.file} (NOT round-trip)`, backOrder);
+          if (backOrder.length) problems.push(...backOrder.slice(0, 2));
+        }
+      }
+      // Nothing else in the document may move either.
+      for (const key of Object.keys(q.doc)) {
+        if (key === 'm_requirements') continue;
+        if (JSON.stringify(after[key]) !== JSON.stringify(q.doc[key])) problems.push(`${q.file}#${key} changed`);
+      }
+    }
+    expect(problems.slice(0, 10)).toEqual([]);
+    expect(checked).toBe(314);
+  });
+
+  it('keeps the 40 ReqHasEntry nodes’ two undocumented keys and their key order', () => {
+    const problems: string[] = [];
+    let seen = 0;
+    for (const q of withTree) {
+      const base = q.requirement as Record<string, unknown>;
+      const children = Array.isArray(base.m_requirements) ? base.m_requirements : [];
+      children.forEach((child, index) => {
+        if (!isObj(child) || typeof child.$type !== 'string' || !/ReqHasEntry/.test(child.$type)) return;
+        seen += 1;
+        const path = R.requirementChildPath(['m_requirements'], index);
+        const after = applyEdits(q.doc as never, [R.toggleApplyNOTEdit(path, child)]) as Record<string, unknown>;
+        const entry = (after.m_requirements as Record<string, unknown>[]).m_requirements[index] as Record<string, unknown>;
+        if (!('m_displayName' in entry)) problems.push(`${q.file}#${index}: m_displayName dropped`);
+        if (!('m_isQuestRegistry' in entry)) problems.push(`${q.file}#${index}: m_isQuestRegistry dropped`);
+        if (entry.m_isQuestRegistry !== child.m_isQuestRegistry) problems.push(`${q.file}#${index}: registry value changed`);
+        if (Object.keys(entry).join('|') !== Object.keys(child).join('|')) {
+          problems.push(`${q.file}#${index}: key order ${Object.keys(entry).join(',')}`);
+        }
+        if (entry.m_applyNOT !== !R.requirementApplyNOT(child)) problems.push(`${q.file}#${index}: NOT did not flip`);
+      });
+    }
+    expect(problems.slice(0, 10)).toEqual([]);
+    expect(seen).toBe(40);
+  });
+
+  it('appends a canonical child without moving the existing ones', () => {
+    const problems: string[] = [];
+    for (const q of withTree) {
+      const base = q.requirement as Record<string, unknown>;
+      const before = Array.isArray(base.m_requirements) ? base.m_requirements : [];
+      // Appending is index = length; the model inserts AT the index it is given.
+      const edited = applyEdits(
+        q.doc as never,
+        R.addConditionEdits(['m_requirements'], before.length),
+      ) as Record<string, unknown>;
+      const list = (edited.m_requirements as Record<string, unknown>).m_requirements as unknown[];
+      if (list.length !== before.length + 1) problems.push(`${q.file}: length`);
+      if (JSON.stringify(list.slice(0, before.length)) !== JSON.stringify(before)) {
+        problems.push(`${q.file}: existing children moved`);
+      }
+      const added = list[list.length - 1] as Record<string, unknown>;
+      if (!isObj(added)) { problems.push(`${q.file}: added not an object`); continue; }
+      // A new ReqHasQuest leaf: canonical corpus order $type, m_applyNOT, m_operator, m_questName.
+      if (typeof added.$type !== 'string' || !/ReqHasQuest/.test(added.$type)) {
+        problems.push(`${q.file}: added is not ReqHasQuest (${String(added.$type)})`);
+      }
+      if (Object.keys(added).join('|') !== '$type|m_applyNOT|m_operator|m_questName') {
+        problems.push(`${q.file}: added key order ${Object.keys(added).join(',')}`);
+      }
+    }
+    expect(problems.slice(0, 10)).toEqual([]);
+  });
+
+  it('initializes a null tree with one set and never with a $type-less guess', () => {
+    expect(nullTrees.length).toBe(8);
+    const problems: string[] = [];
+    for (const q of nullTrees) {
+      const edits = R.initializeTreeEdits(['m_requirements'], null);
+      expect(edits.length, q.file).toBe(1);
+      expect(edits[0].op, q.file).toBe('set');
+      const after = applyEdits(q.doc as never, edits) as Record<string, unknown>;
+      const wrapper = after.m_requirements as Record<string, unknown>;
+      expect(isObj(wrapper), q.file).toBe(true);
+      expect(Array.isArray(wrapper.m_requirements), q.file).toBe(true);
+      expect((wrapper.m_requirements as unknown[]).length, q.file).toBe(1);
+      // The wrapper is a typed RequirementList, and no other key of the document moved.
+      expect(String(wrapper.$type), q.file).toMatch(/RequirementList/);
+      for (const key of Object.keys(q.doc)) {
+        if (key === 'm_requirements') continue;
+        if (JSON.stringify(after[key]) !== JSON.stringify(q.doc[key])) problems.push(`${q.file}#${key}`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('excludes the two types that do not exist in the corpus, and offers the 4 that do', () => {
+    expect(R.REQUIREMENT_TYPE_SPECS.length).toBe(4);
+    const names = R.REQUIREMENT_TYPE_SPECS.map((s) => s.shortName).sort();
+    expect(names).toEqual(['ReqHasEntry', 'ReqHasQuest', 'ReqIsSchool', 'ReqSchoolOfFocus']);
+    const sample = withTree
+      .map((q) => (q.requirement as Record<string, unknown>).m_requirements)
+      .flatMap((c) => (Array.isArray(c) ? c : []))
+      .find((c) => isObj(c) && /ReqHasQuest/.test(String(c.$type)))!;
+    const options = R.requirementTypeSelectOptions(sample);
+    const all = options.map((o) => `${o.value} ${o.label}`).join(' | ');
+    expect(options.length).toBe(4);
+    expect(all).not.toMatch(/ReqHasGoal|ReqEntryValue/);
+  });
+
+  it('uses the spec’s border colours and the two-level operator truth', () => {
+    // Per-side classes on purpose (so the colour cannot lose a CSS-order race with the
+    // card's own border-zinc-800). The live pass measured the COMPUTED left border:
+    // rgb(59,130,246) = blue-500, rgb(168,85,247) = purple-500, rgb(34,197,94) = green-500.
+    expect(R.REQUIREMENT_GROUP_BORDER_CLASSES.ROP_AND).toBe('border-l-blue-500');
+    expect(R.REQUIREMENT_GROUP_BORDER_CLASSES.ROP_OR).toBe('border-l-purple-500');
+    expect(R.REQUIREMENT_LEAF_BORDER_CLASS).toBe('border-l-green-500');
+    // The corpus is ROP_AND in 631/631 and applyNOT true once — my own count.
+    let and = 0;
+    let or = 0;
+    let notTrue = 0;
+    const count = (v: unknown): void => {
+      if (!isObj(v)) return;
+      if (v.m_operator === 'ROP_AND') and += 1;
+      if (v.m_operator === 'ROP_OR') or += 1;
+      if (v.m_applyNOT === true) notTrue += 1;
+      const kids = Array.isArray(v.m_requirements) ? v.m_requirements : [];
+      for (const k of kids) count(k);
+    };
+    for (const q of withTree) count(q.requirement);
+    expect(and).toBe(631);
+    expect(or).toBe(0);
+    expect(notTrue).toBe(1);
+  });
+
+  it('reads and preserves the DropTable item trees it will be reused for (Phase 4)', () => {
+    const problems: string[] = [];
+    let untyped = 0;
+    for (const item of dropItems) {
+      const view = R.readRequirementTree(item.path, item.value);
+      if (view === null || !view.readable) { problems.push(`${item.file}#${item.index}: unreadable`); continue; }
+      if (!R.requirementNodeIsGroup(item.value)) problems.push(`${item.file}#${item.index}: not a group`);
+      if (view.typeString === null) untyped += 1;
+      const op = R.requirementOperator(item.value);
+      if (op !== 'ROP_AND') problems.push(`${item.file}#${item.index}: operator ${String(op)}`);
+      // No-op edit through the same builders, applied at the item's own path.
+      const edits = [R.setOperatorEdit(item.path, 'ROP_AND')];
+      const after = applyEdits(
+        { Items: [{ Requirements: item.value }] } as never,
+        edits.map((e) => ({ ...e, path: ['Items', 0, 'Requirements', ...e.path.slice(item.path.length)] })),
+      ) as { Items: Array<{ Requirements: unknown }> };
+      if (JSON.stringify(after.Items[0].Requirements) !== JSON.stringify(item.value)) {
+        problems.push(`${item.file}#${item.index}: bytes changed`);
+      }
+    }
+    expect(problems.slice(0, 10)).toEqual([]);
+    expect(dropItems.length).toBe(65);
+    expect(untyped).toBe(65);
+  });
+});```

@@ -1,0 +1,80 @@
+# p3-06 tier-2 evidence — the requirement tree on the real stack (lead-run, D23)
+
+Subagents have no playwright-mcp, so the browser pass is the lead's (D23). Rig as p3-04/p3-05: a
+**copy** of the live DB (`cp data/spiraldb-ui.db /tmp/p306-tier2.db`), the real corpus clone
+(`SPIRALDB_PATH=data/test-spiraldb`), the freshly built `dist`, and
+`NODE_ENV=test … PORT=3216 npx tsx server/src/index.ts`. **Save was never pressed**: every value
+below is the in-memory document read back through the JSON panel's `[Copy]` (the clipboard is
+wiped and re-polled, so a read cannot pass on a stale value).
+
+The three targets were chosen because they are the corpus's own edge cases, not inventions:
+
+| Quest | Why it was chosen (measured) |
+|---|---|
+| `WC-UNICORN-MAIN-001` | one of the **7 untyped** top-level wrappers (`{m_requirements, m_applyNOT, m_operator}` — **no `$type`**), corpus key order (e) |
+| `WC-OLDE-MAIN-003A` | the **only** corpus tree with 3 children (child counts are 1 → 312, 2 → 1, 3 → 1), corpus key order (d) `$type,m_requirements,m_applyNOT,m_operator` |
+| `Tutorial_Intro` | one of the **8 null** `m_requirements` slots |
+
+## 1. The whole tab, live (`WC-UNICORN-MAIN-001`)
+
+| Measured | Value |
+|---|---|
+| regions | `Quest requirements editor`, `Requirements`, `Preparation requirements`, `Prune requirements`, `Goal requirements`, `Goal requirements for 1_…`, `for 2_…`, `for 3_…` |
+| cards | `Group m_requirements` + `ReqHasEntry m_requirements[0]` — the untyped wrapper renders as a **group with no class name**, which is what "untyped" should look like |
+| the Type selector | **exactly** `ReqHasQuest`, `ReqHasEntry`, `ReqSchoolOfFocus`, `ReqIsSchool` |
+| the Operator selector | `ROP_AND`, `ROP_OR` |
+| controls | `AND for m_requirements` / `OR for m_requirements` / `Delete m_requirements` / `Delete m_requirements[0]` / `Quest m_requirements[0]` / `Add Condition to <address>` / `Add Group to <address>` (address-scoped, so a control names its node) |
+| the ReqHasEntry card's copy | surfaces both keys the domain reference omits, with honest help: *"Display Name — Corpus-only key the domain reference omits; null in all 40 measured nodes"*, *"Quest Registry — … true in …"* |
+
+## 2. D57 on an untyped wrapper — the risk that would have made the story worthless
+
+One click on `Add Condition to m_requirements`, then the document read back:
+
+| | Before | After |
+|---|---|---|
+| wrapper keys | `m_requirements, m_applyNOT, m_operator` | `m_requirements, m_applyNOT, m_operator` (identical) |
+| `$type` on the wrapper | absent | **still absent** (no class invented) |
+| children | 1 | 2, the new one `{$type: …ReqHasQuest…, m_applyNOT: false, m_operator: ROP_AND, m_questName: ""}` (canonical corpus order) |
+| the original child | — | byte-identical |
+| top-level keys | 36 | 36 |
+
+## 3. The 3-child tree and the spec's colours (`WC-OLDE-MAIN-003A`)
+
+- The wrapper's key order — corpus order (d) — was `$type,m_requirements,m_applyNOT,m_operator`
+  before and after the edit: **unchanged**.
+- `OR for m_requirements` wrote `m_operator: ROP_OR` (the corpus value was `ROP_AND`), and all
+  three children kept their full 7-key ReqHasEntry order **byte-identically**.
+- The group's **computed** left border is `rgb(168, 85, 247)` (purple-500) while OR is pressed and
+  `rgb(59, 130, 246)` (blue-500) while AND is pressed; each leaf's is `rgb(34, 197, 94)`
+  (green-500). Measured from `getComputedStyle`, so the claim does not rest on a class name — and
+  the `aria-pressed` pair flips true/false together with the colour.
+- `m_prepRequirements` and `m_pruneRequirements` stayed `null` throughout.
+
+Screenshot: `p3-06-requirement-tree.png`.
+
+## 4. Mounting a null slot writes nothing (`Tutorial_Intro`)
+
+Opening the Requirements tab and the JSON panel produced the empty state (`No requirements.` plus
+`Add Condition to m_requirements` / `Add Group to m_requirements`) and the document still carried
+`m_requirements: null` — the key present, the value null, exactly as the corpus has it. `m_prep`
+and `m_prune` were also still null, and the document still had 36 top-level keys.
+
+Screenshot: `p3-06-empty-slot.png`.
+
+## 5. Server lifecycle
+
+The rig ran as a managed background job on :3216 and was killed at the end of the pass; nothing was
+left listening on 5173, 3001 or 3216.
+
+## What this pass did **not** prove
+
+- No image input in this model, so the two screenshots' **pixels** were not inspected; every claim
+  is a DOM, ARIA-name, computed-style or clipboard read.
+- The AC1 tree `AND(ReqHasQuest{NOT}, OR(ReqSchoolOfFocus, ReqHasEntry))` was **not** rebuilt by hand
+  in the browser: it is tier-1's job (§5 of `p3-06.md`) and the corpus cannot produce it (no
+  `ROP_OR`, no nested group, and those two leaf classes never co-occur with `ReqHasQuest`). On the
+  real stack I exercised the same controls it uses (type selector, NOT, operator toggle, add
+  condition/group) on real nodes.
+- No Save was pressed, so "the document" is the live edited state, not a file on disk; the save
+  pipeline is D49's contract and this story does not change it.
+- 768px/mobile was not re-checked for this tab.
