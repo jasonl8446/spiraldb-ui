@@ -1,0 +1,32 @@
+# gate-2 — Phase 1 (19 checkboxes) mechanical re-run FRESH at the Phase-2 boundary, 2026-09-26T12:55:57Z
+# branch=phase-2-quest-extraction head=09ace95
+# A THROWAWAY DB via the documented 'npm run sync -- --db <path>' flag / SPIRALDB_SYNC_DB (D44).
+# RECORDED, NOT HIDDEN: a first attempt used '--db-file', which the sync CLI reports as an unknown
+# option (cli.ts L212 warns on stderr) and therefore fell back to the default DB path, so two extra
+# syncs wrote to the app's own data/spiraldb-ui.db. That is the same operation the UI Sync button
+# performs and sync is replace-not-duplicate by design; the live DB was verified intact afterwards -
+# name tables 79835/18173/23033/322/1241/317/216991, entry_status 2271 (quest 322), status_history 3.
+
+## P1 #2 fresh DB: tables + indexes
+
+Node.js v24.21.0
+
+## P1 #4 sync run 1
+  unpack / scan / write: 16.2 s / 3.1 s / 448 ms
+  total               : 19.8 s
+  sync_history        : success row written at 2026-09-26T12:56:17Z
+counts: {"items":79835,"spells":18173,"npcs":23033,"quests":322,"zones":1241,"drop_tables":317,"string_table":216991}
+sync_history: [{"status":"success","n":4}]
+
+## P1 #7 sync run 2 (replace, not duplicate)
+  total               : 20.0 s
+  sync_history        : success row written at 2026-09-26T12:56:38Z
+run2 counts: {"items":79835,"spells":18173,"npcs":23033,"quests":322,"zones":1241,"drop_tables":317,"string_table":216991}
+IDENTICAL to run 1 on all 7 tables: true
+sync_history rows: 5 after this recheck's repeated runs - APPEND-ONLY (each run added a row; the
+# replace check is about the name tables, which are byte-identical above)
+
+## P1 #5 spot-check vs the unpacked source
+
+summary
+  checks: 108  failures: 0  seed: 20260926

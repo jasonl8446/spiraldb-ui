@@ -1,0 +1,44 @@
+# gate-2 (Phase 2) — Verification Steps 5, 6, 7: clone-based git evidence (D17) + history, FRESH 2026-09-26T12:46:55Z
+# The save was driven through the UI with a two-quest capture (2 POSTs, 0 before the confirm).
+
+## V5: data/test-spiraldb (the test clone, D17)
+branch: content/2026-09-26
+commits (newest first):
+  18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002 (Lead Verify)
+  b94b60f spiraldb: extract quest WC-UNICORN-MAIN-004 (Lead Verify)
+  f3f8b5c test-setup: make two quests not-yet-extracted (gate-2 fixture) (Jason)
+  c55ccab fix: give the Olivia goal a quest helper tag (Jason)
+files: 322 templates (was 320 after the test-setup removals)
+the two created files:
+  101880 QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+  30476 QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json
+what the two save commits touched:
+  COMMIT 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+  
+  A	QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
+  A	QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+  COMMIT b94b60f spiraldb: extract quest WC-UNICORN-MAIN-004
+  
+  M	QuestMetadatas/questmetadata_WC-UNICORN-MAIN-004.json
+  A	QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json
+  COMMIT f3f8b5c test-setup: make two quests not-yet-extracted (gate-2 fixture)
+  
+  D	QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json
+  D	QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
+  D	QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+  D	QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json
+
+## V6: clean JSON (no trailing commas) on both saved files
+  WC-UNICORN-MAIN-004: JSON.parse OK name=WC-UNICORN-MAIN-004 goals=7 startGoals=5 dialogBlocks=2
+    trailing-comma scan: none
+  WC-CYCLOPS-MAIN-002: JSON.parse OK name=WC-CYCLOPS-MAIN-002 goals=6 startGoals=0 dialogBlocks=1
+    trailing-comma scan: none
+
+## V7: the status + history endpoints for both saved quests
+  --- WC-UNICORN-MAIN-004
+    null -> extracted | by Lead Verify | notes: Imported from packet capture two-quests.json
+  --- WC-CYCLOPS-MAIN-002
+    null -> extracted | by Lead Verify | notes: Imported from packet capture two-quests.json
+    extracted -> reviewed | by Lead Verify | notes: gate-2 check: read through all 6 persona goals
+  --- summary: {"total":322,"extracted":321,"reviewed":1,"verified":0}
+  --- dashboard overall: {"total":2271,"extracted":2270,"reviewed":1,"verified":0,"percent_verified":0}

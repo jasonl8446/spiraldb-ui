@@ -1,0 +1,54 @@
+# gate-2 — the browser (D23 tier 2) portion of the boundary re-run, driven live by the lead
+# Stack: NODE_ENV=test SPIRALDB_UI_DB=<throwaway> npm run dev (import enabled); throwaway DB.
+# Screenshots copied into this directory: gate2-01-two-quests-results.png, gate2-02-extracting-spinner.png,
+# gate2-03-friendly-dropdowns.png, gate2-04-sync-toast-fresh.png
+
+## P1 #1 proxy + console cleanliness
+page-context fetch('/api/settings') from :5173 -> HTTP 200, keys
+aurorium_path,git_branch,imcodec_path,spiraldb_path,user_name
+per-page console listener over /, /settings, /drop-tables -> 0 errors, 0 warnings
+
+## P1 #14 sidebar + Sync button
+12/12 nav hrefs (read from the nav itself, not guessed):
+  / , /quests/extract , /quests , /drop-tables , /npc-inventories , /npc-spell-inventories ,
+  /creature-spellbooks , /npc-drop-tables , /treasure-card-inventories , /zone-transfers ,
+  /global-registry , /settings
+each route renders its heading and exactly one aria-current="page" on the matching href
+live Sync: "Sync" -> "Syncing…" (disabled, sampled at t=0/8/16/24 polls, ~22 s) -> "Sync"
+  toast: "Sync complete: 79,835 items · 18,173 spells · 23,033 NPCs · 322 quests · 1,241 zones"
+
+## P1 #15 FriendlyNameDropdown (raw id stored, name shown)
+items  option "Twice Stitched Boots"     -> hidden preview_items = 4808
+spells option "Firecat Alley"            -> hidden preview_spells = 607923
+npcs   option "ArrotToMerles (161001)"   -> hidden preview_npcs = 161001
+
+## P2 #4 the UI walkthrough (upload -> results -> Save All -> confirm), N=2
+A two-quest capture was built by concatenating two committed D28 captures (7+15 = 22 envelopes,
+45,896 B; the D45(f) technique) and fed to the page's real hidden input[type=file]; the real .NET CLI
+parsed it server-side.
+  before    browse read "Showing 1-50 of 320", tabs "All 320 | Extracted 320 | Reviewed 0 | Verified 0",
+            and both quests were absent
+  spinner   sampled at t=0: two [role=status] regions - ["", "Extracting quests..."] - with
+            svg.animate-spin and 0 [role=progressbar] (indeterminate), Cancel button present
+  results   [role=listbox][aria-label="Extracted quests"] held exactly two rows:
+            "WC-UNICORN-MAIN-004 | Level 0 | 7 goals | new" and "WC-CYCLOPS-MAIN-002 | Level 1 | 6 goals | new"
+  confirm   dialog "Save 2 quests to SpiralDB? This will create files and auto-commit." with
+            0 POST /api/quests recorded BEFORE the confirm, then exactly 2 POSTs
+  toast     "WC-CYCLOPS-MAIN-002 marked reviewed" was captured for the status flow (sonner auto-dismisses
+            at ~4 s; the earlier 9 s wait in this round simply missed the save toasts - a probe-timing
+            artifact, and the two commits in the clone are the durable proof of the save)
+  grown     browse then read "Showing 1-50 of 322" with tabs "All 322 | Extracted 322 | Reviewed 0 |
+            Verified 0"; both rows present with the right facts
+            ("WC-UNICORN-MAIN-004  0  7 ✓ Mainline just now", "WC-CYCLOPS-MAIN-002  1  6 ✓ Mainline just now")
+
+## P2 #8's browser half / P2 AC#14: browse -> detail -> mark reviewed
+detail /quests/WC-CYCLOPS-MAIN-002: h1 "WC-CYCLOPS-MAIN-002", tabs Info/Goals/Goal Logic/Requirements/
+Results/Dialog; the Goals tab renders all 6 goals with the full field display (PersonaGoalTemplate,
+m_goalName 1..6, GoalNameIDs, location names, portrait paths, client tags, GOAL_TYPE_PERSONA)
+Mark Reviewed + notes "gate-2 check: read through all 6 persona goals" -> toast
+"WC-CYCLOPS-MAIN-002 marked reviewed" and the detail header flipped to "Reviewed"
+
+## Mobile
+375x812 on /quests/extract: no horizontal overflow (scrollWidth <= 375), the drop zone renders and the
+copy is correct ("Drop & drop packet capture file here / or click to browse / Supported format: JSON
+packet capture files (.json)"). p2-07's tier-2 pass carries the mobile results-overlay screenshot.
