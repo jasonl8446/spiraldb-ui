@@ -1,0 +1,53 @@
+# Minimal CI — plan decision D24 (amended by D29).
+# Objective PR signal for the agent self-merge gate: the run merges a phase PR
+# only when this workflow is green AND the phase-boundary gate story passed
+# with recorded evidence (Docs/plan-overview.md → Execution model).
+#
+# The npm/playwright steps are gated on package.json existing so the workflow
+# is live (and green) from the preflight PR onward, before Phase 1 scaffolding
+# lands. Task 1.9 makes the full pipeline run for real on the Phase 1 PR.
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect Node project
+        id: proj
+        run: |
+          if [ -f package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No package.json yet — skeleton run (D24 pull-forward)."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.proj.outputs.exists == 'true'
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        if: steps.proj.outputs.exists == 'true'
+        run: npm ci
+
+      - name: Unit tests
+        if: steps.proj.outputs.exists == 'true'
+        run: npm test
+
+      - name: Build
+        if: steps.proj.outputs.exists == 'true'
+        run: npm run build
+
+      - name: Install headless chromium
+        if: steps.proj.outputs.exists == 'true'
+        run: npx playwright install chromium
+
+      - name: UI tests
+        if: steps.proj.outputs.exists == 'true'
+        run: npm run test:ui

@@ -1,6 +1,6 @@
 # Phase 1 — Foundation
 
-**Status:** pending approval
+**Status:** approved (2026-09-26, via plan-overview rev 3 / D29)
 **Depends on:** nothing (no .NET SDK needed — the prebuilt `imcodec` binary is verified working, see [plan-overview.md](./plan-overview.md) baseline)
 **Spec reading order before starting:** [spec-domain-reference.md](./spec-domain-reference.md) → [spec-architecture.md](./spec-architecture.md) → [spec-data-model.md](./spec-data-model.md) → [spec-api.md](./spec-api.md) → [spec-ui-design.md](./spec-ui-design.md)
 
@@ -64,7 +64,8 @@ The core Phase 1 deliverable. Full re-sync strategy, no incrementals ([spec-data
 - **Settings page** (full, not stub): paths, user name, Sync Now button, last-sync summary, sync history table per [spec-ui-design.md](./spec-ui-design.md) L488–512.
 
 ### 1.9 Minimal CI workflow — S
-- `.github/workflows/ci.yml` (D24): on pull_request → `npm ci && npm test && npm run build && npx playwright install chromium && npm run test:ui`. Nothing else — no deploy, no matrix. Gives async PR review an objective signal.
+- `.github/workflows/ci.yml` (D24, amended by D29): on pull_request → `npm ci && npm test && npm run build && npx playwright install chromium && npm run test:ui`. Nothing else — no deploy, no matrix. Gives the self-merge gate an objective signal.
+- **Pull-forward note (2026-09-26):** the workflow file already exists from the preflight PR with its npm/playwright steps gated on `package.json` existing (the skeleton keeps Actions green before scaffolding). This task = make the full pipeline run for real: once task 1.1 lands `package.json`, ensure the Phase 1 PR's own check run executes every step end-to-end (acceptance criterion below unchanged), adjusting the workflow if needed.
 
 ### 1.10 UI test harness (D23 tier 1) — S
 - `@playwright/test` pinned as a devDependency; specs in `tests/ui/`; script `test:ui` (headless chromium); `playwright.config.ts` with `webServer` auto-starting `npm run dev` and `PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers` (workspace-local browsers, gitignored — do **not** rely on the Nix store browsers; their revision is coupled to the system playwright package). Setup step documented in README: `npx playwright install chromium`.

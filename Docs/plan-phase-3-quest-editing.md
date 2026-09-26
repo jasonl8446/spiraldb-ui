@@ -1,6 +1,6 @@
 # Phase 3 — Quest Editing
 
-**Status:** pending approval
+**Status:** approved (2026-09-26, via plan-overview rev 3 / D29)
 **Depends on:** Phase 2 (read-only quest detail, save pipeline, quests API)
 **Spec reading order before starting:** [spec-domain-reference.md](./spec-domain-reference.md) **in full** (goal/result/requirement/dialog enumerations, validation rules) → [spec-ui-design.md](./spec-ui-design.md) L274–454 (detail page, flowchart, requirement tree, dialog editor)
 

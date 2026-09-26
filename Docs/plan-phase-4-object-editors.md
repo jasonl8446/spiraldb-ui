@@ -1,6 +1,6 @@
 # Phase 4 — Other Object Editors
 
-**Status:** pending approval
+**Status:** approved (2026-09-26, via plan-overview rev 3 / D29)
 **Depends on:** Phase 1 (names/status APIs, FriendlyNameDropdown, save-pipeline primitives); Phase 3 task 3.6 (RequirementTreeEditor — reused by DropTable items, [spec-domain-reference.md](./spec-domain-reference.md) L708–709) and the D5 fidelity pattern
 **Spec reading order before starting:** [spec-domain-reference.md](./spec-domain-reference.md) L27–309 (all non-quest schemas) → [spec-data-model.md](./spec-data-model.md) L171–204 (naming + embedded audit fields) → [spec-ui-design.md](./spec-ui-design.md) L458–486 → [spec-api.md](./spec-api.md) L180–204
 
