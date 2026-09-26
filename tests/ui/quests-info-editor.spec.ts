@@ -25,7 +25,9 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  * - edits reach the JSON side panel with no refresh, while untouched keys — including
  *   the ones no Info-tab field owns — are byte-identical;
  * - emptying an editable field **deletes** its key rather than writing `''`;
- * - the other five tabs stay read-only.
+ * - the Info tab is the only *editable* tab this spec owns: the Goals tab became the
+ *   second live editor in story p3-04 (`quests-goals-editor.spec.ts`), and the remaining
+ *   four stay read-only.
  *
  * The strings are written out in full rather than imported from the app: a spec that
  * imported the copy it asserts could only prove the app agrees with itself. The one
@@ -350,15 +352,20 @@ test.describe('edits and the JSON panel', () => {
 });
 
 test.describe('the other tabs stay read-only', () => {
-  test('five tabs render no input at all', async ({ page }) => {
+  test('the four not-yet-editable tabs render no control at all', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
     // The Info tab is the editor…
     await expect(editor(page).locator('input').first()).toBeVisible();
 
-    // …and every other tab is still the read-only preview (p2-08's contract).
-    for (const tab of ['Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const) {
+    // …the Goals tab is the second live editor as of story p3-04 (its own spec,
+    // `quests-goals-editor.spec.ts`, drives it)…
+    await main_(page).getByRole('tab', { name: 'Goals' }).click();
+    await expect(main_(page).getByRole('region', { name: 'Quest goals editor' })).toBeVisible();
+
+    // …and the remaining four are still the read-only preview (p2-08's contract).
+    for (const tab of ['Goal Logic', 'Requirements', 'Results', 'Dialog'] as const) {
       await main_(page).getByRole('tab', { name: tab }).click();
       await expect(
         main_(page).getByRole('tabpanel').locator('input, select, textarea'),

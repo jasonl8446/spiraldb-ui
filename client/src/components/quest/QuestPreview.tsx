@@ -34,21 +34,19 @@ export interface QuestPreviewProps {
   quest: QuestObject;
   className?: string;
   /**
-   * Replaces the Info tab's read-only field list (plan task 3.3, story p3-03).
+   * Replaces any tab's read-only body with a live editor (plan task 3.3/3.4, stories
+   * p3-03/p3-04).
    *
-   * The extraction page and the mobile overlay pass nothing, so they keep the
-   * read-only tab the Phase-2 specs pin; the detail page passes
-   * `QuestInfoEditor`. A prop rather than a fork because the other five tabs and the
-   * tab strip are exactly what both callers want: only the Info body differs.
+   * The extraction page and the mobile overlay pass nothing, so they keep the read-only
+   * tabs the Phase-2 specs pin; the detail page passes `{ Info, Goals }`. A **map** rather
+   * than one prop per tab (p3-03 shipped `infoPanel`) because p3-05..p3-08 each add their
+   * own entry: a missing key falls back to that tab's read-only body, so a caller never
+   * has to know the tab list.
    */
-  infoPanel?: ReactNode;
+  panels?: Partial<Record<PreviewTab, ReactNode>>;
 }
 
-export default function QuestPreview({
-  quest,
-  className,
-  infoPanel,
-}: QuestPreviewProps): JSX.Element {
+export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
   const [tab, setTab] = useState<PreviewTab>('Info');
   const panelId = useId();
 
@@ -95,7 +93,7 @@ export default function QuestPreview({
         aria-labelledby={`${panelId}-tab-${tab}`}
         className="min-h-0 flex-1 overflow-y-auto p-4"
       >
-        {renderPanel(tab, quest, infoPanel)}
+        {renderPanel(tab, quest, panels)}
       </div>
     </div>
   );
@@ -103,12 +101,21 @@ export default function QuestPreview({
 
 /**
  * One tab's body. Kept as a plain function so no tab pays for the others' hooks —
- * and so the Info tab can be the caller's editor instead of the read-only list.
+ * and so a tab with a caller-supplied editor renders it instead of the read-only list.
+ * A tab absent from {@link QuestPreviewProps.panels} gets its own p2-07 body.
  */
-function renderPanel(tab: PreviewTab, quest: QuestObject, infoPanel?: ReactNode): JSX.Element {
+function renderPanel(
+  tab: PreviewTab,
+  quest: QuestObject,
+  panels?: Partial<Record<PreviewTab, ReactNode>>,
+): JSX.Element {
+  const editor = panels?.[tab];
+  if (editor !== undefined) {
+    return <>{editor}</>;
+  }
   switch (tab) {
     case 'Info':
-      return infoPanel === undefined ? <InfoPanel quest={quest} /> : <>{infoPanel}</>;
+      return <InfoPanel quest={quest} />;
     case 'Goals':
       return <GoalsPanel quest={quest} />;
     case 'Goal Logic':

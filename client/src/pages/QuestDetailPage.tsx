@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, Braces, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
 import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
@@ -77,14 +78,15 @@ import { cn } from '../lib/utils';
  * rewritten row (D51(e)) is the same list row this page's badge reads, so the badge
  * flips without waiting for a refetch. No seventh tab was added.
  *
- * **Editing (story p3-03).** The Info tab is now the live editor and the other five
- * stay read-only (the header Edit/Save toggle, the dirty guard and the save are task
- * 3.10). The loaded body therefore lives in {@link LoadedQuest}, which holds the one
- * editable document: `useQuestDocument` turns the fetched quest into local document
- * state, `QuestInfoEditor` edits it through `shared/document.ts`, and the same live
- * document feeds the JSON panel — so a form edit appears in the panel with no
- * refetch and no manual refresh. The hook mounts only here, never in the page, because
- * `loadDoc` rightly throws on "no document yet" (loading and error are not documents).
+ * **Editing (stories p3-03, p3-04).** The Info and Goals tabs are now live editors and the
+ * other four stay read-only (the header Edit/Save toggle, the dirty guard and the save are
+ * task 3.10). The loaded body therefore lives in {@link LoadedQuest}, which holds the **one**
+ * editable document: `useQuestDocument` turns the fetched quest into local document state,
+ * both editors mutate it through `shared/document.ts`, and the same live document feeds the
+ * JSON panel — so a form edit appears in the panel with no refetch and no manual refresh.
+ * There is exactly one `useQuestDocument` instance for the page; both panels are constructed
+ * from it (`QuestPreview`'s `panels` map). The hook mounts only here, never in the page,
+ * because `loadDoc` rightly throws on "no document yet" (loading and error are not documents).
  *
  * The read-only timestamp the Info tab shows (spec L298) is the list row's
  * `modified_at` — the same row the badge already reads (D51(e)), not a new API field.
@@ -196,7 +198,10 @@ function LoadedQuest({
           <QuestPreview
             quest={quest}
             className="h-[70vh]"
-            infoPanel={<QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />}
+            panels={{
+              Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+              Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+            }}
           />
         </div>
         {/* Exactly one of the two JSON surfaces is mounted (see `QuestJsonPanel`). */}
