@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { getDb } from '../db.js';
+import { createNamesRouter } from './names.js';
 import { createSettingsRouter } from './settings.js';
 import { createSyncRouter } from './sync.js';
 
@@ -45,4 +46,17 @@ let syncRouter: Router | undefined;
 apiRouter.use('/sync', (req, res, next) => {
   syncRouter ??= createSyncRouter({ db: getDb() });
   syncRouter(req, res, next);
+});
+
+/**
+ * Names (task 1.5) — lazily mounted for the same reason as settings/sync: the
+ * first request is the first moment the process needs `data/spiraldb-ui.db`.
+ *
+ * The seven type routers are pure reads (`/api/names/:type`, `/api/names/:type/:id`).
+ */
+let namesRouter: Router | undefined;
+
+apiRouter.use('/names', (req, res, next) => {
+  namesRouter ??= createNamesRouter({ db: getDb() });
+  namesRouter(req, res, next);
 });
