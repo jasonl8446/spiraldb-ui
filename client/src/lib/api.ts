@@ -239,6 +239,60 @@ export function patchStatus(
   });
 }
 
+/* ----------------------------------------------------------- status history */
+
+/**
+ * One `history[]` element of `GET /api/status/:type/:key/history` (decision D37,
+ * docs/spec-api.md L106-141).
+ *
+ * `old_status` is `null` on the row that first tracked the entry; `changed_at` is
+ * nullable because the column is, and `changed_by` is `null` for an unattributed
+ * change (D37: only an absent `changed_by` defaults to `settings.user_name`).
+ */
+export interface StatusHistoryEntry {
+  old_status: StatusValue | null;
+  new_status: StatusValue;
+  notes: string | null;
+  changed_by: string | null;
+  changed_at: string | null;
+}
+
+/**
+ * Prefix key of every status-history query, for invalidation.
+ *
+ * The per-entry key is built by {@link statusHistoryQueryKey} — one prefix so a
+ * transition can invalidate the histories without naming each entry (the same
+ * prefix/read pattern as `QUESTS_QUERY_KEY` + `questDetailQueryKey`).
+ */
+export const STATUS_HISTORY_QUERY_KEY = ['status-history'] as const;
+
+/** TanStack Query key for one entry's status history. */
+export function statusHistoryQueryKey(
+  type: StatusRouteType,
+  key: string,
+): readonly [string, StatusRouteType, string] {
+  return ['status-history', type, key] as const;
+}
+
+/**
+ * `GET /api/status/:type/:key/history` — **oldest → newest** (the server orders by
+ * `status_history.id`; decision D37). The envelope is unwrapped, so callers deal in
+ * rows only.
+ *
+ * An entry with no `entry_status` row answers `404 { error: 'Unknown quests entry
+ * "…"' }` — an {@link ApiError} with `status === 404` — which the history panel
+ * renders as its untracked state rather than as a failure (`retry: false`).
+ */
+export async function getStatusHistory(
+  type: StatusRouteType,
+  key: string,
+): Promise<StatusHistoryEntry[]> {
+  const body = await apiFetch<{ history: StatusHistoryEntry[] }>(
+    `/api/status/${type}/${encodeURIComponent(key)}/history`,
+  );
+  return body.history;
+}
+
 /* --------------------------------------------------------------------- names */
 
 /** Query-key prefix for every names query; one entry per type. */

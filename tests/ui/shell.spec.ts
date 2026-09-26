@@ -427,6 +427,38 @@ test.describe('settings', () => {
     await expect(page.getByText(MOCK_COUNTS_LINE).first()).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Success' })).toBeVisible();
   });
+
+  test('shows git_branch as a read-only information row (story p2-09, D42)', async ({ page }) => {
+    const puts: Array<Record<string, unknown>> = [];
+    // Registered after the shared mock, so it wins for this test's settings calls.
+    await page.route('**/api/settings', async (route) => {
+      if (route.request().method() === 'PUT') {
+        puts.push((route.request().postDataJSON() ?? {}) as Record<string, unknown>);
+      }
+      await route.fulfill({ json: MOCK_SETTINGS });
+    });
+
+    await page.goto('/settings');
+
+    // D42: `git_branch` is returned by `GET /api/settings` (D32) but the Phase 1 UI
+    // rendered nothing for it. Story p2-09 surfaces it — **read-only**, because the
+    // save pipeline generates it (`content/YYYY-MM-DD`, spec-data-model L206-214) and
+    // a hand-edited value would redirect every following commit off that strategy.
+    const branch = page.getByLabel('Git Branch');
+    await expect(branch).toHaveValue(MOCK_SETTINGS.git_branch);
+    await expect(branch).toHaveAttribute('readonly', '');
+    await expect(
+      page.getByText(/Set automatically when a save creates this session's/),
+    ).toBeVisible();
+    await expect(page.getByText('content/YYYY-MM-DD')).toBeVisible();
+
+    // Read-only in fact, not only in appearance: the row never joins `edits`, so
+    // saving the editable fields cannot carry `git_branch` into the `PUT` body.
+    await page.getByLabel('User Name').fill('Someone Else');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect.poll(() => puts.length).toBe(1);
+    expect(puts[0]).toEqual({ user_name: 'Someone Else' });
+  });
 });
 
 test('the dev stack answers a real API request through the Vite proxy', async ({ page }) => {

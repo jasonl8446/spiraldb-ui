@@ -20,8 +20,9 @@ import { mockQuestsApi, mockQuestRows, questListBody } from './quests-mocks';
  * - the pagination line verbatim — "Showing 1-50 of 322" — and the boundary
  *   button states at both ends;
  * - row-click and the name link both navigate to `/quests/:questName`;
- * - the disabled Edit action (native tooltip, no navigation) and the documented
- *   p2-09 status-menu placeholder, both inside the 80px Actions column;
+ * - the disabled Edit action (native tooltip, no navigation) and the real status
+ *   menu (story p2-09, which replaced p2-08's documented placeholder), both inside
+ *   the 80px Actions column;
  * - every per-filter empty state, and the empty-corpus case;
  * - the mobile card list at 375px with the four spec fields (L270);
  * - the loading skeleton and the failure state with its retry.
@@ -316,7 +317,9 @@ test.describe('navigation', () => {
     await expect(page).toHaveURL(/\/quests\/DS-ACAD1-C01-001$/);
   });
 
-  test('the disabled Edit action and the status placeholder never navigate', async ({ page }) => {
+  test('the disabled Edit action never navigates, and the status menu is the real one', async ({
+    page,
+  }) => {
     await mockQuestsApi(page);
     await page.goto('/quests');
 
@@ -324,22 +327,38 @@ test.describe('navigation', () => {
     await expect(edit).toBeDisabled();
     await expect(edit).toHaveAttribute('title', 'Editing arrives in Phase 3');
 
-    // The status menu is story p2-09's; p2-08 ships a documented, visually marked
-    // placeholder — a dashed border and a tooltip that says where it comes from.
+    // BEFORE (p2-08): a disabled, dashed-border placeholder whose accessible name
+    // and tooltip said 'Change status (arrives with story p2-09)' /
+    // 'Status transitions arrive with story p2-09'. Story p2-09 built the real
+    // Radix popover menu, so that placeholder and both assertions are **replaced** by
+    // the real ones: an enabled trigger whose title is the menu's own, and — after a
+    // click — the two lifecycle actions. The full flow (dialog → PATCH → toast) lives
+    // in `quests-status.spec.ts`.
     const statusMenu = firstRow(page).getByRole('button', {
-      name: 'Change status (arrives with story p2-09)',
+      name: 'Change status: DS-ACAD1-C01-001',
     });
-    await expect(statusMenu).toBeDisabled();
-    await expect(statusMenu).toHaveAttribute('title', 'Status transitions arrive with story p2-09');
-    await expect(statusMenu).toHaveClass(/border-dashed/);
+    await expect(statusMenu).toBeEnabled();
+    await expect(statusMenu).toHaveAttribute('title', 'Change verification status');
+    await expect(
+      page.getByRole('button', { name: 'Change status (arrives with story p2-09)' }),
+    ).toHaveCount(0);
 
     // `dispatchEvent` rather than `click()`: Playwright treats `aria-disabled` as
     // disabled and would refuse to click, so dispatching the real DOM event is what
     // proves the handler goes nowhere.
     await edit.dispatchEvent('click');
-    await statusMenu.dispatchEvent('click');
     await expect(page).toHaveURL(/\/quests$/);
     await expect(rows(page)).toHaveCount(50);
+
+    // The menu's trigger is not a navigation target either: the row around it is.
+    await statusMenu.click();
+    await expect(page).toHaveURL(/\/quests$/);
+    await expect(rows(page)).toHaveCount(50);
+    await expect(
+      page.getByLabel('Change status: DS-ACAD1-C01-001').getByRole('button', {
+        name: 'Mark Reviewed',
+      }),
+    ).toBeVisible();
   });
 });
 

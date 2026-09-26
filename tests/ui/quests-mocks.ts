@@ -125,6 +125,54 @@ export function questListBody(rows: MockQuestRow[]): Record<string, unknown> {
 
 type RouteHandler = (route: Route) => Promise<void> | void;
 
+/**
+ * One `status_history` row of `GET /api/status/quests/:key/history`, copied from
+ * `docs/spec-api.md` L113-141 (oldest → newest, D37).
+ */
+export interface MockHistoryRow {
+  old_status: 'extracted' | 'reviewed' | 'verified' | null;
+  new_status: 'extracted' | 'reviewed' | 'verified';
+  notes: string | null;
+  changed_by: string | null;
+  changed_at: string | null;
+}
+
+/**
+ * The spec's own history example (`docs/spec-api.md` L113-141): the initial
+ * `extracted` row plus a `reviewed` and a `verified` transition, one day apart.
+ *
+ * `changed_at` is computed from `Date.now()` at call time so the timeline's
+ * relative timestamps are deterministic ("2 days ago", "1 day ago", "right now")
+ * without touching the clock.
+ */
+export function mockHistoryRows(): MockHistoryRow[] {
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  return [
+    {
+      old_status: null,
+      new_status: 'extracted',
+      notes: 'Imported from packet capture session_2026-09-24.json',
+      changed_by: 'quest_builder',
+      changed_at: new Date(now - 2 * DAY).toISOString(),
+    },
+    {
+      old_status: 'extracted',
+      new_status: 'reviewed',
+      notes: 'Goal logic chain verified against live game',
+      changed_by: 'jason',
+      changed_at: new Date(now - DAY).toISOString(),
+    },
+    {
+      old_status: 'reviewed',
+      new_status: 'verified',
+      notes: 'Tested on r806919, all goals trigger correctly',
+      changed_by: 'jason',
+      changed_at: new Date(now - 30 * 1000).toISOString(),
+    },
+  ];
+}
+
 export interface QuestsMockOptions {
   /** Replaces the 322-row corpus (use `[]` for the empty state). */
   rows?: MockQuestRow[];
@@ -134,6 +182,29 @@ export interface QuestsMockOptions {
   onDetail?: RouteHandler;
   /** The quest object the detail endpoint answers with. */
   detail?: unknown;
+  /**
+   * `settings.user_name`. `''` is the D38/D43 "not asked yet" state, which makes the
+   * identity gate open **before** the notes dialog.
+   */
+  userName?: string;
+  /** `GET /api/status/quests/:key/history` rows; `[]` when omitted. */
+  history?: MockHistoryRow[];
+  /**
+   * Answers the history route with the D51(f) untracked 404 instead of rows.
+   *
+   * A **successful** default `PATCH` mutates the mocked `rows` and appends to
+   * `history` (see the handler), so the client's post-transition invalidation sees a
+   * server that agrees with what it just did. The `onPatch` override bypasses both.
+   */
+  historyUntracked?: boolean;
+  /** Replaces the `PATCH /api/status/quests/:key` answer entirely (for 404/500). */
+  onPatch?: RouteHandler;
+  /**
+   * Holds every PATCH response open for this long. The optimistic badge flip must be
+   * observable while the request is still in flight, i.e. before the settle
+   * invalidation can refetch anything.
+   */
+  patchDelayMs?: number;
 }
 
 /** What the mocked API recorded, so a spec can assert what was *not* requested. */
@@ -144,6 +215,20 @@ export interface QuestsMockRecorded {
   detailRequests: number;
   /** The request URLs in order, for the client-side-search assertion. */
   urls: string[];
+  /** The parsed bodies of every `PATCH /api/status/quests/:key`, in order. */
+  patches: Array<Record<string, unknown>>;
+  /** The `PATCH` request paths, in order (the path is part of the contract). */
+  patchPaths: string[];
+  /**
+   * How many `PATCH` handlers have started answering. While this is still `0` the
+   * request is in flight and nothing can have settled — the window in which an
+   * on-screen status change can only be the optimistic write.
+   */
+  patchResponses: number;
+  /** How many `GET .../history` reads were made. */
+  historyRequests: number;
+  /** The put bodies of every `PUT /api/settings` (the identity gate persists here). */
+  settingsPuts: Array<Record<string, unknown>>;
 }
 
 /**
@@ -155,20 +240,38 @@ export async function mockQuestsApi(
   page: Page,
   options: QuestsMockOptions = {},
 ): Promise<QuestsMockRecorded> {
-  const recorded: QuestsMockRecorded = { listRequests: 0, detailRequests: 0, urls: [] };
+  const recorded: QuestsMockRecorded = {
+    listRequests: 0,
+    detailRequests: 0,
+    urls: [],
+    patches: [],
+    patchPaths: [],
+    patchResponses: 0,
+    historyRequests: 0,
+    settingsPuts: [],
+  };
   const rows = options.rows ?? mockQuestRows();
+  const history = options.history ?? [];
 
-  await page.route('**/api/settings', (route) =>
-    route.fulfill({
-      json: {
-        aurorium_path: '/mock/aurorium',
-        imcodec_path: '/mock/imcodec',
-        spiraldb_path: '/mock/spiraldb',
-        user_name: 'Mock Reviewer',
-        git_branch: 'content/2026-09-26',
-      },
-    }),
-  );
+  // Mutable so a `PUT /api/settings` answers with the merged map, exactly like the
+  // server (D32) — the identity gate writes the name and reads it back.
+  let settings: Record<string, string> = {
+    aurorium_path: '/mock/aurorium',
+    imcodec_path: '/mock/imcodec',
+    spiraldb_path: '/mock/spiraldb',
+    user_name: options.userName ?? 'Mock Reviewer',
+    git_branch: 'content/2026-09-26',
+  };
+  await page.route('**/api/settings', async (route) => {
+    if (route.request().method() === 'PUT') {
+      const patch = (route.request().postDataJSON() ?? {}) as Record<string, string>;
+      recorded.settingsPuts.push(patch);
+      settings = { ...settings, ...patch };
+      await route.fulfill({ json: settings });
+      return;
+    }
+    await route.fulfill({ json: settings });
+  });
   await page.route('**/api/sync/status', (route) =>
     route.fulfill({
       json: { last_sync: null, revision: null, status: 'never' },
@@ -199,6 +302,78 @@ export async function mockQuestsApi(
       return;
     }
     await route.fulfill({ json: options.detail ?? MOCK_QUEST });
+  });
+
+  // The whole status surface of one entry, one handler: `GET .../history` and
+  // `PATCH /api/status/quests/:key` share a prefix, and Playwright runs the most
+  // recently registered matching route first, so branching on method + suffix inside
+  // one handler is less fragile than ordering two overlapping globs.
+  await page.route('**/api/status/quests/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (request.method() === 'PATCH') {
+      recorded.patches.push((request.postDataJSON() ?? {}) as Record<string, unknown>);
+      recorded.patchPaths.push(path);
+      // Recorded before the delay, so the body is assertable while the request is
+      // still open (the optimistic-flip window).
+      if (options.patchDelayMs !== undefined && options.patchDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, options.patchDelayMs));
+      }
+      recorded.patchResponses += 1;
+      if (options.onPatch !== undefined) {
+        await options.onPatch(route);
+        return;
+      }
+      // The default PATCH behaves like the server: it moves the row and appends one
+      // `status_history` row, so the settle refetch — which the client invalidates
+      // after every transition — agrees with the optimistic write instead of
+      // reverting it, and the history timeline really shows the transition.
+      const body = recorded.patches[recorded.patches.length - 1];
+      const key = decodeURIComponent(path.split('/').pop() ?? '');
+      const target = body.status as MockQuestRow['status'];
+      const row = rows.find((candidate) => candidate.quest_name === key);
+      const previous = row?.status ?? null;
+      if (row !== undefined) {
+        row.status = target;
+      }
+      history.push({
+        old_status: previous,
+        new_status: target,
+        notes: (body.notes as string | undefined) ?? null,
+        changed_by: settings.user_name,
+        changed_at: new Date().toISOString(),
+      });
+      await route.fulfill({
+        json: {
+          object_type: 'quest',
+          object_key: key,
+          status: target,
+          extracted_at: '2026-09-26T12:00:00.000Z',
+          reviewed_at: null,
+          verified_at: null,
+          latest_notes: (body.notes as string | undefined) ?? null,
+        },
+      });
+      return;
+    }
+
+    if (path.endsWith('/history')) {
+      recorded.historyRequests += 1;
+      if (options.historyUntracked === true) {
+        const key = decodeURIComponent(path.split('/').slice(-2)[0] ?? '');
+        await route.fulfill({
+          status: 404,
+          json: { error: `Unknown quests entry "${key}"` },
+        });
+        return;
+      }
+      await route.fulfill({ json: { history } });
+      return;
+    }
+
+    // Nothing else on this surface is part of the client: answer loudly instead of
+    // continuing to the dev stack's database (the tier-1 suite stays hermetic, D40).
+    await route.fulfill({ status: 404, json: { error: `Unmocked status route: ${path}` } });
   });
 
   return recorded;

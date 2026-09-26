@@ -6,10 +6,13 @@ import {
   getQuest,
   getSettings,
   getStatus,
+  getStatusHistory,
   patchStatus,
   putSettings,
   questDetailQueryKey,
   SETTINGS_QUERY_KEY,
+  STATUS_HISTORY_QUERY_KEY,
+  statusHistoryQueryKey,
   statusQueryKey,
 } from '../../client/src/lib/api';
 
@@ -200,6 +203,48 @@ describe('status wrappers', () => {
   it('exposes stable query keys the gate and the shell share', () => {
     expect(SETTINGS_QUERY_KEY).toEqual(['settings']);
     expect(statusQueryKey('quests')).toEqual(['status', 'quests']);
+  });
+});
+
+describe('status history reader (p2-09)', () => {
+  it('getStatusHistory GETs the history route, URL-encoding the key, and unwraps it', async () => {
+    const rows = [
+      {
+        old_status: null,
+        new_status: 'extracted',
+        notes: 'Imported from packet capture pcap.json',
+        changed_by: 'jason',
+        changed_at: '2026-09-26T12:00:00.000Z',
+      },
+    ];
+    mockJson({ history: rows });
+
+    await expect(getStatusHistory('quests', 'DS ACAD/C01 001')).resolves.toEqual(rows);
+
+    const sent = call();
+    expect(sent.url).toBe('/api/status/quests/DS%20ACAD%2FC01%20001/history');
+    expect(sent.method).toBeUndefined();
+    expect(sent.body).toBeUndefined();
+  });
+
+  it('throws the ApiError 404 the untracked state is keyed on (D51(f))', async () => {
+    mockJson({ error: 'Unknown quests entry "NOPE"' }, { status: 404 });
+
+    const error = await getStatusHistory('quests', 'NOPE').catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(404);
+    expect((error as ApiError).message).toBe('Unknown quests entry "NOPE"');
+  });
+
+  it('exposes the history query key prefix and one key per entry', () => {
+    expect(STATUS_HISTORY_QUERY_KEY).toEqual(['status-history']);
+    // The per-entry key starts with the prefix, so one invalidation reaches them all.
+    expect(statusHistoryQueryKey('quests', 'DS-ACAD1-C01-001')).toEqual([
+      'status-history',
+      'quests',
+      'DS-ACAD1-C01-001',
+    ]);
   });
 });
 

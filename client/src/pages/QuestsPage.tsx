@@ -5,12 +5,14 @@ import { useNavigate } from 'react-router-dom';
 
 import QuestBrowseTable from '../components/quest/QuestBrowseTable';
 import QuestCardList from '../components/quest/QuestCardList';
+import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useStatusTransition } from '../hooks/useStatusTransition';
 import { listQuests, QUESTS_QUERY_KEY, type QuestListRow } from '../lib/api';
 import { serverMessage } from '../lib/extract';
 import {
@@ -52,10 +54,17 @@ const SKELETON_ROWS = 8;
  *
  * Below `md` the table is replaced by the card list and the whole page — tabs,
  * search and pagination included — stays usable (spec L270).
+ *
+ * **The status menu (story p2-09).** Each row's Actions cell opens the real status
+ * menu, and the page owns the one transition flow (`useStatusTransition`) so a
+ * single notes dialog serves every row. The moved status is written optimistically
+ * into this page's own `QUESTS_QUERY_KEY` payload, so the row's colour dot and the
+ * filter tabs' count badges both move with it.
  */
 export default function QuestsPage(): JSX.Element {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const transition = useStatusTransition('quests');
 
   const [filter, setFilter] = useState<QuestFilter>('All');
   const [search, setSearch] = useState('');
@@ -186,6 +195,8 @@ export default function QuestsPage(): JSX.Element {
               sort={sort}
               onSortChange={setSort}
               onRowActivate={openQuest}
+              onTransition={(row, target) => transition.request(row.quest_name, target)}
+              transitionPending={transition.isPending}
             />
           )}
 
@@ -214,6 +225,8 @@ export default function QuestsPage(): JSX.Element {
           </div>
         </div>
       )}
+      {/* One dialog for every row's menu; the hook owns the PATCH and the optimistic dot. */}
+      <StatusNotesDialog {...transition.dialog} />
     </div>
   );
 }

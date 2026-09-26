@@ -1,0 +1,421 @@
+# p2-09 gate — the six standard checks (D40) + decisions + honest gaps, executor-run
+# branch=phase-2-quest-extraction HEAD=e7e1854 (unchanged; tree left UNCOMMITTED for the lead)
+# baseline: p2-08's gate recorded 29 unit test files / 750 tests and 49 tier-1 UI specs
+# after:    30 unit test files / 770 tests (+20 = 17 new in tests/unit/status-transition.test.ts
+#           + 3 new in tests/unit/api-client.test.ts) and 64 tier-1 UI specs
+#           (+15 = 13 tests/ui/quests-status.spec.ts + 1 detail header + 1 shell settings)
+#           — no spec was weakened, deleted or skipped; see "corrections" below for the two
+#           assertions that were REPLACED (p2-08's status-menu placeholder, by construction).
+
+## what was built (plan task 2.8, story p2-09)
+
+new — client/src/lib/status-transition.ts (pure: labels, PATCH body, timeline text, panel state,
+        the optimistic cache write), client/src/hooks/useStatusTransition.ts (gate → dialog →
+        mutation → toast), client/src/components/quest/{StatusMenu,StatusNotesDialog,
+        StatusHistoryPanel}.tsx, tests/ui/quests-status.spec.ts, tests/unit/status-transition.test.ts
+changed — client/src/lib/api.ts (StatusHistoryEntry + statusHistoryQueryKey + getStatusHistory),
+        client/src/components/quest/QuestBrowseTable.tsx (the Actions column's real menu),
+        client/src/lib/quests.ts (the p2-08 placeholder constants deleted),
+        client/src/pages/QuestsPage.tsx, client/src/pages/QuestDetailPage.tsx (header actions +
+        history panel), client/src/pages/SettingsPage.tsx (the read-only git_branch row),
+        tests/ui/{quests-mocks,quests-browse,quests-detail,shell}.spec.ts,
+        tests/unit/{api-client,quests-browse}.test.ts
+NOT touched: the server (zero files), the sibling repos, package.json/package-lock.json (no new
+        dependency — the menu reuses the vendored Radix popover, D39).
+
+## p2-09-ac1, clause by clause
+
+"Mark Reviewed with notes -> history endpoint shows the transition"
+                        → the tier-1 flow spec asserts the exact PATCH path + body
+                          (`/api/status/quests/<key>` `{status, notes}`), and that the history
+                          panel re-reads and shows the new entry first (mock appends the row the
+                          way the server does). Raw: §2.
+"StatusBadge flips to blue/reviewed"
+                        → the optimistic assertions, plus `bg-blue-500` on the timeline dot for a
+                          `reviewed` entry (STATUS_META, spec-ui-design L21-24). Raw: §2.
+"identity-modal guard (1.7) fires first when user_name empty"
+                        → with `user_name: ''` the gate opens FIRST (no notes dialog, no PATCH, no
+                          settings PUT recorded), then the transition resumes after the name is
+                          saved. Raw: §2.
+"history panel renders the timeline (P2 AC#14)"
+                        → newest-first order, coloured dot, mono key, action text, relative time,
+                          italic text-zinc-400 notes, `by <changed_by>`, plus the empty and
+                          untracked-404 states. Raw: §2.
+
+## decisions (the spec-silent points this story had to settle)
+
+1. **The transition lives in the two spec locations, and deliberately NOT on the extraction
+   results list.** Task 2.8 asks for the browse table's Actions menu (spec-ui-design L262) and the
+   detail header's buttons (L281); the extraction results list is a *third* surface that the spec
+   never asks for, and it is structurally wrong today: an unsaved extraction has no `entry_status`
+   row, so by D51(f) a PATCH there would be a 404 by construction. Rather than ship a button whose
+   every use fails, the action appears on browse/detail the moment a save has tracked the entry
+   (the save path already invalidates the quests list, so it appears with no extra wiring).
+   **Flagged for the lead:** if the results list should eventually offer it, that is a D-item
+   (the endpoint would have to track-and-transition in one call). The mobile card list carries no
+   action either, which matches the spec's four-field card (L270) — the Actions column is a
+   desktop-table concept.
+2. **A Radix `Popover`, not `role="menu"`.** D39 vendors only the primitives real code first
+   needed; there is no dropdown-menu primitive. Two labelled buttons in a popover is honest;
+   claiming menu semantics without the arrow-key roving focus the pattern requires would not be.
+   Escape, outside-click and focus return come from Radix; the trigger carries a native `title`
+   because there is no tooltip primitive either (the D51(b) pattern).
+3. **Both the trigger AND the portaled content stop click propagation — found by the spec, not by
+   reading.** Radix portals the popover to `document.body`, but React still bubbles the click
+   through the **React** tree, where the popover is a descendant of the table row: the first tier-1
+   run choosing "Mark Reviewed" also activated the row and navigated to the detail page. The
+   trigger had a `stopPropagation` from the start; the content needed one too
+   (client/src/components/quest/StatusMenu.tsx:76-86). This is the one real defect the story's own
+   tier-1 specs caught.
+4. **Both actions are always listed; the entry's own status is `disabled` and marked "Current".**
+   The menu then also answers "what status is this row in?", and the AC's "disable or omit the
+   action for the current status" is met by disabling (omitting would make the menu's contents
+   depend on invisible row state). The header buttons use the same rule with the D51(b)
+   `aria-disabled` + `title={Already <status>}` pattern the disabled Edit button established.
+5. **The identity gate runs before the dialog, not merely before the request.** `requireUserName()`
+   is awaited first and only then does the notes dialog open ("fires first" read strictly): the
+   user is asked who they are once, not asked to click "Mark Reviewed" a second time afterwards.
+   Cancelling the gate aborts the whole transition — no dialog, no request, no toast (asserted).
+   `ExtractionPage`'s call site is the reference and `requireUserName`/`UserNameCancelledError` are
+   reused verbatim, never re-implemented.
+6. **A failed transition keeps the notes dialog open** with an inline `role="alert"` carrying the
+   server's own message and the notes text still in the field (one click to retry); there is no
+   duplicate error toast. Success closes the dialog and toasts `<quest> marked <status>`.
+7. **404-vs-everything-else is the mapping, not the message text.** `ApiError` with `status === 404`
+   is D51(f)'s untracked entry and becomes an actionable "save or import it first" sentence (two
+   wordings: the dialog's, and the history panel's); every other failure passes the server's own
+   message through via `serverMessage(error, fallback)`. Matching on `error.message` would break
+   the moment the server rewords its body.
+8. **The PATCH body omits blank notes entirely** (`{status}` only — never `notes: ''`), and never
+   contains `changed_by`: the server attributes the change from the persisted `settings.user_name`
+   (D37). Both are asserted exactly (`toEqual`).
+9. **The optimistic write goes into the browse list's cached payload, summary included.** D51(e)
+   makes the list row the single status source for both pages, so the mutation rewrites that row
+   and recomputes the payload's own `summary` — the filter tabs' count badges stay consistent with
+   the row's dot during the window. The settle invalidates the list, `['status']` and the history
+   key; a failed mutation restores the exact previous payload (no partial rollback).
+10. **The timeline's key and action are inline text with a real space** (not flex + `gap`), so the
+    rendered text content is the spec's own line `DS-ACAD1-C01-001 marked verified`: a screen
+    reader or a copy-paste gets the space, and the words are assertable as one string.
+11. **`git_branch` is a read-only information row (D42), and the tension is real.** spec-data-model
+    L206-214 describes it as generated (`content/YYYY-MM-DD`, created from `main` HEAD when a save
+    opens a session) while L214 says "User can change branch in Settings page". The value is
+    surfaced with a hint and `readOnly`, and never joins `edits`, so Save cannot send it — asserted
+    by PUT-body equality in the settings spec. Rationale: a hand-edited branch would silently
+    redirect every following commit off the pipeline's strategy, and there is no validation this
+    UI could do that the save pipeline does better. **Flagged for the lead** as a spec deviation.
+12. **The empty history state is the common case, not an edge case.** The first-startup import
+    inserts `entry_status` rows and *no* `status_history` rows (D37), so every imported entry shows
+    "No status changes recorded yet." until its first transition; the panel says so explicitly
+    rather than rendering an empty box. The read is `retry: false` so the untracked 404 shows its
+    message immediately instead of after three retries.
+13. **The history panel is a page section, not a seventh tab.** `CardTitle` is a styled `<div>` in
+    this repo, so the section attaches `role="heading" aria-level={2}` at its call site (no change
+    to the shared primitive). The detail page still has exactly the six read-only tabs.
+14. **`HistoryPanelState` is a pure function** (`loading → untracked → error → empty → ready`) so
+    the five states are unit-tested without a browser; `newestFirst` reverses the endpoint's
+    oldest-first rows rather than re-sorting by `changed_at`, which keeps the order stable for
+    same-second rows (the endpoint orders by `status_history.id`, `server/src/services/status.ts`).
+
+## corrections the specs forced (the tests changed the code, not the reverse)
+
+* **The portal click trap (decision 3).** The first full tier-1 run navigated away from the table
+  when an action was chosen — a genuine bug, now fixed and pinned.
+* **The timeline's concatenated words (decision 10).** `toContainText('DS-ACAD1-C01-001 marked
+  verified')` failed against `DS-ACAD1-C01-001marked verified`; the markup now renders the space the
+  spec draws.
+* **Two assertion techniques had to change because the measurements were wrong, not the app:**
+  (a) dev-mode StrictMode double-mounts `GET /api/quests`, so "the list request count is still 1"
+  is not a usable anchor — `tests/ui/quests-mocks.ts` now records **withheld responses**
+  (`patchResponses`) and the spec proves the flip while the PATCH response has not been sent (a
+  strictly stronger claim than counting refetches); (b) while a Radix dialog is open the page behind
+  it is `aria-hidden`, so `page.getByRole('main')` resolves nothing — the rollback assertions read
+  the badge with an attribute selector (`badgeBehindModal`) and the helper carries the why.
+* No existing test was weakened. p2-08's placeholder assertions were **replaced by construction**
+  (the placeholder button, its two tooltip/label constants and their assertions are gone), the
+  detail header test gained the two actions, and the settings test gained the git_branch case.
+
+## not claimed here (honest gaps)
+
+* **Tier 2 is the lead's**: the AC's own browser/real-corpus pass, a real `status_history` row read
+  back from the real database, and the real `content/YYYY-MM-DD` branch. Every number in this file
+  is tier 1 (route-mocked, hermetic, no CLI/.NET/sibling repo/network).
+* **The server was not exercised and not modified.** The PATCH and history contracts used here are
+  the mocks' reading of `docs/spec-api.md` + D37/D51(f); the server's own behaviour is covered by
+  p2-01/p2-02's unit tests and the lead's tier-2 pass. Nothing in `server/` was touched.
+* **The `git_branch` hint's claim is documented, not measured**: "set automatically when a save
+  creates this session's branch" is D42/spec-derived; this story proves the value renders read-only
+  and cannot enter a PUT body, not that the save pipeline created that branch.
+* **The menu is not a keyboard ARIA menu** (decision 2): Tab reaches the trigger and both actions;
+  Up/Down roving focus is deliberately absent rather than half-claimed.
+* **768px exactly is untested**, as in p2-06/p2-07/p2-08 (the specs drive 375 and 1280).
+* **"Verified on a live Imlight server" semantics are not checked** — the lifecycle's third status
+  is a bookkeeping transition here, as the specs define it.
+
+
+### 1. npm test
+
+> spiraldb-ui@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/lang.test.ts (28 tests) 25ms
+ ✓ tests/unit/naming.test.ts (54 tests) 31ms
+(node:1457741) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1457741) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1457741) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1457741) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+ ✓ tests/unit/api-client.test.ts (18 tests) 43ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 27ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 68ms
+ ✓ tests/unit/extract-ui.test.ts (26 tests) 27ms
+ ✓ tests/unit/revision.test.ts (14 tests) 16ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 38ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 25ms
+ ✓ tests/unit/db.test.ts (22 tests) 212ms
+ ✓ tests/unit/import.test.ts (33 tests) 88ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 47ms
+ ✓ tests/unit/sync-api.test.ts (8 tests) 129ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 196ms
+ ✓ tests/unit/manifest.test.ts (12 tests) 15ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 28ms
+ ✓ tests/unit/settings.test.ts (27 tests) 315ms
+ ✓ tests/unit/templates.test.ts (23 tests) 24ms
+ ✓ tests/unit/ui-shell.test.ts (65 tests) 64ms
+ ✓ tests/unit/quests-browse.test.ts (26 tests) 14ms
+ ✓ tests/unit/user-name-gate.test.ts (13 tests) 8ms
+ ✓ tests/unit/spiraldb-index.test.ts (18 tests) 18ms
+ ✓ tests/unit/status-transition.test.ts (17 tests) 23ms
+ ✓ tests/unit/server.test.ts (4 tests) 89ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:64:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/names.test.ts (66 tests) 582ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:79:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:90:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/status.test.ts (81 tests) 594ms
+ ✓ tests/unit/extract-api.test.ts (12 tests) 246ms
+ ✓ tests/unit/git-service.test.ts (16 tests) 1137ms
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:933:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:117:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (53 tests) 2376ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank  405ms
+ ✓ tests/unit/save-pipeline.test.ts (21 tests) 3688ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  568ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  384ms
+
+ Test Files  30 passed (30)
+      Tests  770 passed (770)
+   Start at  07:41:23
+   Duration  4.58s (transform 3.79s, setup 0ms, collect 11.26s, tests 10.19s, environment 7ms, prepare 3.03s)
+
+EXIT=0
+
+### 2. npm run test:ui
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1459564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] [WebServer] (node:1459594) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:1459611) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1459593) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 260 ms
+[WebServer] [client] 
+[WebServer] [client] [WebServer]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+
+Running 64 tests using 5 workers
+
+(node:1459659) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1459652) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1459651) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1459650) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1459653) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 [chromium] › tests/ui/extraction.spec.ts:327:3 › upload phase › states the supported format verbatim and browses through a hidden .json input (721ms)
+  ✓   5 [chromium] › tests/ui/quests-detail.spec.ts:48:3 › header › shows the back link, the mono name, the status badge and the disabled Edit (647ms)
+  ✓   4 [chromium] › tests/ui/quests-browse.spec.ts:90:3 › columns › renders the seven spec columns at their exact widths (932ms)
+  ✓   1 [chromium] › tests/ui/quests-status.spec.ts:95:3 › the browse table status menu › offers both actions and disables the row`s own status (1.1s)
+  ✓   6 [chromium] › tests/ui/extraction.spec.ts:374:3 › upload phase › shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel (461ms)
+  ✓   7 [chromium] › tests/ui/quests-detail.spec.ts:78:3 › header › carries the two lifecycle actions next to the badge (story p2-09) (510ms)
+  ✓   8 [chromium] › tests/ui/quests-browse.spec.ts:113:3 › columns › every column but Actions sorts, and the header reports the direction (553ms)
+  ✓   9 [chromium] › tests/ui/quests-status.spec.ts:125:3 › the browse table status menu › no longer renders the p2-08 placeholder (508ms)
+  ✓  10 [chromium] › tests/ui/extraction.spec.ts:411:3 › upload phase › an error surfaces the server message and returns to the upload phase (401ms)
+  ✓  14 [chromium] › tests/ui/extraction.spec.ts:434:3 › upload phase › a 500 from an unbuilt CLI is surfaced verbatim (359ms)
+  ✓  11 [chromium] › tests/ui/quests-detail.spec.ts:95:3 › tabs › renders the six read-only tabs through QuestPreview (750ms)
+  ✓  12 [chromium] › tests/ui/quests-browse.spec.ts:134:3 › filter tabs › the four tabs carry the summary count badges and the active styling (720ms)
+  ✓  15 [chromium] › tests/ui/extraction.spec.ts:452:3 › upload phase › Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it (532ms)
+  ✓  16 [chromium] › tests/ui/quests-detail.spec.ts:133:3 › json side panel › the { } toggle opens exactly 400px of syntax-highlighted JSON (822ms)
+  ✓  17 [chromium] › tests/ui/quests-browse.spec.ts:165:3 › search › filters the rows client-side without another request (597ms)
+  ✓  13 [chromium] › tests/ui/quests-status.spec.ts:142:3 › the transition flow › menu → dialog → PATCH with the typed notes, a success toast and the optimistic dot (1.5s)
+  ✓  18 [chromium] › tests/ui/extraction.spec.ts:526:3 › results phase › renders the split layout: a 320px list and a read-only tabbed preview (824ms)
+  ✓   2 [chromium] › tests/ui/shell.spec.ts:224:3 › sidebar navigation › every route is reachable, renders a real page, and highlights its item (3.5s)
+  ✓  20 [chromium] › tests/ui/quests-browse.spec.ts:198:3 › sorting › the Quest Name header toggles ascending → descending → default (746ms)
+  ✓  19 [chromium] › tests/ui/quests-detail.spec.ts:168:3 › json panel on mobile › below 768px the panel is a full-screen overlay, not a side panel (789ms)
+  ✓  22 [chromium] › tests/ui/extraction.spec.ts:586:3 › results phase › an empty extraction shows the empty state and Discard returns to upload (423ms)
+  ✓  23 [chromium] › tests/ui/shell.spec.ts:284:3 › sidebar navigation › collapsing a group hides its items and flips aria-expanded (490ms)
+  ✓  25 [chromium] › tests/ui/quests-detail.spec.ts:201:3 › loading, failure and not found › the detail skeleton is announced while the quest is loading (430ms)
+  ✓  21 [chromium] › tests/ui/quests-status.spec.ts:184:3 › the transition flow › a blank notes field omits the key from the PATCH body entirely (1.2s)
+  ✓  24 [chromium] › tests/ui/quests-browse.spec.ts:219:3 › sorting › the Level header sorts numerically, and the level shows as a badge (682ms)
+  ✓  28 [chromium] › tests/ui/quests-detail.spec.ts:225:3 › loading, failure and not found › a 404 renders the not-found state with the server message (453ms)
+  ✓  27 [chromium] › tests/ui/shell.spec.ts:309:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (729ms)
+  ✓  31 [chromium] › tests/ui/quests-detail.spec.ts:247:3 › loading, failure and not found › a failed detail read shows the server message and retries (448ms)
+  ✓  32 [chromium] › tests/ui/shell.spec.ts:348:3 › sidebar navigation › a non-root deep link is served the SPA shell, and an unknown path is the SPA 404 (498ms)
+  ✓  30 [chromium] › tests/ui/quests-browse.spec.ts:235:3 › pagination › shows the spec string and disables the buttons at both boundaries (1.2s)
+  ✓  33 [chromium] › tests/ui/shell.spec.ts:372:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (362ms)
+  ✓  34 [chromium] › tests/ui/quests-browse.spec.ts:262:3 › pagination › an empty corpus reads Showing 0-0 of 0 with both buttons disabled (268ms)
+  ✓  35 [chromium] › tests/ui/shell.spec.ts:413:3 › settings › renders the settings values, the last sync and the history (316ms)
+  ✓  37 [chromium] › tests/ui/shell.spec.ts:431:3 › settings › shows git_branch as a read-only information row (story p2-09, D42) (334ms)
+  ✓  36 [chromium] › tests/ui/quests-browse.spec.ts:275:3 › empty states › every filter has its own empty state (512ms)
+  ✓  29 [chromium] › tests/ui/quests-status.spec.ts:204:3 › the optimistic badge (D51(e)) › the detail StatusBadge flips while the PATCH is still in flight, then the toast lands (2.1s)
+  ✓  38 [chromium] › tests/ui/shell.spec.ts:464:1 › the dev stack answers a real API request through the Vite proxy (308ms)
+  ✓  40 [chromium] › tests/ui/quests-status.spec.ts:233:3 › the optimistic badge (D51(e)) › the header disables the entry`s own status action (374ms)
+  ✓  41 [chromium] › tests/ui/shell.spec.ts:476:3 › harness self-check › the console-error guard itself is live (303ms)
+  ✓  39 [chromium] › tests/ui/quests-browse.spec.ts:301:3 › navigation › clicking a row opens that quest, and so does its name link (634ms)
+  ✓  43 [chromium] › tests/ui/quests-browse.spec.ts:320:3 › navigation › the disabled Edit action never navigates, and the status menu is the real one (412ms)
+  ✓  42 [chromium] › tests/ui/quests-status.spec.ts:252:3 › failure paths › a failed PATCH rolls the badge back and shows the error in the dialog (670ms)
+  ✓  44 [chromium] › tests/ui/quests-browse.spec.ts:366:3 › mobile › below 768px the table is a card list with the four spec fields (395ms)
+  ✓  45 [chromium] › tests/ui/quests-status.spec.ts:275:3 › failure paths › the D51(f) untracked 404 becomes an actionable message, for the dialog and the panel (645ms)
+  ✓  46 [chromium] › tests/ui/quests-browse.spec.ts:395:3 › loading and failure › the list skeleton is announced while the request is in flight (319ms)
+  ✓  47 [chromium] › tests/ui/quests-status.spec.ts:305:3 › the identity gate fires first (D38/D43) › a blank user_name opens the identity modal first and the transition resumes after it (679ms)
+  ✓  49 [chromium] › tests/ui/quests-status.spec.ts:344:3 › the identity gate fires first (D38/D43) › dismissing the identity dialog aborts the transition entirely (376ms)
+  ✓  50 [chromium] › tests/ui/quests-status.spec.ts:360:3 › the history timeline › renders the entries newest first with the spec`s anatomy (364ms)
+  ✓  48 [chromium] › tests/ui/quests-browse.spec.ts:416:3 › loading and failure › a failed list shows the server message and recovers on Try again (1.7s)
+  ✓  51 [chromium] › tests/ui/quests-status.spec.ts:389:3 › the history timeline › an entry with no history says so explicitly (336ms)
+  ✓  26 [chromium] › tests/ui/extraction.spec.ts:604:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (6.4s)
+  ✓  53 [chromium] › tests/ui/extraction.spec.ts:637:3 › results phase › Save Selected saves only the selected quest (456ms)
+  ✓  52 [chromium] › tests/ui/quests-status.spec.ts:402:3 › the history timeline › the history panel shows the transition it just made (794ms)
+  ✓  54 [chromium] › tests/ui/extraction.spec.ts:655:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (339ms)
+  ✓  55 [chromium] › tests/ui/extraction.spec.ts:674:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (323ms)
+  ✓  56 [chromium] › tests/ui/extraction.spec.ts:710:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (6.2s)
+  ✓  57 [chromium] › tests/ui/extraction.spec.ts:754:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (373ms)
+  ✓  58 [chromium] › tests/ui/extraction.spec.ts:775:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.1s)
+  ✓  59 [chromium] › tests/ui/extraction.spec.ts:806:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (444ms)
+  ✓  60 [chromium] › tests/ui/extraction.spec.ts:822:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (321ms)
+  ✓  61 [chromium] › tests/ui/extraction.spec.ts:841:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (758ms)
+  ✓  62 [chromium] › tests/ui/extraction.spec.ts:868:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (560ms)
+  ✓  63 [chromium] › tests/ui/extraction.spec.ts:899:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (462ms)
+  ✓  64 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (863ms)
+
+  64 passed (29.4s)
+EXIT=0
+
+### 3. npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+EXIT=0
+
+### 4. npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+EXIT=0
+
+### 5. tsc --noEmit (server + client)
+server: no output (clean)
+client: no output (clean)
+EXIT=0
+
+### 6. npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1758 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-CS_3gzUU.css   29.95 kB │ gzip:   6.56 kB
+dist/assets/index-CPmYBVzB.js   495.75 kB │ gzip: 152.48 kB
+✓ built in 1.82s
+EXIT=0
+

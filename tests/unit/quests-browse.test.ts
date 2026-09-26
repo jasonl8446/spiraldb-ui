@@ -22,7 +22,6 @@ import {
   QUESTS_SEARCH_PLACEHOLDER,
   searchQuests,
   sortQuests,
-  STATUS_MENU_PLACEHOLDER_TOOLTIP,
   type QuestFilter,
 } from '../../client/src/lib/quests';
 
@@ -347,7 +346,11 @@ describe('empty states and page copy', () => {
 
   it('carries the mandated copy and geometry the pages render', () => {
     expect(EDIT_DISABLED_TOOLTIP).toBe('Editing arrives in Phase 3');
-    expect(STATUS_MENU_PLACEHOLDER_TOOLTIP).toBe('Status transitions arrive with story p2-09');
+    // p2-08's `STATUS_MENU_PLACEHOLDER_TOOLTIP` assertion stood here. Story p2-09
+    // built the real status menu, so the placeholder constant is gone and this test
+    // no longer pins "Status transitions arrive with story p2-09" — the menu's own
+    // copy and availability are asserted in `status-transition.test.ts` and the
+    // tier-1 `quests-status.spec.ts`.
     expect(JSON_PANEL_WIDTH_PX).toBe(400);
     expect(QUESTS_PAGE_SIZE).toBe(50);
   });

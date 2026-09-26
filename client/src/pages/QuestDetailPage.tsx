@@ -5,11 +5,14 @@ import { Link, useParams } from 'react-router-dom';
 
 import QuestPreview from '../components/quest/QuestPreview';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
+import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
+import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import StatusBadge from '../components/StatusBadge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useStatusTransition } from '../hooks/useStatusTransition';
 import {
   getQuest,
   listQuests,
@@ -29,6 +32,11 @@ import {
   QUEST_NOT_FOUND_TITLE,
   questStatus,
 } from '../lib/quests';
+import {
+  isCurrentStatus,
+  STATUS_TRANSITIONS,
+  type TransitionTarget,
+} from '../lib/status-transition';
 import { cn } from '../lib/utils';
 
 /**
@@ -58,11 +66,20 @@ import { cn } from '../lib/utils';
  * missing quest is not a transient failure): a 404 renders {@link QUEST_NOT_FOUND_TITLE}
  * with the server's own `Unknown quest "…"` body, any other failure renders the
  * server's message plus a retry, and neither strands the back link.
+ *
+ * **Transitions and history (story p2-09).** The header carries the two lifecycle
+ * actions next to the `StatusBadge`, and the history timeline sits under the
+ * preview. The actions run through the shared `useStatusTransition` flow — identity
+ * gate first, then the notes dialog, then the PATCH — and the optimistically
+ * rewritten row (D51(e)) is the same list row this page's badge reads, so the badge
+ * flips without waiting for a refetch. The six read-only tabs and the JSON panel are
+ * untouched: no seventh tab was added.
  */
 export default function QuestDetailPage(): JSX.Element {
   const { questName = '' } = useParams<{ questName: string }>();
   const isMobile = useIsMobile();
   const [jsonOpen, setJsonOpen] = useState(false);
+  const transition = useStatusTransition('quests');
 
   const quest = useQuery({
     queryKey: questDetailQueryKey(questName),
@@ -130,6 +147,8 @@ export default function QuestDetailPage(): JSX.Element {
         status={status}
         jsonOpen={jsonOpen}
         onToggleJson={() => setJsonOpen((open) => !open)}
+        transitionPending={transition.isPending}
+        onTransition={(target) => transition.request(questName, target)}
       />
 
       <div className="flex min-h-0 gap-4">
@@ -143,6 +162,9 @@ export default function QuestDetailPage(): JSX.Element {
       {isMobile ? (
         <QuestJsonOverlay open={jsonOpen} onOpenChange={setJsonOpen} quest={quest.data} />
       ) : null}
+
+      <StatusHistoryPanel questName={questName} />
+      <StatusNotesDialog {...transition.dialog} />
     </div>
   );
 }
@@ -168,19 +190,32 @@ function BackLink(): JSX.Element {
   );
 }
 
-/** The spec's header bar (L281): back link, mono name, StatusBadge, Edit + `{ }`. */
+/**
+ * The spec's header bar (L281): back link, mono name, StatusBadge, the two status
+ * actions (story p2-09), Edit + `{ }`.
+ *
+ * The action for the status the entry already has is `aria-disabled` rather than
+ * natively disabled, exactly like the Edit button below it: a natively disabled
+ * control leaves the tab order and stops explaining itself, so the pair stays
+ * focusable and its `title` still works. The handler re-checks the condition, so the
+ * attribute describes the behaviour instead of being the only guard.
+ */
 function QuestHeader({
   quest,
   questName,
   status,
   jsonOpen,
   onToggleJson,
+  transitionPending,
+  onTransition,
 }: {
   quest: QuestObject;
   questName: string;
   status: StatusValue;
   jsonOpen: boolean;
   onToggleJson: () => void;
+  transitionPending: boolean;
+  onTransition: (target: TransitionTarget) => void;
 }): JSX.Element {
   const displayName = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
   return (
@@ -196,6 +231,30 @@ function QuestHeader({
       <StatusBadge status={status} />
 
       <div className="ml-auto flex items-center gap-2">
+        {STATUS_TRANSITIONS.map((transition) => {
+          const current = isCurrentStatus(status, transition.status);
+          const unavailable = current || transitionPending;
+          return (
+            <Button
+              key={transition.status}
+              type="button"
+              variant="outline"
+              aria-disabled={unavailable}
+              title={current ? `Already ${transition.status}` : undefined}
+              className={cn(
+                'aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+                current ? null : 'border-blue-600/60 text-blue-300 hover:text-blue-200',
+              )}
+              onClick={() => {
+                if (!unavailable) {
+                  onTransition(transition.status);
+                }
+              }}
+            >
+              {transition.label}
+            </Button>
+          );
+        })}
         {/*
           Disabled with `aria-disabled` rather than the `disabled` attribute: the
           "Editing arrives in Phase 3" tooltip is a native `title`, and a truly

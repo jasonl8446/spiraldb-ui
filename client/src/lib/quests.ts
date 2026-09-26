@@ -322,16 +322,12 @@ export const EDIT_DISABLED_TOOLTIP = 'Editing arrives in Phase 3';
 /** The browse row's Edit action's accessible name (it is icon-only — see the 80px column). */
 export const EDIT_ACTION_LABEL = 'Edit quest';
 
-/**
- * The status-menu placeholder's accessible name and tooltip.
- *
- * The status menu is task 2.8 / story **p2-09** (plan §2.8), still in Phase 2 — so
- * the placeholder says so instead of borrowing the Edit button's Phase 3 sentence.
- * p2-08 must not implement transitions, and a placeholder that is visually marked
- * and documented is the smallest honest thing to ship in its place.
+/*
+ * p2-08 shipped the status menu as a documented, disabled placeholder here
+ * (`STATUS_MENU_PLACEHOLDER_TOOLTIP` / `STATUS_MENU_PLACEHOLDER_LABEL`). Story p2-09
+ * built the real menu, so both constants and every assertion on them are **gone** —
+ * the menu's own copy now lives with its logic in `lib/status-transition.ts`.
  */
-export const STATUS_MENU_PLACEHOLDER_TOOLTIP = 'Status transitions arrive with story p2-09';
-export const STATUS_MENU_PLACEHOLDER_LABEL = 'Change status (arrives with story p2-09)';
 
 /** The browse list's failure line. */
 export const QUESTS_LOAD_ERROR = 'Could not load the quest list.';

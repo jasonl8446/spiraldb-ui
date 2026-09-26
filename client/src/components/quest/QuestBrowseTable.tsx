@@ -5,7 +5,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ChevronDown, ChevronUp, ChevronsUpDown, MoreHorizontal, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronsUpDown, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -18,17 +18,17 @@ import {
   QUEST_COLUMNS,
   QUEST_SORT_KEYS,
   questStatus,
-  STATUS_MENU_PLACEHOLDER_LABEL,
-  STATUS_MENU_PLACEHOLDER_TOOLTIP,
   type QuestColumnId,
   type QuestSort,
   type QuestSortKey,
 } from '../../lib/quests';
+import type { TransitionTarget } from '../../lib/status-transition';
 import { cn } from '../../lib/utils';
 import { STATUS_META } from '../StatusBadge';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import StatusMenu from './StatusMenu';
 
 /**
  * `QuestBrowseTable` — the desktop browse table (plan task 2.7,
@@ -55,6 +55,10 @@ export interface QuestBrowseTableProps {
   sort: QuestSort;
   onSortChange: (sort: QuestSort) => void;
   onRowActivate: (row: QuestListRow) => void;
+  /** Step 1 of a transition: the page gates the user, then opens the notes dialog. */
+  onTransition: (row: QuestListRow, target: TransitionTarget) => void;
+  /** True while a transition is in flight; every row's status menu is disabled. */
+  transitionPending?: boolean;
   className?: string;
 }
 
@@ -96,6 +100,8 @@ export default function QuestBrowseTable({
   sort,
   onSortChange,
   onRowActivate,
+  onTransition,
+  transitionPending = false,
   className,
 }: QuestBrowseTableProps): JSX.Element {
   const sorting = useMemo<SortingState>(
@@ -166,10 +172,12 @@ export default function QuestBrowseTable({
         header: QUEST_COLUMNS[6].header,
         // Not sortable (L262) — the spec's one non-sortable column.
         enableSorting: false,
-        cell: ({ row }) => <RowActions name={row.original.quest_name} />,
+        cell: ({ row }) => (
+          <RowActions row={row.original} disabled={transitionPending} onTransition={onTransition} />
+        ),
       },
     ],
-    [],
+    [onTransition, transitionPending],
   );
 
   const table = useReactTable({
@@ -269,16 +277,24 @@ export default function QuestBrowseTable({
 }
 
 /**
- * The Actions cell: the disabled Edit action and the p2-09 status-menu
- * placeholder (both documented in `lib/quests.ts`).
+ * The Actions cell: the disabled Edit action (Phase 3) and the real status menu
+ * (story p2-09, which replaces p2-08's disabled placeholder).
  *
- * Icon-only because the spec's Actions column is 80px (L262) — two labelled
- * buttons do not fit — and both carry `aria-label` + `title`, so nothing is
- * conveyed by the glyph alone. Neither uses the `disabled` attribute: a disabled
- * control is removed from the tab order and stops showing its own tooltip, so both
- * are `aria-disabled` with a click that goes nowhere.
+ * The Edit action is icon-only because the spec's Actions column is 80px (L262) —
+ * two labelled buttons do not fit — and it keeps `aria-disabled` + a native
+ * `title` rather than the `disabled` attribute so its tooltip still fires and it
+ * stays focusable (D51(b)). The status menu is `StatusMenu`, which owns its own
+ * popover; both stop propagation so an action never navigates the row.
  */
-function RowActions({ name }: { name: string }): JSX.Element {
+function RowActions({
+  row,
+  disabled,
+  onTransition,
+}: {
+  row: QuestListRow;
+  disabled: boolean;
+  onTransition: (row: QuestListRow, target: TransitionTarget) => void;
+}): JSX.Element {
   return (
     <span className="flex items-center gap-1">
       <Button
@@ -286,25 +302,19 @@ function RowActions({ name }: { name: string }): JSX.Element {
         variant="ghost"
         size="icon"
         className="h-7 w-7 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-        aria-label={`${EDIT_ACTION_LABEL}: ${name}`}
+        aria-label={`${EDIT_ACTION_LABEL}: ${row.quest_name}`}
         aria-disabled="true"
         title={EDIT_DISABLED_TOOLTIP}
         onClick={(event) => event.stopPropagation()}
       >
         <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 cursor-not-allowed rounded-md border border-dashed border-zinc-700 text-zinc-500 opacity-60"
-        aria-label={STATUS_MENU_PLACEHOLDER_LABEL}
-        aria-disabled="true"
-        title={STATUS_MENU_PLACEHOLDER_TOOLTIP}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-      </Button>
+      <StatusMenu
+        questName={row.quest_name}
+        status={questStatus(row)}
+        disabled={disabled}
+        onSelect={(target) => onTransition(row, target)}
+      />
     </span>
   );
 }
