@@ -1,0 +1,84 @@
+# p2-08 tier-2 (lead-run playwright-mcp, D23) — the REAL corpus, not a fixture
+# Stack: NODE_ENV=test SPIRALDB_UI_DB=/tmp/p208-lead/lead.db npm run dev, spiraldb_path = the disposable
+# clone, startup import ENABLED (2271 entries imported, imported_at 2026-09-26T11:00:23Z) so the status
+# dimension is genuine. Real data: GET /api/quests -> 322 rows, summary {total:322, extracted:322,
+# reviewed:0, verified:0} (D49(b) defaults every untracked row to extracted, matching the seed).
+# Seed through the REAL status API: 3 x reviewed, 2 x verified -> summary
+# {total:322, extracted:317, reviewed:3, verified:2}. Files: p208-01..04-*.png.
+
+## 1. Filter tabs, count badges, pagination, columns — real data
+Tabs (role=tab): "All 322" [selected] | "Extracted 317" | "Reviewed 3" | "Verified 2"  -> the badges are
+the server summary, not a search result (they did NOT change while searching).
+Pagination string, exactly: "Showing 1-50 of 322"; Previous disabled=true, Next disabled=false.
+Table columns measured with getBoundingClientRect (viewport 1440x900):
+  STATUS 40 | QUEST NAME 717 (flex) | LEVEL 60 | GOALS 60 | MAINLINE 40 | MODIFIED 120 | ACTIONS 80
+Header labels: STATUS / QUEST NAME / LEVEL / GOALS / MAINLINE / MODIFIED / ACTIONS. Rows rendered: 50.
+Row bg computed: rgb(24,24,27) then rgba(24,24,27,0.5) alternating = zinc-900 / zinc-900/50 (spec's
+stripes). Row cursor: pointer.
+Status dot: <span class="h-2.5 w-2.5 rounded-full bg-amber-500"> measured 10x10 rgb(245,158,11) for an
+extracted row; rgb(59,130,246) = blue-500 for the reviewed rows.
+Quest-name cell: <a class="block truncate font-mono text-sm ..." title="DS-ACAD-C01-001"
+href="/quests/DS-ACAD-C01-001"> -> monospace (JetBrains Mono), truncated, tooltip = the full name, and a
+real link (so a row click is a navigation, not a JS handler).
+First rows: "DS-ACAD-C01-001 | 1 | 5 | ✓ Mainline | 5 minutes ago".
+
+## 2. Reviewed tab + search (client-side)
+Clicking "Reviewed 3" -> 3 rows, all dots blue-500, "Showing 1-3 of 3", Previous AND Next disabled:
+  MB-YARD1-C01-001 | 1 | 15 | ✓ Mainline | 6 minutes ago
+  WC-CYCLOPS-MAIN-002 | 1 | 6 | ✓ Mainline | 6 minutes ago
+  WC-UNICORN-MAIN-004 | 0 | 7 | ✓ Mainline | 6 minutes ago
+(these are exactly the 3 quests seeded through the status API — the status join is real)
+Search "unicorn" on that filter -> 1 row (WC-UNICORN-MAIN-004), "Showing 1-1 of 1", tabs unchanged,
+0 network requests triggered by searching (client-side per D12).
+Search "zzz-no-such-quest" -> rows 0, panel text:
+  "No Reviewed quests found. | Try a different filter or search, or extract more quests from a packet
+   capture. | Showing 0-0 of 0 | Previous | Next"
+(the spec's "No {status} quests found." + its suggestion, pagination degraded to 0)
+
+## 3. Sorting
+Clicking the LEVEL header -> aria-sort="ascending" on that th only (others "-"), first rows all level 0.
+
+## 4. Detail page — entered by a real row click
+Row click -> location.pathname === "/quests/WC-UNICORN-MAIN-004".
+- Back link: <a href="/quests">Browse Quests</a>.
+- Quest name: class "min-w-0 truncate text-xl font-mono font-semibold text-zinc-50", 20px, weight 600,
+  font JetBrains Mono — exactly the spec's text-xl font-mono font-semibold.
+- StatusBadge: "Reviewed" (the status I seeded, so the row->detail status wiring is real).
+- Edit: aria-disabled="true", title="Editing arrives in Phase 3" (the AC's tooltip verbatim). Clicked it
+  with force: tabs 6 -> 6, inputs 0 -> 0, URL unchanged, no edit-mode copy appeared => inert.
+- Tabs: Info / Goals / Goal Logic / Requirements / Results / Dialog; 0 editable controls on the page.
+- Goals tab rendered real content read-only: "1_WizardQuestGoals_00000015 | ScavengeGoalTemplate | $type |
+  Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate | m_itemAdjectives | WC-FairyCage02.AdjRef |
+  m_itemTotal | 1 | m_goalName | 1_Wiz..." (0 inputs).
+
+## 5. JSON side panel
+Toggle button is icon-only with title="Toggle JSON panel". After opening, the panel is an <aside>
+measured at width 400 (class "flex shrink-0 animate-in flex-col overflow-hidden rounded-lg border
+border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right") — the spec's 400px + slide transition.
+Content starts "{ m_questName:\"WC-UNICORN-MAIN-004\", m_questNameID:0, m_questTitle:\"QuestTitle_1625CA\""
+with a [Copy] button and 0 editable controls. Syntax highlighting is real (react-json-view-lite's
+solarized palette), token colours counted inside the panel:
+  keys/punctuation rgb(253,246,227) x87 | strings rgb(203,75,22) x5 | numbers rgb(211,54,130) x3 |
+  booleans/null rgb(174,129,255) x9 | brackets rgb(129,181,172) x12.
+On mobile the panel is NOT a side panel: at 375x667 it renders as role=dialog measured 375x667 @0,0
+(exactly the viewport) titled "Quest JSON | Read-only JSON of this quest.", while the desktop <aside> is
+display:none.
+
+## 6. Mobile card list (375x667)
+The table is not rendered at all (tablePresent false). ul[aria-label="Quests"] -> 50 <li>, each 312x74
+(viewport 375), text exactly "DS-ACAD-C01-001 | Level 1 | Extracted | 8 minutes ago" = name, level, status
+badge, relative modified (the spec's card contents), each card an <a href="/quests/DS-ACAD-C01-001">.
+"Showing 1-50 of 322" and the four count tabs remain.
+
+## 7. Not-found state
+/quests/NO-SUCH-QUEST-XYZ -> main text "Back to Quests | Quest not found | Unknown quest
+\"NO-SUCH-QUEST-XYZ\"" with the back link present and 0 tabs. Page errors: none. The browser console
+carried exactly one error, the expected "Failed to load resource: 404 ... /api/quests/NO-SUCH-QUEST-XYZ".
+
+## 8. Query artifacts of my own (recorded, not hidden)
+(1) My first table query ran in a narrow default viewport and returned 0 rows — the page was correctly
+rendering the MOBILE card list; I resized to 1440x900 before measuring the table. (2) My JSON-panel
+selector first matched the app's left nav <aside> (260px) because it used querySelector('aside'), and a
+later compound selector threw a SyntaxError on my own bad escaping; both are my query bugs, and the panel
+was verified by selecting the 400px aside. (3) My mobile card query matched the nav <ul> first
+(`children.length > 5`), so I re-queried via ul[aria-label="Quests"].

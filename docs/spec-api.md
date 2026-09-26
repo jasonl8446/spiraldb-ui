@@ -177,6 +177,117 @@ CRUD endpoints for each SpiralDB object type. All follow the same pattern.
 | GET | `/api/quests/:name` | Single quest JSON |
 | POST | `/api/quests` | Save new/update quest (writes file + metadata + git commit) |
 
+**Implemented response shapes** (task 2.5 / story p2-06). This table above is the
+spec's complete contract — it fixes no shapes — so the shapes below are the
+agent-chosen ones and are binding for the client from p2-07 onward. They follow
+the house precedent of `GET /api/status/:type` (`{entries, summary}`) and are
+served by `server/src/services/quests.ts`.
+
+`GET /api/quests` — the browse list. One directory scan + JSON5 parse per request
+(D12; 322 local files, no caching), joined with `entry_status`. Search and
+status-filtering are **client-side** over this payload (p2-08).
+
+```json
+{
+  "quests": [
+    {
+      "quest_name": "DS-ACAD1-C01-001",
+      "title": "Quest for Perfection",
+      "title_key": "QuestTitle_1ED8D",
+      "title_source": "resolved",
+      "level": 1,
+      "goal_count": 7,
+      "is_mainline": true,
+      "modified_at": "2026-09-26T09:04:09.008Z",
+      "status": "extracted"
+    }
+  ],
+  "summary": { "total": 322, "extracted": 322, "reviewed": 0, "verified": 0 },
+  "skipped": [{ "file": "QuestTemplates/broken.json", "message": "Could not parse …" }]
+}
+```
+
+The values above are measured on the clone's fresh import (all 322 rows
+`extracted`). `title_source: "resolved"` needs a populated `string_table`, which
+only a names sync produces — against an unsynced database every present key
+reports `rawKey` instead.
+
+- `title_source` is `resolved` (string-table hit), `rawKey` (the raw
+  `m_questTitle` value is shown) or `missing` (no `m_questTitle` — the title is
+  `m_quest_name`). Measured on the corpus: 313 `rawKey`, 7 `missing`, 0 with a
+  null `level`, 306 `is_mainline`, 11 with `goal_count` 0.
+- `status` defaults to `extracted` for a quest with no `entry_status` row (the
+  schema default and the first-startup import value).
+- `summary` counts the rows in this response, so the filter tabs count exactly
+  what the table holds; it equals `GET /api/status/quests`'s `summary` whenever
+  the database is in sync with the corpus (the import and every save keep it so).
+- `skipped` reports corpus files that could not be read or parsed. They never fail
+  the request.
+
+`GET /api/quests/:name` — **the parsed quest object itself**, not an envelope
+(the spec's literal "Single quest JSON", and exactly what `POST` round-trips).
+Resolved through the D19 content-keyed index, so an off-convention legacy filename
+is found; read JSON5-tolerantly, so a legacy file with trailing commas parses.
+Unknown name → `404 {"error": "Unknown quest \"…\""}`.
+
+`POST /api/quests` — body `{ "quest": { … }, "notes": "optional commit body" }`.
+The only required shape is a JSON object with a usable `m_questName`; the request
+carries no enum conversion (the CLI already emits the corpus spelling, D48(a)).
+
+```json
+{
+  "quest_name": "DS-ACAD1-C01-001",
+  "outcome": "created",
+  "action": "extract",
+  "commit": "3f1c…",
+  "branch": "content/2026-09-26",
+  "commit_message": "spiraldb: extract quest DS-ACAD1-C01-001",
+  "file": "QuestTemplates/questtemplates_DS-ACAD1-C01-001.json",
+  "metadata": "QuestMetadatas/questmetadata_DS-ACAD1-C01-001.json",
+  "metadata_outcome": "created",
+  "status": { "object_type": "quest", "object_key": "DS-ACAD1-C01-001", "status": "extracted", "…": "…" },
+  "warnings": []
+}
+```
+
+- `action` is `extract` for a key that did not exist and `update` for one that
+  did; `outcome` is `created`/`updated`; `commit` is this save's single commit sha
+  (D13).
+- No status change and no history note are recorded: the endpoint has no
+  capture-file context. A new entry is inserted as `extracted`; an existing
+  entry's status is left alone.
+- `warnings` carries the D48(d) ambiguity report when `QuestMetadatas/` holds more
+  than one file whose `Name` is this quest (8 of 316 names do). The save still
+  proceeds deterministically on the first file in name order, and the same text is
+  logged to the server console.
+- Errors: body without a usable `quest`/`m_questName` → `400`; unset
+  `settings.spiraldb_path` → `400`; dirty SpiralDB working tree (`DirtyRepoError`,
+  D14) → `409` with the actionable message; any other pipeline failure → `500`.
+
+**Added by story p2-07 (Gap B) — the request body also takes `source`.** The body
+is therefore `{ "quest": { … }, "notes"?: "commit body", "source"?: "session_1.json" }`.
+`source` is the capture file the quests were extracted from; the extraction page
+knows it (the user picked the file), and this is the only way the endpoint can —
+so it supersedes the "no history note" clause above **only when `source` is
+present in the request**:
+
+- It is sanitised before use: trimmed, reduced to its base name (every `\`/`/`
+  directory component is dropped — `../../etc/passwd` is recorded as `passwd`,
+  `/tmp/x/session_1.json` as `session_1.json`), control characters stripped and the
+  result capped at 255 characters. An absent, `null`, blank or unsafe value means
+  **no note at all** — a request without `source` behaves exactly as it did before
+  the field existed (a new entry is inserted as `extracted` with a `null` note).
+- When the save **creates** the `entry_status` row (`outcome: "created"`), one
+  `status_history` row is written with
+  `notes` = `Imported from packet capture {source}`, `old_status: null`,
+  `new_status: "extracted"` and `changed_by` = the resolved `settings.user_name`.
+- When the save **updates** an existing entry (`outcome: "updated"`) it adds **no**
+  note and does **not** touch the status: D49(d) stands — an update carries no
+  user-facing transition, so re-saving a `verified` quest keeps its history and its
+  status.
+- A `source` that is not a string → `400`, like a non-string `notes`.
+- Response shape unchanged: `source` is not echoed.
+
 ### Other Object Types
 
 Same pattern for each type:

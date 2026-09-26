@@ -1,0 +1,33 @@
+story p2-05 — ac3: dirty SpiralDB working tree → actionable error (D14), nothing written
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+git status --porcelain : "?? P2-05-acceptance-dirty.txt"
+HEAD before the attempt: 44 commits
+
+thrown: DirtyRepoError
+SpiralDB repo at /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb has uncommitted changes — resolve them first. The save pipeline never stashes or discards your work. git status --porcelain (1): ?? P2-05-acceptance-dirty.txt
+
+file written?                false
+metadata written?            false
+commits unchanged?           true
+status row?                  undefined
+stash list (must stay empty): ""
+the deliberate edit is still on disk: true
+PASS  ac3: DirtyRepoError with the actionable message
+PASS  ac3: nothing written — no file, no metadata, no commit, no status row
+PASS  ac3: never auto-stashed
+
+after removing the deliberate edit the same save succeeds: QuestTemplates/questtemplates_DS-P205-AC3-002.json (created)
+PASS  ac3: the guard was the only blocker (same save succeeds on a clean tree)

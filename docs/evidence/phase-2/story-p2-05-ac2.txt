@@ -1,0 +1,43 @@
+story p2-05 — ac2: quest metadata pairs by content (D20) — updated in place, never a name-derived duplicate
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+corpus reality:
+  metadata files                       : 327
+  distinct Names                        : 319
+  Names with more than one metadata file: 8
+  uniquely-named + off-convention paths : WC-TUT-C05-001, WC-TUT-C03-001
+  → the index pairs by the `Name` field inside the file (never by file name), and
+    records a duplicate key for the ambiguous Names (reported in the build stats).
+
+update target            : WC-TUT-C05-001
+  quest file             : QuestTemplates/questtemplates_WC-TUT-C05-001.json
+  paired metadata file   : QuestMetadatas/e1604f05-050c-42c3-80aa-91b77dd089d9.json
+  not name-derived       : true
+  before: ModifiedAt=2025-12-30T20:37:06.8234824Z ModifiedBy=lol
+          CreatedAt=2025-08-30T21:10:37.8483394Z CreatedBy=jay
+          Description="This is the very first quest, force added by the tutorial script. The goals here are meant to be force triggered by the tutorial script. The player never knows they actually have a quest.\nDO NOT CHANGE THE NAME OF THIS QUEST: The client itself has this name, and we cannot change it."
+  edited field m_activityType = "ACTIVITY_NotActivity" → + " (p2-05)"
+
+outcome updated / action update
+file updated in place    : QuestTemplates/questtemplates_WC-TUT-C05-001.json
+  after : ModifiedAt=2026-09-26T08:34:12.674Z ModifiedBy=P2-05 Acceptance
+  CreatedAt/CreatedBy unchanged: true
+  Description unchanged      : true
+  name-derived metadata files for "WC-TUT-C05-001": []
+  key order preserved        : true
+PASS  ac2: the off-convention metadata file was updated in place
+PASS  ac2: no questmetadata_{name}.json duplicate was created (metadata file count unchanged)
+PASS  ac2: ModifiedAt/ModifiedBy refreshed, CreatedAt/CreatedBy/Description preserved
+PASS  ac2: a brand-new quest got one name-derived metadata file (from ac1)

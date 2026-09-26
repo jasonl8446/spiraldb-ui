@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createApp } from './app.js';
-import { defaultDbFile, getDb, readSettings } from './db.js';
+import { getDb, readSettings, resolveDbFile } from './db.js';
 import { runFirstStartupImport } from './services/import.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -39,7 +39,10 @@ const staticDir = findStaticDir(path.dirname(fileURLToPath(import.meta.url)));
 // applies the migrations from server/migrations (copied into the build by
 // `scripts/copy-server-assets.mjs`) and seeds `settings` on first run.
 const db = getDb();
-console.log(`[spiraldb-ui] database ready at ${defaultDbFile()}`);
+// Log the file actually opened, not the default: `SPIRALDB_UI_DB` (decision D44)
+// points the tier-1 harness at a throwaway database, and a boot line naming the
+// developer's database would misreport which one the run is writing to.
+console.log(`[spiraldb-ui] database ready at ${resolveDbFile()}`);
 
 // First-startup import of the existing SpiralDB corpus (task 1.6,
 // docs/spec-data-model.md L254-279). It runs here — the real entrypoint, after

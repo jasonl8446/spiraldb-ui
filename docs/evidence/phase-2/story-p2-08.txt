@@ -1,0 +1,381 @@
+# p2-08 gate — the six standard checks (D40) + decisions + honest gaps, executor-run
+# 2026-09-26 branch=phase-2-quest-extraction HEAD=4408eba
+# tree: left UNCOMMITTED for the lead (the story says do not commit)
+# baseline: p2-07's gate recorded 28 unit test files / 687 tests and 22 tier-1 UI specs
+# after:    29 unit test files / 750 tests (+29 = 26 new in tests/unit/quests-browse.test.ts
+#           + 3 new in tests/unit/api-client.test.ts) and 49 tier-1 UI specs
+#           (+21 = 14 tests/ui/quests-browse.spec.ts + 7 tests/ui/quests-detail.spec.ts)
+#           — tests/ui/shell.spec.ts keeps its 28 tests and extraction.spec.ts its own; the
+#           shell spec was UPDATED (its /quests stub assertion became a real-page assertion
+#           and two API routes joined its mocks), never weakened.
+
+## what was built (plan task 2.7, story p2-08)
+
+new — client/src/lib/quests.ts (pure), pages/QuestsPage.tsx, pages/QuestDetailPage.tsx,
+components/quest/{QuestBrowseTable,QuestCardList,QuestJsonPanel}.tsx,
+tests/ui/{quests-browse.spec.ts,quests-detail.spec.ts,quests-mocks.ts},
+tests/unit/quests-browse.test.ts, docs/evidence/phase-2/story-p2-08-{ac1,ac2}.txt
+changed — client/src/App.tsx (two routes wired), client/src/lib/api.ts (the QuestListRow
+mirror completed; getQuest + questDetailQueryKey), client/src/lib/display.ts (relativeTime),
+tests/ui/shell.spec.ts, tests/unit/api-client.test.ts, package.json + package-lock.json
+
+Per-AC clause maps and their own raw runs: story-p2-08-ac1.txt, story-p2-08-ac2.txt.
+
+## decisions (the spec-silent points this story had to settle)
+
+1. **Where the detail header's status comes from.** `GET /api/quests/:name` answers the *bare*
+   quest object (D49) — it carries no status — so the header reads the browse list's own row
+   through the shared `QUESTS_QUERY_KEY` cache instead of a second status contract. That key
+   already applies D49's `extracted` default, is invalidated by every save
+   (client/src/pages/ExtractionPage.tsx:198), and is usually already cached from the list the
+   user just came from. A missing row or a failed list read degrades the badge to `extracted`
+   and never blocks the page (`questStatus(undefined)`).
+2. **`aria-disabled="true"`, never the `disabled` attribute**, on both Edit buttons: a natively
+   disabled button is dropped from the tab order and does not reliably fire the native `title`
+   tooltip, so the control would neither explain itself nor be reachable. There is no tooltip
+   primitive to use — D39 ships only the primitives the shell needed. Measured consequence for
+   the specs: Playwright's disabled check consults `getAriaDisabled`, so `toBeDisabled()` passes
+   on these buttons and `click()` refuses to act on them; the no-navigation assertions therefore
+   use `dispatchEvent('click')`, which fires the real DOM event.
+3. **The status-menu placeholder is p2-09, not Phase 3.** Task 2.8 is story **p2-09**, still
+   inside Phase 2, so the Actions column's second button says "Status transitions arrive with
+   story p2-09" rather than borrowing the Edit button's Phase 3 sentence. p2-08 must not
+   implement transitions; a visually marked (dashed border), documented placeholder is the
+   smallest honest thing to ship in its place.
+4. **`emptyStateMessage('All')` is "No quests found."** The spec's template (L268) is
+   `No {status} quests found.`, which for the one tab with no status would read "No All quests
+   found.". The other three are the template verbatim.
+5. **`[Wrap]` is deliberately not shipped.** The spec's `[Copy] [Wrap]` diagram (L336) comes
+   from the `@monaco-editor/react` option of L326, where wrapping is a toggle;
+   `react-json-view-lite` wraps unconditionally, so there is nothing to toggle. `[Copy]` ships
+   and is exercised (toast assertion). The panel keeps the library's syntax colours and
+   overrides only its Solarized container colour (a class-string merge, not a theme fork).
+6. **The detail header has no `[Save]`.** The spec's L281 mock draws `[Edit] [Save]`; the AC
+   names only the disabled Edit, and Save belongs to the Phase 3 editor. Saving is p2-07's
+   results-pane flow.
+7. **Every column's first click sorts ascending** (`sortDescFirst: false`). TanStack's default
+   is "auto" — ascending for string cells, **descending** for numbers and booleans — so a first
+   click on Level sorted 20→1 and on Mainline showed "checked" first while Status started at
+   `extracted`. That direction is decided by the JS type of an accessor the user cannot see;
+   measured in the tier-1 spec and pinned. The spec is silent on direction (L254-262).
+8. **Column widths are exact, not negotiated.** `table-fixed` plus an inline `{ width }` on each
+   `<th>`/`<td>` makes the six px widths the spec's to the pixel, with Quest Name as the flex
+   column (`null` width in the shared table). The spec's 40/60/60/40/120/80 are asserted with
+   `boundingBox()` in the browser, not only in the unit test.
+9. **The Actions column is icon-only** — two 28px buttons — because the spec fixes that column
+   at 80px; the Edit action's accessible name carries the quest name (`Edit quest: <name>`) so
+   the row is unambiguous, and both buttons stop propagation so they never navigate.
+10. **`relativeTime` thresholds are pinned to whole units** and never locale-formatted (a
+    machine-dependent string inside a fixed 120px column and inside the specs would be a moving
+    target): <45s `just now` (a future mtime is clock skew, not "-3 minutes ago"), <60min
+    minutes, <24h hours, <30d days, <365d months (30-day month), else years. The unit changes at
+    the whole unit — at 60 minutes the column reads `1 hour ago`, never `60 minutes ago`.
+    `modified_at` is `null` when a corpus file vanished before the server stat'ed it → `—`.
+11. **`skipped` is not surfaced on the browse page.** `GET /api/quests` reports unreadable corpus
+    files, but no AC or spec clause asks the list to render them and p2-07's overwrite check does
+    not either; the wire type is mirrored (`QuestListSkipped`) so the contract stays honest.
+    **Flagged for the lead:** an unreadable file means the list is silently short (the spec's own
+    example says 322) — a one-line notice would be cheap in a later story.
+12. **Dependencies** (both `--save-exact`, per the D30/D31 pin discipline):
+    `@tanstack/react-table@8.21.3` — the spec's choice (L16) and the React-18-era API line the
+    spec text was written against;
+    `react-json-view-lite@2.5.0` — the plan's lightness-over-Monaco choice (L64, D25), peers
+    `react ^18 || ^19` against our `react ^18.3.1`. `npm ci --dry-run`: "up to date", no
+    package.json/lockfile mismatch.
+13. **The filter tabs are `role="tab"` buttons without roving arrow-key focus.** The spec calls
+    them filter tabs and requires a count badge per tab; the full ARIA tabs keyboard pattern
+    (roving tabindex + arrow keys) would model a filter as a tab strip. Recorded as a small,
+    deliberate a11y deviation: each button is individually tabbable and the single
+    `role="tabpanel"` is referenced by `aria-controls`/`aria-labelledby`.
+
+## corrections the specs forced (tests changed the client, not the reverse)
+
+* `relativeTime`'s minutes branch originally extended to 90 minutes, so a 60-minute-old file
+  rendered "60 minutes ago". The unit boundary is now whole (see 10) — found by the browse
+  spec's Modified assertions and pinned in the unit test at 59/60/90 minutes.
+* TanStack's auto sort direction (see 7) — found by the browse spec's Level sort.
+* No existing test was weakened, deleted or skipped to make anything pass; the only edit to an
+  existing spec is shell.spec.ts's `/quests` branch, which moved from asserting the *stub*
+  ("Arrives in Phase 2") to asserting the real page (search box + Quest Name column) plus one
+  real-detail-page assertion on its existing `/quests/DS-ACAD-C01-001` test.
+
+## not claimed here (honest gaps)
+
+* **Tier 2**: the AC's own `(playwright-mcp assertions)` clause and any real-corpus browse pass
+  are the lead's. This file is tier 1 only.
+* **The 322 rows are a fixture**, not the developer's corpus: the filter counts, "Showing 1-50 of
+  322" and page 7's "301-322" are proven against `tests/ui/quests-mocks.ts`, whose numbers are the
+  spec's own example. A real-corpus count check is tier 2.
+* **768px exactly is untested** (`useIsMobile` = `max-width: 767px`): the specs drive 375 and
+  1280, the same two widths p2-06/p2-07 used.
+* **`npm ci` was verified with `--dry-run` only.** A full clean install was deliberately not run:
+  this host's npm holds install scripts behind an allow-list, so a real `npm ci` would skip
+  better-sqlite3's node-gyp rebuild and could leave the workspace's `node_modules` broken for the
+  lead's own gate. The runner's `npm ci` (and D41's clone simulation) covers the real check; what
+  this story could have broken — lockfile/package.json disagreement — the dry run rules out.
+## 1. npm test
+$ npm test
+
+> spiraldb-ui@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/naming.test.ts (54 tests) 10ms
+(node:1433509) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1433509) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1433509) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1433509) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+ ✓ tests/unit/revision.test.ts (14 tests) 15ms
+ ✓ tests/unit/extract-ui.test.ts (26 tests) 28ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 72ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 29ms
+ ✓ tests/unit/manifest.test.ts (12 tests) 16ms
+ ✓ tests/unit/templates.test.ts (23 tests) 28ms
+ ✓ tests/unit/import.test.ts (33 tests) 56ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 26ms
+ ✓ tests/unit/db.test.ts (22 tests) 231ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 75ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 51ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 21ms
+ ✓ tests/unit/sync-api.test.ts (8 tests) 109ms
+ ✓ tests/unit/settings.test.ts (27 tests) 326ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 179ms
+ ✓ tests/unit/api-client.test.ts (15 tests) 24ms
+ ✓ tests/unit/quests-browse.test.ts (26 tests) 21ms
+ ✓ tests/unit/lang.test.ts (28 tests) 32ms
+ ✓ tests/unit/user-name-gate.test.ts (13 tests) 10ms
+ ✓ tests/unit/spiraldb-index.test.ts (18 tests) 25ms
+ ✓ tests/unit/ui-shell.test.ts (65 tests) 54ms
+ ✓ tests/unit/server.test.ts (4 tests) 76ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:64:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/names.test.ts (66 tests) 449ms
+ ✓ tests/unit/extract-api.test.ts (12 tests) 244ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:79:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:90:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/status.test.ts (81 tests) 607ms
+ ✓ tests/unit/git-service.test.ts (16 tests) 1097ms
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:933:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:117:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (53 tests) 2436ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank  408ms
+ ✓ tests/unit/save-pipeline.test.ts (21 tests) 3648ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  525ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  389ms
+
+ Test Files  29 passed (29)
+      Tests  750 passed (750)
+   Start at  06:56:28
+   Duration  4.49s (transform 2.83s, setup 0ms, collect 9.68s, tests 10.00s, environment 9ms, prepare 2.72s)
+
+exit=0
+
+## 2. npm run test:ui  (full tier-1 suite: shell + extraction + the two new specs)
+$ npm run test:ui
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1435323) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] (node:1435352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:1435370) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1435353) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 242 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+
+Running 49 tests using 4 workers
+
+(node:1435392) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1435393) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1435391) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1435390) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [chromium] › tests/ui/quests-detail.spec.ts:48:3 › header › shows the back link, the mono name, the status badge and the disabled Edit (1.3s)
+  ✓   4 [chromium] › tests/ui/extraction.spec.ts:327:3 › upload phase › states the supported format verbatim and browses through a hidden .json input (1.3s)
+  ✓   3 [chromium] › tests/ui/quests-browse.spec.ts:89:3 › columns › renders the seven spec columns at their exact widths (1.5s)
+  ✓   6 [chromium] › tests/ui/extraction.spec.ts:374:3 › upload phase › shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel (363ms)
+  ✓   5 [chromium] › tests/ui/quests-detail.spec.ts:80:3 › tabs › renders the six read-only tabs through QuestPreview (567ms)
+  ✓   7 [chromium] › tests/ui/quests-browse.spec.ts:112:3 › columns › every column but Actions sorts, and the header reports the direction (403ms)
+  ✓   8 [chromium] › tests/ui/extraction.spec.ts:411:3 › upload phase › an error surfaces the server message and returns to the upload phase (348ms)
+  ✓  11 [chromium] › tests/ui/extraction.spec.ts:434:3 › upload phase › a 500 from an unbuilt CLI is surfaced verbatim (301ms)
+  ✓  10 [chromium] › tests/ui/quests-browse.spec.ts:133:3 › filter tabs › the four tabs carry the summary count badges and the active styling (539ms)
+  ✓   9 [chromium] › tests/ui/quests-detail.spec.ts:118:3 › json side panel › the { } toggle opens exactly 400px of syntax-highlighted JSON (777ms)
+  ✓  12 [chromium] › tests/ui/extraction.spec.ts:452:3 › upload phase › Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it (447ms)
+  ✓  13 [chromium] › tests/ui/quests-browse.spec.ts:164:3 › search › filters the rows client-side without another request (483ms)
+  ✓  14 [chromium] › tests/ui/quests-detail.spec.ts:153:3 › json panel on mobile › below 768px the panel is a full-screen overlay, not a side panel (709ms)
+  ✓  16 [chromium] › tests/ui/quests-browse.spec.ts:197:3 › sorting › the Quest Name header toggles ascending → descending → default (499ms)
+  ✓  15 [chromium] › tests/ui/extraction.spec.ts:526:3 › results phase › renders the split layout: a 320px list and a read-only tabbed preview (654ms)
+  ✓  17 [chromium] › tests/ui/quests-detail.spec.ts:186:3 › loading, failure and not found › the detail skeleton is announced while the quest is loading (376ms)
+  ✓  18 [chromium] › tests/ui/quests-browse.spec.ts:218:3 › sorting › the Level header sorts numerically, and the level shows as a badge (439ms)
+  ✓  19 [chromium] › tests/ui/extraction.spec.ts:586:3 › results phase › an empty extraction shows the empty state and Discard returns to upload (407ms)
+  ✓  20 [chromium] › tests/ui/quests-detail.spec.ts:210:3 › loading, failure and not found › a 404 renders the not-found state with the server message (383ms)
+  ✓  23 [chromium] › tests/ui/quests-detail.spec.ts:232:3 › loading, failure and not found › a failed detail read shows the server message and retries (346ms)
+  ✓  21 [chromium] › tests/ui/quests-browse.spec.ts:234:3 › pagination › shows the spec string and disables the buttons at both boundaries (838ms)
+  ✓  24 [chromium] › tests/ui/quests-browse.spec.ts:261:3 › pagination › an empty corpus reads Showing 0-0 of 0 with both buttons disabled (212ms)
+  ✓   1 [chromium] › tests/ui/shell.spec.ts:224:3 › sidebar navigation › every route is reachable, renders a real page, and highlights its item (5.2s)
+  ✓  25 [chromium] › tests/ui/quests-browse.spec.ts:274:3 › empty states › every filter has its own empty state (450ms)
+  ✓  26 [chromium] › tests/ui/shell.spec.ts:284:3 › sidebar navigation › collapsing a group hides its items and flips aria-expanded (343ms)
+  ✓  28 [chromium] › tests/ui/shell.spec.ts:309:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (419ms)
+  ✓  27 [chromium] › tests/ui/quests-browse.spec.ts:300:3 › navigation › clicking a row opens that quest, and so does its name link (531ms)
+  ✓  30 [chromium] › tests/ui/quests-browse.spec.ts:319:3 › navigation › the disabled Edit action and the status placeholder never navigate (351ms)
+  ✓  29 [chromium] › tests/ui/shell.spec.ts:348:3 › sidebar navigation › a non-root deep link is served the SPA shell, and an unknown path is the SPA 404 (456ms)
+  ✓  31 [chromium] › tests/ui/quests-browse.spec.ts:347:3 › mobile › below 768px the table is a card list with the four spec fields (369ms)
+  ✓  32 [chromium] › tests/ui/shell.spec.ts:372:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (411ms)
+  ✓  33 [chromium] › tests/ui/quests-browse.spec.ts:376:3 › loading and failure › the list skeleton is announced while the request is in flight (306ms)
+  ✓  34 [chromium] › tests/ui/shell.spec.ts:413:3 › settings › renders the settings values, the last sync and the history (299ms)
+  ✓  36 [chromium] › tests/ui/shell.spec.ts:432:1 › the dev stack answers a real API request through the Vite proxy (262ms)
+  ✓  37 [chromium] › tests/ui/shell.spec.ts:444:3 › harness self-check › the console-error guard itself is live (219ms)
+  ✓  35 [chromium] › tests/ui/quests-browse.spec.ts:397:3 › loading and failure › a failed list shows the server message and recovers on Try again (1.7s)
+  ✓  22 [chromium] › tests/ui/extraction.spec.ts:604:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (6.2s)
+  ✓  38 [chromium] › tests/ui/extraction.spec.ts:637:3 › results phase › Save Selected saves only the selected quest (468ms)
+  ✓  39 [chromium] › tests/ui/extraction.spec.ts:655:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (362ms)
+  ✓  40 [chromium] › tests/ui/extraction.spec.ts:674:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (371ms)
+  ✓  41 [chromium] › tests/ui/extraction.spec.ts:710:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (6.2s)
+  ✓  42 [chromium] › tests/ui/extraction.spec.ts:754:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (387ms)
+  ✓  43 [chromium] › tests/ui/extraction.spec.ts:775:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.2s)
+  ✓  44 [chromium] › tests/ui/extraction.spec.ts:806:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (464ms)
+  ✓  45 [chromium] › tests/ui/extraction.spec.ts:822:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (365ms)
+  ✓  46 [chromium] › tests/ui/extraction.spec.ts:841:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (765ms)
+  ✓  47 [chromium] › tests/ui/extraction.spec.ts:868:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (593ms)
+  ✓  48 [chromium] › tests/ui/extraction.spec.ts:899:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (531ms)
+  ✓  49 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (857ms)
+
+  49 passed (29.2s)
+exit=0
+
+## 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+## 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+
+## 5. both tsc --noEmit projects
+$ npx tsc -p server/tsconfig.json --noEmit && npx tsc -p client/tsconfig.json --noEmit
+exit=0
+
+## 6. npm run build
+$ npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1753 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-BIItKhOG.css   29.24 kB │ gzip:   6.43 kB
+dist/assets/index-CdV2vfPm.js   487.26 kB │ gzip: 150.49 kB
+✓ built in 1.71s
+exit=0
+
+## dependency check
+$ npm ci --dry-run
+
+up to date in 239ms
+
+113 packages are looking for funding
+  run `npm fund` for details
+npm warn install-scripts 3 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   better-sqlite3@12.11.1 (install: node-gyp rebuild)
+npm warn install-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn install-scripts   esbuild@0.21.5 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+exit=0

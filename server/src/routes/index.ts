@@ -2,7 +2,9 @@ import { Router } from 'express';
 
 import { getDb } from '../db.js';
 import { createDashboardRouter } from './dashboard.js';
+import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
+import { createQuestsRouter } from './quests.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
@@ -87,4 +89,31 @@ let dashboardRouter: Router | undefined;
 apiRouter.use('/dashboard', (req, res, next) => {
   dashboardRouter ??= createDashboardRouter({ db: getDb() });
   dashboardRouter(req, res, next);
+});
+
+/**
+ * Quest extraction (tasks 2.2/2.3, story p2-04) — `POST /api/extract/quests`.
+ *
+ * Mounted **directly**, not lazily like the five routers above: the extraction
+ * router holds no database handle (architecture rule 4 — the CLI is the only
+ * capture reader), so a request never needs `data/spiraldb-ui.db`. It is still
+ * free of import-time side effects: the service, the upload directory and
+ * multer's `mkdirp` all resolve on the first request (`./extract.ts` header).
+ */
+apiRouter.use('/extract', createExtractRouter());
+
+/**
+ * Quests (task 2.5, story p2-06) — `GET /api/quests`, `GET /api/quests/:name`,
+ * `POST /api/quests`.
+ *
+ * Lazily mounted like settings/sync/names/status/dashboard: the router needs
+ * `getDb()` for the settings and the status join, and the first request is the
+ * first moment the process needs `data/spiraldb-ui.db` (decision D32). Its D19
+ * index and save pipeline are built on the first request that needs them.
+ */
+let questsRouter: Router | undefined;
+
+apiRouter.use('/quests', (req, res, next) => {
+  questsRouter ??= createQuestsRouter({ db: getDb() });
+  questsRouter(req, res, next);
 });

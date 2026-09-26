@@ -1,0 +1,75 @@
+# p2-03 — FixtureGen corpus measurements, generator sweep, fixture selection (task 2.1a, D28)
+# 2026-09-26T07:30:41Z  head=38d151f  branch=phase-2-quest-extraction
+# corpus clone: data/test-spiraldb @ c55ccab175440c5f676b8d5315575ccd6d550332
+
+## 1. strict-JSON vs JSON5 (the corpus is NOT strict JSON)
+$ node -e "for each of data/test-spiraldb/QuestTemplates/*.json: JSON5.parse vs JSON.parse"
+files=322 json5-parsed=322 json5-parse-failures=0 strict-JSON-failures=306
+=> fixtures must be strict JSON (the CLI uses System.Text.Json), the corpus must be read trailing-comma-tolerantly (json5)
+
+## 2. goal-type occurrences per goal (measured, not assumed)
+$ node -e "histogram of m_goals[].m_goalType across the corpus"
+     4 goal(s) in   4 quest(s)  GOAL_TYPE_BOUNTY
+     4 goal(s) in   1 quest(s)  GOAL_TYPE_USAGE
+    26 goal(s) in   4 quest(s)  GOAL_TYPE_ACHIEVERANK
+    43 goal(s) in  42 quest(s)  GOAL_TYPE_SCAVENGE
+    96 goal(s) in  88 quest(s)  GOAL_TYPE_BOUNTYCOLLECT
+   194 goal(s) in 126 quest(s)  GOAL_TYPE_WAYPOINT
+   405 goal(s) in 306 quest(s)  GOAL_TYPE_PERSONA
+
+## 3. the goal-naming invariant QuestBuilder depends on: m_goalName == "{i+1}_{m_goalTitle}"
+$ node -e "check the invariant on every goal of every quest"
+quests satisfying the invariant: 318/322
+  Tutorial_Intro: 1 violating goal(s), e.g. goal[0] m_goalName='OnlyGoal' expected '1_' type=GOAL_TYPE_ACHIEVERANK
+  WC-TUT-C03-001: 19 violating goal(s), e.g. goal[0] m_goalName='player damage 1' expected '1_' type=GOAL_TYPE_ACHIEVERANK
+  WC-TUT-C05-001: 5 violating goal(s), e.g. goal[0] m_goalName='Trigger Storm' expected '1_' type=GOAL_TYPE_ACHIEVERANK
+  WC-TUT-C08-001: 1 violating goal(s), e.g. goal[0] m_goalName='Teleport' expected '1_' type=GOAL_TYPE_ACHIEVERANK
+=> every violator is an ACHIEVERANK quest: the reader numbers goals "{n}_{title}", so these can never round-trip on goal names
+
+## 4. m_startGoals vs m_goals (the compilation/packet split)
+$ node -e "|m_startGoals| histogram + prefix invariant"
+|m_startGoals| histogram: [[0,16],[1,289],[2,6],[3,4],[4,4],[5,1],[6,2]]
+quests where m_startGoals is a prefix of m_goals: 322/322  (k==n: 93)
+=> compilation = m_startGoals prefix is faithful for every quest; the reader numbers the
+   compilation goals 1..k and the packet goals k+1..n, which reproduces m_goalName exactly
+
+## 5. m_questLevel distribution (why the level row is a known reader defect)
+$ node -e "histogram of m_questLevel"
+histogram: [[0,15],[1,286],[15,1],[16,2],[17,3],[18,2],[19,5],[20,4],[21,3],[26,1]]
+quests at level 0: 15/322
+level-0 quests the generator accepts: 4 -> WC-MAIN-C01-013, WC-UNICORN-MAIN-002, WC-UNICORN-MAIN-004, WC-UNICORN-MAIN-007
+
+## 6. generator sweep over the whole corpus (what FixtureGen accepts and refuses)
+$ for f in data/test-spiraldb/QuestTemplates/*.json; do fixturegen --quest "$f" --output /tmp/fx/sweep2/$(basename $f) || …; done
+generated=181 refused=141  (of 322)
+
+refusal classes (normalised from the raw sweep report, /tmp/fx/sweep2-report.txt):
+    130 goal-level dialog on a compilation goal (reader cannot attach a dialog to a compilation goal)
+     26 m_goalNameID 0 (ACHIEVERANK)
+     26 goal name != "{n}_{m_goalTitle}" (ACHIEVERANK: empty m_goalTitle)
+     11 quest has no goals
+      5 quest-level dialog tag not Prep/Completion (unrepresentable placement)
+      2 m_goalNameID 0 appears on more than one goal: QuestBuilder skips a packet whose GoalNameID is already present, which would shift every later goal name.
+      1 duplicate quest-level dialog tag (the reader replaces instead of adding)
+
+## 7. the fixture set (diversity first, then measured)
+fixture                goals   k  level blocks entries mainline     types  sha256
+MB-YARD1-C01-001          15   1      1     7       9     true WAYPOINT/PERSONA/BOUNTYCOLLECT 339bd29245af25a041e99592028c73c3eed320d23da90d03925cd1628c04ca87
+WC-CYCLOPS-MAIN-002        6   0      1     7      27     true   PERSONA e2c9137b20abd621a2520104e71cc6ce2402efb31a78be30e0bf56c77bee4941
+WC-FIRECAT-MAIN-004        5   1      1     3      13     true SCAVENGE/PERSONA/WAYPOINT/BOUNTYCOLLECT efaf06ab46504ea482e3e5d7b0e9978287cc1d52f78746649f00ff1d43c48d4b
+WC-UNICORN-MAIN-004        7   5      0     3       8     true USAGE/BOUNTYCOLLECT/WAYPOINT/PERSONA a2eae4202bc9ee0a67fe00138066c5fac2c03a387882d98f8ffa0ce8b15fd047
+WC-UNICORN-MAIN-007        4   1      0     5       8     true WAYPOINT/BOUNTY/PERSONA 69af8326966595ba96abd6b097cd4efdf6319979f32cc72b08d137a11ef75b9e
+
+why these five (each requirement of the plan's ac2 diversity clause):
+  MB-YARD1-C01-001   multi-goal mainline: 15 goals (7 WAYPOINT, 6 PERSONA, 2 BOUNTYCOLLECT), mainline=true
+  WC-CYCLOPS-MAIN-002 dialog-heavy: 7 dialog blocks / 27 NPCDialogEntry (largest entry count of the 181 accepted quests)
+  WC-UNICORN-MAIN-004 rarest goal type USAGE (all 4 USAGE goals in the corpus live in this one quest) + 1 tally madlib blob
+  WC-UNICORN-MAIN-007 rarest goal type BOUNTY (4 goals corpus-wide, this is one) + a goal-level Prep dialog + 2 tally madlib blobs
+  WC-FIRECAT-MAIN-004 SCAVENGE (43 corpus-wide) in a 5-goal multi-type quest with 13 dialog entries
+  goal-type coverage of the five: PERSONA, WAYPOINT, BOUNTYCOLLECT, USAGE, BOUNTY, SCAVENGE = 6 of the 7 types present
+  (ACHIEVERANK, the 7th, is unreachable: see section 3).
+
+  measured ranking among the 181 accepted quests:
+    goals:          MB-YARD1-C01-001 ranks 1/181 (15 goals)
+    dialog entries: WC-CYCLOPS-MAIN-002 ranks 1/181 (27 entries; next 20, 19, 14, 13)
+    so the multi-goal and dialog-heavy fixtures are the most extreme quests the generator accepts, not arbitrary picks.

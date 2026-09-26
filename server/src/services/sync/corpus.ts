@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { isPlainObject, parseJsonLenient } from './json.js';
@@ -27,11 +27,18 @@ import { isPlainObject, parseJsonLenient } from './json.js';
 export interface CorpusDeps {
   readdir: (dir: string) => Promise<string[]>;
   readFile: (file: string) => Promise<string>;
+  /**
+   * File metadata — consulted only when `collectDetails` is on (the quests API
+   * list needs each quest file's modified time; task 2.5). Injectable so a test
+   * can pin mtimes instead of depending on the filesystem clock.
+   */
+  statFile: (file: string) => Promise<{ mtime: Date }>;
 }
 
 export const defaultCorpusDeps: CorpusDeps = {
   readdir: (dir) => readdir(dir),
   readFile: (file) => readFile(file, 'utf8'),
+  statFile: (file) => stat(file),
 };
 
 export interface CorpusFileError {
@@ -58,6 +65,19 @@ export interface QuestRow {
   /** The raw `m_questTitle` value (`QuestTitle_1ED8A`) when present. */
   titleKey: string | null;
   titleSource: QuestTitleSource;
+  /**
+   * `m_goals.length` — present only with `collectDetails` (task 2.5's list
+   * "goals" column). `0` when `m_goals` is absent, `null` or not an array.
+   */
+  goalCount?: number;
+  /**
+   * The source file's mtime as an ISO 8601 string — present only with
+   * `collectDetails` (the "modified" column). `undefined` when the file
+   * vanished between the read and the stat.
+   */
+  modifiedAt?: string;
+  /** Absolute path of the file the row came from — present only with `collectDetails`. */
+  sourceFile?: string;
 }
 
 export interface ZoneRow {
@@ -123,20 +143,40 @@ async function readCorpusDir(
   }
 }
 
+/**
+ * Reads and parses each file in bounded batches.
+ *
+ * `collectDetails` additionally stats each file (once) so a caller that needs the
+ * modified time pays for it; a stat failure leaves `modifiedAt` undefined rather
+ * than dropping a document that parsed fine.
+ */
 async function readDocuments(
   files: readonly string[],
   deps: CorpusDeps,
   parse: (text: string) => unknown,
   concurrency: number,
-): Promise<{ docs: Array<{ file: string; doc: unknown }>; errors: CorpusFileError[] }> {
-  const docs: Array<{ file: string; doc: unknown }> = [];
+  collectDetails = false,
+): Promise<{
+  docs: Array<{ file: string; doc: unknown; modifiedAt?: string }>;
+  errors: CorpusFileError[];
+}> {
+  const docs: Array<{ file: string; doc: unknown; modifiedAt?: string }> = [];
   const errors: CorpusFileError[] = [];
   for (let offset = 0; offset < files.length; offset += concurrency) {
     const batch = files.slice(offset, offset + concurrency);
     const parsed = await Promise.all(
       batch.map(async (file) => {
         try {
-          return { file, doc: parse(await deps.readFile(file)) };
+          const doc = parse(await deps.readFile(file));
+          if (!collectDetails) {
+            return { file, doc };
+          }
+          try {
+            const { mtime } = await deps.statFile(file);
+            return { file, doc, modifiedAt: mtime.toISOString() };
+          } catch {
+            return { file, doc };
+          }
         } catch (error) {
           errors.push({ file, message: error instanceof Error ? error.message : String(error) });
           return undefined;
@@ -152,6 +192,26 @@ async function readDocuments(
   return { docs, errors };
 }
 
+/**
+ * The number of goals a parsed quest carries: `m_goals.length`.
+ *
+ * Every file in the corpus writes `m_goals` as a plain JSON array (measured: 322
+ * of 322), but the Imcodec serializer wraps collections as
+ * `{"$type": …, "$values": […]}` elsewhere, so both spellings are accepted.
+ * Anything else — absent, `null`, an object without `$values` — is `0`, which
+ * keeps the column numeric (the UI renders "0 goals" rather than a blank cell).
+ */
+export function countQuestGoals(doc: Record<string, unknown>): number {
+  const goals = doc.m_goals;
+  if (Array.isArray(goals)) {
+    return goals.length;
+  }
+  if (isPlainObject(goals) && Array.isArray(goals.$values)) {
+    return goals.$values.length;
+  }
+  return 0;
+}
+
 export interface BuildQuestRowsOptions {
   questTemplatesDir: string;
   /** String-table lookup for `m_questTitle`; `undefined` → raw-key fallback. */
@@ -159,6 +219,11 @@ export interface BuildQuestRowsOptions {
   deps?: Partial<CorpusDeps>;
   parse?: (text: string) => unknown;
   concurrency?: number;
+  /**
+   * Adds `goalCount`, `modifiedAt` and `sourceFile` to every row (one `stat` per
+   * file). Off by default so the sync path pays nothing for fields it never uses.
+   */
+  collectDetails?: boolean;
 }
 
 /**
@@ -166,6 +231,10 @@ export interface BuildQuestRowsOptions {
  *
  * `m_questTitle` is absent on 7 of the 322 files; those rows take `m_questName`
  * as the title and report `titleSource: 'missing'`.
+ *
+ * `collectDetails` (task 2.5) adds the three columns the quests browse table needs
+ * beyond the sync's own set — `goalCount`, `modifiedAt`, `sourceFile`. It is
+ * opt-in so the names sync keeps its current cost.
  */
 export async function buildQuestRows(
   options: BuildQuestRowsOptions,
@@ -174,8 +243,15 @@ export async function buildQuestRows(
 > {
   const deps: CorpusDeps = { ...defaultCorpusDeps, ...options.deps };
   const parse = options.parse ?? parseJsonLenient;
+  const collectDetails = options.collectDetails === true;
   const { files, error } = await readCorpusDir(options.questTemplatesDir, deps);
-  const { docs, errors } = await readDocuments(files, deps, parse, options.concurrency ?? 24);
+  const { docs, errors } = await readDocuments(
+    files,
+    deps,
+    parse,
+    options.concurrency ?? 24,
+    collectDetails,
+  );
   if (error) {
     errors.push(error);
   }
@@ -185,7 +261,7 @@ export async function buildQuestRows(
   let rawKeyFallbacks = 0;
   let missingTitles = 0;
 
-  for (const { doc } of docs) {
+  for (const { file, doc, modifiedAt } of docs) {
     if (!isPlainObject(doc)) {
       continue;
     }
@@ -218,14 +294,20 @@ export async function buildQuestRows(
     }
 
     const level = typeof doc.m_questLevel === 'number' ? doc.m_questLevel : null;
-    byName.set(questName, {
+    const row: QuestRow = {
       quest_name: questName,
       title,
       level,
       is_mainline: doc.m_mainline === true,
       titleKey,
       titleSource,
-    });
+    };
+    if (collectDetails) {
+      row.goalCount = countQuestGoals(doc);
+      row.modifiedAt = modifiedAt;
+      row.sourceFile = file;
+    }
+    byName.set(questName, row);
   }
 
   const rows = [...byName.values()].sort((a, b) => a.quest_name.localeCompare(b.quest_name));

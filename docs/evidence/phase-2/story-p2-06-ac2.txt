@@ -1,0 +1,89 @@
+story p2-06 — ac2
+date: 2026-09-26T09:13:37.089Z   branch: phase-2-quest-extraction   HEAD: 97fd60e
+server: node server/dist/server/src/index.js PORT=3141 SPIRALDB_UI_DB=/tmp/p206-evidence/p2-06.db
+clone: data/test-spiraldb (disposable, D17)   user_name: P2-06 Acceptance
+
+==============================================================================
+0. baseline corpus measured BEFORE this run writes anything (corroborates D48(b): 306/306/317)
+==============================================================================
+$ cat /tmp/p206-evidence/probe-corpus-json5.mjs
+import fs from 'node:fs';
+import path from 'node:path';
+
+const dir = "/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates";
+const files = fs
+  .readdirSync(dir, { withFileTypes: true })
+  .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+  .map((entry) => entry.name);
+
+let strictFail = 0;
+let trailing = 0;
+let integralFloat = 0;
+let noFinalNewline = 0;
+for (const name of files) {
+  const text = fs.readFileSync(path.join(dir, name), 'utf8');
+  try {
+    JSON.parse(text);
+  } catch {
+    strictFail += 1;
+  }
+  if ((text.match(/,\s*[}\]]/g) ?? []).length > 0) trailing += 1;
+  if (/(^|[^\d.])\d+\.0([^\d]|$)/.test(text)) integralFloat += 1;
+  if (text.at(-1) !== String.fromCharCode(10)) noFinalNewline += 1;
+}
+console.log('files scanned                   :', files.length);
+console.log('strict JSON.parse fails         :', strictFail);
+console.log('carry a trailing comma          :', trailing);
+console.log('contain an integral float (n.0) :', integralFloat);
+console.log('have no final newline           :', noFinalNewline);
+$ node /tmp/p206-evidence/probe-corpus-json5.mjs
+files scanned                   : 322
+strict JSON.parse fails         : 306
+carry a trailing comma          : 306
+contain an integral float (n.0) : 317
+have no final newline           : 306
+
+==============================================================================
+1. a REAL corpus file whose raw bytes are illegal JSON — and the only defect is the trailing commas
+==============================================================================
+# file: QuestTemplates/questtemplates_DS-ACAD1-C01-001.json  (36093 bytes, 991 lines)
+$ cat /tmp/p206-evidence/probe-trailing-commas.mjs
+import fs from 'node:fs';
+const file = "/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json";
+const text = fs.readFileSync(file, 'utf8');
+console.log('trailing commas before a closer (regex /,\\s*[}\\]]/g):', (text.match(/,\s*[}\]]/g) ?? []).length);
+try {
+  JSON.parse(text);
+  console.log('JSON.parse: SUCCEEDED (unexpected)');
+} catch (error) {
+  console.log('JSON.parse: FAILED ->', error.message);
+}
+const cleaned = text.replace(/,\s*([}\]])/g, (match, closer) => closer);
+try {
+  JSON.parse(cleaned);
+  console.log('after removing ONLY the trailing commas: JSON.parse SUCCEEDS -> trailing commas are the only defect');
+} catch (error) {
+  console.log('still failing after the trailing-comma strip:', error.message);
+}
+$ node /tmp/p206-evidence/probe-trailing-commas.mjs
+trailing commas before a closer (regex /,\s*[}\]]/g): 7
+JSON.parse: FAILED -> Expected double-quoted property name in JSON at position 12213 (line 349 column 15)
+after removing ONLY the trailing commas: JSON.parse SUCCEEDS -> trailing commas are the only defect
+
+==============================================================================
+2. GET /api/quests/DS-ACAD1-C01-001 — fully parsed
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X GET 'http://127.0.0.1:3141/api/quests/DS-ACAD1-C01-001'
+# GET /api/quests/DS-ACAD1-C01-001 → HTTP 200  (24079 bytes)
+# body not echoed (24079 bytes); parsed summary below
+$ jq -c '{keys: (keys|length), name: .m_questName, title: .m_questTitle, level: .m_questLevel, goals: (.m_goals|length), nested: .m_goals[0].m_goalName, requirements: .m_goals[0].m_goalRequirements, explicitNulls: ([.. | select(. == null)] | length)}' /tmp/p206-evidence/detail-before.json
+{"keys":36,"name":"DS-ACAD1-C01-001","title":"QuestTitle_1ED8D","level":1,"goals":7,"nested":"1_WizardQuestGoals_00000058","requirements":null,"explicitNulls":69}
+# the endpoint parsed the same bytes JSON.parse rejected: the only difference is JSON5 recovery (trailing commas).
+
+==============================================================================
+3. the content-keyed index (D19) — resolve a name, never a filename; 404 for an unknown one
+==============================================================================
+$ curl -s -o /dev/null -w 'unknown name -> HTTP %{http_code}\n' 'http://127.0.0.1:3141/api/quests/NO-SUCH-QUEST-1'
+unknown name -> HTTP 404
+$ curl -s 'http://127.0.0.1:3141/api/quests/NO-SUCH-QUEST-1'
+{"error":"Unknown quest \"NO-SUCH-QUEST-1\""}

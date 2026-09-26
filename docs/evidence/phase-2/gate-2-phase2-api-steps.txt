@@ -1,0 +1,16 @@
+# gate-2 (Phase 2) — Verification Steps 3, 5, 6, 7 re-run FRESH (real server, real CLI, D17 clone), 2026-09-26T12:41:42Z
+# stack: NODE_ENV=test SPIRALDB_UI_DB=/tmp/gate2/lead.db npm run dev (import enabled: 2269 entries); user_name=Lead Verify
+
+## V3: POST /api/extract/quests (multipart, a D28-generated capture)
+keys=quests,count  count=1  names=WC-UNICORN-MAIN-004
+-- the two-quest capture (two fixtures concatenated, D45(f) technique):
+count=2  names=WC-UNICORN-MAIN-004,WC-CYCLOPS-MAIN-002
+-- invalid file -> 400 {error} and the server stays healthy:
+  HTTP status: 400
+  body: {"error":"Failed to parse packet capture: error: '/home/jason/Documents/git-projects/spiraldb-ui/data/uploads/69197e29-b1de-4e8d-8223-22157ea19f42.json' is not valid JSON: 'not a c
+  unsupported extension: 400
+  body: {"error":"Unsupported file type \".txt\" — only .json packet captures are accepted. Supported format: JSON packet capture files (.json)"}
+  server healthy after the CLI failures (same request again): count=2
+
+## V4/V5/V6/V7 are driven from the browser (V4) and read back from the clone (V5/V6) + the API (V7)
+(see gate-2-tier2.txt for the browser pass and the clone read-back)

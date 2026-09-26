@@ -1,0 +1,26 @@
+# p2-06 gate — the six standard checks (D40), LEAD-run on the executor's tree
+# 2026-09-26T09:13:03Z branch=phase-2-quest-extraction HEAD=97fd60e
+
+## 1. npm test
+ Test Files  27 passed (27)
+      Tests  668 passed (668)
+   Duration  3.87s (transform 3.62s, setup 0ms, collect 11.12s, tests 7.49s, environment 7ms, prepare 2.78s)
+
+## 2. npm run test:ui
+  8 passed (8.8s)
+
+## 3. lint (eslint + prettier)
+eslint exit=0
+All matched files use Prettier code style!
+prettier exit=0
+
+## 4. npm run typecheck:tests
+exit=0
+
+## 5. tsc server + client
+server exit=0
+client exit=0
+
+## 6. npm run build
+✓ built in 1.59s
+exit=0

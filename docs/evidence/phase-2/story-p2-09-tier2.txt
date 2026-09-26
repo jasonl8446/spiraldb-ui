@@ -1,0 +1,78 @@
+# p2-09 tier-2 (lead-run playwright-mcp, D23) — the identity gate, a REAL transition, a REAL history row
+# Stack: NODE_ENV=test SPIRALDB_UI_DB=/tmp/p209-lead/lead.db npm run dev, startup import ENABLED
+# ({"ran":true,"imported":2271,"imported_at":"2026-09-26T11:44:32.227Z"}), spiraldb_path = the disposable
+# clone, and user_name deliberately BLANK (verified "") so the identity guard had to fire.
+# Files: p209-01-notes-dialog-after-identity-gate.png, p209-02-detail-history-timeline.png,
+#        p209-03-settings-git-branch.png.
+
+## 1. The status menu replaced p2-08's placeholder
+Row Actions cell buttons, before -> after: "Editing arrives in Phase 3" + "Status transitions arrive with
+story p2-09"  ->  "Editing arrives in Phase 3" + "Change verification status". Clicking the second opens
+role=dialog "Change status: DS-ACAD-C01-001" containing exactly "Mark Reviewed" and "Mark Verified".
+
+## 2. The identity guard fires FIRST (AC clause 3) — measured, not assumed
+Clicking "Mark Reviewed" with user_name "" produced the identity dialog:
+  "What should we call you? | Stored locally in this app's settings and used to attribute status changes,
+   metadata and commits. We only ask once. | Your name | Up to 64 characters. | Cancel | Save name"
+  input name=user-name placeholder=jason
+and the PATCH listener recorded **0 requests** at that point. After entering "Lead Verify" + Save name the
+NOTES dialog appeared (still 0 PATCH):
+  "Mark Reviewed | Mark DS-ACAD-C01-001 as reviewed? | Notes (optional) | Optional — notes are shown in
+   the status history. | Cancel | Mark Reviewed | Close"
+
+## 3. The transition, its body, and the optimistic flip (AC clauses 1+2)
+Typing notes and confirming issued exactly one request:
+  PATCH http://localhost:5173/api/status/quests/DS-ACAD-C01-001
+  body {"status":"reviewed","notes":"p2-09 tier-2: reviewed live by the lead"}
+(no changed_by — the server resolves it from user_name; blank notes are omitted rather than sent as "")
+Sampled IMMEDIATELY after the confirm click, before any refetch could resolve:
+  status dot rgb(59,130,246) = blue-500/reviewed; filter tabs "All 322 | Extracted 321 | Reviewed 1 | Verified 0"
+  -> the optimistic cache write moves the badge AND the summary consistently (D51(e)).
+After settling: dot blue, status cell "Status: Reviewed", toast "DS-ACAD-C01-001 marked reviewed",
+0 dialogs open.
+
+## 4. Server truth (AC clause 1: "history endpoint shows the transition")
+$ curl -s localhost:5173/api/status/quests/DS-ACAD-C01-001/history
+{"history":[{"old_status":"extracted","new_status":"reviewed",
+             "notes":"p2-09 tier-2: reviewed live by the lead","changed_by":"Lead Verify",
+             "changed_at":"2026-09-26T11:46:01.834Z"}]}
+i.e. the name the identity gate collected is the one the DB attributes the transition to (the D38 chain),
+and GET /api/status/quests?status=reviewed returns that row with reviewed_at set, verified_at null and
+latest_notes filled, summary {total:322,extracted:321,reviewed:1,verified:0}.
+
+## 5. The history panel's timeline (AC clause 4 / P2 AC#14, spec-ui-design L177)
+On /quests/DS-ACAD-C01-001, heading "Status History", one timeline item:
+  text   "DS-ACAD-C01-001 marked reviewed | just now | by Lead Verify | p2-09 tier-2: reviewed live by the lead"
+  dot    10px rgb(59,130,246)  (the status colour)
+  mono   "DS-ACAD-C01-001"     (the object key in monospace)
+  notes  italic, colour rgb(161,161,170) = zinc-400   -> exactly the spec's anatomy
+  relative time "just now", and changed_by rendered as "by Lead Verify".
+Detail header actions: "Mark Reviewed" "Mark Verified" "Edit" "Toggle JSON panel" + the six tabs; the
+StatusBadge reads "Reviewed" (colour rgb(96,165,250)). With the entry already reviewed,
+"Mark Reviewed" is aria-disabled=true while "Mark Verified" stays enabled — a released status cannot be
+re-applied, the forward transition remains available.
+
+## 6. D42's forward gap closed (read-only git_branch)
+/settings inputs: aurorium_path / imcodec_path / spiraldb_path / user_name (all editable, readOnly=false)
+plus a new **git_branch** input with value "content/2026-09-26" and **readOnly=true**, shown with its
+explanation. It never joins the Save PUT body (the unit tests assert PUT-body equality).
+
+## 7. Corpus scale, measured (prompted by the owner's note that the wiki lists ~1,539 side + ~2,325
+##     storyline quests — far more than the 322 in this repo)
+The local corpus is exactly the repo's own files: 322 x QuestTemplates/*.json, 9.6 MB.
+GET /api/quests, three consecutive runs: 0.536s / 0.452s / 0.446s, 71,328 bytes each — it scans the
+directory and JSON5-parses every file PER REQUEST (D12), joined with entry_status.
+NOTHING hardcodes the count: grep for "322" in client/src + server/src finds only comments describing
+measured corpus facts plus one doc-comment quoting the spec's example string; the summary, the tab badges
+and the "Showing 1-50 of N" string are all derived from the scan. So a bigger corpus changes the numbers
+automatically — but the measured cost is the thing to watch: ~3,900 quests (~12x) would make this endpoint
+roughly 12x slower and 12x larger (~860 KB, several seconds), so D12's "322 files is fine locally"
+assumption now has a measured boundary and wants a caching decision before the corpus grows. Recorded as
+D52(i); the browse page holds no client-side cap either (50 rows per page, but the whole list is fetched).
+
+## 8. Query artifacts of my own (recorded, not hidden)
+(1) My first popover probe read an empty string because it matched Radix's popper wrapper rather than the
+content — the snapshot showed the real dialog. (2) My history-panel probe walked four ancestors up from
+the heading and landed on <main>, so its "13 items" were nav links; re-querying the panel's own list gave
+the single real timeline item. (3) The StatusBadge probe returned null until I stopped requiring
+children.length === 0 (the badge wraps its dot and label).

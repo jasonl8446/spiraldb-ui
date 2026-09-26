@@ -1,0 +1,101 @@
+story p2-04 — ac3: friendly failure modes + the maxBuffer escape hatch, for real
+date:   2026-09-26T03:58:03-04:00
+branch: phase-2-quest-extraction   HEAD: 93f08a8
+
+## 1. boot the server against a throwaway DB
+$ env -u DOTNET_ROOT SPIRALDB_UI_DB=/tmp/p204-evidence/ac3.db SPIRALDB_UI_SKIP_IMPORT=1 PORT=3139 node server/dist/server/src/index.js &
+server pid: 1330744
+{"status":"ok"}
+
+## 2. CLI missing — move the built binary away (it is a gitignored build artifact)
+$ ls -la tools/bin/
+  total 12
+  drwxr-xr-x 2 jason users 4096 Sep 26 03:55 .
+  drwxr-xr-x 8 jason users 4096 Sep 26 03:17 ..
+  lrwxrwxrwx 1 jason users   47 Sep 26 03:36 fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+  lrwxrwxrwx 1 jason users   62 Sep 26 03:36 imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+$ mv tools/bin/imview-packet-reader /tmp/p204-evidence/imview-packet-reader.away
+$ ls -la tools/bin/
+  total 8
+  drwxr-xr-x 2 jason users 4096 Sep 26 03:58 .
+  drwxr-xr-x 8 jason users 4096 Sep 26 03:17 ..
+  lrwxrwxrwx 1 jason users   47 Sep 26 03:36 fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+
+$ curl -s -D - -F "file=@server/test/fixtures/captures/MB-YARD1-C01-001.json" http://localhost:3139/api/extract/quests
+HTTP/1.1 500 Internal Server Error
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 155
+ETag: W/"9b-E/4n0/6rRJJrbiNTT6fDGRfZHzg"
+Date: Sat, 26 Sep 2026 07:58:03 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+body: {"error":"Packet capture CLI not found at /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/imview-packet-reader. Build it with: npm run build:cli"}
+
+  -> the error names the path AND the build command (task 2.2 / p2-04 ac3).
+
+## 3. restore the binary and prove the ONLY difference was its absence
+$ mv /tmp/p204-evidence/imview-packet-reader.away tools/bin/imview-packet-reader
+$ ls -la tools/bin/ && readlink tools/bin/imview-packet-reader
+  total 12
+  drwxr-xr-x 2 jason users 4096 Sep 26 03:58 .
+  drwxr-xr-x 8 jason users 4096 Sep 26 03:17 ..
+  lrwxrwxrwx 1 jason users   47 Sep 26 03:36 fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+  lrwxrwxrwx 1 jason users   62 Sep 26 03:36 imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+  -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+
+$ curl -s -F "file=@server/test/fixtures/captures/MB-YARD1-C01-001.json" http://localhost:3139/api/extract/quests | head -c 70
+{"quests":[{"m_questName":"MB-YARD1-C01-001","m_questNameID":0,"m_ques
+
+## 4. maxBuffer escape hatch, exercised for REAL
+   The big capture's stdout is 55,177,495 bytes (measured in the ac2 evidence),
+   i.e. above the spec's 50 MB cap — so the service must retry with --output.
+$ curl -s --max-time 180 -o /tmp/p204-evidence/ac3-big-resp.json -w 'HTTP %{http_code}  %{size_download} bytes  %{time_total}s' -F "file=@/tmp/p204-evidence/big-capture.json" http://localhost:3139/api/extract/quests
+  HTTP 200  38514036 bytes downloaded  28.335332s
+  curl exit=0   wall=28.34s
+
+$ node -e '<count the quests in the API response>'
+  top-level keys: quests, count
+  count: 3200 | quests.length: 3200
+  first/last quest name: MB-YARD1-C01-001 / MB-YARD1-C01-001
+
+  The >50 MB stdout was impossible to buffer, so the response can only come from
+  the --output retry. The service announces that on stderr:
+$ grep 'extract' /tmp/p204-evidence/ac3-server.log
+  (node:1330744) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /home/jason/Documents/git-projects/spiraldb-ui/data/uploads/092c7f8e-00f1-49d3-af8b-13e2b507b505.json; retrying with --output file mode
+
+  The 55 MB payload is read from the temp file and the temp dir is removed:
+$ ls -d /tmp/spiraldb-extract-*   (the --output temp dirs)
+  ls: cannot access '/tmp/spiraldb-extract-*': No such file or directory
+exit=0 (2 = no leftovers)
+$ ls -la data/uploads
+  total 8
+  drwxr-xr-x 2 jason users 4096 Sep 26 03:58 .
+  drwxr-xr-x 5 jason users 4096 Sep 26 03:57 ..
+
+## 5. server still healthy; nothing leaked
+$ curl -s http://localhost:3139/api/health
+{"status":"ok"}
+$ ps -o pid,cmd -C imview-packet-reader
+    PID CMD
+exit=1 (1 = none)
+
+## 6. shut the server down
+connection refused (server is down)
+$ ps -o pid,cmd -C imview-packet-reader
+    PID CMD
+exit=1 (1 = none)
+$ git status --short   (the tree, uncommitted, for the lead)
+ M package-lock.json
+ M package.json
+ M server/src/routes/index.ts
+?? docs/evidence/phase-2/gate-p2-04.txt
+?? docs/evidence/phase-2/story-p2-04-ac1.txt
+?? docs/evidence/phase-2/story-p2-04-ac2.txt
+?? docs/evidence/phase-2/story-p2-04-ac3.txt
+?? server/src/routes/extract.ts
+?? server/src/services/extraction.ts
+?? tests/unit/extract-api.test.ts
+?? tests/unit/extraction-service.test.ts

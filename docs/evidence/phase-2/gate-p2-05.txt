@@ -1,0 +1,98 @@
+# p2-05 gate — the six standard checks (D40), executor-run
+# 2026-09-26T04:34:30-04:00 branch=phase-2-quest-extraction HEAD=b9577d2
+# tree: left uncommitted for the lead (2 modified files, 10 added paths incl. tests)
+# baseline before this story: 22 test files / 555 tests; after: 26 files / 639 tests (+84)
+
+## 1. npm test
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  391ms
+
+ Test Files  26 passed (26)
+      Tests  639 passed (639)
+   Start at  04:34:30
+   Duration  3.88s (transform 3.58s, setup 0ms, collect 10.40s, tests 6.66s, environment 7ms, prepare 3.27s)
+
+exit=0
+
+## 2. npm run test:ui
+  ✓  8 [chromium] › tests/ui/shell.spec.ts:388:3 › harness self-check › the console-error guard itself is live (212ms)
+
+  8 passed (8.7s)
+exit=0
+
+## 3. npm run lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+## 4. npm run typecheck:tests
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+
+## 5a. tsc -p server/tsconfig.json --noEmit
+exit=0
+
+## 5b. tsc -p client/tsconfig.json --noEmit
+exit=0
+
+## 6. npm run build
+✓ 1731 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-CFVJSuLY.css   24.88 kB │ gzip:   5.34 kB
+dist/assets/index-BQHBZPTe.js   392.09 kB │ gzip: 125.02 kB
+✓ built in 1.49s
+exit=0
+
+######################################################################
+# LEAD RE-RUN after the D48 CLI fix (StringEnumConverter in tools/PacketReaderCli/Program.cs)
+# 2026-09-26T08:41:35Z  branch=phase-2-quest-extraction HEAD=b9577d2
+######################################################################
+
+## p2-02 contract spot-check (the CLI's own contract after the output-format change)
+  empty capture ->  exit=1
+  non-capture -> exit=1 stderr: error: '/tmp/not-a-capture.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {"data":{"name":"MSG_QUESTOFFER","
+  bad args   -> exit=1 stderr: unknown argument: --bogus
+
+Usage: imview-packet-reader --input <path> [--output <path|->]
+
+Reconstructs QuestTemplate ob
+
+## regeneration: the CLI rebuilt from the patched source
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+grep: write error: Broken pipe
+  build:cli exit=0
+
+## p2-03 capture verifier (the 5 fixtures + 10 rows each + byte-equality regeneration)
+
+PASS: 5 fixture(s), 50 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).
+
+## 1. npm test
+ Test Files  26 passed (26)
+      Tests  639 passed (639)
+   Duration  3.81s (transform 3.17s, setup 0ms, collect 9.86s, tests 6.70s, environment 7ms, prepare 3.27s)
+
+## 2. npm run test:ui
+  8 passed (8.2s)
+
+## 3. npm run lint
+eslint exit=0
+All matched files use Prettier code style!
+prettier exit=0
+
+## 4. npm run typecheck:tests
+exit=0
+
+## 5. tsc server + client
+server exit=0
+client exit=0
+
+## 6. npm run build
+✓ built in 1.56s
+exit=0
+empty ARRAY -> stdout=[[]] exit=0

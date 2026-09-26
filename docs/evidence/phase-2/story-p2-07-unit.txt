@@ -1,0 +1,106 @@
+# p2-07 evidence — node unit + client data-layer tests (npm test)
+# 2026-09-26T05:36:15-04:00 branch=phase-2-quest-extraction HEAD=8f19f87
+# baseline before p2-07: 27 test files / 668 tests
+# after: 28 files / 687 tests (+19 in tests/unit/extract-ui.test.ts)
+
+$ npm test
+
+> spiraldb-ui@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/api-client.test.ts (12 tests) 26ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 41ms
+(node:1385571) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1385571) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1385571) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1385571) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+ ✓ tests/unit/extract-ui.test.ts (19 tests) 26ms
+ ✓ tests/unit/manifest.test.ts (12 tests) 18ms
+ ✓ tests/unit/templates.test.ts (23 tests) 37ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 15ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 82ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 56ms
+ ✓ tests/unit/db.test.ts (22 tests) 167ms
+ ✓ tests/unit/import.test.ts (33 tests) 62ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 27ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 57ms
+ ✓ tests/unit/sync-api.test.ts (8 tests) 127ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 131ms
+ ✓ tests/unit/revision.test.ts (14 tests) 30ms
+ ✓ tests/unit/settings.test.ts (27 tests) 317ms
+ ✓ tests/unit/ui-shell.test.ts (65 tests) 68ms
+ ✓ tests/unit/spiraldb-index.test.ts (18 tests) 20ms
+ ✓ tests/unit/user-name-gate.test.ts (13 tests) 18ms
+ ✓ tests/unit/server.test.ts (4 tests) 55ms
+ ✓ tests/unit/lang.test.ts (28 tests) 44ms
+ ✓ tests/unit/naming.test.ts (54 tests) 32ms
+ ✓ tests/unit/extract-api.test.ts (12 tests) 266ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:79:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:90:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/status.test.ts (81 tests) 506ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:64:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/names.test.ts (66 tests) 507ms
+ ✓ tests/unit/git-service.test.ts (16 tests) 1066ms
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:698:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:117:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (29 tests) 1031ms
+ ✓ tests/unit/save-pipeline.test.ts (18 tests) 2957ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  541ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  386ms
+
+ Test Files  28 passed (28)
+      Tests  687 passed (687)
+   Start at  05:36:15
+   Duration  3.86s (transform 3.19s, setup 0ms, collect 10.06s, tests 7.79s, environment 6ms, prepare 2.98s)
+

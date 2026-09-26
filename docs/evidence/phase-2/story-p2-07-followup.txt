@@ -1,0 +1,194 @@
+story p2-07 FOLLOW-UP — gap A (overwrite confirmation) + gap B (capture note)
+branch phase-2-quest-extraction, HEAD 8f19f87, tree left UNCOMMITTED for the lead.
+Both gaps are plan §2.4 requirements the p2-07 tree did not satisfy. Nothing was
+reverted; no sibling repo was touched; no real extraction or save runs in any test
+(every save/extract spec is route-mocked; the unit saves use throwaway `git init`
+repos and an in-memory DB).
+
+--------------------------------------------------------------------------------
+GAP A — "UI confirms before overwriting an existing quest" (plan §2.4, last bullet)
+--------------------------------------------------------------------------------
+
+WHAT CHANGED
+  client/src/lib/api.ts
+    + `listQuests()` — `GET /api/quests` (p2-06's already-shipped endpoint), typed
+      as `QuestsListResult`/`QuestListRow`. No new server endpoint.
+  client/src/lib/extract.ts            (pure helpers + the copy, D10)
+    + OVERWRITE_HEADING, CHECKING_EXISTING_MESSAGE, OVERWRITE_TITLE
+    + overwriteConfirmMessage(name), overwriteTargets(names, existing)
+    + EXISTING_CHECK_FALLBACK, existingCheckErrorMessage(error),
+      existingCheckFailedMessage(reason)
+  client/src/components/quest/ExistingQuestsNotice.tsx    (new)
+      the amber list of names; renders nothing for an empty list
+  client/src/components/quest/OverwriteConfirmDialog.tsx  (new)
+      Save Selected's small confirm (Cancel / Overwrite)
+  client/src/components/quest/SaveConfirmDialog.tsx       (extended)
+      + existingNames / checking / checkError props; Save stays disabled until the
+        check has succeeded; the AC sentence itself is untouched
+  client/src/pages/ExtractionPage.tsx                     (wired)
+      lazy check on the first save click of a results set (a promise memo, cleared
+      after a successful save and on a new extraction), Save All's list, Save
+      Selected's prompt-only-for-existing, fail-closed refusal
+
+HOW IT BEHAVES
+  * The check is lazy: zero `GET /api/quests` until the first save click; one read
+    per results set (not one per click), refreshed after a save created quests.
+  * Save All shows the AC sentence EXACTLY as before
+    (`Save {N} quests to SpiralDB? This will create files and auto-commit.`) and
+    renders the existing names next to it in the same dialog:
+      heading: "These quests already exist in SpiralDB and will be overwritten:"
+      then an <ul aria-label="Quests that will be overwritten"> of names, in
+      extraction order, deduplicated. A quest that is NOT in SpiralDB is never
+      listed.
+  * Save Selected asks only for an existing name. Its wording is:
+      title:       "Overwrite quest"
+      description: "Quest {name} already exists in SpiralDB. Saving will overwrite
+                    that file, refresh its metadata and auto-commit."
+      buttons:     Cancel / Overwrite
+    A new quest keeps today's one-click behaviour (no prompt).
+  * While the check is in flight the Save button is disabled; the action-bar
+    buttons are disabled too, so a second click cannot race it.
+
+FAIL-SAFE DECISION (the list fetch fails ⇒ FAIL CLOSED, nothing is saved)
+  A failed `GET /api/quests` cannot be degraded into an unconfirmed overwrite, and
+  it cannot be "assumed empty", so the page refuses to save at all:
+    Save Selected → no dialog, no POST, one error toast.
+    Save All      → the dialog opens with the reason and the consequence, and its
+                    Save button is DISABLED (only Cancel is available).
+  The message is `existingCheckFailedMessage(existingCheckErrorMessage(error))`:
+    "<server's own message> Nothing was saved: the check has to succeed before a
+     save, so an existing quest is never overwritten without warning. Try again."
+  The memo is cleared on failure, so the next click really retries rather than
+  replaying the rejection.
+
+WHAT PINS IT
+  tests/unit/extract-ui.test.ts (26 tests, +7)
+    - "adds the overwrite information without touching the AC sentence"  (exact copy)
+    - "names the one quest in the Save Selected confirm"                 (exact copy)
+    - "lists only the names that exist, in extraction order and without duplicates"
+    - "states the fail-safe decision: nothing is saved when the check cannot run"
+    - "listQuests — the overwrite check's data source"; GET path/verb asserts
+  tests/ui/extraction.spec.ts (20 specs in this file, +6)
+    - "Save All lists the names it would overwrite, and POSTs only after the
+      confirmation": `listRequests === 0` before the click (lazy), the exact AC
+      sentence + the name in the <ul>, `savedQuests === []` before confirming AND
+      after Cancel, `listRequests === 1` throughout (no re-fetch), then the two
+      POSTs after Save.
+    - "Save All shows no overwrite wording when every extracted quest is new":
+      list count 0, no "already exist in SpiralDB" text, still one check.
+    - "Save Selected on an existing quest asks first, listing that name":
+      dialog with the name, `savedQuests === []` before confirming and after
+      Cancel, then exactly one POST on Overwrite.
+    - "Save Selected on a new quest keeps its one-click behaviour": no dialog
+      (count 0) and the POST goes straight through.
+    - "a failed list read blocks Save Selected and says nothing was saved":
+      error toast with the server text, zero dialogs, zero POSTs.
+    - "a failed list read disables the Save All confirm": the dialog warns, the
+      Save button is DISABLED, Cancel is enabled, zero POSTs.
+
+--------------------------------------------------------------------------------
+GAP B — the capture note (plan §2.4, save-sequence bullet)
+--------------------------------------------------------------------------------
+
+WHAT CHANGED
+  server/src/services/savePipeline.ts
+    + `SaveObjectRequest.historyNotesOnCreate` — used in place of `historyNotes`
+      when the save's `outcome` is `created`, dropped on an update. Resolved inside
+      the pipeline because only the pipeline knows `outcome`.
+  server/src/services/quests.ts
+    + `MAX_CAPTURE_SOURCE_LENGTH` (255), `captureSourceNote(source)`,
+      `sanitizeCaptureSource(value)`
+    + body now validates `source` (non-string ⇒ 400, like `notes`) and passes
+      `historyNotesOnCreate: 'Imported from packet capture <base name>'`
+  server/src/routes/quests.ts — header doc only (`{ quest, notes?, source? }`)
+  client/src/lib/api.ts — `SaveQuestBody.source?: string`
+  client/src/pages/ExtractionPage.tsx — both save paths send
+    `source: extraction.file?.name` (the user-picked capture's file name); a page
+    with no file sends the body exactly as before
+  docs/spec-api.md — ADDITIVE block appended to the D49(a) `POST /api/quests` part
+    (the "Implemented response shapes" section). Nothing the owner wrote was
+    rewritten; the new block says explicitly that it supersedes the old "no history
+    note" clause only when `source` is present.
+
+HOW IT BEHAVES
+  * `source` is sanitised: trimmed, reduced to its BASE NAME (split on `\` and `/`,
+    keep the last component), control characters stripped, capped at 255 chars.
+    `../../etc/passwd` → `passwd`; `/tmp/x/session_1.json` → `session_1.json`;
+    `C:\Users\j\captures\session.json` → `session.json`; `""`/`"   "`/`null`/a
+    non-string → no note at all (absent ⇒ exactly today's behaviour).
+  * On a CREATE the single `status_history` row is
+      old_status: null, new_status: 'extracted',
+      notes: 'Imported from packet capture {base name}',
+      changed_by: <settings.user_name>          (exact text, no suffix)
+  * On an UPDATE: no history row is added and the status is never touched
+    (D49(d) — no user-facing transition on an update).
+  * The response shape is unchanged (`source` is not echoed).
+
+WHAT PINS IT
+  tests/unit/quests-api.test.ts (50 tests, +21)
+    - "builds the plan's exact note sentence"
+    - "reduces %j to the safe base name %j" (13 cases: paths, Windows path,
+      whitespace, `///`, `""`, null, undefined, 42, object)
+    - "strips control characters and caps the note's source at the limit"
+    - "writes the exact note on a create: old_status null, new_status extracted,
+      changed_by the user" — GET /api/quests is untouched; the assertion is on
+      `getStatusHistory`, i.e. the real DB row
+    - "records the sanitised base name for a path-like source"
+    - "records no note and no history row on an update, and never resets the status
+      (D49(d))" — seeded `verified` entry stays `verified`, history stays empty,
+      `SELECT notes FROM status_history` is `[]`
+    - "behaves exactly as before when source is absent, null or blank"
+    - the existing `400`s `it.each` gained "a non-string source" and
+      "a non-string source and notes" (old cases untouched)
+  tests/unit/save-pipeline.test.ts (19 tests, +1)
+    - "applies a create-only note on the first save and drops it on an update
+      (gap B)" — also pins that a create-only note wins over a plain
+      `historyNotes` on a create, and that the update keeps the original row
+  tests/ui/extraction.spec.ts
+    - the wire body is `['quest', 'source']` and `source === CAPTURE_NAME` on
+      Save Selected ("Save Selected saves only the selected quest" — the previous
+      `['quest']` assertion was extended, not deleted)
+    - "Save All lists the names ... " asserts `source` on BOTH save-all POSTs
+    - "Save Selected on a new quest keeps its one-click behaviour" asserts `source`
+
+--------------------------------------------------------------------------------
+SIX-CHECK GATE (raw output appended as "## FOLLOW-UP (gap A + gap B)")
+--------------------------------------------------------------------------------
+  1. npm test          28 files / 716 tests passed   (baseline 28 / 687 → +29 unit)
+  2. npm run test:ui   28 passed                     (baseline 22 → +6 tier-1 specs)
+  3. npm run lint      eslint . && prettier --check . → clean, exit 0
+  4. npm run typecheck:tests → exit 0
+  5a. npx tsc -p server/tsconfig.json --noEmit → exit 0
+  5b. npx tsc -p client/tsconfig.json --noEmit → exit 0
+  6. npm run build     → exit 0
+  `npm run format` was run before the gate (lint's prettier check is clean).
+  Evidence: docs/evidence/phase-2/gate-p2-07.txt (new section at the end).
+
+--------------------------------------------------------------------------------
+HONEST NOTES / RISKS
+--------------------------------------------------------------------------------
+  1. NOTHING IS COMMITTED (the task says not to), and no real save was performed:
+     the browser + real git path is the lead's tier-2 pass. The unit tests do
+     exercise the real save pipeline (write + metadata + commit + status) against
+     throwaway repos, so the note's DB row is pinned for real.
+  2. Fail-closed means a transient `GET /api/quests` failure blocks saving until it
+     succeeds. That is deliberate (the alternative — saving without knowing what
+     would be overwritten — is exactly what gap A forbids), and it is recoverable
+     by clicking again.
+  3. `GET /api/quests` scans + JSON5-parses the corpus per request (D12, ~tens of
+     ms for 322 files). The overwrite check therefore costs one extra list read per
+     results set, not per save click.
+  4. The plan's note text is written to `status_history.notes` only; the git
+     commit body stays empty (the endpoint's `notes` field is the commit body and
+     the client sends none) — that matches the p2-05 commit-format expectation.
+  5. Pre-existing, unchanged: the 5 s "Extracting quests..." info toast overlaps
+     the bottom-right action bar, so Playwright waits for it to auto-dismiss on the
+     Save All / existing-name Save Selected clicks (≈6 s per such spec). This
+     predates this round (docs/evidence/phase-2/story-p2-07-ui.txt shows the same 6.1 s), and I did
+     not change the toast policy.
+  6. What I think the plan got wrong / leaves open: plan §2.4 says extraction saves
+     "set status='extracted' with history note ..." without saying what an
+     extraction save of an ALREADY-EXISTING quest should do. I resolved it with
+     D49(d) (no note, no status reset) per this task's instructions, but the plan
+     text alone would read as "always write the note", which would also rewrite a
+     `verified` quest's history on every re-extraction.

@@ -1,0 +1,25 @@
+# LEAD canonical gate re-run — p2-09
+# 2026-09-26T11:43:32Z branch=phase-2-quest-extraction HEAD=e7e1854 (tree uncommitted)
+
+### npm test
+ Test Files  30 passed (30)
+      Tests  770 passed (770)
+   Duration  4.61s (transform 3.59s, setup 0ms, collect 11.63s, tests 10.12s, environment 7ms, prepare 3.25s)
+
+### npm run test:ui (canonical)
+  ✓  64 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (852ms)
+
+  64 passed (28.8s)
+
+### lint
+eslint exit=0
+All matched files use Prettier code style!
+
+### typecheck
+tests exit=0
+server exit=0
+client exit=0
+
+### build
+dist/assets/index-CPmYBVzB.js   495.75 kB │ gzip: 152.48 kB
+✓ built in 1.75s

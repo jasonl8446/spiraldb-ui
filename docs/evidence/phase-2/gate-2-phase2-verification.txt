@@ -1,0 +1,52 @@
+# gate-2 (Phase 2) — Verification Steps re-run FRESH on 09ace95 (phase-2-quest-extraction), 2026-09-26T12:40:25Z
+# D45(3): DOTNET_ROOT=/nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet (the apphost cannot run without it; stock CI needs nothing)
+
+## V1: dotnet version + CLI binaries build + the binaries exist
+9.0.318
+Time Elapsed 00:00:02.50
+Time Elapsed 00:00:01.45
+total 4
+lrwxrwxrwx 1 jason users 47 Sep 26 08:40 fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+lrwxrwxrwx 1 jason users 62 Sep 26 08:40 imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+
+## V2: fixturegen -> capture -> CLI extraction (round-trip spot check, D28)
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json
+  quest            DS-ACAD1-C01-001  title=QuestTitle_1ED8D  level=1  mainline=True
+  goals            7 total = 6 in GoalCompilation (m_startGoals) + 1 via MSG_SENDGOAL
+  dialogs          2 block(s) / 7 dialog entry(ies); 1 quest-level, 1 goal-level
+  packets          5 (1 MSG_SENDGOAL, 2 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 1
+  ids              MobileID=1222694116179546111 QuestID=4790368556426464585
+  output           /tmp/gate2/cap.json
+  self-check       GoalCompilation blob (1507 bytes) decodes to 6 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2114 bytes) decodes to 5 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (964 bytes) decodes to 2 entry(ies), trailing flags intact
+fixturegen exit=0 -> 12639 B
+reader exit=0 stderr=[]
+capture yields count=1 name(s)=DS-ACAD1-C01-001
+  m_questName: same
+  m_questTitle: same
+  m_questLevel: same
+  m_mainline: same
+  m_startGoals: same
+  goal count: same 7
+  goal names in order: true
+  goal types in order: true
+  dialog entry count: src=5 roundtrip=5 same
+  source is JSON5 (trailing commas present): true
+
+## V2b: corrupt / non-capture input exits 1 with a stderr message (AC#1)
+# NOTE: the exit code is captured into rc immediately after the CLI call — writing $? after a
+# $(...) substitution in the same echo reports the substitution's status, not the CLI's.
+  input='not a capture' -> exit=1 stdout=[] stderr=[error: '/tmp/gate2/t.json' is not valid JSON: 'not a capture' is an invalid JSON literal. Expected the literal 'null'. L]
+  input='{"foo":1}' -> exit=1 stdout=[] stderr=[error: '/tmp/gate2/t.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like ]
+  input='[{"data":{"name":"MSG_X"}}]' (no fields) -> exit=1 stdout=[] stderr=[error: '/tmp/gate2/t.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like ]
+  input='[]' (legal capture, no quest packets) -> exit=0 stdout=[[]] stderr=[]
+  input=nonexistent -> exit=1 stderr=[error: input file not found: /tmp/gate2/does-not-exist.json ]
+  input missing flag / unknown flag -> exit=1 with usage on stderr (recorded in the p2-02 evidence)
+
+## V8 (machine part): npm test
+ Test Files  30 passed (30)
+      Tests  770 passed (770)
+
+## The round-trip ACs at corpus scale: the D28 harness + the D53 corpus audit
+PASS: 5 fixture(s), 50 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).

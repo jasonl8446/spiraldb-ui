@@ -1,0 +1,129 @@
+story p2-06 — errors
+date: 2026-09-26T09:13:37.089Z   branch: phase-2-quest-extraction   HEAD: 97fd60e
+server: node server/dist/server/src/index.js PORT=3141 SPIRALDB_UI_DB=/tmp/p206-evidence/p2-06.db
+clone: data/test-spiraldb (disposable, D17)   user_name: P2-06 Acceptance
+
+==============================================================================
+1. POST /api/quests — 400 for a body without a usable quest/m_questName
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X POST 'http://127.0.0.1:3141/api/quests' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# POST {}  → HTTP 400  (95 bytes)
+{"error":"Missing quest: the request body must carry the quest object in the \"quest\" field."}
+# status=400 body={"error":"Missing quest: the request body must carry the quest object in the \"quest\" field."}
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X POST 'http://127.0.0.1:3141/api/quests' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# POST {quest without m_questName} → HTTP 400  (129 bytes)
+{"error":"Cannot save a quest: the object has no usable \"m_questName\" value (expected a non-empty string or a finite number)."}
+# status=400 body={"error":"Cannot save a quest: the object has no usable \"m_questName\" value (expected a non-empty string or a finite number)."}
+
+==============================================================================
+2. POST /api/quests — 409 for a dirty SpiralDB tree (D14)
+==============================================================================
+$ printf 'dirty\n' > /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/__p206-dirty-marker.json
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb status --porcelain
+?? QuestTemplates/__p206-dirty-marker.json
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X POST 'http://127.0.0.1:3141/api/quests' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# POST with a dirty tree → HTTP 409  (266 bytes)
+{"error":"SpiralDB repo at /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb has uncommitted changes — resolve them first. The save pipeline never stashes or discards your work. git status --porcelain (1): ?? QuestTemplates/__p206-dirty-marker.json"}
+# status=409
+# error: SpiralDB repo at /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb has uncommitted changes — resolve them first. The save pipeline never stashes or discards your work. git status --porcelain (1): ?? QuestTemplates/__p206-dirty-marker.json
+$ rm -f /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/__p206-dirty-marker.json; git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb status --porcelain && echo '(tree clean again)'
+(tree clean again)
+$ test ! -f /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/questtemplates_P2-06-DIRTY-1.json && echo 'nothing was written for the refused save'
+nothing was written for the refused save
+
+==============================================================================
+3. POST /api/quests — 500 for a pipeline failure that is not the body (empty user_name, D38)
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X PUT 'http://127.0.0.1:3141/api/settings' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# PUT /api/settings user_name="" → HTTP 200  (324 bytes)
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-26","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","user_name":""}
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X POST 'http://127.0.0.1:3141/api/quests' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# POST with user_name empty → HTTP 500  (171 bytes)
+{"error":"Cannot save to SpiralDB: settings.user_name is empty. Set your name in Settings first — it becomes the git commit author and the metadata CreatedBy/ModifiedBy."}
+# status=500
+# error: Cannot save to SpiralDB: settings.user_name is empty. Set your name in Settings first — it becomes the git commit author and the metadata CreatedBy/ModifiedBy.
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X PUT 'http://127.0.0.1:3141/api/settings' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# PUT /api/settings user_name restored → HTTP 200  (340 bytes)
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-26","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","user_name":"P2-06 Acceptance"}
+
+==============================================================================
+4. D48(d) — POST for a quest whose Name has TWO metadata files (one of the 8)
+==============================================================================
+$ node -e "const fs=require('fs'),JSON5=require('json5'),path=require('path'); const mdir='/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestMetadatas'; const byName={}; for (const e of fs.readdirSync(mdir,{withFileTypes:true})) { if(!e.isFile()||!e.name.endsWith('.json')) continue; const d=JSON5.parse(fs.readFileSync(path.join(mdir,e.name),'utf8')); (byName[d.Name] ||= []).push(e.name); } const dupes=Object.entries(byName).filter(([,f])=>f.length>1); console.log('QuestMetadatas files/names:', fs.readdirSync(mdir).filter(f=>f.endsWith('.json')).length, '/', Object.keys(byName).length, ' duplicate names:', dupes.length); console.log(JSON.stringify(dupes, null, 1)); require('fs').writeFileSync('/tmp/p206-evidence/dupe-name.txt', dupes[0][0]);"
+QuestMetadatas files/names: 325 / 317  duplicate names: 8
+[
+ [
+  "WC-UNICORN-MAIN-004",
+  [
+   "069f430e-b191-448c-94db-ab03da221c1e.json",
+   "questmetadata_WC-UNICORN-MAIN-004.json"
+  ]
+ ],
+ [
+  "WC-UNICORN-MAIN-007",
+  [
+   "358fcb1e-a063-4e0b-81af-64c8e5a44846.json",
+   "questmetadata_WC-UNICORN-MAIN-007.json"
+  ]
+ ],
+ [
+  "WC-UNICORN-MAIN-008",
+  [
+   "3628e78f-a86c-49d0-8e2e-7c90753e219a.json",
+   "questmetadata_WC-UNICORN-MAIN-008.json"
+  ]
+ ],
+ [
+  "WC-UNICORN-MAIN-002",
+  [
+   "8a0abb35-8cb0-4773-ad36-ee4a89f357e1.json",
+   "questmetadata_WC-UNICORN-MAIN-002.json"
+  ]
+ ],
+ [
+  "WC-UNICORN-MAIN-003",
+  [
+   "ba811c24-8863-4354-adfc-1e9a45935d68.json",
+   "questmetadata_WC-UNICORN-MAIN-003.json"
+  ]
+ ],
+ [
+  "WC-UNICORN-MAIN-001",
+  [
+   "bf0a127c-5011-4c52-b8ea-f2c7ff9cec82.json",
+   "questmetadata_WC-UNICORN-MAIN-001.json"
+  ]
+ ],
+ [
+  "WC-COMMONS-MAIN-001",
+  [
+   "dfaee9ed-a542-4f5d-8818-ad44e1bf9433.json",
+   "questmetadata_WC-COMMONS-MAIN-001.json"
+  ]
+ ],
+ [
+  "WC-UNICORN-MAIN-006",
+  [
+   "e76d20c5-2621-4a01-9a62-3c58a853e7bc.json",
+   "questmetadata_WC-UNICORN-MAIN-006.json"
+  ]
+ ]
+]
+name under test: WC-UNICORN-MAIN-004
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X GET 'http://127.0.0.1:3141/api/quests/WC-UNICORN-MAIN-004'
+# GET /api/quests/WC-UNICORN-MAIN-004 → HTTP 200  (30601 bytes)
+# body not echoed (30601 bytes); parsed summary below
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X POST 'http://127.0.0.1:3141/api/quests' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# POST /api/quests (WC-UNICORN-MAIN-004) → HTTP 200  (870 bytes)
+{"quest_name":"WC-UNICORN-MAIN-004","outcome":"updated","action":"update","commit":"a201b57f5330b5d24325c8e675f8f8464686f269","branch":"content/2026-09-26","commit_message":"spiraldb: update quest WC-UNICORN-MAIN-004\n\np2-06: duplicate metadata Name probe","file":"QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json","metadata":"QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json","metadata_outcome":"updated","status":{"object_type":"quest","object_key":"WC-UNICORN-MAIN-004","status":"extracted","extracted_at":"2026-09-26T09:13:38.067Z","reviewed_at":null,"verified_at":null,"latest_notes":null},"warnings":["QuestMetadatas/ holds 2 files whose \"Name\" is \"WC-UNICORN-MAIN-004\". The save updated QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json (first in file-name order) and left the other untouched — resolve the duplicate metadata by hand."]}
+$ jq -c '{outcome, action, metadata, metadata_outcome, warnings}' /tmp/p206-evidence/dupe-response.json
+{"outcome":"updated","action":"update","metadata":"QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json","metadata_outcome":"updated","warnings":["QuestMetadatas/ holds 2 files whose \"Name\" is \"WC-UNICORN-MAIN-004\". The save updated QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json (first in file-name order) and left the other untouched — resolve the duplicate metadata by hand."]}
+$ grep -n 'QuestMetadatas/ holds' /tmp/p206-evidence/server-2.log
+18:[spiraldb-ui] QuestMetadatas/ holds 2 files whose "Name" is "WC-UNICORN-MAIN-004". The save updated QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json (first in file-name order) and left the other untouched — resolve the duplicate metadata by hand.
+36:[spiraldb-ui] QuestMetadatas/ holds 2 files whose "Name" is "WC-UNICORN-MAIN-004". The save updated QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json (first in file-name order) and left the other untouched — resolve the duplicate metadata by hand.
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb show --stat --format='%h %s' HEAD
+a201b57 spiraldb: update quest WC-UNICORN-MAIN-004
+
+ .../069f430e-b191-448c-94db-ab03da221c1e.json      |   4 +-
+ .../questtemplates_WC-UNICORN-MAIN-004.json        | 364 ++++++++++-----------
+ 2 files changed, 184 insertions(+), 184 deletions(-)

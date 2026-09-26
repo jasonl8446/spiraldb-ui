@@ -1,0 +1,219 @@
+story p2-06 — ac1
+date: 2026-09-26T09:13:37.089Z   branch: phase-2-quest-extraction   HEAD: 97fd60e
+server: node server/dist/server/src/index.js PORT=3141 SPIRALDB_UI_DB=/tmp/p206-evidence/p2-06.db
+clone: data/test-spiraldb (disposable, D17)   user_name: P2-06 Acceptance
+
+==============================================================================
+0. fresh baseline clone (npm run test:reset-clone)
+==============================================================================
+$ npm run test:reset-clone
+
+> spiraldb-ui@0.1.0 test:reset-clone
+> rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb
+
+Cloning into '/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb'...
+done.
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb log --oneline -1 && git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb status --porcelain && echo "(clean)"
+c55ccab fix: give the Olivia goal a quest helper tag
+(clean)
+$ ls /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/*.json | wc -l
+322
+# QuestTemplates/*.json = 322
+
+==============================================================================
+1. boot #1 (import skipped) → PUT /api/settings → reboot so the boot import runs against the clone
+==============================================================================
+$ rm -f /tmp/p206-evidence/p2-06.db
+$ ss -ltn | grep -c ':3141 '  → 0 listener(s)
+$ cat /tmp/p206-evidence/server-1.log
+[spiraldb-ui] database ready at /tmp/p206-evidence/p2-06.db
+[spiraldb-ui] API listening on http://localhost:3141
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+[spiraldb-ui] database ready at /tmp/p206-evidence/p2-06.db
+[spiraldb-ui] API listening on http://localhost:3141
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X GET 'http://127.0.0.1:3141/api/health'
+# health → HTTP 200  (15 bytes)
+{"status":"ok"}
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X PUT 'http://127.0.0.1:3141/api/settings' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# PUT /api/settings → HTTP 200  (340 bytes)
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-26","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","user_name":"P2-06 Acceptance"}
+# spiraldb_path now: /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+
+==============================================================================
+1b. seed two string_table rows from the committed fixture (the values resolveLangKey returns)
+==============================================================================
+$ node --input-type=module -e "import {parseLangBuffer, resolveLangKey} from './server/dist/server/src/services/sync/lang.js'; import fs from 'node:fs'; const g = parseLangBuffer(fs.readFileSync('server/test/fixtures/en-US_QuestTitle.lang')); console.log('QuestTitle_1ED8A ->', resolveLangKey('QuestTitle_1ED8A', g)); console.log('QuestTitle_1ED8D ->', resolveLangKey('QuestTitle_1ED8D', g));"
+QuestTitle_1ED8A -> Forged in Fire
+QuestTitle_1ED8D -> Quest for Perfection
+$ node -e "const D = require('better-sqlite3'); const db = new D('/tmp/p206-evidence/p2-06.db'); const ins = db.prepare('INSERT OR REPLACE INTO string_table (key, value, category) VALUES (?, ?, ?)'); ins.run('QuestTitle_1ED8A', 'Forged in Fire', 'QuestTitle'); ins.run('QuestTitle_1ED8D', 'Quest for Perfection', 'QuestTitle'); console.log(db.prepare('SELECT COUNT(*) AS rows FROM string_table').get());"
+{ rows: 2 }
+
+==============================================================================
+2. boot #2 — the first-startup import runs against the clone
+==============================================================================
+$ ss -ltn | grep -c ':3141 '  → 0 listener(s)
+$ cat /tmp/p206-evidence/server-2.log
+[spiraldb-ui] database ready at /tmp/p206-evidence/p2-06.db
+Imported 2271 existing entries from SpiralDB
+[spiraldb-ui] import detail: 3 skipped, 0 unparsable
+[spiraldb-ui] import duplicate keys (first file wins): WizardCity/Tutorial_Exterior, WizardCity/Tutorial_Interior
+[spiraldb-ui] API listening on http://localhost:3141
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+[spiraldb-ui] quests API error: SpiraldbFileError: Cannot save to SpiralDB: settings.user_name is empty. Set your name in Settings first — it becomes the git commit author and the metadata CreatedBy/ModifiedBy.
+    at Object.saveObject (file:///home/jason/Documents/git-projects/spiraldb-ui/server/dist/server/src/services/savePipeline.js:106:19)
+    at saveQuest (file:///home/jason/Documents/git-projects/spiraldb-ui/server/dist/server/src/services/quests.js:178:35)
+    at file:///home/jason/Documents/git-projects/spiraldb-ui/server/dist/server/src/routes/quests.js:88:28
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+[spiraldb-ui] QuestMetadatas/ holds 2 files whose "Name" is "WC-UNICORN-MAIN-004". The save updated QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json (first in file-name order) and left the other untouched — resolve the duplicate metadata by hand.
+[spiraldb-ui] database ready at /tmp/p206-evidence/p2-06.db
+Imported 2271 existing entries from SpiralDB
+[spiraldb-ui] import detail: 3 skipped, 0 unparsable
+[spiraldb-ui] import duplicate keys (first file wins): WizardCity/Tutorial_Exterior, WizardCity/Tutorial_Interior
+[spiraldb-ui] API listening on http://localhost:3141
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+==============================================================================
+3. GET /api/quests — the 322-row corpus
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X GET 'http://127.0.0.1:3141/api/quests'
+# GET /api/quests → HTTP 200  (71334 bytes)
+# body not echoed (71334 bytes); parsed summary below
+$ jq -c '{count: (.quests|length), summary, skipped}' /tmp/p206-evidence/quests-322.json
+{"count":322,"summary":{"total":322,"extracted":322,"reviewed":0,"verified":0},"skipped":[]}
+
+==============================================================================
+3a. sample rows — every table column filled (status / level / goals / mainline / modified / title)
+==============================================================================
+$ jq '.quests[0], .quests[1], ([.quests[]|select(.title_source=="resolved")][0]), ([.quests[]|select(.title_source=="missing")][0])' /tmp/p206-evidence/quests-322.json
+{
+  "quest_name": "DS-ACAD-C01-001",
+  "title": "QuestTitle_298DE",
+  "title_key": "QuestTitle_298DE",
+  "title_source": "rawKey",
+  "level": 1,
+  "goal_count": 5,
+  "is_mainline": true,
+  "modified_at": "2026-09-26T09:13:37.329Z",
+  "status": "extracted"
+}
+{
+  "quest_name": "DS-ACAD-C01-002",
+  "title": "QuestTitle_1ED89",
+  "title_key": "QuestTitle_1ED89",
+  "title_source": "rawKey",
+  "level": 1,
+  "goal_count": 3,
+  "is_mainline": true,
+  "modified_at": "2026-09-26T09:13:37.329Z",
+  "status": "extracted"
+}
+{
+  "quest_name": "DS-ACAD-C01-003",
+  "title": "Forged in Fire",
+  "title_key": "QuestTitle_1ED8A",
+  "title_source": "resolved",
+  "level": 1,
+  "goal_count": 2,
+  "is_mainline": true,
+  "modified_at": "2026-09-26T09:13:37.329Z",
+  "status": "extracted"
+}
+{
+  "quest_name": "Tutorial_Intro",
+  "title": "Tutorial_Intro",
+  "title_key": null,
+  "title_source": "missing",
+  "level": 0,
+  "goal_count": 1,
+  "is_mainline": false,
+  "modified_at": "2026-09-26T09:13:37.341Z",
+  "status": "extracted"
+}
+
+==============================================================================
+3b. the list summary is EQUAL to GET /api/status/quests summary
+==============================================================================
+$ diff <(jq -S .summary /tmp/p206-evidence/quests-322.json) <(curl -s 'http://127.0.0.1:3141/api/status/quests' | jq -S .summary) && echo 'IDENTICAL: GET /api/quests .summary == GET /api/status/quests .summary'
+IDENTICAL: GET /api/quests .summary == GET /api/status/quests .summary
+$ curl -s 'http://127.0.0.1:3141/api/status/quests' | jq '{summary, entries: (.entries|length)}'
+{
+  "summary": {
+    "total": 322,
+    "extracted": 322,
+    "reviewed": 0,
+    "verified": 0
+  },
+  "entries": 322
+}
+$ echo -n 'quests in the list by status: '; jq -c '[.quests[].status] | group_by(.) | map({(.[0]): length}) | add' /tmp/p206-evidence/quests-322.json
+quests in the list by status: {"extracted":322}
+
+==============================================================================
+3c. the client-side search/filter contract (D12) — the endpoint ships the data, the table search is p2-08
+==============================================================================
+$ jq -c '[.quests[] | select(.quest_name | test("UNICORN"))] | length' /tmp/p206-evidence/quests-322.json
+8
+$ jq -c '[.quests[] | select(.status == "extracted")] | length' /tmp/p206-evidence/quests-322.json
+322
+$ node -e "const d = require('/tmp/p206-evidence/quests-322.json'); const sub = d.quests.filter((q) => q.quest_name.includes('UNICORN')); const st = d.quests.filter((q) => q.status === 'extracted'); console.log('node filter: substring UNICORN ->', sub.length, '| status=extracted ->', st.length); console.log('node filter sample:', JSON.stringify(sub.slice(0,3).map((q) => q.quest_name)));"
+node filter: substring UNICORN -> 8 | status=extracted -> 322
+node filter sample: ["WC-UNICORN-MAIN-001","WC-UNICORN-MAIN-002","WC-UNICORN-MAIN-003"]
+
+==============================================================================
+4. POST /api/quests — save one NEW quest (a corpus quest under a new name)
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X POST 'http://127.0.0.1:3141/api/quests' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# POST /api/quests (new) → HTTP 200  (598 bytes)
+{"quest_name":"P2-06-AC1-NEW","outcome":"created","action":"extract","commit":"471fc5793f4af075bc21f2fb2708d8808c2f6139","branch":"content/2026-09-26","commit_message":"spiraldb: extract quest P2-06-AC1-NEW\n\np2-06 ac1: new quest via POST /api/quests","file":"QuestTemplates/questtemplates_P2-06-AC1-NEW.json","metadata":"QuestMetadatas/questmetadata_P2-06-AC1-NEW.json","metadata_outcome":"created","status":{"object_type":"quest","object_key":"P2-06-AC1-NEW","status":"extracted","extracted_at":"2026-09-26T09:13:40.263Z","reviewed_at":null,"verified_at":null,"latest_notes":null},"warnings":[]}
+# outcome=created action=extract commit=471fc5793f4af075bc21f2fb2708d8808c2f6139
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb show --stat --format='%h %s%n(author %an)' HEAD; git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb branch --show-current; git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb status --porcelain && echo '(tree clean)'
+471fc57 spiraldb: extract quest P2-06-AC1-NEW
+(author P2-06 Acceptance)
+
+ QuestMetadatas/questmetadata_P2-06-AC1-NEW.json  |   9 +
+ QuestTemplates/questtemplates_P2-06-AC1-NEW.json | 977 +++++++++++++++++++++++
+ 2 files changed, 986 insertions(+)
+content/2026-09-26
+(tree clean)
+
+==============================================================================
+5. GET /api/quests again — 323 rows, the tallies still equal
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X GET 'http://127.0.0.1:3141/api/quests'
+# GET /api/quests → HTTP 200  (71559 bytes)
+# body not echoed (71559 bytes); parsed summary below
+$ jq -c '{count: (.quests|length), summary, skipped}' /tmp/p206-evidence/quests-323.json
+{"count":323,"summary":{"total":323,"extracted":323,"reviewed":0,"verified":0},"skipped":[]}
+$ jq -c '.quests[] | select(.quest_name == "P2-06-AC1-NEW")' /tmp/p206-evidence/quests-323.json
+{"quest_name":"P2-06-AC1-NEW","title":"Quest for Perfection","title_key":"QuestTitle_1ED8D","title_source":"resolved","level":1,"goal_count":7,"is_mainline":true,"modified_at":"2026-09-26T09:13:40.374Z","status":"extracted"}
+$ diff <(jq -S .summary /tmp/p206-evidence/quests-323.json) <(curl -s 'http://127.0.0.1:3141/api/status/quests' | jq -S .summary) && echo 'IDENTICAL at 323: GET /api/quests .summary == GET /api/status/quests .summary'
+IDENTICAL at 323: GET /api/quests .summary == GET /api/status/quests .summary
+
+==============================================================================
+6. the status dots: PATCH two quests → reviewed / verified, and the tallies follow
+==============================================================================
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X PATCH 'http://127.0.0.1:3141/api/status/quests/DS-ACAD-C01-001' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# PATCH DS-ACAD-C01-001 → reviewed → HTTP 200  (221 bytes)
+{"object_type":"quest","object_key":"DS-ACAD-C01-001","status":"reviewed","extracted_at":"2026-09-26T09:13:38.067Z","reviewed_at":"2026-09-26T09:13:41.468Z","verified_at":null,"latest_notes":"p2-06 ac1: status-dot probe"}
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X PATCH 'http://127.0.0.1:3141/api/status/quests/DS-ACAD-C01-002' -H 'content-type: application/json' --data-binary @/tmp/p206-evidence/last-payload.json
+# PATCH DS-ACAD-C01-002 → verified → HTTP 200  (221 bytes)
+{"object_type":"quest","object_key":"DS-ACAD-C01-002","status":"verified","extracted_at":"2026-09-26T09:13:38.067Z","reviewed_at":null,"verified_at":"2026-09-26T09:13:41.481Z","latest_notes":"p2-06 ac1: status-dot probe"}
+$ curl -s -D /tmp/p206-evidence/last-headers.txt -o /tmp/p206-evidence/last-body.json -X GET 'http://127.0.0.1:3141/api/quests'
+# GET /api/quests → HTTP 200  (71557 bytes)
+# body not echoed (71557 bytes); parsed summary below
+$ jq -c '{count: (.quests|length), summary}' /tmp/p206-evidence/quests-323-status.json
+{"count":323,"summary":{"total":323,"extracted":321,"reviewed":1,"verified":1}}
+$ jq -c '.quests[] | select(.quest_name=="DS-ACAD-C01-001" or .quest_name=="DS-ACAD-C01-002") | {quest_name, status}' /tmp/p206-evidence/quests-323-status.json
+{"quest_name":"DS-ACAD-C01-001","status":"reviewed"}
+{"quest_name":"DS-ACAD-C01-002","status":"verified"}
+$ diff <(jq -S .summary /tmp/p206-evidence/quests-323-status.json) <(curl -s 'http://127.0.0.1:3141/api/status/quests' | jq -S .summary) && echo 'IDENTICAL with 1 reviewed + 1 verified: list tallies == status tallies'
+IDENTICAL with 1 reviewed + 1 verified: list tallies == status tallies
+$ curl -s 'http://127.0.0.1:3141/api/status/quests?status=reviewed' | jq -c '{summary, keys: [.entries[].object_key]}'
+{"summary":{"total":323,"extracted":321,"reviewed":1,"verified":1},"keys":["DS-ACAD-C01-001"]}

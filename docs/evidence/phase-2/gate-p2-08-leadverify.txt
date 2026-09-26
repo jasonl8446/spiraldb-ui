@@ -1,0 +1,28 @@
+# LEAD canonical gate re-run — p2-08
+# 2026-09-26T10:58:30Z branch=phase-2-quest-extraction HEAD=4408eba (tree uncommitted)
+
+### npm test
+ Test Files  29 passed (29)
+      Tests  750 passed (750)
+   Duration  4.51s (transform 3.39s, setup 0ms, collect 10.61s, tests 10.18s, environment 6ms, prepare 2.81s)
+
+### npm run test:ui (ports free, canonical)
+  ✓  49 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (823ms)
+
+  49 passed (28.7s)
+
+### lint
+eslint exit=0
+All matched files use Prettier code style!
+
+### typecheck
+tests exit=0
+server exit=0
+client exit=0
+
+### build
+dist/assets/index-CdV2vfPm.js   487.26 kB │ gzip: 150.49 kB
+✓ built in 1.70s
+
+### deps actually installed
+react-table 8.21.3 | json-view-lite 2.5.0

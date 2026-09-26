@@ -196,7 +196,7 @@ Centered content area (max-width 640px).
 │    Drag & drop packet capture file here     │
 │              or click to browse             │
 │                                             │
-│    Supported format: JSON packet capture (.json) │
+│    Supported format: JSON packet capture (.json)   <!-- the authoritative wording is the task-2.6 acceptance criterion and spec-domain-reference.md L625: "Supported format: JSON packet capture files (.json)" (D50a) --> │
 │                                             │
 └─────────────────────────────────────────────┘
 ```

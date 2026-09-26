@@ -1,0 +1,104 @@
+# p2-08-ac1 evidence — the browse list, tier-1 half (D23 tier 1 / D40)
+# 2026-09-26 branch=phase-2-quest-extraction  tree: uncommitted (left for the lead)
+#
+# AC p2-08-ac1 (verbatim):
+#   "/quests: filter tabs [All][Extracted][Reviewed][Verified] with count badges; client-side
+#    search; exact column spec (status dot / mono name / level badge / goals / mainline /
+#    modified relative / actions); pagination 'Showing 1-50 of 322'; per-filter empty states;
+#    mobile card list (playwright-mcp assertions)."
+#
+# THIS FILE IS THE TIER-1 HALF ONLY. The AC's own "(playwright-mcp assertions)" clause is the
+# lead's tier-2 pass and is NOT claimed here.
+#
+# Clause-by-clause map to the specs below (tests/ui/quests-browse.spec.ts, 14 tests):
+#
+#   filter tabs + count badges  -> 'the four tabs carry the summary count badges and the active
+#                                  styling' (badges 322/45/120/157 from the response summary,
+#                                  active = blue-500 + white, inactive = zinc-400, aria-selected)
+#   client-side search          -> 'filters the rows client-side without another request'
+#                                  (row set changes; `recorded.listRequests === 1` is the proof)
+#   exact column spec           -> 'renders the seven spec columns at their exact widths'
+#                                  (boundingBox width == 40/60/60/40/120/80 px, Quest Name the
+#                                  flex column > 400px) + 'every column but Actions sorts'
+#   status dot                  -> the dot's `title` (and its sr-only text) carry the status
+#                                  word; asserted on the Extracted tab, where the first row
+#                                  must read "Extracted" and none "Reviewed"
+#   mono name                   -> asserted as a row link with the exact quest name
+#   level badge                 -> 'the Level header sorts numerically, and the level shows as a
+#                                  badge' (badge text 11 -> 1 after the numeric sort)
+#   modified relative           -> '1 hour ago' asserted in the table's Modified cell AND on
+#                                  the mobile card (the fixture's first row is one hour old)
+#   pagination string           -> 'shows the spec string and disables the buttons at both
+#                                  boundaries' ("Showing 1-50 of 322" verbatim, 7 pages,
+#                                  301-322 on the last, both boundaries' button states)
+#   per-filter empty states     -> 'every filter has its own empty state' (all four sentences +
+#                                  the shared hint + "Showing 0-0 of 0") and 'an empty corpus
+#                                  reads Showing 0-0 of 0 with both buttons disabled'
+#   mobile card list            -> 'below 768px the table is a card list with the four spec
+#                                  fields' (375x800: no table, 50 listitems, name/level/status/
+#                                  modified, tabs+search+pagination still live, tap navigates)
+#
+# Also covered, because the AC's column spec names "actions": the disabled Edit action and the
+# documented p2-09 status-menu placeholder (attributes asserted, `dispatchEvent('click')` proves
+# neither navigates), the loading skeleton, and the failure state with its retry.
+#
+# The whole API is route-mocked (tests/ui/quests-mocks.ts, D23 tier 1): no SpiralDB corpus, no
+# .NET CLI, no sibling repos, no network. The corpus is the spec's own example (322 = 45+120+157,
+# docs/spec-ui-design.md L245), so "Showing 1-50 of 322" is the spec's number and not an invented
+# one. Fixture levels are `((index + 10) % 20) + 1` so the first row by name is level 11 and a
+# numeric sort has to move a different row to the top.
+
+$ npm run test:ui -- tests/ui/quests-browse.spec.ts --reporter=list
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/quests-browse.spec.ts --reporter=list
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1432983) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] (node:1433012) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] (node:1433030) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1433013) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 131 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [WebServer] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 14 tests using 1 worker
+
+(node:1433053) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/ui/quests-browse.spec.ts:89:3 › columns › renders the seven spec columns at their exact widths (1.1s)
+  ✓   2 [chromium] › tests/ui/quests-browse.spec.ts:112:3 › columns › every column but Actions sorts, and the header reports the direction (332ms)
+  ✓   3 [chromium] › tests/ui/quests-browse.spec.ts:133:3 › filter tabs › the four tabs carry the summary count badges and the active styling (419ms)
+  ✓   4 [chromium] › tests/ui/quests-browse.spec.ts:164:3 › search › filters the rows client-side without another request (381ms)
+  ✓   5 [chromium] › tests/ui/quests-browse.spec.ts:197:3 › sorting › the Quest Name header toggles ascending → descending → default (450ms)
+  ✓   6 [chromium] › tests/ui/quests-browse.spec.ts:218:3 › sorting › the Level header sorts numerically, and the level shows as a badge (396ms)
+  ✓   7 [chromium] › tests/ui/quests-browse.spec.ts:234:3 › pagination › shows the spec string and disables the buttons at both boundaries (731ms)
+  ✓   8 [chromium] › tests/ui/quests-browse.spec.ts:261:3 › pagination › an empty corpus reads Showing 0-0 of 0 with both buttons disabled (257ms)
+  ✓   9 [chromium] › tests/ui/quests-browse.spec.ts:274:3 › empty states › every filter has its own empty state (410ms)
+  ✓  10 [chromium] › tests/ui/quests-browse.spec.ts:300:3 › navigation › clicking a row opens that quest, and so does its name link (433ms)
+  ✓  11 [chromium] › tests/ui/quests-browse.spec.ts:319:3 › navigation › the disabled Edit action and the status placeholder never navigate (355ms)
+  ✓  12 [chromium] › tests/ui/quests-browse.spec.ts:347:3 › mobile › below 768px the table is a card list with the four spec fields (361ms)
+  ✓  13 [chromium] › tests/ui/quests-browse.spec.ts:376:3 › loading and failure › the list skeleton is announced while the request is in flight (297ms)
+  ✓  14 [chromium] › tests/ui/quests-browse.spec.ts:397:3 › loading and failure › a failed list shows the server message and recovers on Try again (1.7s)
+
+  14 passed (9.0s)

@@ -1,0 +1,156 @@
+story p2-04 — ac1: POST /api/extract/quests against the REAL imview-packet-reader CLI
+date:   2026-09-26T03:57:57-04:00
+branch: phase-2-quest-extraction   HEAD: 93f08a8
+node:   v24.21.0   dotnet on PATH: /run/current-system/sw/bin/dotnet
+
+The server is booted WITHOUT DOTNET_ROOT in its environment, so the child env
+must be derived portably by server/src/services/extraction.ts (D45(3)).
+
+$ npm run build          # the server under test is the built output
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-CFVJSuLY.css   24.88 kB │ gzip:   5.34 kB
+dist/assets/index-BQHBZPTe.js   392.09 kB │ gzip: 125.02 kB
+✓ built in 1.54s
+
+## 1. boot the server against a throwaway DB (never data/spiraldb-ui.db)
+$ env -u DOTNET_ROOT SPIRALDB_UI_DB=/tmp/p204-evidence/ac1.db SPIRALDB_UI_SKIP_IMPORT=1 PORT=3137 node server/dist/server/src/index.js &
+server pid: 1330626
+server log:
+  | [spiraldb-ui] database ready at /tmp/p204-evidence/ac1.db
+  | [spiraldb-ui] API listening on http://localhost:3137
+  | [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+DOTNET_ROOT occurrences in the server process environment:
+  0  (0 = the symptom D45(3) describes is genuinely reproduced)
+
+## 2. health before any extraction
+$ curl -s -i http://localhost:3137/api/health
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 15
+ETag: W/"f-VaSQ4oDUiZblZNAEkkN+sX+q3Sg"
+Date: Sat, 26 Sep 2026 07:58:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ok"}
+
+## 3. the upload dir does not exist until the first upload (no import-time mkdir)
+$ ls -d data/uploads 2>&1
+data/uploads
+
+## 4. ac1 success — a D28-generated capture (task 2.1a fixture)
+$ curl -s -D - -F "file=@server/test/fixtures/captures/MB-YARD1-C01-001.json" http://localhost:3137/api/extract/quests -o /tmp/p204-evidence/ac1-resp.json
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 33262
+ETag: W/"81ee-v3wtvkZKwl5xW0LCfEI4zdrLV/0"
+Date: Sat, 26 Sep 2026 07:58:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+response body: 33262 bytes
+$ node -e '<print body shape, count, quest name>'
+top-level keys: quests, count
+count: 1 | quests.length: 1
+quest names: MB-YARD1-C01-001
+quest 0 keys (first 12): m_questName, m_questNameID, m_questTitle, m_startGoals, m_goals, m_prepAlways, m_questLevel, m_questRepeat, m_dialogList, m_isHidden, m_outdated, m_noQuestHelper
+quest 0 m_questLevel: 1 | goals: 15
+
+## 5. the uploaded temp capture is cleaned up
+$ ls -la data/uploads
+  total 8
+  drwxr-xr-x 2 jason users 4096 Sep 26 03:58 .
+  drwxr-xr-x 5 jason users 4096 Sep 26 03:57 ..
+
+## 6. ac1 failure — a .json that is not a packet capture (the CLI exits 1)
+$ cat /tmp/p204-evidence/not-a-capture.json
+{"foo":1}
+$ curl -s -D - -F "file=@/tmp/p204-evidence/not-a-capture.json" http://localhost:3137/api/extract/quests
+HTTP/1.1 400 Bad Request
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 306
+ETag: W/"132-mNFkswaiHZzbn0tjAu0xNF+IDVI"
+Date: Sat, 26 Sep 2026 07:58:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+body: {"error":"Failed to parse packet capture: error: '/home/jason/Documents/git-projects/spiraldb-ui/data/uploads/19b9107e-7e37-49d4-811f-6837ef3eabe4.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {\"data\":{\"name\":\"MSG_QUESTOFFER\",\"fields\":{...}}}."}
+
+## 7. an unsupported extension is rejected before any process is spawned
+$ curl -s -D - -F "file=@/tmp/p204-evidence/notes.txt" http://localhost:3137/api/extract/quests
+HTTP/1.1 400 Bad Request
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 139
+ETag: W/"8b-rt3iIuV1E9ZeZ7M/xrQP82NYHbQ"
+Date: Sat, 26 Sep 2026 07:58:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+body: {"error":"Unsupported file type \".txt\" — only .json packet captures are accepted. Supported format: JSON packet capture files (.json)"}
+
+## 8. a malformed JSON capture (CLI parse failure, not a shape failure)
+$ curl -s -D - -F "file=@/tmp/p204-evidence/broken.json" http://localhost:3137/api/extract/quests
+HTTP/1.1 400 Bad Request
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 331
+ETag: W/"14b-N7cFtA/A+9cPwEZtYFKYnu3Wj3k"
+Date: Sat, 26 Sep 2026 07:58:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+body: {"error":"Failed to parse packet capture: error: '/home/jason/Documents/git-projects/spiraldb-ui/data/uploads/6756a3d2-8ae3-4b45-8cf7-d61c83596a87.json' is not valid JSON: Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed. LineNumber: 1 | BytePositionInLine: 0."}
+
+## 9. P2 AC#3 — the server is still healthy after every CLI failure
+$ curl -s -i http://localhost:3137/api/health
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 15
+ETag: W/"f-VaSQ4oDUiZblZNAEkkN+sX+q3Sg"
+Date: Sat, 26 Sep 2026 07:58:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ok"}
+$ curl -s -F "file=@server/test/fixtures/captures/WC-UNICORN-MAIN-007.json" http://localhost:3137/api/extract/quests | head -c 60
+{"quests":[{"m_questName":"WC-UNICORN-MAIN-007","m_questName
+  (extraction still works after the failures)
+
+## 10. no leaked CLI children
+$ ps -o pid,cmd -C imview-packet-reader
+    PID CMD
+exit=1 (1 = none)
+
+## 11. shut the server down
+$ kill 1330626
+port 3137 still answering?
+curl exit=000
+connection refused (server is down)
+$ ps -o pid,cmd -C imview-packet-reader
+    PID CMD
+exit=1 (1 = none)
+
+## 12. git status (nothing committed — the tree is left for the lead)
+ M package-lock.json
+ M package.json
+ M server/src/routes/index.ts
+?? docs/evidence/phase-2/gate-p2-04.txt
+?? docs/evidence/phase-2/story-p2-04-ac1.txt
+?? docs/evidence/phase-2/story-p2-04-ac2.txt
+?? docs/evidence/phase-2/story-p2-04-ac3.txt
+?? server/src/routes/extract.ts
+?? server/src/services/extraction.ts
+?? tests/unit/extract-api.test.ts
+?? tests/unit/extraction-service.test.ts

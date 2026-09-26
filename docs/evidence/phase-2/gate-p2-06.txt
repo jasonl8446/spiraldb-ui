@@ -1,0 +1,45 @@
+# p2-06 gate — the six standard checks (D40), executor-run
+# 2026-09-26T05:10:37-04:00 branch=phase-2-quest-extraction HEAD=97fd60e
+# tree: left UNCOMMITTED for the lead (the story says do not commit)
+# baseline before p2-06: 26 test files / 639 tests
+# after: 27 files / 668 tests (+29 in tests/unit/quests-api.test.ts)
+
+## 1. npm test
+$ npm test    # exit=0
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:698:13)
+ ✓ tests/unit/quests-api.test.ts (29 tests) 1003ms
+ Test Files  27 passed (27)
+      Tests  668 passed (668)
+   Duration  3.90s (transform 3.29s, setup 0ms, collect 10.25s, tests 7.87s, environment 6ms, prepare 2.55s)
+
+## 2. npm run test:ui
+$ npm run test:ui    # exit=0
+  8 passed (8.7s)
+
+## 3. npm run lint
+$ npm run lint    # exit=0   (eslint . && prettier --check .)
+
+Checking formatting...
+All matched files use Prettier code style!
+
+## 4. npm run typecheck:tests
+$ npm run typecheck:tests    # exit=0 (no output)
+
+## 5a. npx tsc -p server/tsconfig.json --noEmit
+exit=0 (no output)
+
+## 5b. npx tsc -p client/tsconfig.json --noEmit
+exit=0 (no output)
+
+## 6. npm run build
+$ npm run build    # exit=0
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+✓ built in 1.55s
+
+## evidence produced by this story
+  docs/evidence/phase-2/story-p2-06-ac1.txt
+  docs/evidence/phase-2/story-p2-06-ac2.txt
+  docs/evidence/phase-2/story-p2-06-ac3.txt
+  docs/evidence/phase-2/story-p2-06-errors.txt
+  docs/evidence/phase-2/story-p2-06-repo-verification.txt

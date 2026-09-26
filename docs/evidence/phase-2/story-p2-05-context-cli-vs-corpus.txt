@@ -1,0 +1,11 @@
+# p2-05 context — the real CLI's body vs the corpus file, AFTER the D48 enum fix (StringEnumConverter)
+# lead-run, 2026-09-26T08:41:24Z
+# CLI: tools/bin/imview-packet-reader --input server/test/fixtures/captures/WC-UNICORN-MAIN-004.json
+# corpus: /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json
+
+value differences (keys present in BOTH whose JSON text differs):
+  NONE — every shared key serialises identically, enums included
+
+null literals: corpus=75  CLI=0  (NullValueHandling.Ignore omits them; the D45(1) merge keeps the corpus's on update)
+corpus trailing comma before a closer: no | corpus final newline: yes | corpus bytes=46108
+corpus integral floats (0.0 etc.) survive a clean JSON.stringify round trip: no — they normalise to 0 (spec L247-253 blesses clean JSON)

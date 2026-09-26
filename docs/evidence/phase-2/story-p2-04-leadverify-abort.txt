@@ -1,0 +1,30 @@
+# p2-04 ac2 — a REAL mid-flight abort (the first attempt was inconclusive: 400 reps finished in 1.7 s, so --max-time 2 never fired)
+# 2026-09-26T08:02:46Z
+DOTNET_ROOT in my shell: [<unset>] (the service derives it)
+
+server pid=1333473 health={"status":"ok"}
+
+## control: 1600 reps WITHOUT abort (proves the CLI run is long enough to interrupt)
+  http=200 time=5.223455s bytes=19267636
+  count=1600
+
+## the abort: --max-time 2 against the same capture, watching the child every 50 ms
+  curl exit=28 wall=2.001634s
+  (curl exit 28 = the timeout fired = a real client abort)
+  child timeline (only changes printed):
+    t=  0.08s  child=1333546
+    t=  2.02s  child=<none>
+  ps after: [] exit=1
+
+## ac3 escape hatch, for real: 3200 reps -> CLI stdout > 50 MB
+  http=200 time=26.564267s bytes=38514036
+  keys=quests,count count=3200 length=3200
+  server stderr, escape-hatch warning:
+    Warning lines: 1
+  temp dirs left behind: []
+  uploads left behind: []
+  health: {"status":"ok"}
+  stray children: []
+## escape-hatch warning verbatim
+  (node:1333473) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /home/jason/Documents/git-projects/spiraldb-ui/data/uploads/6245d391-f0c6-4c4c-b9d5-cb15c7f751b8.json; retrying with --output file mode
+## did the CLI CLI stdout really exceed 50 MB? 1600 reps -> 19267636 B response (compact); the CLI emits Formatting.Indented, so 3200 reps is ~2x that

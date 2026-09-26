@@ -1,0 +1,76 @@
+story p2-06 — the owner's fork is read-only, and the clone is left clean
+date: 2026-09-26T09:13:37.089Z
+branch: phase-2-quest-extraction  HEAD: 97fd60e
+node: v24.21.0
+
+==============================================================================
+0. the owner's fork BEFORE this run (read-only)
+==============================================================================
+$ git -C /home/jason/Documents/git-projects/spiraldb rev-parse HEAD
+c55ccab175440c5f676b8d5315575ccd6d550332
+$ git -C /home/jason/Documents/git-projects/spiraldb branch --show-current
+main
+$ git -C /home/jason/Documents/git-projects/spiraldb status --porcelain
+$ git -C /home/jason/Documents/git-projects/spiraldb for-each-ref --format='%(refname:short)' refs/heads
+main
+$ find /home/jason/Documents/git-projects/Imview -type f -newer /tmp/p206-evidence/run-start.marker | wc -l
+0
+$ find ~/.nuget -type f -newer /tmp/p206-evidence/run-start.marker 2>/dev/null | wc -l
+0
+
+==============================================================================
+1. the owner's fork AFTER this run (must equal the before-state)
+==============================================================================
+$ git -C /home/jason/Documents/git-projects/spiraldb rev-parse HEAD
+c55ccab175440c5f676b8d5315575ccd6d550332
+$ git -C /home/jason/Documents/git-projects/spiraldb branch --show-current
+main
+$ git -C /home/jason/Documents/git-projects/spiraldb status --porcelain
+$ git -C /home/jason/Documents/git-projects/spiraldb for-each-ref --format='%(refname:short)' refs/heads
+main
+$ find /home/jason/Documents/git-projects/Imview -type f -newer /tmp/p206-evidence/run-start.marker | wc -l
+0
+$ find ~/.nuget -type f -newer /tmp/p206-evidence/run-start.marker 2>/dev/null | wc -l
+0
+HEAD before/after      : c55ccab175440c5f676b8d5315575ccd6d550332 / c55ccab175440c5f676b8d5315575ccd6d550332  IDENTICAL
+branch before/after    : main / main  IDENTICAL
+status --porcelain     : "" / ""  IDENTICAL (both empty)
+refs/heads before/after: ["main"] / ["main"]  IDENTICAL
+Imview files newer than the run marker     : 0 / 0
+~/.nuget files newer than the run marker   : 0 / 0
+$ git -C /home/jason/Documents/git-projects/spiraldb log --oneline -1
+c55ccab fix: give the Olivia goal a quest helper tag
+$ git -C /home/jason/Documents/git-projects/spiraldb status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+
+==============================================================================
+2. the writes all landed in the disposable clone, and the clone is reset afterwards
+==============================================================================
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb log --oneline -5
+a201b57 spiraldb: update quest WC-UNICORN-MAIN-004
+b35b7c2 spiraldb: update quest DS-ACAD-C01-001
+471fc57 spiraldb: extract quest P2-06-AC1-NEW
+c55ccab fix: give the Olivia goal a quest helper tag
+8223241 fix: name the location on the Pesky Pirates goals
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb branch --list
+* content/2026-09-26
+  main
+$ npm run test:reset-clone
+
+> spiraldb-ui@0.1.0 test:reset-clone
+> rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb
+
+Cloning into '/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb'...
+done.
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb log --oneline -1; git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb branch --show-current; git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb status --porcelain && echo '(clean)'
+c55ccab fix: give the Olivia goal a quest helper tag
+main
+(clean)
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb branch --list
+* main
+$ test "$(git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb rev-parse HEAD)" = "c55ccab175440c5f676b8d5315575ccd6d550332" && echo YES || echo NO
+YES
+# clone HEAD == owner HEAD ? YES

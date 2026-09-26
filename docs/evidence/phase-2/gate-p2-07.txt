@@ -1,0 +1,441 @@
+# p2-07 gate — the six standard checks (D40), executor-run
+# 2026-09-26T05:36:27-04:00 branch=phase-2-quest-extraction HEAD=8f19f87
+# tree: left UNCOMMITTED for the lead (the story says do not commit)
+# baseline before p2-07 (p2-06 gate): 27 test files / 668 tests; 8 UI specs
+# after: 28 files / 687 tests (+19 unit); 22 UI specs (+14 tier-1 extraction)
+
+## 1. npm test
+$ npm test
+> spiraldb-ui@0.1.0 test
+> vitest run
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+ ✓ tests/unit/naming.test.ts (54 tests) 22ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 44ms
+ ✓ tests/unit/lang.test.ts (28 tests) 22ms
+(node:1387231) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1387231) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1387231) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1387231) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+ ✓ tests/unit/extract-ui.test.ts (19 tests) 17ms
+ ✓ tests/unit/revision.test.ts (14 tests) 18ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 70ms
+ ✓ tests/unit/templates.test.ts (23 tests) 32ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 42ms
+ ✓ tests/unit/db.test.ts (22 tests) 197ms
+ ✓ tests/unit/import.test.ts (33 tests) 69ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 23ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 38ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 158ms
+ ✓ tests/unit/sync-api.test.ts (8 tests) 131ms
+ ✓ tests/unit/api-client.test.ts (12 tests) 34ms
+ ✓ tests/unit/settings.test.ts (27 tests) 276ms
+ ✓ tests/unit/ui-shell.test.ts (65 tests) 69ms
+ ✓ tests/unit/user-name-gate.test.ts (13 tests) 10ms
+ ✓ tests/unit/spiraldb-index.test.ts (18 tests) 27ms
+ ✓ tests/unit/server.test.ts (4 tests) 48ms
+ ✓ tests/unit/manifest.test.ts (12 tests) 20ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 15ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:64:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+ ✓ tests/unit/names.test.ts (66 tests) 494ms
+ ✓ tests/unit/extract-api.test.ts (12 tests) 232ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:79:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:90:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+ ✓ tests/unit/status.test.ts (81 tests) 539ms
+ ✓ tests/unit/git-service.test.ts (16 tests) 1113ms
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:698:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:117:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+ ✓ tests/unit/quests-api.test.ts (29 tests) 1054ms
+ ✓ tests/unit/save-pipeline.test.ts (18 tests) 2978ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  542ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  390ms
+ Test Files  28 passed (28)
+      Tests  687 passed (687)
+   Start at  05:36:27
+   Duration  3.85s (transform 3.07s, setup 0ms, collect 9.63s, tests 7.79s, environment 6ms, prepare 2.93s)
+
+## 2. npm run test:ui
+$ npm run test:ui
+  ✓  18 [chromium] › tests/ui/extraction.spec.ts:607:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (331ms)
+  22 passed (13.2s)
+
+  (full per-spec output: docs/evidence/phase-2/story-p2-07-ui.txt)
+
+## 3. npm run lint   (eslint . && prettier --check .)
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+## 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+
+## 5a. npx tsc -p server/tsconfig.json --noEmit
+exit=0
+
+## 5b. npx tsc -p client/tsconfig.json --noEmit
+exit=0
+
+## 6. npm run build
+$ npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1741 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-BuQu85hu.css   26.13 kB │ gzip:   5.64 kB
+dist/assets/index-ZlqvKvb2.js   408.67 kB │ gzip: 129.23 kB
+✓ built in 1.75s
+
+## evidence produced by this story
+  docs/evidence/phase-2/story-p2-07-ac1.txt   (the AC's tier-1 half: 14/14 extraction specs)
+  docs/evidence/phase-2/story-p2-07-ui.txt    (full npm run test:ui: 22/22)
+  docs/evidence/phase-2/story-p2-07-unit.txt  (full npm test: 28 files / 687 tests)
+  docs/evidence/phase-2/story-p2-07-notes.txt (clause map, deviations, spec-silent states)
+# NOT produced here (the lead's D23 tier-2 pass): playwright-mcp assertions + screenshots.
+
+# ---------------------------------------------------------------------------
+## FOLLOW-UP (gap A + gap B)
+# the overwrite confirmation + the capture note (story p2-07 follow-up round)
+# appended by the p2-07 follow-up round; everything below is raw command output
+# 2026-09-26T06:04:12-04:00 branch=phase-2-quest-extraction HEAD=8f19f87 (tree still uncommitted)
+# baseline from the p2-07 gate above: 28 test files / 687 tests; 22 UI specs
+# after gap A + gap B:                28 test files / 716 tests (+29 unit); 28 UI specs (+6)
+#
+# gap A  overwrite confirmation: GET /api/quests (lazy, first save click) intersected
+#        with the extracted names -> Save All lists the existing names, Save Selected
+#        asks for an existing name only, and a failed check saves NOTHING (fail-closed).
+# gap B  capture note: POST /api/quests body {quest, notes?, source?}; source is
+#        sanitised to a base name and becomes 'Imported from packet capture {source}'
+#        on a create only (old_status null); an update adds no note and no status change.
+# ---------------------------------------------------------------------------
+
+## 1. npm test
+$ npm test
+
+> spiraldb-ui@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/api-client.test.ts (12 tests) 16ms
+ ✓ tests/unit/naming.test.ts (54 tests) 26ms
+(node:1399735) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1399735) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1399735) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:1399735) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+ ✓ tests/unit/lang.test.ts (28 tests) 18ms
+ ✓ tests/unit/extract-ui.test.ts (26 tests) 24ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 20ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 71ms
+ ✓ tests/unit/templates.test.ts (23 tests) 34ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 42ms
+ ✓ tests/unit/import.test.ts (33 tests) 45ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 21ms
+ ✓ tests/unit/db.test.ts (22 tests) 202ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 57ms
+ ✓ tests/unit/settings.test.ts (27 tests) 298ms
+ ✓ tests/unit/sync-api.test.ts (8 tests) 96ms
+ ✓ tests/unit/manifest.test.ts (12 tests) 19ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 112ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 22ms
+ ✓ tests/unit/revision.test.ts (14 tests) 20ms
+ ✓ tests/unit/spiraldb-index.test.ts (18 tests) 19ms
+ ✓ tests/unit/user-name-gate.test.ts (13 tests) 10ms
+ ✓ tests/unit/ui-shell.test.ts (65 tests) 81ms
+ ✓ tests/unit/server.test.ts (4 tests) 64ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:64:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/extract-api.test.ts (12 tests) 241ms
+ ✓ tests/unit/names.test.ts (66 tests) 497ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:79:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1064:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:90:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/status.test.ts (81 tests) 482ms
+ ✓ tests/unit/git-service.test.ts (16 tests) 1074ms
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:833:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:117:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (50 tests) 1864ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank  405ms
+ ✓ tests/unit/save-pipeline.test.ts (19 tests) 3193ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  520ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  388ms
+
+ Test Files  28 passed (28)
+      Tests  716 passed (716)
+   Start at  06:03:08
+   Duration  4.06s (transform 3.25s, setup 0ms, collect 9.87s, tests 8.67s, environment 6ms, prepare 2.72s)
+
+exit=0
+
+## 2. npm run test:ui
+$ npm run test:ui -- --reporter=list
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test --reporter=list
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:1401421) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] (node:1401451) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] (node:1401469) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:1401452) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 238 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5173/
+[WebServer] [client]   ➜  Network: use --host to expose
+
+Running 28 tests using 2 workers
+
+(node:1401494) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1401495) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/ui/extraction.spec.ts:327:3 › upload phase › states the supported format verbatim and browses through a hidden .json input (451ms)
+  ✓   3 [chromium] › tests/ui/extraction.spec.ts:374:3 › upload phase › shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel (272ms)
+  ✓   4 [chromium] › tests/ui/extraction.spec.ts:411:3 › upload phase › an error surfaces the server message and returns to the upload phase (294ms)
+  ✓   5 [chromium] › tests/ui/extraction.spec.ts:434:3 › upload phase › a 500 from an unbuilt CLI is surfaced verbatim (244ms)
+  ✓   6 [chromium] › tests/ui/extraction.spec.ts:452:3 › upload phase › Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it (493ms)
+  ✓   7 [chromium] › tests/ui/extraction.spec.ts:526:3 › results phase › renders the split layout: a 320px list and a read-only tabbed preview (550ms)
+  ✓   8 [chromium] › tests/ui/extraction.spec.ts:586:3 › results phase › an empty extraction shows the empty state and Discard returns to upload (265ms)
+  ✓   2 [chromium] › tests/ui/shell.spec.ts:191:3 › sidebar navigation › every route is reachable, renders a real page, and highlights its item (4.6s)
+  ✓  10 [chromium] › tests/ui/shell.spec.ts:243:3 › sidebar navigation › collapsing a group hides its items and flips aria-expanded (352ms)
+  ✓  11 [chromium] › tests/ui/shell.spec.ts:268:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (432ms)
+  ✓  12 [chromium] › tests/ui/shell.spec.ts:302:3 › sidebar navigation › a non-root deep link is served the SPA shell, and an unknown path is the SPA 404 (403ms)
+  ✓  13 [chromium] › tests/ui/shell.spec.ts:326:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (376ms)
+  ✓  14 [chromium] › tests/ui/shell.spec.ts:367:3 › settings › renders the settings values, the last sync and the history (239ms)
+  ✓  15 [chromium] › tests/ui/shell.spec.ts:386:1 › the dev stack answers a real API request through the Vite proxy (225ms)
+  ✓  16 [chromium] › tests/ui/shell.spec.ts:398:3 › harness self-check › the console-error guard itself is live (220ms)
+  ✓   9 [chromium] › tests/ui/extraction.spec.ts:604:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (6.1s)
+  ✓  17 [chromium] › tests/ui/extraction.spec.ts:637:3 › results phase › Save Selected saves only the selected quest (454ms)
+  ✓  18 [chromium] › tests/ui/extraction.spec.ts:655:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (373ms)
+  ✓  19 [chromium] › tests/ui/extraction.spec.ts:674:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (347ms)
+  ✓  20 [chromium] › tests/ui/extraction.spec.ts:710:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (6.0s)
+  ✓  21 [chromium] › tests/ui/extraction.spec.ts:754:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (349ms)
+  ✓  22 [chromium] › tests/ui/extraction.spec.ts:775:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.1s)
+  ✓  23 [chromium] › tests/ui/extraction.spec.ts:806:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (483ms)
+  ✓  24 [chromium] › tests/ui/extraction.spec.ts:822:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (405ms)
+  ✓  25 [chromium] › tests/ui/extraction.spec.ts:841:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (805ms)
+  ✓  26 [chromium] › tests/ui/extraction.spec.ts:868:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (568ms)
+  ✓  27 [chromium] › tests/ui/extraction.spec.ts:899:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (531ms)
+  ✓  28 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (834ms)
+
+  28 passed (27.7s)
+exit=0
+
+## 3. npm run lint   (eslint . && prettier --check .)
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+## 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+
+## 5a. npx tsc -p server/tsconfig.json --noEmit
+$ npx tsc -p server/tsconfig.json --noEmit
+exit=0
+
+## 5b. npx tsc -p client/tsconfig.json --noEmit
+$ npx tsc -p client/tsconfig.json --noEmit
+exit=0
+
+## 6. npm run build
+$ npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1743 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-DBJSpXU5.css   26.45 kB │ gzip:   5.70 kB
+dist/assets/index-BQ_LubvJ.js   411.33 kB │ gzip: 130.02 kB
+✓ built in 1.63s
+exit=0
+
+# ---------------------------------------------------------------------------
+## NOTE FIX — gap B, corrected (the note belongs to the entry_status INSERT,
+## not to the file outcome). Round of 2026-09-26T06:14:38-04:00, branch
+## phase-2-quest-extraction, HEAD 8f19f87, tree left uncommitted.
+# ---------------------------------------------------------------------------
+# Defect (measured live): an extraction of WC-UNICORN-MAIN-004 — a quest already
+# in the corpus, so the save is outcome 'updated' — inserted the entry_status row
+# as `extracted` with status_history.notes = null. savePipeline applied
+# `historyNotesOnCreate` only when the FILE outcome was 'created'.
+#
+# Rule now implemented (plan §2.4, spec-api L122): the note is written when the
+# save inserts the entry_status row — the entry's first appearance in tracking —
+# whether the file was created or updated. An update of an already-tracked entry
+# still writes nothing (no note, no status change, no history row; D49(d)).
+#
+# FILES: server/src/services/savePipeline.ts, server/src/services/quests.ts
+#        (comment), tests/unit/quests-api.test.ts, tests/unit/save-pipeline.test.ts
+#
+# FULL RAW OUTPUT + the 5 new tests + the pre-fix failure:
+#   docs/evidence/phase-2/story-p2-07-note-fix.txt
+#
+# 1. npm test                -> Test Files 28 passed (28) / Tests 721 passed (721)
+# 2. npm run test:ui         -> BLOCKED: the lead's own isolated dev stack holds
+#                               :5173/:3001 and playwright.config.ts refuses to
+#                               reuse a running stack (D44). Substitute: the same
+#                               28 specs run unmodified against that stack via a
+#                               temporary reuse config -> 28 passed. Re-run the
+#                               canonical command once that stack is stopped.
+# 3. npm run lint            -> exit=0
+# 4. npm run typecheck:tests -> exit=0
+# 5a. tsc server --noEmit    -> exit=0
+# 5b. tsc client --noEmit    -> exit=0
+# 6. npm run build           -> exit=0

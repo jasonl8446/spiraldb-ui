@@ -1,0 +1,27 @@
+
+## LEAD RE-RUN after gap A + gap B + the capture-note fix (raw output, canonical commands)
+# 2026-09-26T10:22:04Z branch=phase-2-quest-extraction HEAD=8f19f87 (tree uncommitted)
+
+### npm test
+ Test Files  28 passed (28)
+      Tests  721 passed (721)
+   Duration  4.74s (transform 3.49s, setup 0ms, collect 11.21s, tests 10.28s, environment 7ms, prepare 3.54s)
+
+### npm run test:ui (canonical — ports free, no reuse)
+  ✓  28 [chromium] › tests/ui/extraction.spec.ts:925:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (860ms)
+
+  28 passed (28.0s)
+
+### npm run lint
+eslint exit=0
+All matched files use Prettier code style!
+
+### typecheck:tests
+exit=0
+
+### tsc server + client
+server exit=0
+client exit=0
+
+### build
+✓ built in 1.63s

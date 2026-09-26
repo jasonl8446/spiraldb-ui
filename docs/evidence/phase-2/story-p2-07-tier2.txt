@@ -1,0 +1,194 @@
+# p2-07 ac1 — tier-2 evidence (D23): playwright-mcp against the REAL dev stack, real CLI, real saves
+# 2026-09-26T09:52Z  branch phase-2-quest-extraction  HEAD 8f19f87 + the executor's uncommitted tree
+#
+# The app was served over HTTP (file:// is blocked by the MCP server) at http://localhost:5173/quests/extract
+# from `NODE_ENV=test SPIRALDB_UI_DB=/tmp/p207-lead/lead.db SPIRALDB_UI_SKIP_IMPORT=1 npm run dev`.
+# NODE_ENV=test seeds the D44 throwaway database: measured `GET /api/settings` —
+#   spiraldb_path=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb  (the D17 disposable clone)
+#   user_name=""   (so D38/D43's identity gate is exercised for real)
+#   git_branch=content/2026-09-26
+# No assertion below is route-mocked; every screenshot is in this directory.
+
+## 1. UPLOAD PHASE — dropzone (screenshot p207-01-upload-dropzone.png)
+$ browser_evaluate -> the exact format line and the spec's colours/geometry
+{
+  hasExactFormatLine: true,
+  formatLinesFound: ["Supported format: JSON packet capture files (.json)"],
+  hasDragCopy: true,                                    // "Drag & drop packet capture file here" + "or click to browse"
+  dropzone: { borderStyle: "dashed", borderColor: "rgb(63, 63, 70)",      // zinc-700
+              background: "rgba(24, 24, 27, 0.5)",                        // zinc-900/50
+              radius: "12px", classes: "... border-dashed p-10 ... border-zinc-700 bg-zinc-900/50" },
+  inputAccept: ".json", inputHidden: "block/sr-only",
+  iconBox: { w: 48, h: 48 },                            // the spec's 48px icon
+  centeredColWidth: 606,                                // inside the padded shell; the column is max-w-[640px]
+  viewport: { w: 913, h: 931 }
+}
+NOTE: the AC's string is "Supported format: JSON packet capture files (.json)" — measured verbatim. The
+spec-ui-design L199 mockup draws the shorter "Supported format: JSON packet capture (.json)", which
+contradicts spec-domain-reference L625 and this AC; the implementation followed the AC (D50 item 3).
+
+## 2. EXTRACTING PHASE — a REAL 105 MB capture through the REAL .NET CLI (screenshot p207-02-extracting-spinner.png)
+Set the input to /tmp/p204-evidence/big-capture.json (105462401 B, 1600 quest reps) with setInputFiles, then
+asserted the DOM while it was in flight:
+{
+  extractingCopy: true,                                 // "Extracting quests..."
+  fileNameShown: true, sizeShown: ["100.6 MB"],         // human-readable file card
+  indeterminateSpinners: 1, spinnerClass: "lucide lucide-loader-circle h-4 w-4 animate-spin text-blue-400",
+  progressIndicators: 0,                                // the spec forbids a progress bar / live count
+  cancelButton: { text: "Cancel", destructive: true, classes: "... bg-red-600 text-zinc-50 hover:bg-red-500 ..." },
+  hasDropzoneNow: false
+}
+$ ps -C imview-packet-reader -o pid,etime,args --no-headers
+1393043  00:05  /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/imview-packet-reader \
+                --input .../data/uploads/cb52754e-....json --output /tmp/spiraldb-extract-cYmNnS/quests.json
+count=1   upload temp: 1 file(s)
+=> the spinner state belongs to a genuine CLI extraction, not a stub.
+
+## 3. CANCEL ABORTS FOR REAL (D9 / D47) — the spec's cancel path, no curl
+Click "Cancel" at pid 1393043 mid-run (page.getByRole('button', { name: 'Cancel' }).click(), 26 ms):
+$ child timeline, polled every 100 ms
+  CLI child gone after ~100ms
+  final count=0
+  uploads left: 0; temp extract dirs left: 0
+$ browser_evaluate after the abort
+{ backToDropzone: true, stillExtracting: false, resultsVisible: false, errorAlert: null, inputValue: "" }
+=> the real .NET child is killed by the browser's abort, its temp capture and /tmp/spiraldb-extract-* dir are
+   cleaned up, and the UI returns to the upload phase with no error toast (a deliberate specification of the
+   cancel path, D50 item 2).
+
+## 4. RESULTS PHASE — split layout, real CLI output (screenshot p207-03-results-split.png)
+Fixture server/test/fixtures/captures/WC-UNICORN-MAIN-004.json (14235 B, a D28-generated real capture):
+{
+  actionBar: ["Save All to SpiralDB", "Save Selected", "Discard"],
+  leftPanel: { width: 320, scrollable: "auto",
+               classes: "... overflow-y-auto p-2 w-full shrink-0 ... md:h-full md:w-80 md:border-r" },
+  listItems: ["WC-UNICORN-MAIN-004 | Level 0 | 7 goals | new"],
+  tabs: ["Info"(selected), "Goals", "Goal Logic", "Requirements", "Results", "Dialog"],
+  previewTabPanelVisible: true,
+  editableInputsInPreview: 0,          // the preview is read-only, as the AC requires
+  enumRendering: "m_activityType -> ACTIVITY_NotActivity"   // D48(a): the CLI's names flow through unaltered
+}
+$ computed style of the selected row [aria-selected="true"]
+  selectedHasBlueClass: true   selectedBackground: "rgba(37, 99, 235, 0.1)"   // blue-600/10, exactly the spec
+
+## 5. SAVE ALL — confirm first, then a REAL write (screenshots p207-04, p207-05, p207-06)
+(i) Confirm dialog, verbatim (p207-04):
+    "Save to SpiralDB | Save 1 quests to SpiralDB? This will create files and auto-commit. | Cancel | Save | Close"
+    confirmTextExact: true              // matches "Save {N} quests to SpiralDB? This will create files and auto-commit."
+(ii) The confirm really gates the write — measured on the clone BEFORE pressing Save:
+    clone HEAD: c55ccab fix: give the Olivia goal a quest helper tag
+    clone status: []     refs: [main]
+(iii) D43's identity gate, fired live for the first time in this project (p207-05): because user_name was "",
+    pressing Save opened the identity dialog instead of saving:
+    "What should we call you? | Stored locally ... We only ask once. | Your name | Up to 64 characters. | Cancel | Save name"
+    inputs: [{ type: "text", placeholder: "jason", value: "", autofocus: true }]
+    and the clone was STILL untouched at that moment:
+      clone HEAD: c55ccab ... status: []      GET /api/settings -> user_name: ""
+(iv) Entering "Lead Verify" persisted the name (GET /api/settings -> user_name: "Lead Verify") and the pending
+    save resumed with no second click (D38) — the write landed:
+(v) The real writes, on the clone:
+    $ git -C data/test-spiraldb log --oneline -3
+      9651b42 spiraldb: update quest WC-UNICORN-MAIN-004
+      ccae95d spiraldb: update quest WC-UNICORN-MAIN-004
+      c55ccab fix: give the Olivia goal a quest helper tag
+    $ git -C data/test-spiraldb show --stat --format='' ccae95d
+      ... questmetadata_...json              |   4 +-
+      ... questtemplates_WC-UNICORN-MAIN-004.json | 416 ++++++++--------   (210/210: the D49(c) legacy
+                                                                          normalisation, formatting only)
+    branch: content/2026-09-26 (main still present)
+    $ git -C data/test-spiraldb log -2 --format='%h %an <%ae>'
+      9651b42 Lead Verify <Lead-Verify@spiraldb-ui.local>
+      ccae95d Lead Verify <Lead-Verify@spiraldb-ui.local>
+      => the identity gate's value reaches the git author line end to end (D38 + D43).
+(vi) The success toast, captured live (p207-06) — both toasts are in the DOM simultaneously:
+    "Quest WC-UNICORN-MAIN-004 saved and committed"        // the spec's L117 example, verbatim template
+    "QuestMetadatas/ holds 2 files whose \"Name\" is \"WC-UNICORN-MAIN-004\". The save updated
+     QuestMetadatas/069f430e-....json (first in file-name order) and left the other untouched — resolve the
+     duplicate metadata by hand."                          // D48(d) surfaced to the user, not silent
+    $ server console, same line:
+      [spiraldb-ui] QuestMetadatas/ holds 2 files whose "Name" is "WC-UNICORN-MAIN-004". ...
+(vii) The DB the UI wrote (throwaway /tmp/p207-lead/lead.db):
+    entry_status: {"object_type":"quest","object_key":"WC-UNICORN-MAIN-004","status":"extracted",
+                   "extracted_at":"2026-09-26T09:46:08.726Z","reviewed_at":null,"verified_at":null}
+    status_history: [{"old_status":null,"new_status":"extracted","changed_by":"Lead Verify","notes":null}]
+      => the initial insert IS recorded in history (null -> extracted) and attributed to the identity-gate
+         name. This refines D49(d), which said the endpoint records "no status transition and no history note";
+         corrected in D50 item 1.
+
+## 6. 375px MOBILE — list full width, preview as an overlay (screenshots p207-07, p207-08)
+$ browser_resize(375, 667) then browser_evaluate:
+{
+  viewport: { vw: 375, vh: 667 },
+  rowText: "WC-UNICORN-MAIN-004 | Level 0 | 7 goals | new", rowWidth: 310, listFullWidth: true,
+  desktopPane: { w: 0, h: 0, offsetParentNull: true, ancestorClasses: "... hidden min-w-0 flex-1 md:flex" },
+  dialogCount: 0                                  // no inline preview on mobile
+}
+Tapping the row opened the overlay (p207-07):
+{
+  overlay: { role: "dialog", w: 327, h: 540, classes: "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 ..." },
+  overlayTabs: ["Info","Goals","Goal Logic","Requirements","Results","Dialog"],
+  overlayText: "WC-UNICORN-MAIN-004 | Read-only preview of the selected quest. | ...",
+  editableInside: 0
+}
+Escape closes it and returns to the full-width list (p207-08): { dialogOpen: 0, backToMobileList: true }
+NOTE (phrasing): the desktop pane is rendered but CSS-hidden at 375px (0x0, offsetParent null, `hidden md:flex`),
+i.e. "not displayed", not unmounted — the tier-1 spec's wording says "not mounted". Same observable behaviour.
+
+## 7. Artifacts of MY OWN queries, recorded rather than hidden
+1. rowCount: 2 in the first results probe counted the row's wrapper and its inner button — the list really
+   holds ONE quest (confirmed by listPanelRowCount: 1 and by the confirm dialog's "Save 1 quests").
+2. A className.match(/bg-[a-z]+-\d+\/\d+/) probe reported bg-zinc-800/50 for the selected row because it
+   matched the `hover:` prefix first; the computed background is rgba(37,99,235,0.1) = blue-600/10, as the
+   spec requires, and the class IS applied (selectedHasBlueClass: true). My query was wrong, not the code.
+3. One `browser_run_code` call that attached a request listener and polled for 10 s dropped the MCP
+   connection and reset the tab to about:blank. Re-running the same steps with short calls worked; the first
+   save had in fact succeeded (commit ccae95d) — the evidence above uses the retry, and the first attempt's
+   write is visible in the log as the earlier of the two commits.
+
+## 8. Cleanup
+The clone is reset below to main/c55ccab (no content/* branch, clean tree) and the dev stack is stopped.
+The owner's fork was never written: it stayed at c55ccab on main with an empty status throughout.
+
+## 9. FOLLOW-UP RE-VERIFICATION — plan §2.4 L48/L49, found missing by the lead's browser run and fixed
+# Second dev-stack run: NODE_ENV=test SPIRALDB_UI_DB=/tmp/p207b-lead/lead.db (fresh) then a THIRD with
+# /tmp/p207c-lead/lead.db (fresh) after the fix. Clone reset to main/c55ccab before each; user_name was
+# pre-set to "Lead Verify" via PUT /api/settings so the identity dialog did not interrupt this check
+# (it was already proven in §5).
+
+### 9.1 Gap A — the overwrite confirmation (plan §2.4: "UI confirms before overwriting an existing quest")
+Screenshot p207-09-overwrite-confirm.png. Extracting WC-UNICORN-MAIN-004 (which exists in the corpus) and
+pressing Save All produced, verbatim:
+  "Save to SpiralDB | Save 1 quests to SpiralDB? This will create files and auto-commit. |
+   These quests already exist in SpiralDB and will be overwritten: | WC-UNICORN-MAIN-004 | Cancel | Save | Close"
+and the DOM carried the machine-readable list too:
+  overwrite: [{ label: "Quests that will be overwritten", items: ["WC-UNICORN-MAIN-004"] }]
+while the check was in flight the dialog read "... | Checking SpiralDB for existing quests… | ..." with
+Save DISABLED; once it resolved Save was enabled. postsBeforeConfirm = 0 (no POST /api/quests before a
+human confirms), and the clone was untouched at that point (HEAD c55ccab, status [], refs [main]).
+
+### 9.2 Gap B — the capture note (plan §2.4: note "Imported from packet capture {filename}")
+The client's real POST body was captured with a route handler:
+  [{ keys: ["quest","source"], source: "WC-UNICORN-MAIN-004.json", questName: "WC-UNICORN-MAIN-004" }]
+=> the client half already worked. THE FIRST LIVE SAVE EXPOSED A SERVER DEFECT that no unit test caught:
+  $ node -e "... select old_status,new_status,notes,changed_by from status_history ..."
+  [{"old_status":null,"new_status":"extracted","notes":null,"changed_by":"Lead Verify"}]
+  notes === the spec text: false
+Root cause: savePipeline applied the note only when the JSON FILE was new (`outcome === 'created'`). An
+extraction of an existing corpus quest — the normal case, 322 quests already exist — is a file UPDATE plus a
+first-time `entry_status` INSERT, so it wrote no provenance. The rule was corrected to key on the
+**entry_status insert** (the entry's first appearance in tracking), leaving D49(d) intact for already-tracked
+entries. Tests were added that fail on the pre-fix code (5 new: 721 unit tests total).
+RE-MEASURED LIVE after the fix, on a fresh tracking database, through the same real UI path:
+  status_history: [{"old_status":null,"new_status":"extracted",
+                    "notes":"Imported from packet capture WC-UNICORN-MAIN-004.json",
+                    "changed_by":"Lead Verify"}]
+  notes === the spec text: true
+  entry_status: {"object_key":"WC-UNICORN-MAIN-004","status":"extracted","extracted_at":"2026-09-26T10:21:25.477Z"}
+  clone: 2794f12 spiraldb: update quest WC-UNICORN-MAIN-004   (file + metadata, 210/210 formatting-only)
+Toasts on that save: "Quest WC-UNICORN-MAIN-004 saved and committed" + the D48(d) duplicate-metadata warning
++ the info toast "Extracting quests... this may take a moment".
+
+### 9.3 Cleanup
+Both extra stacks were stopped (ports 5173/3001 free), the clone is back at main/c55ccab with an empty
+status, and the owner's fork stayed at c55ccab on main with an empty status throughout. The canonical six
+checks were then re-run with the ports free — see gate-p2-07-leadverify.txt (721 unit tests / 28 UI specs).

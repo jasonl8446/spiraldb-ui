@@ -28,6 +28,18 @@ export const TOAST_DURATIONS = {
 } as const;
 
 /**
+ * How long a **warning** toast stays (story p2-07).
+ *
+ * The spec defines only the three types above (L115-117); warnings are the
+ * extraction UI's addition for the D48(d) duplicate-metadata report, and they
+ * re-use the error's 10 s because the message is long and must be readable
+ * (`TOAST_ACCENT_CLASSES.warning` already gives them the amber left border).
+ * Kept out of {@link TOAST_DURATIONS} so that map still says exactly what the
+ * spec fixes.
+ */
+export const TOAST_WARNING_DURATION_MS = 10000;
+
+/**
  * The toast `type` values sonner can put on an element (`data-type`), i.e. the
  * ones a left-border accent has to cover (spec L115-117: "Success: Green left
  * border … Error: Red left border … Info: Blue left border").

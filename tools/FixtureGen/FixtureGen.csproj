@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>fixturegen</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Same reference graph as tools/PacketReaderCli: the generator writes the blobs that
+         QuestBuilder reads, so it must see the identical Imcodec type cache. -->
+    <ProjectReference Include="../../../Imview/src/Imview.PacketReader/Imview.PacketReader.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The corpus is JSON5-ish (trailing commas, $type annotations) and the envelope/dialog
+         entities carry $type, so Newtonsoft is the parser here. Pinned to 13.0.3 house-wide (D45). -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

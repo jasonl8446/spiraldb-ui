@@ -1,0 +1,62 @@
+story p2-05 — ac6: content-keyed index (D19) — resolve by content, write back to the original path
+date:    2026-09-26T04:36:00-04:00
+branch:  phase-2-quest-extraction   HEAD: b9577d2 (working tree left uncommitted for the lead)
+node:    v24.21.0   dotnet: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/.dotnet-wrapper
+clone:   data/test-spiraldb (disposable — reset with `npm run test:reset-clone` before and after this run, D17)
+db:      data/__test-scratch__/p2-05-acceptance.db (throwaway; the owner's data/spiraldb-ui.db is never opened)
+run:     npm run test:reset-clone && npx tsx data/__test-scratch__/p2-05-acceptance.ts
+
+The pipeline under test is server/src/services/savePipeline.ts, driven exactly as the
+quests API will drive it (task 2.5) — no UI, no route. Quests come from the REAL CLI
+wrapper (server/src/services/extraction.ts → tools/bin/imview-packet-reader).
+Output below is verbatim harness stdout; the tree it ran on is the formatted final tree.
+
+==============================================================================
+
+index after all saves: {"scanned":2606,"indexed":2596,"skipped":0,"failed":0,"missingDirectories":["NpcDropTable"],"duplicateKeys":["ZoneTransfer/WizardCity/Tutorial_Exterior","ZoneTransfer/WizardCity/Tutorial_Interior","QuestMetadatas/WC-COMMONS-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-001","QuestMetadatas/WC-UNICORN-MAIN-002","QuestMetadatas/WC-UNICORN-MAIN-003","QuestMetadatas/WC-UNICORN-MAIN-004","QuestMetadatas/WC-UNICORN-MAIN-006","QuestMetadatas/WC-UNICORN-MAIN-007","QuestMetadatas/WC-UNICORN-MAIN-008"]}
+
+DropTables/: 317 of 317 files are off-convention, e.g.:
+  droptables_ds-acad-c01-001.json
+  droptables_ds-acad-c01-002.json
+  droptables_ds-acad-c01-003.json
+
+key                        : DS-ACAD-C01-001
+name derived from the key  : droptable_DS-ACAD-C01-001.json
+index.pathFor(droptable)   : DropTables/droptables_ds-acad-c01-001.json
+resolved == the real file  : true
+editing field              : CreatedAt = "2026-06-01T00:57:40.516730Z" → + " (p2-05 update)"
+
+outcome updated / action update
+wrote to                   : DropTables/droptables_ds-acad-c01-001.json
+name-derived file created? : false
+metadata companion         : null  (quests only in p2-05)
+commit                     : aa2b25c spiraldb: update drop_table DS-ACAD-C01-001
+files in that commit:
+DropTables/droptables_ds-acad-c01-001.json
+working tree               : ""
+
+git diff --unified=0 HEAD~1 HEAD (field change + legacy normalisation):
+diff --git a/DropTables/droptables_ds-acad-c01-001.json b/DropTables/droptables_ds-acad-c01-001.json
+index 631d4f0..436f5e2 100644
+--- a/DropTables/droptables_ds-acad-c01-001.json
++++ b/DropTables/droptables_ds-acad-c01-001.json
+@@ -4 +4 @@
+-  "RollChance": 1.0,
++  "RollChance": 1,
+@@ -6,2 +6,2 @@
+-  "NoneChance": 0.0,
+-  "PityCounter": 0.0,
++  "NoneChance": 0,
++  "PityCounter": 0,
+@@ -13 +13 @@
+-  "CreatedAt": "2026-06-01T00:57:40.516730Z",
++  "CreatedAt": "2026-06-01T00:57:40.516730Z (p2-05 update)",
+@@ -17 +17 @@
+-}
+\ No newline at end of file
++}
+status row for drop_table/DS-ACAD-C01-001: {"object_type":"drop_table","object_key":"DS-ACAD-C01-001","status":"extracted","extracted_at":"2026-09-26T08:34:14.993Z","reviewed_at":null,"verified_at":null,"latest_notes":null}
+dashboard after all saves: overall={"total":7,"extracted":7,"reviewed":0,"verified":0,"percent_verified":0}
+PASS  ac6: the index resolves a key to the file that holds it, not to a derived name
+PASS  ac6: the update wrote back to the original path and created no name-derived file
+PASS  ac6: rebuilds scan the type directories and JSON5-parse the key field

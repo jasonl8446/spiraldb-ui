@@ -1,0 +1,42 @@
+# gate-2 — Phase 1 checks 8/9/10/11/12/13/16/18 FRESH on a throwaway DB (/tmp/gate2/p1fresh.db)
+# 2026-09-26T12:51:41Z
+
+## P1 #9 first startup imports existing entries exactly once
+  LOG [server] Imported 2271 existing entries from SpiralDB
+  LOG [server] [spiraldb-ui] import detail: 3 skipped, 0 unparsable
+  LOG [server] [spiraldb-ui] import duplicate keys (first file wins): WizardCity/Tutorial_Exterior, WizardCity/Tutorial_Interior
+  GET /api/status/_import: {"ran":true,"imported":2271,"imported_at":"2026-09-26T12:51:42.237Z"}
+  entry_status rows: [{"object_type":"creature_spellbook","n":134},{"object_type":"drop_table","n":317},{"object_type":"npc_inventory","n":215},{"object_type":"npc_spell_inventory","n":77},{"object_type":"quest","n":322},{"object_type":"treasure_card_inventory","n":1},{"object_type":"zone_transfer","n":1205}]
+  quest count must be 322 / drop_table 317
+
+## P1 #8 names API shapes + unknown id -> 404
+  GET /api/names/items: {"items":[{"gid":1740074,"name":" +100 Energy Elixir"},{"gid":1374633,"name":" Lounging Pigswick Student"},{"gid":137443
+  GET /api/names/items/4808: {"gid":4808,"name":"Twice Stitched Boots"}
+  unknown id -> HTTP 404 {"error":"Unknown items id \"999999999\""}
+  GET /api/names/zones?q=Hub: {"zones":[{"zone_path":"Aquila/AQ_Z00_Hub","display_name":"Aquila / AQ Z00 Hub","world":"Aquila"},{"zone_path"
+  GET /api/names/spells/607923: {"template_id":607923,"name":"Firecat Alley"}
+  GET /api/names/npcs/1397242: {"template_id":1397242,"name":"AZ-Parrot-Darkshaman-A_StandIn"}
+
+## P1 #10 status/quests?status=extracted summary
+  entries: 322  summary: {"total":322,"extracted":322,"reviewed":0,"verified":0}
+
+## P1 #11 PATCH extracted->reviewed with notes, then history + reviewed_at/by
+  PUT settings user_name -> Gate-2 Recheck
+{"object_type":"quest","object_key":"DS-ACAD-C01-001","status":"reviewed","extracted_at":"2026-09-26T12:51:42.237Z","reviewed_at":"2026-09-26T12:51:46.990Z","verified_at":null,"latest_notes":"gate-2 phase-1 recheck"}
+  extracted -> reviewed | by Gate-2 Recheck | gate-2 phase-1 recheck
+  row: {"object_key":"DS-ACAD-C01-001","status":"reviewed","reviewed_at_set":1,"reviewed_by":"Gate-2 Recheck"}
+
+## P1 #12 dashboard: per-type sums == overall; percent_verified matches
+  overall: {"total":2271,"extracted":2270,"reviewed":1,"verified":0,"percent_verified":0}
+  type keys (8): quest, drop_table, npc_inventory, npc_spell_inventory, creature_spellbook, npc_drop_table, treasure_card_inventory, zone_transfer
+  sum(type totals) = 2271 == overall.total 2271 -> true
+  percent_verified: 0 vs computed 0
+
+## P1 #13 settings: PUT persists, GET reflects, invalid path -> 400
+  invalid aurorium_path -> HTTP 400 {"error":"aurorium_path \"/nope\" is not an existing directory"}
+  unknown key -> HTTP 400 {"error":"Unknown settings key: nonsense. Allowed keys: aurorium_path, imcodec_path, user_name, spiraldb_path, git_branch"}
+
+## P1 #16 unit suite / #18 UI suite at this boundary
+ Test Files  30 passed (30)
+      Tests  770 passed (770)
+  git check-ignore: .gitignore:23:tools/.playwright-browsers/	tools/.playwright-browsers .gitignore:5:data/	data/ 

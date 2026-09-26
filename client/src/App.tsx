@@ -4,10 +4,13 @@ import { Toaster } from 'sonner';
 
 import AppLayout from './components/layout/AppLayout';
 import NotFoundPage from './pages/NotFoundPage';
+import ExtractionPage from './pages/ExtractionPage';
+import QuestDetailPage from './pages/QuestDetailPage';
+import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
 import StubPage from './pages/StubPage';
 import { UserNameGateProvider } from './hooks/useUserNameGate';
-import { APP_ROUTES } from './lib/routes';
+import { APP_ROUTES, type AppRoute } from './lib/routes';
 import {
   TOASTER_CLASS_NAMES,
   TOASTER_CLOSE_BUTTON,
@@ -23,9 +26,10 @@ import {
  *
  * Routing is generated from the `APP_ROUTES` table, so the spec-api L325-350
  * route list has exactly one home and cannot drift from the sidebar: every route
- * exists, `/settings` renders the real page, and every other route renders the
- * "Arrives in Phase N" stub with the phase recorded in the table (decision D39
- * item 7).
+ * exists, the built pages (`/settings` from p1-08, `/quests/extract` from p2-07,
+ * `/quests` and `/quests/:questName` from p2-08) render for real, and every other
+ * route renders the "Arrives in Phase N" stub with the phase recorded in the table
+ * (decision D39 item 7).
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +42,33 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * The page a route renders.
+ *
+ * Built pages are listed explicitly by path — the `phase` in `APP_ROUTES` is the
+ * phase that *owns* the page, not a switch, so a built page is wired here once
+ * (`/settings` in p1-08, `/quests/extract` in p2-07, the browse list and its
+ * detail page in p2-08) and everything else keeps the "Arrives in Phase N" stub.
+ *
+ * `/quests/extract` is listed before `/quests/:questName` in `APP_ROUTES` and the
+ * router ranks the static path higher regardless, so the detail route can never
+ * shadow the extraction page.
+ */
+function elementFor(route: AppRoute): JSX.Element {
+  switch (route.path) {
+    case '/settings':
+      return <SettingsPage />;
+    case '/quests/extract':
+      return <ExtractionPage />;
+    case '/quests':
+      return <QuestsPage />;
+    case '/quests/:questName':
+      return <QuestDetailPage />;
+    default:
+      return <StubPage route={route} />;
+  }
+}
+
 export default function App(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
@@ -47,13 +78,7 @@ export default function App(): JSX.Element {
           <Routes>
             <Route element={<AppLayout />}>
               {APP_ROUTES.map((route) => (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={
-                    route.path === '/settings' ? <SettingsPage /> : <StubPage route={route} />
-                  }
-                />
+                <Route key={route.path} path={route.path} element={elementFor(route)} />
               ))}
               <Route path="*" element={<NotFoundPage />} />
             </Route>
