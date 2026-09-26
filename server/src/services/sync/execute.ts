@@ -12,6 +12,12 @@ import {
   type ZoneRow,
 } from './corpus.js';
 import { createKeyLookup, scanLangDir } from './lang.js';
+import {
+  EMPTY_MANIFEST_ID_REPORT,
+  TEMPLATE_MANIFEST_FILE,
+  loadTemplateManifest,
+  type ManifestIdReport,
+} from './manifest.js';
 import { resolveRevision } from './revision.js';
 import { buildStringTableRows, type StringTableRow } from './stringtable.js';
 import { scanTemplateTree, type ItemRow, type NpcRow, type SpellRow } from './templates.js';
@@ -19,17 +25,25 @@ import { runUnpack, UnpackError } from './unpack.js';
 
 /**
  * Sync orchestrator — task 1.4f (transactional replace + `sync_history`),
- * consumed by `POST /api/sync` (1.4g) and `npm run sync`.
+ * consumed by `POST /api/sync` (1.4g) and `npm run sync`; task 1.4h adds the
+ * manifest-driven template identity (D35).
  *
  * Pipeline (each stage injectable so tests never spawn a real unpack and never
  * touch a real database):
  *
  * ```
- * settings → resolveRevision → runUnpack → scanLangDir ┐
- *                                        ↘ scanTemplateTree
+ * settings → resolveRevision → runUnpack → loadTemplateManifest → scanLangDir ┐
+ *                                        ↘ scanTemplateTree(manifest)
  *                                        ↘ buildQuest/Zone/DropTableRows
  *                                        → ONE transaction: DELETE ×7 + bulk INSERT + sync_history
  * ```
+ *
+ * ## Id provenance (D35)
+ *
+ * `TemplateManifest_deser.json` is loaded from the tree root and handed to the
+ * scanner, which keys every row by the manifest `m_id` for its source path. A
+ * tree without the manifest fails loudly rather than silently falling back to the
+ * string-table index — that fallback loses 13,003 of 16,474 spell rows.
  *
  * ## Transaction contract
  *
@@ -73,23 +87,19 @@ export const ZERO_SYNC_COUNTS: SyncCounts = {
 export type SyncStatus = 'success' | 'failed';
 
 /**
- * Rows the primary key forced out of the template-derived tables — measured on
- * the real corpus (a D33(f) follow-up).
+ * Rows the primary keys forced out of the template-derived tables.
  *
- * `spells.template_id` is the string-table index of `m_displayName` (a
- * `SpellTemplate` carries no numeric id), and that index is **not unique per
- * spell**. Measured on `V_r806919.Wizard_1_610`: 16,474 spell templates with a
- * numeric id collapse onto **3,471** distinct indices, and 371 of the 1,362
- * duplicate groups carry *different* names — `Spells_00000151` ("Freeze") and
- * `Spell_00000151` ("Snow Shield") share index 151 across two `.lang`
- * categories. `items.gid` (79,835) and `npcs.template_id` (22,888) are unique in
- * the same build, so only `spells` loses rows.
+ * **Measured 0 / 0 / 0 since task 1.4h (D35).** Every row's id now comes from
+ * `TemplateManifest_deser.json`, whose 137,423 ids are distinct — so `items.gid`
+ * (79,835), `spells.template_id` (18,173) and `npcs.template_id` (23,033) are all
+ * unique in the real build.
  *
- * The write step therefore de-duplicates by primary key, first row in scan
- * order (sorted `_deser.json` path) winning, and reports how many rows it
- * dropped. The leading row is deterministic, but for the 371 mixed-name groups
- * the choice between two legitimate names is arbitrary — a schema limitation
- * (`spells.template_id INTEGER PRIMARY KEY` cannot hold both), not a sync bug.
+ * The counter and the de-duplication stay in place as the loud guard for the
+ * situation that created this story: keying `spells` by the string-table index of
+ * `m_displayName` (`Spells_*` and `Spell_*` share that index space — index 151 is
+ * "Freeze" *and* "Snow Shield") collapsed 16,474 parsed rows onto 3,471 ids and
+ * dropped 13,003 of them. If a future id source ever regresses, the summary says
+ * so instead of losing rows silently.
  */
 export interface SyncDedupe {
   items: number;
@@ -98,6 +108,13 @@ export interface SyncDedupe {
 }
 
 export const ZERO_SYNC_DEDUPE: SyncDedupe = { items: 0, spells: 0, npcs: 0 };
+
+/** The zeroed id-provenance report (failure path / no manifest read). */
+export const ZERO_MANIFEST_REPORT: ManifestIdReport = {
+  ...EMPTY_MANIFEST_ID_REPORT,
+  mismatchSamples: [],
+  missingSamples: [],
+};
 
 /** First row per primary key wins; the rest are counted as dropped. */
 function dedupeByKey<T>(
@@ -135,6 +152,7 @@ export interface SyncOverrides {
 export interface SyncDeps {
   resolveRevision: typeof resolveRevision;
   runUnpack: typeof runUnpack;
+  loadTemplateManifest: typeof loadTemplateManifest;
   scanLangDir: typeof scanLangDir;
   scanTemplateTree: typeof scanTemplateTree;
   buildQuestRows: typeof buildQuestRows;
@@ -145,6 +163,7 @@ export interface SyncDeps {
 export const defaultSyncDeps: SyncDeps = {
   resolveRevision,
   runUnpack,
+  loadTemplateManifest,
   scanLangDir,
   scanTemplateTree,
   buildQuestRows,
@@ -184,8 +203,10 @@ export interface RunSyncResult {
   /** Resolved revision, or `null` when resolution itself failed. */
   revision: string | null;
   counts: SyncCounts;
-  /** Rows the primary keys forced out (see `SyncDedupe`; non-zero for spells). */
+  /** Rows the primary keys forced out (see `SyncDedupe`; 0/0/0 since D35). */
   deduplicated: SyncDedupe;
+  /** Manifest id provenance (see `ManifestIdReport`). */
+  manifest: ManifestIdReport;
   /** Whole-run wall clock in milliseconds. */
   durationMs: number;
   /** The value written to `sync_history.sync_timestamp` (ISO-8601, `…Z`). */
@@ -356,6 +377,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
   const timings: SyncTimings = { unpackMs: 0, scanMs: 0, writeMs: 0 };
   let counts: SyncCounts = { ...ZERO_SYNC_COUNTS };
   let deduplicated: SyncDedupe = { ...ZERO_SYNC_DEDUPE };
+  let manifestReport: ManifestIdReport = ZERO_MANIFEST_REPORT;
 
   try {
     // Inside the try: a missing `settings` table (an un-migrated database) must
@@ -406,9 +428,20 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     }
 
     const scanStarted = Date.now();
+    // The manifest is the authoritative id space (D35): read it before the tree
+    // scan and let the parse result go as soon as the id↔path maps exist.
+    const manifestPath = path.join(treeDir, TEMPLATE_MANIFEST_FILE);
+    const manifest = await deps.loadTemplateManifest(manifestPath).catch((error: unknown) => {
+      throw new Error(
+        `Could not read the template manifest at ${manifestPath} — without it the ` +
+          `authoritative spell id space is unavailable and rows would silently lose ` +
+          `their ids (${errorMessage(error)}).`,
+      );
+    });
     const lang = await deps.scanLangDir(path.join(treeDir, 'Locale', 'en-US'));
     const lookup = createKeyLookup(lang.byCategory, lang.namedByCategory);
-    const templates = await deps.scanTemplateTree(treeDir, { resolveName: lookup });
+    const templates = await deps.scanTemplateTree(treeDir, { resolveName: lookup, manifest });
+    manifestReport = templates.manifest;
     const quests: BuildResult<QuestRow> = await deps.buildQuestRows({
       questTemplatesDir: path.join(spiraldbPath, 'QuestTemplates'),
       lookupTitle: lookup,
@@ -422,9 +455,10 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     timings.scanMs = Date.now() - scanStarted;
 
     // The template scanner reports one row per `_deser.json`; the three keyed
-    // tables need one row per primary key (see `SyncDedupe` for the measured
-    // spells collision). Corpus-derived tables already de-duplicate inside their
-    // builders, so an anomaly there still fails the transaction loudly.
+    // tables need one row per primary key. With the manifest ids (D35) that is a
+    // no-op — the counter stays as the loud guard (see `SyncDedupe`).
+    // Corpus-derived tables already de-duplicate inside their builders, so an
+    // anomaly there still fails the transaction loudly.
     const items = dedupeByKey(templates.items, (row) => row.gid);
     const spells = dedupeByKey(templates.spells, (row) => row.template_id);
     const npcs = dedupeByKey(templates.npcs, (row) => row.template_id);
@@ -464,6 +498,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       revision,
       counts,
       deduplicated,
+      manifest: manifestReport,
       durationMs: Date.now() - started,
       timestamp,
       reused,
@@ -485,6 +520,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       revision,
       counts: { ...ZERO_SYNC_COUNTS },
       deduplicated: { ...ZERO_SYNC_DEDUPE },
+      manifest: { ...ZERO_MANIFEST_REPORT, mismatchSamples: [], missingSamples: [] },
       durationMs: Date.now() - started,
       timestamp,
       reused,

@@ -33,11 +33,13 @@ import {
   resolveRepoRoot,
 } from '../server/src/db.js';
 import {
+  TEMPLATE_MANIFEST_FILE,
   buildDropTableRows,
   buildQuestRows,
   buildZoneRows,
   createKeyLookup,
   langEntryCount,
+  loadTemplateManifest,
   resolveRevision,
   runUnpack,
   scanLangDir,
@@ -197,11 +199,30 @@ field('elapsed', step());
 
 const lookupTitle = createKeyLookup(lang.byCategory, lang.namedByCategory);
 
+// ---------------------------------------------------------------- 1.4h -----
+heading('[1.4h] TemplateManifest_deser.json — the authoritative id space (D35)');
+const manifestPath = path.join(treeDir, TEMPLATE_MANIFEST_FILE);
+const manifest = await loadTemplateManifest(manifestPath);
+field('file', `${manifestPath} (${bytes(statSync(manifestPath).size)})`);
+field(
+  'entries',
+  `${n(manifest.counts.entries)} entries → ${n(manifest.counts.ids)} ids / ${n(
+    manifest.counts.files,
+  )} files`,
+);
+field(
+  'rejected / duplicates',
+  `rejected ${n(manifest.counts.rejected)}; duplicate ids ${n(
+    manifest.counts.duplicateIds,
+  )}, duplicate files ${n(manifest.counts.duplicateFiles)}`,
+);
+field('elapsed', step());
+
 // ---------------------------------------------------------------- 1.4d -----
 heading('[1.4d] template tree — ObjectData/** + Spells/** (classification by _className)');
-const templates = await scanTemplateTree(treeDir, { resolveName: lookupTitle });
+const templates = await scanTemplateTree(treeDir, { resolveName: lookupTitle, manifest });
 const nameSources = { resolved: 0, rawKey: 0, objectName: 0, spellName: 0 };
-const idSources = { m_templateID: 0, displayNameIndex: 0, none: 0 };
+const idSources = { manifest: 0, m_templateID: 0, displayNameIndex: 0, none: 0 };
 for (const row of templates.rows) {
   nameSources[row.nameSource] += 1;
   idSources[row.idSource] += 1;
@@ -213,7 +234,7 @@ field(
 );
 field(
   'spells',
-  `${n(templates.counts.spell)} parsed → ${n(templates.spells.length)} rows with a numeric template_id (SpellTemplate has no m_templateID; the id is the m_displayName index)`,
+  `${n(templates.counts.spell)} parsed → ${n(templates.spells.length)} rows keyed by the manifest m_id (D35)`,
 );
 field(
   'npcs (flat)',
@@ -227,12 +248,27 @@ field(
 );
 field('rows without an id', n(templates.counts.noId));
 field(
+  'manifest ids',
+  `used ${n(templates.manifest.assigned)}, fallback ${n(
+    templates.manifest.fallback,
+  )}, missing ${n(templates.manifest.missing)}, mismatches ${n(templates.manifest.mismatches)}`,
+);
+for (const sample of templates.manifest.mismatchSamples) {
+  field(
+    'mismatch',
+    `${sample.sourcePath} (m_templateID ${n(sample.embeddedId)} vs manifest ${n(sample.manifestId)})`,
+  );
+}
+for (const sample of templates.manifest.missingSamples) {
+  field('missing', `${sample.sourcePath} (manifest path ${sample.manifestPath})`);
+}
+field(
   'name sources',
   `resolved=${n(nameSources.resolved)}, rawKey=${n(nameSources.rawKey)}, objectName=${n(nameSources.objectName)}, spellName=${n(nameSources.spellName)}`,
 );
 field(
   'id sources',
-  `m_templateID=${n(idSources.m_templateID)}, displayNameIndex=${n(idSources.displayNameIndex)}, none=${n(idSources.none)}`,
+  `manifest=${n(idSources.manifest)}, m_templateID=${n(idSources.m_templateID)}, displayNameIndex=${n(idSources.displayNameIndex)}, none=${n(idSources.none)}`,
 );
 field('skipped classes', n(templates.counts.skippedClasses));
 field('parse errors', n(templates.counts.parseErrors));

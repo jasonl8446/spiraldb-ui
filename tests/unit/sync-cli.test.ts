@@ -36,6 +36,15 @@ const SUCCESS: RunSyncResult = {
     string_table: 217394,
   },
   deduplicated: { items: 0, spells: 0, npcs: 0 },
+  manifest: {
+    entries: 137_423,
+    assigned: 18_173,
+    fallback: 0,
+    mismatches: 0,
+    missing: 0,
+    mismatchSamples: [],
+    missingSamples: [],
+  },
   durationMs: 24_300,
   timestamp: '2026-09-25T15:30:00Z',
   reused: true,
@@ -95,6 +104,25 @@ describe('formatSyncSummary', () => {
     expect(text).toContain('217,394');
     expect(text).toContain('0 ms / 4.1 s / 3.0 s');
     expect(text).toContain('24.3 s');
+  });
+
+  it('prints the manifest provenance and the dropped (PK) line, zeroes included (D35)', () => {
+    const text = formatSyncSummary(SUCCESS).join('\n');
+
+    expect(text).toContain('manifest entries    : 137,423 ids');
+    expect(text).toContain('manifest ids used   : 18,173 rows keyed by the manifest (fallback 0)');
+    expect(text).toContain('id mismatches       : 0 rows');
+    expect(text).toContain('missing manifest    : 0 rows');
+    expect(text).toContain('dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)');
+  });
+
+  it('reports a non-zero dropped (PK) count when the primary key forces rows out', () => {
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      deduplicated: { items: 1, spells: 13_003, npcs: 2 },
+    }).join('\n');
+
+    expect(text).toContain('dropped (PK)        : 13,006 rows (items 1, spells 13,003, npcs 2)');
   });
 
   it('prints the error and no counts for a failed run', () => {

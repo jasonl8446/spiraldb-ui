@@ -1,7 +1,7 @@
 /**
- * AC#2 spot-check for story p1-06 — verifies synced `string_table`/name rows
- * against the **unpacked source tree and corpus on disk**, not against the sync
- * code that wrote them.
+ * AC#2 spot-check for story p1-06 (+ p1-06b, task 1.4h) — verifies synced
+ * `string_table`/name rows against the **unpacked source tree and corpus on
+ * disk**, not against the sync code that wrote them.
  *
  * ```
  * npx tsx scripts/sync-spotcheck.ts [--tree /tmp/wad-spike] [--db data/spiraldb-ui.db]
@@ -11,9 +11,18 @@
  * For each name table it picks `--sample` random database rows and re-reads the
  * originating file fresh:
  *
- * - `items`/`spells`/`npcs` — the `_deser.json` template: `m_templateID` (or, for
- *   spells, the `m_displayName` index) must equal the database id, and the row's
- *   name must equal `lookupString(db, m_displayName)`.
+ * - `items`/`npcs` — the id must equal the **manifest** `m_id` for the row's
+ *   source path (`TemplateManifest_deser.json`, D35), cross-checked against the
+ *   file's own `m_templateID`; the name must equal
+ *   `lookupString(db, m_displayName)` (or the D33(b) ladder's fallback).
+ * - `spells` — the id is resolved back through the manifest:
+ *   `template_id` → `m_filename` → the real `<name>_deser.json` → the resolved
+ *   name must equal the database `name` (p1-06b-ac2). This is the check the old
+ *   `m_displayName`-index keying could not pass at all.
+ * - `corpus spell coverage` — every spell id the corpus references
+ *   (`NpcSpellInventory` `Spells[].TemplateID`/`RequiredSpellID`,
+ *   `CreatureSpellbook.SpellTemplateIds`, quest `m_spellID`) is looked up in the
+ *   database, with concrete `id -> file -> name` triples (p1-06b-ac2).
  * - `quests` — the `QuestTemplates/*.json` file: `m_questTitle` resolved through
  *   **the database's** `string_table`, compared with `quests.title`/`level`.
  * - `zones` — the `ZoneTransfer/*.json` file that carries `ZoneName` /
@@ -32,13 +41,18 @@ import path from 'node:path';
 import { defaultDbFile, openDb, readSettings, resolveRepoRoot } from '../server/src/db.js';
 import { humanizeZonePath } from '../server/src/services/sync/corpus.js';
 import { parseJsonLenient } from '../server/src/services/sync/json.js';
+import { parseLangBuffer, type LangTable } from '../server/src/services/sync/lang.js';
 import {
-  parseLangBuffer,
-  langKeyToIndex,
-  type LangTable,
-} from '../server/src/services/sync/lang.js';
+  TEMPLATE_MANIFEST_FILE,
+  loadTemplateManifest,
+  manifestPathToDeserPath,
+} from '../server/src/services/sync/manifest.js';
 import { lookupString } from '../server/src/services/sync/lookup.js';
-import { scanTemplateTree, type TemplateRow } from '../server/src/services/sync/templates.js';
+import {
+  manifestPathForSource,
+  scanTemplateTree,
+  type TemplateRow,
+} from '../server/src/services/sync/templates.js';
 
 function flag(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -123,8 +137,29 @@ console.log(
 );
 
 // ---------------------------------------------------------------- templates --
-headed('[items / spells / npcs] re-read the source _deser.json for each sampled row');
-const templates = await scanTemplateTree(TREE);
+const manifestFile = path.join(TREE, TEMPLATE_MANIFEST_FILE);
+const manifest = await loadTemplateManifest(manifestFile);
+headed('[manifest] TemplateManifest_deser.json — the authoritative id space (D35)');
+console.log(`  file             : ${manifestFile}`);
+console.log(
+  `  entries          : ${manifest.counts.entries.toLocaleString('en-US')} → ` +
+    `${manifest.counts.ids.toLocaleString('en-US')} ids / ${manifest.counts.files.toLocaleString('en-US')} files`,
+);
+console.log(
+  `  rejected/dupes   : rejected ${manifest.counts.rejected}; duplicate ids ${manifest.counts.duplicateIds}, duplicate files ${manifest.counts.duplicateFiles}`,
+);
+for (const sample of manifest.rejectedSamples) {
+  console.log(`  rejected sample  : index ${sample.index} — ${sample.reason} — ${sample.raw}`);
+}
+for (const sample of manifest.duplicateSamples) {
+  console.log(
+    `  duplicate sample : index ${sample.index} — ${sample.reason} — ` +
+      `m_id ${String(sample.m_id)} / ${String(sample.m_filename)} (kept m_id ${String(sample.kept?.m_id)})`,
+  );
+}
+
+headed('[items / npcs / spells] re-read the source _deser.json for each sampled row');
+const templates = await scanTemplateTree(TREE, { manifest });
 const templateByKey = new Map<string, TemplateRow>();
 for (const row of templates.rows) {
   if (row.id !== null) {
@@ -137,10 +172,39 @@ console.log(
     `spells=${templates.spells.length.toLocaleString('en-US')} ` +
     `npcs=${templates.npcs.length.toLocaleString('en-US')}`,
 );
+console.log(
+  `  manifest ids used: ${templates.manifest.assigned.toLocaleString('en-US')} / ` +
+    `fallback ${templates.manifest.fallback.toLocaleString('en-US')} / ` +
+    `missing ${templates.manifest.missing.toLocaleString('en-US')} / ` +
+    `mismatches ${templates.manifest.mismatches.toLocaleString('en-US')}`,
+);
+
+/** The D33(b) name ladder, shared by the items/npcs/spell checks. */
+function ladderName(
+  doc: Record<string, unknown> | undefined,
+  object: Record<string, unknown>,
+): { expected: string; ladder: string } {
+  const displayName = typeof object.m_displayName === 'string' ? object.m_displayName : '';
+  const objectName = typeof object.m_objectName === 'string' ? object.m_objectName : '';
+  const spellName = typeof object.m_name === 'string' ? object.m_name : '';
+  const resolved = lookupString(db, displayName);
+  if (displayName !== '') {
+    return resolved !== undefined && resolved !== ''
+      ? { expected: resolved, ladder: `m_displayName → string_table (${displayName})` }
+      : { expected: displayName, ladder: `m_displayName raw-key fallback (${displayName})` };
+  }
+  if (objectName !== '') {
+    return { expected: objectName, ladder: 'm_objectName (m_displayName empty)' };
+  }
+  return {
+    expected: spellName,
+    ladder: `m_name (m_displayName and m_objectName empty) — ${String(doc?._className)}`,
+  };
+}
 
 async function checkTemplateTable(
   label: string,
-  family: 'item' | 'spell' | 'npc',
+  family: 'item' | 'npc',
   rows: Array<{ id: number; name: string }>,
 ): Promise<void> {
   headed(`[${label}] ${SAMPLE} random rows`);
@@ -159,42 +223,57 @@ async function checkTemplateTable(
     const doc = await readJson(source.sourcePath);
     const object = objectOf(doc);
     const rawId = object.m_templateID;
-    const displayName = typeof object.m_displayName === 'string' ? object.m_displayName : '';
-    const objectName = typeof object.m_objectName === 'string' ? object.m_objectName : '';
-    const spellName = typeof object.m_name === 'string' ? object.m_name : '';
-    const resolved = lookupString(db, displayName);
-    const suffix = displayName.slice(displayName.lastIndexOf('_') + 1);
-    const idMatches =
-      family === 'spell' ? langKeyToIndex(suffix) === row.id : Number(rawId) === row.id;
-    // The D33(b) ladder: m_displayName → resolved value → raw key → m_objectName
-    // (→ m_name for the one family that carries it). A row whose m_displayName is
-    // empty is legitimately named from m_objectName; the string table is not
-    // involved at all, so it must not be asserted for those rows.
-    const expectedName = displayName !== '' ? resolved : objectName !== '' ? objectName : spellName;
-    const ladder =
-      displayName === ''
-        ? objectName !== ''
-          ? 'm_objectName (m_displayName empty)'
-          : 'm_name (m_displayName and m_objectName empty)'
-        : resolved !== undefined && resolved !== ''
-          ? 'm_displayName → string_table'
-          : 'm_displayName raw-key fallback';
+    const manifestPath = manifestPathForSource(TREE, source.sourcePath);
+    const manifestId = manifest.byFile.get(manifestPath);
+    const { expected, ladder } = ladderName(doc, object);
     console.log(`     source      : ${source.sourcePath}`);
+    console.log(`     manifest    : ${manifestPath} → m_id ${String(manifestId)} (D35 id source)`);
     console.log(
-      `     _className  : ${String(doc?._className)} (family ${source.family})  m_templateID=${String(rawId)}  m_displayName=${JSON.stringify(displayName)}  m_objectName=${JSON.stringify(objectName)}`,
-    );
-    console.log(
-      `     string_table: lookupString(${JSON.stringify(displayName)}) = ${JSON.stringify(resolved)}`,
+      `     _className  : ${String(doc?._className)} (family ${source.family})  m_templateID=${String(rawId)}  m_displayName=${JSON.stringify(object.m_displayName)}  m_objectName=${JSON.stringify(object.m_objectName)}`,
     );
     console.log(`     ladder      : ${ladder}`);
+    report(manifestId === row.id, `id equals the manifest m_id (${String(manifestId)})`);
+    report(Number(rawId) === row.id, `embedded m_templateID agrees (${String(rawId)})`);
     report(
-      idMatches,
-      `id matches source (${family === 'spell' ? `m_displayName index ${String(langKeyToIndex(suffix))}` : `m_templateID ${String(rawId)}`})`,
+      expected === row.name,
+      `name matches the source-derived name ${JSON.stringify(expected)} (db ${JSON.stringify(row.name)})`,
     );
+  }
+}
+
+/**
+ * The p1-06b-ac2 check: `spells.template_id` → manifest `m_filename` → the real
+ * `_deser.json` → the resolved name must equal the database name. The corpus
+ * references exactly these ids, so this is the resolution the old
+ * `m_displayName`-index keying could never perform.
+ */
+async function checkSpellTable(rows: Array<{ id: number; name: string }>): Promise<void> {
+  const count = Math.max(SAMPLE, 10);
+  headed(`[spells] ${count} random rows: template_id → manifest file → _deser.json → name`);
+  for (const row of sample(rows, count)) {
+    console.log(`  - spells id=${row.id}  db name=${JSON.stringify(row.name)}`);
+    const manifestPath = manifest.byId.get(row.id);
+    if (manifestPath === undefined) {
+      report(false, `id ${row.id} is not in the manifest`);
+      continue;
+    }
+    const deserPath = path.join(TREE, manifestPathToDeserPath(manifestPath));
+    const doc = await readJson(deserPath);
+    const object = objectOf(doc);
+    const { expected, ladder } = ladderName(doc, object);
+    const embedded = object.m_templateID;
+    console.log(`     manifest    : ${manifestPath}`);
+    console.log(`     source      : ${deserPath}`);
+    console.log(`     _className  : ${String(doc?._className)}`);
+    console.log(`     ladder      : ${ladder}`);
+    console.log(`     triple      : ${row.id} -> ${manifestPath} -> ${JSON.stringify(expected)}`);
+    report(manifestPath.startsWith('Spells/'), 'the manifest path is under Spells/');
+    report(doc !== undefined, 'the manifest target file exists on disk');
     report(
-      expectedName === row.name,
-      `name matches the source-derived name ${JSON.stringify(expectedName)} (db ${JSON.stringify(row.name)})`,
+      embedded === undefined || embedded === null,
+      'SpellTemplate carries no m_templateID (the id can only come from the manifest)',
     );
+    report(expected === row.name, `resolved name matches the db name ${JSON.stringify(row.name)}`);
   }
 }
 
@@ -206,9 +285,7 @@ await checkTemplateTable(
     name: string;
   }>,
 );
-await checkTemplateTable(
-  'spells',
-  'spell',
+await checkSpellTable(
   db.prepare('SELECT template_id AS id, name FROM spells ORDER BY template_id').all() as Array<{
     id: number;
     name: string;
@@ -221,6 +298,118 @@ await checkTemplateTable(
     id: number;
     name: string;
   }>,
+);
+
+// ------------------------------------------------- corpus spell coverage --
+/** Collects numbers under `keys` anywhere inside `value`. */
+function collectNumbers(value: unknown, keys: ReadonlySet<string>, out: Set<number>): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectNumbers(item, keys, out);
+    }
+    return;
+  }
+  if (typeof value !== 'object' || value === null) {
+    return;
+  }
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    if (keys.has(key) && typeof child === 'number' && Number.isFinite(child)) {
+      out.add(child);
+      continue;
+    }
+    if (keys.has(key) && Array.isArray(child)) {
+      for (const item of child) {
+        if (typeof item === 'number' && Number.isFinite(item)) {
+          out.add(item);
+        }
+      }
+      continue;
+    }
+    collectNumbers(child, keys, out);
+  }
+}
+
+const corpusDir = settings.spiraldb_path;
+const referencedSpellIds = new Set<number>();
+const referenceSource = new Map<number, string>();
+const corpusSpecs = [
+  { dir: 'NpcSpellInventory', keys: new Set(['TemplateID', 'RequiredSpellID']) },
+  { dir: 'CreatureSpellbook', keys: new Set(['SpellTemplateIds']) },
+  { dir: 'QuestTemplates', keys: new Set(['m_spellID']) },
+] as const;
+
+headed(`[corpus spell coverage] spell ids referenced by ${corpusDir} (p1-06b-ac2)`);
+for (const spec of corpusSpecs) {
+  const dir = path.join(corpusDir, spec.dir);
+  let files: string[];
+  try {
+    files = await readdir(dir);
+  } catch {
+    console.log(`  ${spec.dir}: directory missing — skipped`);
+    continue;
+  }
+  const beforeDir = referencedSpellIds.size;
+  for (const name of files.filter((entry) => entry.endsWith('.json'))) {
+    const file = path.join(dir, name);
+    const doc = await readJson(file);
+    if (!doc) {
+      continue;
+    }
+    const before = new Set(referencedSpellIds);
+    collectNumbers(doc, spec.keys, referencedSpellIds);
+    for (const id of referencedSpellIds) {
+      if (!before.has(id) && !referenceSource.has(id)) {
+        referenceSource.set(id, path.join(spec.dir, name));
+      }
+    }
+  }
+  console.log(`  ${spec.dir.padEnd(20)}: +${referencedSpellIds.size - beforeDir} new id(s)`);
+}
+
+let resolved = 0;
+let inManifest = 0;
+let manifestSpellsPath = 0;
+const triples: string[] = [];
+for (const id of [...referencedSpellIds].sort((a, b) => a - b)) {
+  const manifestPath = manifest.byId.get(id);
+  if (manifestPath !== undefined) {
+    inManifest += 1;
+    if (manifestPath.startsWith('Spells/')) {
+      manifestSpellsPath += 1;
+    }
+  }
+  const row = db.prepare('SELECT name FROM spells WHERE template_id = ?').get(id) as
+    { name: string } | undefined;
+  if (row !== undefined) {
+    resolved += 1;
+    if (triples.length < 12) {
+      triples.push(
+        `${id} -> ${manifestPath ?? '(not in the manifest)'} -> ${JSON.stringify(row.name)}` +
+          ` (referenced by ${referenceSource.get(id) ?? '?'})`,
+      );
+    }
+  }
+}
+const total = referencedSpellIds.size;
+const rate = total === 0 ? 0 : (resolved / total) * 100;
+console.log(`  referenced ids     : ${total.toLocaleString('en-US')}`);
+console.log(
+  `  in the manifest    : ${inManifest.toLocaleString('en-US')} (${manifestSpellsPath.toLocaleString('en-US')} point at Spells/*.xml)`,
+);
+console.log(
+  `  resolved in spells : ${resolved.toLocaleString('en-US')}/${total.toLocaleString('en-US')} (${rate.toFixed(1)}%) — was 0 before D35, expect ≥700`,
+);
+for (const triple of triples) {
+  console.log(`  triple             : ${triple}`);
+}
+report(total > 0, 'the corpus references at least one spell id');
+report(
+  resolved >= 700,
+  `≥700 of the referenced spell ids resolve to a name through the database (${resolved}/${total})`,
+);
+report(
+  resolved === manifestSpellsPath,
+  `every referenced id that points at a Spells/ file resolves (${resolved} vs ${manifestSpellsPath})`,
 );
 
 // ------------------------------------------------------------------ corpus --

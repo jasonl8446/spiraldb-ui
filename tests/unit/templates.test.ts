@@ -11,10 +11,13 @@ import {
   NPC_CLASSES,
   PET_CLASSES,
   SPELL_CLASSES,
+  SPELL_CLASS_SUFFIX,
   classifyTemplateClass,
   extractTemplateRow,
+  manifestPathForSource,
   scanTemplateTree,
 } from '@server/services/sync/templates';
+import { parseTemplateManifest, type TemplateManifest } from '@server/services/sync/manifest';
 
 /**
  * Task 1.4d acceptance (p1-05-ac3): families are discriminated by the JSON
@@ -23,8 +26,20 @@ import {
  * mounts fold into the flat `npcs` table, and `m_templateID` is reported both as
  * a number (`items.gid`) and as a decimal string (the verification key form).
  *
- * The real fixtures are byte-exact copies from the retained `/tmp/wad-spike`.
+ * Task 1.4h acceptance (p1-06b): the manifest `m_id` for a row's source path is
+ * the id (D35), the embedded `m_templateID` is a reported cross-check, and any
+ * `*SpellTemplate` class is a spell.
+ *
+ * The real fixtures are byte-exact copies from the retained `/tmp/wad-spike`; the
+ * manifest is always synthetic (the real one is 17 MB and never committed).
  */
+
+/** A synthetic manifest from `[filename, id]` pairs. */
+function manifestOf(entries: Array<[string, number]>): TemplateManifest {
+  return parseTemplateManifest({
+    _object: { m_serializedTemplates: entries.map(([m_filename, m_id]) => ({ m_filename, m_id })) },
+  });
+}
 
 const FIXTURES = fileURLToPath(new URL('../../server/test/fixtures/', import.meta.url));
 const tempRoots: string[] = [];
@@ -81,6 +96,36 @@ describe('template family classification (D33(a))', () => {
     expect(classifyTemplateClass('WizCinematicActorTemplate')).toBeUndefined();
     expect(classifyTemplateClass('BattlegroundTemplate')).toBeUndefined();
     expect(classifyTemplateClass('')).toBeUndefined();
+  });
+
+  it('classifies every *SpellTemplate class as a spell without touching items/NPCs (D35)', () => {
+    expect(SPELL_CLASS_SUFFIX).toBe('SpellTemplate');
+    for (const name of [
+      'SpellTemplate',
+      'TieredSpellTemplate',
+      'CastleMagicSpellTemplate',
+      'CantripsSpellTemplate',
+      'GardenSpellTemplate',
+      'WhirlyBurlySpellTemplate',
+      'FishingSpellTemplate',
+      'SomeFutureSpellTemplate',
+    ]) {
+      expect(classifyTemplateClass(name)).toBe('spell');
+    }
+    // Exact matches still win, so the object families are unaffected.
+    for (const name of ITEM_CLASSES) {
+      expect(classifyTemplateClass(name)).toBe('item');
+    }
+    for (const name of NPC_CLASSES) {
+      expect(classifyTemplateClass(name)).toBe('npc');
+    }
+    for (const name of PET_CLASSES) {
+      expect(classifyTemplateClass(name)).toBe('pet');
+    }
+    for (const name of MOUNT_CLASSES) {
+      expect(classifyTemplateClass(name)).toBe('mount');
+    }
+    expect(classifyTemplateClass('SpellTemplat')).toBeUndefined();
   });
 });
 
@@ -292,5 +337,188 @@ describe('scanTemplateTree — synthetic tree walk (task 1.4d)', () => {
       },
     });
     expect(result.items).toEqual([{ gid: 107_071, name: 'mg_skullriders_start' }]);
+  });
+});
+
+describe('manifest-driven ids (task 1.4h / D35)', () => {
+  it('maps a source path to the manifest spelling (both separators, leading ./)', () => {
+    expect(manifestPathForSource('/tree', '/tree/ObjectData/A_deser.json')).toBe(
+      'ObjectData/A.xml',
+    );
+    expect(manifestPathForSource('/tree', '/tree/Spells/Tiered Spells/Imp_deser.json')).toBe(
+      'Spells/Tiered Spells/Imp.xml',
+    );
+    // A path outside the tree never matches a manifest entry.
+    expect(manifestPathForSource('/tree', '/elsewhere/A_deser.json')).toBe('../elsewhere/A.xml');
+  });
+
+  it('takes the id from extractTemplateRow options when the manifest supplied one', () => {
+    const row = extractTemplateRow(fixture('item_skullriders_start_deser.json'), {
+      manifestId: 5_550_000,
+    });
+    expect(row).toMatchObject({
+      id: 5_550_000,
+      idText: '5550000',
+      idSource: 'manifest',
+      manifestId: 5_550_000,
+      embeddedId: 107_071,
+      name: 'mg_skullriders_start',
+    });
+  });
+
+  it('keys a spell by the manifest id — the id the corpus references (D35)', () => {
+    // `SpellTemplate` carries no m_templateID; the manifest id replaces the
+    // string-table index that used to be the key.
+    const row = extractTemplateRow(fixture('spell_pixie_deser.json'), {
+      resolveName: (key) => (key === 'Spells_00000424' ? 'Pixie' : undefined),
+      manifestId: 1143963608,
+    });
+    expect(row).toMatchObject({
+      family: 'spell',
+      id: 1143963608,
+      idSource: 'manifest',
+      manifestId: 1143963608,
+      embeddedId: null,
+      name: 'Pixie',
+      nameSource: 'resolved',
+    });
+  });
+
+  it('lets the manifest id win and reports the embedded m_templateID disagreement', async () => {
+    const tree = makeTree({
+      'ObjectData/mg_skullriders_start_deser.json': 'item_skullriders_start_deser.json',
+    });
+    const manifest = manifestOf([['ObjectData/mg_skullriders_start.xml', 5_550_000]]);
+
+    const result = await scanTemplateTree(tree, { manifest });
+
+    // The manifest wins for the row...
+    expect(result.items).toEqual([{ gid: 5_550_000, name: 'mg_skullriders_start' }]);
+    expect(result.rows[0]).toMatchObject({
+      id: 5_550_000,
+      idSource: 'manifest',
+      manifestId: 5_550_000,
+      embeddedId: 107_071,
+    });
+    // ...and the disagreement is counted, never silent.
+    expect(result.manifest).toMatchObject({
+      entries: 1,
+      assigned: 1,
+      fallback: 0,
+      mismatches: 1,
+      missing: 0,
+    });
+    expect(result.manifest.mismatchSamples).toHaveLength(1);
+    expect(result.manifest.mismatchSamples[0]).toMatchObject({
+      embeddedId: 107_071,
+      manifestId: 5_550_000,
+    });
+    expect(result.manifest.mismatchSamples[0].sourcePath).toMatch(/mg_skullriders_start_deser/);
+  });
+
+  it('falls back to the embedded id for a row missing from the manifest and reports it', async () => {
+    const tree = makeTree({
+      'ObjectData/mg_skullriders_start_deser.json': 'item_skullriders_start_deser.json',
+      'Spells/Pixie_deser.json': 'spell_pixie_deser.json',
+    });
+    // Only the spell is listed; the item row is absent.
+    const manifest = manifestOf([['Spells/Pixie.xml', 424]]);
+
+    const result = await scanTemplateTree(tree, { manifest });
+
+    expect(result.items).toEqual([{ gid: 107_071, name: 'mg_skullriders_start' }]);
+    expect(result.spells).toEqual([{ template_id: 424, name: 'Spells_00000424' }]);
+    const item = result.rows.find((row) => row.family === 'item');
+    expect(item).toMatchObject({
+      id: 107_071,
+      idSource: 'm_templateID',
+      manifestId: null,
+      embeddedId: 107_071,
+    });
+    expect(result.manifest).toMatchObject({
+      entries: 1,
+      assigned: 1,
+      fallback: 1,
+      mismatches: 0,
+      missing: 1,
+    });
+    expect(result.manifest.missingSamples).toEqual([
+      {
+        sourcePath: path.join(tree, 'ObjectData', 'mg_skullriders_start_deser.json'),
+        manifestPath: 'ObjectData/mg_skullriders_start.xml',
+      },
+    ]);
+  });
+
+  it('distinguishes "missing from the manifest" from "an embedded id was used"', async () => {
+    const tree = makeTree({});
+    mkdirSync(path.join(tree, 'ObjectData'), { recursive: true });
+    // Named, but no m_templateID and no manifest entry → no id at all.
+    writeFileSync(
+      path.join(tree, 'ObjectData', 'NoId_deser.json'),
+      JSON.stringify({
+        _className: 'WizItemTemplate',
+        _object: { m_displayName: 'Items_00000001', m_templateID: null },
+      }),
+    );
+    // Named, embedded id present, still no manifest entry → the fallback is used.
+    writeFileSync(
+      path.join(tree, 'ObjectData', 'Falls_back_deser.json'),
+      JSON.stringify({
+        _className: 'WizItemTemplate',
+        _object: { m_displayName: 'Items_00000002', m_templateID: 42 },
+      }),
+    );
+
+    const result = await scanTemplateTree(tree);
+
+    expect(result.counts.noId).toBe(1);
+    expect(result.manifest).toMatchObject({ missing: 2, fallback: 1, assigned: 0 });
+    expect(result.items).toEqual([{ gid: 42, name: 'Items_00000002' }]);
+    expect(result.rows.find((row) => row.id === null)?.name).toBe('Items_00000001');
+  });
+
+  it('reports every row as missing when no manifest is supplied at all', async () => {
+    const tree = makeTree({
+      'ObjectData/mg_skullriders_start_deser.json': 'item_skullriders_start_deser.json',
+      'Spells/Pixie_deser.json': 'spell_pixie_deser.json',
+    });
+
+    const result = await scanTemplateTree(tree);
+
+    expect(result.manifest).toMatchObject({
+      entries: 0,
+      assigned: 0,
+      fallback: 2,
+      mismatches: 0,
+      missing: 2,
+    });
+    // Legacy behaviour is preserved for the fallback: the spell's id is the
+    // m_displayName string-table index.
+    expect(result.spells).toEqual([{ template_id: 424, name: 'Spells_00000424' }]);
+    expect(result.rows.find((row) => row.family === 'spell')?.idSource).toBe('displayNameIndex');
+  });
+
+  it('scans every *SpellTemplate class as a spell and keys it by the manifest id', async () => {
+    const castle = {
+      _className: 'CastleMagicSpellTemplate',
+      _object: { m_name: 'Castle Bolt', m_displayName: 'Spells_00000999', m_objectName: null },
+    };
+    const tree = makeTree({
+      'Spells/Castle Bolt_deser.json': 'spell_pixie_deser.json',
+    });
+    writeFileSync(path.join(tree, 'Spells', 'Castle Bolt_deser.json'), JSON.stringify(castle));
+    const manifest = manifestOf([['Spells/Castle Bolt.xml', 7_777_777]]);
+
+    const result = await scanTemplateTree(tree, {
+      manifest,
+      resolveName: (key) => (key === 'Spells_00000999' ? 'Castle Bolt' : undefined),
+    });
+
+    expect(result.counts.spell).toBe(1);
+    expect(result.counts.item).toBe(0);
+    expect(result.counts.npc).toBe(0);
+    expect(result.spells).toEqual([{ template_id: 7_777_777, name: 'Castle Bolt' }]);
+    expect(result.manifest.mismatches).toBe(0);
   });
 });

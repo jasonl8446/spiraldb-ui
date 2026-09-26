@@ -2,11 +2,17 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { isPlainObject, parseJsonLenient } from './json.js';
+import {
+  MANIFEST_SAMPLE_LIMIT,
+  deserPathToManifestPath,
+  type ManifestIdReport,
+  type TemplateManifest,
+} from './manifest.js';
 
 /**
- * Template parsers — task 1.4d
- * ([plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4d,
- * decision **D33(a)/(b)**, spike 1.4a §4).
+ * Template parsers — tasks 1.4d + 1.4h
+ * ([plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4d
+ * §1.4h, decisions **D33(a)/(b)** and **D35**, spike 1.4a §4).
  *
  * Three spec assumptions are wrong in the real data (D33):
  *
@@ -14,7 +20,10 @@ import { isPlainObject, parseJsonLenient } from './json.js';
  *    path** — globbing `*ItemTemplate*` matches zero files. The real class names
  *    are `WizItemTemplate` (76,679), `ItemBundleTemplate` (1,810),
  *    `ReagentItemTemplate` (867), `PetSnackItemTemplate` (478), `ItemTemplate` (2);
- *    `SpellTemplate` (14,856), `TieredSpellTemplate` (2,579);
+ *    `SpellTemplate` (14,856), `TieredSpellTemplate` (2,579) plus any other
+ *    `*SpellTemplate` class (D35: `CastleMagicSpellTemplate` 290,
+ *    `CantripsSpellTemplate` 162, `GardenSpellTemplate` 143,
+ *    `WhirlyBurlySpellTemplate` 94, `FishingSpellTemplate` 49);
  *    `WizGameObjectTemplate` (15,190), `GameObjectTemplate` (7,698);
  *    `WizPetTemplate` (143), `WizMountTemplate` (2). **`ActorTemplate` does not exist.**
  * 2. The friendly-name field is **`m_displayName`**, not `m_name` (`m_name` exists
@@ -23,19 +32,32 @@ import { isPlainObject, parseJsonLenient } from './json.js';
  * 3. Pets and mounts are folded into `npcs` so ID lookups never miss (the plan's
  *    "flat list, no type classification").
  *
- * ## Two measured gaps, reported rather than papered over
+ * ## The id comes from the manifest (D35 / task 1.4h)
  *
- * - `SpellTemplate`/`TieredSpellTemplate` carry **no numeric template ID at all**
- *   (only `m_name`, `m_displayName`, `m_spellBase`). The `spells.template_id`
- *   column therefore takes the **string-table index of `m_displayName`**
- *   (`Spells_00000424` → 424) and the row records `idSource`, because the corpus's
- *   `m_spellID` references cannot be derived from Root.wad.
- * - `m_templateID` is a JSON number but the verification schema keys entries by
- *   *string* (`entry_status.object_key`, [spec-data-model.md] L262-274), so every
- *   row carries both `id` (number) and `idText` (decimal string).
+ * Every row's id is looked up in `TemplateManifest_deser.json` by its source path
+ * (`<filename>.xml` ↔ `<filename>_deser.json`) — see `manifest.ts`. The per-file
+ * `m_templateID` is kept as a **cross-check**, not as the source:
+ *
+ * - the manifest id wins whenever the source path has an entry (`idSource: 'manifest'`);
+ * - a row with no manifest entry falls back to the legacy id — `m_templateID` for
+ *   the object-derived families, the `m_displayName` string-table index for spells
+ *   — and is counted in `manifest.missing`;
+ * - a row where both exist and disagree is counted in `manifest.mismatches` with a
+ *   bounded sample. Measured on the real tree: 0 of 123,041 rows are missing from
+ *   the manifest and 0 disagree.
+ *
+ * That replaces the old keying, which used the string-table index of
+ * `m_displayName` for spells. The index space is shared by the `.lang` categories
+ * `Spells_*` and `Spell_*` (index 151 = "Freeze" *and* "Snow Shield"), so 16,474
+ * parsed rows collapsed onto 3,471 ids and the INTEGER primary key dropped 13,003.
+ * The manifest gives 18,173 distinct spell ids — exactly the `Spells/` entry count.
+ *
+ * `m_templateID` is a JSON number but the verification schema keys entries by
+ * *string* (`entry_status.object_key`, [spec-data-model.md] L262-274), so every
+ * row carries both `id` (number) and `idText` (decimal string).
  *
  * Documents are parsed, distilled into a row, and dropped — the scanner never
- * retains a whole `_deser.json` (133,937 files, 1.15 GB unpacked).
+ * retains a whole `_deser.json` (123,042 files under the two scanned roots).
  */
 
 /** `_className` values that belong to the `items` table (D33(a)). */
@@ -47,8 +69,16 @@ export const ITEM_CLASSES = [
   'ItemTemplate',
 ] as const;
 
-/** `_className` values that belong to the `spells` table (D33(a)). */
+/** `_className` values that belong to the `spells` table (D33(a) + D35). */
 export const SPELL_CLASSES = ['SpellTemplate', 'TieredSpellTemplate'] as const;
+
+/**
+ * Any other class ending in this suffix is a spell too (D35): the measured
+ * `CastleMagicSpellTemplate` (290), `CantripsSpellTemplate` (162),
+ * `GardenSpellTemplate` (143), `WhirlyBurlySpellTemplate` (94) and
+ * `FishingSpellTemplate` (49) bring the family to the manifest's 18,173.
+ */
+export const SPELL_CLASS_SUFFIX = 'SpellTemplate';
 
 /** `_className` values that belong to the `npcs` table (D33(a)). */
 export const NPC_CLASSES = ['WizGameObjectTemplate', 'GameObjectTemplate'] as const;
@@ -72,16 +102,24 @@ const CLASS_TO_FAMILY: ReadonlyMap<string, TemplateFamily> = new Map([
   ...MOUNT_CLASSES.map((name) => [name, 'mount'] as const),
 ]);
 
-/** Classifies a `_className`; `undefined` for every class that is not a friendly name. */
+/**
+ * Classifies a `_className`; `undefined` for every class that is not a friendly
+ * name. Exact matches win first, so the item/NPC families are unaffected by the
+ * `*SpellTemplate` suffix rule (D35).
+ */
 export function classifyTemplateClass(className: string): TemplateFamily | undefined {
-  return CLASS_TO_FAMILY.get(className);
+  const exact = CLASS_TO_FAMILY.get(className);
+  if (exact !== undefined) {
+    return exact;
+  }
+  return className.endsWith(SPELL_CLASS_SUFFIX) ? 'spell' : undefined;
 }
 
 /** How the row's display name was derived. */
 export type TemplateNameSource = 'resolved' | 'rawKey' | 'objectName' | 'spellName';
 
 /** Where the row's numeric id came from. */
-export type TemplateIdSource = 'm_templateID' | 'displayNameIndex' | 'none';
+export type TemplateIdSource = 'manifest' | 'm_templateID' | 'displayNameIndex' | 'none';
 
 export interface TemplateRow {
   family: TemplateFamily;
@@ -90,6 +128,10 @@ export interface TemplateRow {
   /** Same value as a decimal string — the verification-schema key form. */
   idText: string | null;
   idSource: TemplateIdSource;
+  /** The manifest `m_id` for this source path, or `null` when it is absent. */
+  manifestId: number | null;
+  /** The file's own `m_templateID` (number form) — the cross-check value. */
+  embeddedId: number | null;
   /** Friendly name after the D33(b) ladder. Never empty for an emitted row. */
   name: string;
   nameSource: TemplateNameSource;
@@ -111,6 +153,12 @@ export interface ExtractTemplateOptions {
   resolveName?: (key: string) => string | undefined;
   /** On-disk path, recorded for provenance. */
   sourcePath?: string;
+  /**
+   * The manifest `m_id` for this document's source path — the authoritative id
+   * (D35). `null`/absent means "no manifest entry", which falls back to the
+   * embedded id.
+   */
+  manifestId?: number | null;
 }
 
 function asString(value: unknown): string {
@@ -178,11 +226,21 @@ export function extractTemplateRow(
     return undefined;
   }
 
-  let id = asNumericId(object.m_templateID);
-  let idSource: TemplateIdSource = id === null ? 'none' : 'm_templateID';
+  const manifestId = options.manifestId ?? null;
+  const embeddedId = asNumericId(object.m_templateID);
+
+  // The manifest id wins (D35); the embedded `m_templateID` is only the fallback
+  // for a row the manifest does not list, and its disagreement is reported by the
+  // scanner rather than silently preferred.
+  let id: number | null = manifestId;
+  let idSource: TemplateIdSource = 'manifest';
+  if (id === null) {
+    id = embeddedId;
+    idSource = id === null ? 'none' : 'm_templateID';
+  }
   if (id === null && family === 'spell') {
-    // SpellTemplate has no m_templateID (measured); its per-spell numeric
-    // identity is the string-table index inside m_displayName.
+    // Legacy fallback: a `SpellTemplate` has no `m_templateID`, so its old
+    // identity was the string-table index inside `m_displayName`.
     const separator = rawDisplayName.lastIndexOf('_');
     if (separator > 0) {
       id = asNumericId(rawDisplayName.slice(separator + 1));
@@ -195,6 +253,8 @@ export function extractTemplateRow(
     id,
     idText: id === null ? null : String(id),
     idSource,
+    manifestId,
+    embeddedId,
     name,
     nameSource,
     rawDisplayName,
@@ -248,8 +308,24 @@ export interface ScanTemplateTreeOptions extends ExtractTemplateOptions {
   roots?: readonly string[];
   /** Bounded read concurrency. */
   concurrency?: number;
+  /**
+   * The authoritative id source (D35). Absent/`null` degrades to the embedded
+   * ids and reports every row as "missing from the manifest".
+   */
+  manifest?: TemplateManifest | null;
   /** Called for every unreadable/undeserializable file; the scan continues. */
   onError?: (file: string, error: unknown) => void;
+}
+
+/**
+ * `<tree>/ObjectData/LM Equipment/Wands/ _deser.json` →
+ * `ObjectData/LM Equipment/Wands/ .xml` (the manifest spelling, `/` separators).
+ *
+ * A path outside the tree yields a `../…` relative path, which never matches a
+ * manifest entry — the row then reports as missing and falls back.
+ */
+export function manifestPathForSource(treeDir: string, sourcePath: string): string {
+  return deserPathToManifestPath(path.relative(treeDir, sourcePath).split(path.sep).join('/'));
 }
 
 export interface TemplateScanResult {
@@ -279,6 +355,8 @@ export interface TemplateScanResult {
     noId: number;
   };
   parseErrors: Array<{ file: string; message: string }>;
+  /** Manifest id provenance — see `ManifestIdReport`. */
+  manifest: ManifestIdReport;
 }
 
 /** Recursively lists `*_deser.json` files under `root`. */
@@ -318,6 +396,7 @@ export async function scanTemplateTree(
   const parse = options.parse ?? parseJsonLenient;
   const roots = options.roots ?? TEMPLATE_SCAN_ROOTS;
   const concurrency = Math.max(1, options.concurrency ?? 24);
+  const manifest = options.manifest ?? null;
 
   const files: string[] = [];
   for (const root of roots) {
@@ -327,6 +406,15 @@ export async function scanTemplateTree(
 
   const rows: TemplateRow[] = [];
   const parseErrors: TemplateScanResult['parseErrors'] = [];
+  const manifestReport: ManifestIdReport = {
+    entries: manifest?.byFile.size ?? 0,
+    assigned: 0,
+    fallback: 0,
+    mismatches: 0,
+    missing: 0,
+    mismatchSamples: [],
+    missingSamples: [],
+  };
   let scannedFiles = 0;
   let skippedClasses = 0;
   let noName = 0;
@@ -359,9 +447,12 @@ export async function scanTemplateTree(
         continue;
       }
       scannedFiles += 1;
+      const manifestPath = manifestPathForSource(treeDir, entry.file);
+      const manifestId = manifest?.byFile.get(manifestPath) ?? null;
       const row = extractTemplateRow(entry.doc, {
         resolveName: options.resolveName,
         sourcePath: entry.file,
+        manifestId,
       });
       if (!row) {
         const family = isPlainObject(entry.doc)
@@ -374,6 +465,28 @@ export async function scanTemplateTree(
           skippedClasses += 1;
         }
         continue;
+      }
+      if (row.manifestId === null) {
+        manifestReport.missing += 1;
+        // The embedded id is only "used" when the ladder actually found one.
+        if (row.idSource !== 'none') {
+          manifestReport.fallback += 1;
+        }
+        if (manifestReport.missingSamples.length < MANIFEST_SAMPLE_LIMIT) {
+          manifestReport.missingSamples.push({ sourcePath: entry.file, manifestPath });
+        }
+      } else {
+        manifestReport.assigned += 1;
+        if (row.embeddedId !== null && row.embeddedId !== row.manifestId) {
+          manifestReport.mismatches += 1;
+          if (manifestReport.mismatchSamples.length < MANIFEST_SAMPLE_LIMIT) {
+            manifestReport.mismatchSamples.push({
+              sourcePath: entry.file,
+              embeddedId: row.embeddedId,
+              manifestId: row.manifestId,
+            });
+          }
+        }
       }
       rows.push(row);
     }
@@ -414,5 +527,5 @@ export async function scanTemplateTree(
     npcs.push({ template_id: row.id, name: row.name });
   }
 
-  return { rows, items, spells, npcs, counts, parseErrors };
+  return { rows, items, spells, npcs, counts, parseErrors, manifest: manifestReport };
 }

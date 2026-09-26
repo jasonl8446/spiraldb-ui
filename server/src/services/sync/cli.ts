@@ -138,21 +138,28 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('zones', n(result.counts.zones)),
       field('drop_tables', n(result.counts.drop_tables)),
       field('string_table', n(result.counts.string_table)),
+      // Manifest id provenance (D35 / task 1.4h). Always printed, including the
+      // zeroes: "0 dropped" is the acceptance criterion, so it must be visible.
+      field('manifest entries', `${n(result.manifest.entries)} ids`),
+      field(
+        'manifest ids used',
+        `${n(result.manifest.assigned)} rows keyed by the manifest (fallback ${n(
+          result.manifest.fallback,
+        )})`,
+      ),
+      field(
+        'id mismatches',
+        `${n(result.manifest.mismatches)} rows (embedded m_templateID vs manifest)`,
+      ),
+      field('missing manifest', `${n(result.manifest.missing)} rows`),
+      field(
+        'dropped (PK)',
+        `${n(
+          result.deduplicated.items + result.deduplicated.spells + result.deduplicated.npcs,
+        )} rows (items ${n(result.deduplicated.items)}, ` +
+          `spells ${n(result.deduplicated.spells)}, npcs ${n(result.deduplicated.npcs)})`,
+      ),
     );
-    const dropped =
-      result.deduplicated.items + result.deduplicated.spells + result.deduplicated.npcs;
-    if (dropped > 0) {
-      // Measured reality: `spells.template_id` (the m_displayName index) is not
-      // unique per spell template, so the primary key forces rows out. Reported,
-      // never silent — see `SyncDedupe` in execute.ts.
-      lines.push(
-        field(
-          'dropped (PK)',
-          `${n(dropped)} rows (items ${n(result.deduplicated.items)}, ` +
-            `spells ${n(result.deduplicated.spells)}, npcs ${n(result.deduplicated.npcs)})`,
-        ),
-      );
-    }
     lines.push(
       field(
         'unpack / scan / write',
