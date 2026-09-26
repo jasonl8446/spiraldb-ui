@@ -115,7 +115,10 @@ describe('unpack runner — argv, temp dir and cleanup (task 1.4c)', () => {
     });
 
     // The error carries the temp dir and the underlying cause for reporting.
-    const error = await promise.catch((caught: unknown) => caught as UnpackError);
+    // `promise.catch(handler)` types as `RunUnpackResult | UnpackError` — the promise's
+    // value type joined with the handler's return type — so narrow here, keeping the
+    // `toBeInstanceOf` assertion below as the runtime check that it really is the error.
+    const error = (await promise.catch((caught: unknown) => caught)) as UnpackError;
     expect(error).toBeInstanceOf(UnpackError);
     expect(error.tempDir).toBe(created);
     expect((error.cause as Error).message).toBe('imcodec: unexpected end of archive');

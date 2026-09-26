@@ -14,7 +14,12 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "vitest"],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"],
+      "@server/*": ["../server/src/*"]
+    }
   },
-  "include": ["ui/**/*.ts", "../playwright.config.ts"]
+  "include": ["**/*.ts", "../playwright.config.ts"]
 }

@@ -209,11 +209,11 @@ test.describe('sidebar navigation', () => {
         await expect(page.getByRole('main').getByText(item.path, { exact: true })).toBeVisible();
       }
 
-      // Exactly one item is highlighted, and it is the one that was clicked —
-      // except on `/quests/extract`, where react-router's `NavLink` prefix-matches
-      // the `/quests` item as well (see the KNOWN DEFECT test below).
-      const expectedActive = item.path === '/quests/extract' ? 2 : 1;
-      await expect(activeNavLinks(sidebar)).toHaveCount(expectedActive);
+      // Exactly one item is highlighted, and it is the one that was clicked — the
+      // highlight is `activeNavPath(pathname)`, a single value, so a prefix match can
+      // never light up a second item (`/quests/extract` used to light up `/quests` too;
+      // see the nested-route test below for the regression cover).
+      await expect(activeNavLinks(sidebar)).toHaveCount(1);
       const active = navLink(sidebar, item.label);
       await expect(active).toHaveClass(/bg-blue-600\/10/);
       await expect(active).toHaveClass(/text-blue-400/);
@@ -255,24 +255,38 @@ test.describe('sidebar navigation', () => {
     await expect(dropTables).toBeVisible();
   });
 
-  test('KNOWN DEFECT: Extract Quests also highlights Browse Quests', async ({ page }) => {
-    // The sidebar renders react-router `NavLink`s whose `isActive` prefix-matches,
-    // so on `/quests/extract` the `/quests` item is active too: **two** items carry
-    // the active styling. `docs/spec-ui-design.md` L85-89 describes one active item,
-    // and this story's criterion says "exactly one item is" — so this is a genuine
-    // shell defect, reported with story p1-13. It is **not** fixed here because
-    // app/UI behaviour is outside this story's scope (harness + spec only).
+  test('a nested route highlights exactly one item — itself, or the list item that owns it', async ({
+    page,
+  }) => {
+    // Regression cover for the defect story p1-13 found and pinned: the sidebar used
+    // react-router's `NavLink`, whose `isActive` prefix-matches, so `/quests/extract`
+    // highlighted `/quests/extract` **and** `/quests`. `docs/spec-ui-design.md` L85-89
+    // describes one active item, so that was a genuine shell defect. The highlight now
+    // comes from `activeNavPath(pathname)`.
     //
-    // Fix (when the lead decides): make the sidebar's active state come from
-    // `activeNavPath(pathname)` — which already returns a single path — instead of
-    // `NavLink`'s boolean, then flip this test to `toHaveCount(1)`, rename it, and
-    // drop the `/quests/extract` special case in the sweep above.
+    // Both halves matter, because the fix must not be "add `end` everywhere": a detail
+    // route has no nav item of its own and has to keep highlighting the list item it
+    // belongs to.
     await page.goto('/quests/extract');
     const sidebar = sidebarOf(page);
 
-    await expect(activeNavLinks(sidebar)).toHaveCount(2);
+    // An exact nav-path match owns the pathname…
+    await expect(activeNavLinks(sidebar)).toHaveCount(1);
     await expect(navLink(sidebar, 'Extract Quests')).toHaveClass(/bg-blue-600\/10/);
+    await expect(navLink(sidebar, 'Browse Quests')).not.toHaveClass(/bg-blue-600\/10/);
+    // …and only that one item carries the `aria-current` the highlight reflects.
+    await expect(navLink(sidebar, 'Extract Quests')).toHaveAttribute('aria-current', 'page');
+    await expect(navLink(sidebar, 'Browse Quests')).not.toHaveAttribute('aria-current', 'page');
+
+    // A quest detail route is owned by the list item it belongs to — exactly one active.
+    await page.goto('/quests/DS-ACAD-C01-001');
+    await expect(page.getByRole('heading', { name: 'Quest Detail', exact: true })).toBeVisible();
+
+    await expect(activeNavLinks(sidebar)).toHaveCount(1);
     await expect(navLink(sidebar, 'Browse Quests')).toHaveClass(/bg-blue-600\/10/);
+    await expect(navLink(sidebar, 'Extract Quests')).not.toHaveClass(/bg-blue-600\/10/);
+    await expect(navLink(sidebar, 'Browse Quests')).toHaveAttribute('aria-current', 'page');
+    await expect(navLink(sidebar, 'Extract Quests')).not.toHaveAttribute('aria-current', 'page');
   });
 
   test('a non-root deep link is served the SPA shell, and an unknown path is the SPA 404', async ({

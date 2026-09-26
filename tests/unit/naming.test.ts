@@ -251,6 +251,12 @@ describe('the zone slash→underscore transform is lossy (documented, not guesse
     if (parsed === null) {
       throw new Error(`parseFileName could not read ${file}`);
     }
+    // `fileKey` is `string | null` — null only for the unkeyed GlobalRegistry file. This
+    // test is about the *keyed* zone transform, so state that requirement (and narrow
+    // the type for `fileNameFor`, which takes a `string`).
+    if (parsed.fileKey === null) {
+      throw new Error(`parseFileName returned no file key for ${file}`);
+    }
     expect(parsed).toEqual({ type: 'zonetransfer', fileKey: 'WizardCity_WC_Hub' });
     // The ZoneName is NOT recovered; no heuristic turns `_` back into `/`.
     expect(parsed.fileKey).not.toBe('WizardCity/WC_Hub');

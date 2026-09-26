@@ -179,6 +179,49 @@ describe('route table', () => {
   });
 });
 
+/* --------------------------------------------------- active nav ownership */
+
+/**
+ * Representative pathnames for the ownership sweep: every nav path (added below from
+ * `NAV_ITEMS`), a detail route under each data item, the route the defect broke, and
+ * paths no nav item owns — plus trailing-slash forms of the interesting ones.
+ */
+const PROBE_PATHS = [
+  '/quests/extract',
+  '/quests/extract/',
+  '/quests/',
+  '/quests/DS-ACAD-C01-001',
+  '/quests/DS-ACAD-C01-001/',
+  '/drop-tables/ABC',
+  '/npc-inventories/1',
+  '/npc-spell-inventories/1',
+  '/creature-spellbooks/Deck',
+  '/npc-drop-tables/1',
+  '/treasure-card-inventories/1',
+  '/zone-transfers/Aquila/AQ_Z00_Hub',
+  '/settings/',
+  '/questsfoo',
+  '/settingsfoo',
+  '/drop-tables-extra',
+  '/unknown',
+  '/definitely-not-a-route',
+  '/npc-inventory',
+] as const;
+
+/**
+ * Independent oracle for the ownership *predicate* of `activeNavPath`, written out here
+ * so the sweep does not merely re-run the function it checks. It answers with **every**
+ * nav path that owns the pathname, which is deliberately more than one for
+ * `/quests/extract` (`/quests/extract` *and* `/quests`). That overlap is exactly what
+ * made react-router's prefix-matching `NavLink.isActive` render two active items.
+ */
+function matchingNavPaths(pathname: string): string[] {
+  const path = pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
+  return NAV_ITEMS.map((item) => item.path).filter((navPath) =>
+    navPath === '/' ? path === '/' : path === navPath || path.startsWith(`${navPath}/`),
+  );
+}
+
 describe('navigation table', () => {
   it('has the four spec groups, in order', () => {
     expect(NAV_GROUPS.map((group) => group.label)).toEqual([
@@ -237,13 +280,69 @@ describe('navigation table', () => {
     }
   });
 
-  it('highlights the nav item a detail route belongs to', () => {
-    expect(activeNavPath('/')).toBe('/');
-    expect(activeNavPath('/settings')).toBe('/settings');
+  it('maps every nav path to itself', () => {
+    for (const item of NAV_ITEMS) {
+      expect(activeNavPath(item.path), item.label).toBe(item.path);
+    }
+  });
+
+  it('gives /quests/extract to the extract item, never to /quests', () => {
+    // An exact match wins over the prefix match — the pair the defect lit up together.
     expect(activeNavPath('/quests/extract')).toBe('/quests/extract');
-    expect(activeNavPath('/quests/DS-ACAD1-C01-001')).toBe('/quests');
-    expect(activeNavPath('/drop-tables/Some_Table')).toBe('/drop-tables');
-    expect(activeNavPath('/unknown')).toBeUndefined();
+    expect(activeNavPath('/quests/extract')).not.toBe('/quests');
+  });
+
+  it('gives a detail route to the list item that owns it', () => {
+    expect(activeNavPath('/quests/DS-ACAD-C01-001')).toBe('/quests');
+    expect(activeNavPath('/quests/DS-ACAD-C01-001')).not.toBe('/quests/extract');
+    expect(activeNavPath('/drop-tables/ABC')).toBe('/drop-tables');
+    expect(activeNavPath('/npc-inventories/42')).toBe('/npc-inventories');
+    expect(activeNavPath('/zone-transfers/Aquila/AQ_Z00_Hub')).toBe('/zone-transfers');
+  });
+
+  it('owns the root only for the root', () => {
+    expect(activeNavPath('/')).toBe('/');
+  });
+
+  it('needs a segment boundary — a longer slug is not an owned prefix', () => {
+    expect(activeNavPath('/questsfoo')).toBeNull();
+    expect(activeNavPath('/settingsfoo')).toBeNull();
+    expect(activeNavPath('/drop-tables-extra')).toBeNull();
+  });
+
+  it('normalizes a trailing slash', () => {
+    expect(activeNavPath('/settings/')).toBe('/settings');
+    expect(activeNavPath('/quests/')).toBe('/quests');
+    expect(activeNavPath('/quests/extract/')).toBe('/quests/extract');
+    expect(activeNavPath('/quests/DS-ACAD-C01-001/')).toBe('/quests');
+    expect(activeNavPath('/')).toBe('/');
+  });
+
+  it('owns nothing for a pathname no nav item claims', () => {
+    expect(activeNavPath('/unknown')).toBeNull();
+    expect(activeNavPath('/definitely-not-a-route')).toBeNull();
+    expect(activeNavPath('/npc-inventory')).toBeNull();
+  });
+
+  it('systematically resolves each pathname to one owner — the longest match', () => {
+    // The invariant the defect violated is "at most one sidebar item is active". The
+    // oracle shows the raw overlap the highlight must collapse; the sweep then proves
+    // the collapse happens on every representative pathname, not just this one.
+    expect(matchingNavPaths('/quests/extract')).toHaveLength(2);
+    expect([...matchingNavPaths('/quests/extract')].sort()).toEqual(['/quests', '/quests/extract']);
+
+    for (const pathname of [...PROBE_PATHS, ...NAV_ITEMS.map((item) => item.path)]) {
+      const owner = activeNavPath(pathname);
+      const longest = [...matchingNavPaths(pathname)].sort(
+        (left, right) => right.length - left.length,
+      )[0];
+
+      expect(owner, pathname).toBe(longest ?? null);
+      // `owner` is a single path and nav paths are unique, so at most one — and for an
+      // owned pathname exactly one — nav item renders active.
+      const activeItems = NAV_ITEMS.filter((item) => item.path === owner);
+      expect(activeItems.length, pathname).toBe(owner === null ? 0 : 1);
+    }
   });
 
   it('reports the active group so it can be expanded', () => {

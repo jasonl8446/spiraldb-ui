@@ -200,21 +200,43 @@ export function pageTitleForPath(pathname: string): string {
  */
 export const NAV_ITEMS: readonly NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
+/** Drops trailing slashes, so `/settings/` and `/settings` name the same page. */
+function normalizePathname(pathname: string): string {
+  return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
+}
+
 /**
- * The nav item to highlight for a pathname.
+ * The nav item to highlight for a pathname — **exactly one**, or `null` for none.
  *
- * A detail route (`/drop-tables/123`) has no nav item of its own; it highlights
- * the list item it belongs to — the longest nav path that is a prefix of the
- * pathname on a segment boundary. `/` only matches `/` exactly.
+ * `docs/spec-ui-design.md` L85-89 describes a single active item, so the sidebar
+ * derives its highlight from this function instead of react-router's `NavLink`, whose
+ * `isActive` prefix-matches: on `/quests/extract` that lit up both `/quests/extract`
+ * and `/quests` (the defect story p1-13 pinned). Adding `end` to every link would only
+ * trade that case for the next one, because a detail route
+ * (`/quests/DS-ACAD-C01-001`) has no nav item of its own and *must* keep highlighting
+ * the list item that owns it.
+ *
+ * The rule, in order:
+ *
+ * 1. an exact match wins — `/quests/extract` belongs to `/quests/extract`, never to
+ *    `/quests`, even though both are prefixes;
+ * 2. otherwise the longest segment-aligned prefix owns the pathname —
+ *    `/quests/DS-ACAD-C01-001` → `/quests`, `/drop-tables/ABC` → `/drop-tables`;
+ * 3. `/` owns only `/`;
+ * 4. "segment-aligned" means the match ends on a `/`, so `/questsfoo` is owned by
+ *    nothing;
+ * 5. a trailing slash is normalized away (`/settings/` → `/settings`).
+ *
+ * `null` means no nav item owns the pathname (an unknown route), so nothing is
+ * highlighted.
  */
-export function activeNavPath(pathname: string): string | undefined {
-  let best: string | undefined;
+export function activeNavPath(pathname: string): string | null {
+  const path = normalizePathname(pathname);
+  let best: string | null = null;
   for (const item of NAV_ITEMS) {
-    const matches =
-      item.path === '/'
-        ? pathname === '/'
-        : pathname === item.path || pathname.startsWith(`${item.path}/`);
-    if (matches && (best === undefined || item.path.length > best.length)) {
+    const owns =
+      item.path === '/' ? path === '/' : path === item.path || path.startsWith(`${item.path}/`);
+    if (owns && (best === null || item.path.length > best.length)) {
       best = item.path;
     }
   }
@@ -224,7 +246,7 @@ export function activeNavPath(pathname: string): string | undefined {
 /** The sidebar group a path belongs to, so it can be force-expanded. */
 export function activeNavGroupId(pathname: string): NavGroup['id'] | undefined {
   const active = activeNavPath(pathname);
-  if (active === undefined) {
+  if (active === null) {
     return undefined;
   }
   return NAV_GROUPS.find((group) => group.items.some((item) => item.path === active))?.id;

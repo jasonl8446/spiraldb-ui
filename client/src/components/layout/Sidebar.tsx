@@ -18,12 +18,12 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { APP_NAME } from '@shared/index';
 
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
-import { activeNavGroupId, NAV_GROUPS, type NavIconName } from '../../lib/routes';
+import { activeNavGroupId, activeNavPath, NAV_GROUPS, type NavIconName } from '../../lib/routes';
 import { swipeShouldClose } from '../../lib/swipe';
 import { cn } from '../../lib/utils';
 
@@ -34,6 +34,12 @@ import { cn } from '../../lib/utils';
  * four collapsible groups (OVERVIEW / QUESTS / DATA / SETTINGS) whose items carry
  * 18px Lucide icons. The active item gets `blue-600/10` + `blue-400` text; hover
  * is `zinc-800` (spec L85-89).
+ *
+ * Which item is active comes from `activeNavPath(pathname)` — a single path or
+ * `null` — and never from `NavLink`'s own `isActive`, which prefix-matches and so
+ * highlighted `/quests` as well as `/quests/extract`. `Link` is enough here because
+ * the highlight and `aria-current="page"` are both derived from that one value, so
+ * exactly one item can ever be active.
  *
  * Mobile (< md): the same navigation renders inside a Radix dialog — a real
  * overlay that traps focus, closes on Escape and outer click, and hides the rest
@@ -69,6 +75,7 @@ const ITEM_BASE =
 /** The nav list itself — shared by the desktop rail and the mobile overlay. */
 function NavContent({ onNavigate }: { onNavigate?: () => void }): JSX.Element {
   const { pathname } = useLocation();
+  const activePath = activeNavPath(pathname);
   const activeGroup = activeNavGroupId(pathname);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -115,24 +122,25 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }): JSX.Element {
               <ul id={`nav-group-${group.id}`} className="mt-1 space-y-1">
                 {group.items.map((item) => {
                   const ItemIcon = NAV_ICONS[item.icon];
+                  // At most one item satisfies this, by construction: `activePath` is
+                  // a single path and nav paths are unique.
+                  const isActive = item.path === activePath;
                   return (
                     <li key={item.path}>
-                      <NavLink
+                      <Link
                         to={item.path}
-                        end={item.path === '/'}
                         onClick={onNavigate}
-                        className={({ isActive }) =>
-                          cn(
-                            ITEM_BASE,
-                            isActive
-                              ? 'bg-blue-600/10 text-blue-400'
-                              : 'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50',
-                          )
-                        }
+                        aria-current={isActive ? 'page' : undefined}
+                        className={cn(
+                          ITEM_BASE,
+                          isActive
+                            ? 'bg-blue-600/10 text-blue-400'
+                            : 'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50',
+                        )}
                       >
                         <ItemIcon size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
                         <span className="truncate">{item.label}</span>
-                      </NavLink>
+                      </Link>
                     </li>
                   );
                 })}
