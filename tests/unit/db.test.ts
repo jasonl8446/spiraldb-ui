@@ -21,7 +21,7 @@ import {
 } from '@server/db';
 
 /**
- * Task 1.2 acceptance: the migration matches Docs/spec-data-model.md L21-162
+ * Task 1.2 acceptance: the migration matches docs/spec-data-model.md L21-162
  * column-for-column (11 tables, 3 named indexes, the entry_status UNIQUE
  * constraint), the `settings` seed matches L164-169 with the env/NODE_ENV
  * precedence from the lead's decisions, and both steps are idempotent.

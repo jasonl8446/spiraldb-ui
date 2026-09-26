@@ -6,7 +6,7 @@ import { promisify } from 'node:util';
 
 /**
  * WAD unpack runner — task 1.4c
- * ([plan-phase-1-foundation.md](../../../../Docs/plan-phase-1-foundation.md) §1.4c,
+ * ([plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4c,
  * spike 1.4a §9/1.4c).
  *
  * ```

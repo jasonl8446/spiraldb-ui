@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 /**
- * Vite dev server + production build for the client (Docs/spec-architecture.md L132-143).
+ * Vite dev server + production build for the client (docs/spec-architecture.md L132-143).
  * `vite root` is this directory, so the dev server serves `client/index.html`
  * and resolves `/src/main.tsx`; when no `--config` cwd is set the config is always
  * loaded by Vite itself, which defines `__dirname` for the bundled config file.

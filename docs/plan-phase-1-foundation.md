@@ -93,7 +93,7 @@ All checks run against the real sibling repos on this machine.
 - [ ] Unit tests green: lang parser (incl. hex→dec mapping `QuestTitle_1ED8D → 126349`, [spec-domain-reference.md](./spec-domain-reference.md) L688–689, on a real fixture from spike 1.4a), D4 type mapping, filename/key mapping table ([spec-data-model.md](./spec-data-model.md) L173–187) as a pure function, import scanner against a fixture directory tree.
 - [ ] `.github/workflows/ci.yml` exists and runs `npm ci && npm test && npm run build && npm run test:ui` on pull_request (verified by the phase PR's own check run, including headless chromium install).
 - [ ] `npm run test:ui` green: `tests/ui/shell.spec.ts` passes headless against the dev server; `tools/.playwright-browsers/` gitignored.
-- [ ] UI criteria above evidenced per D23 tier 2: playwright-mcp assertions + screenshots copied from `/home/jason/.cache/playwright-mcp/` into `Docs/evidence/phase-1/` and committed (workflow validated 2026-09-25 — see D23).
+- [ ] UI criteria above evidenced per D23 tier 2: playwright-mcp assertions + screenshots copied from `/home/jason/.cache/playwright-mcp/` into `docs/evidence/phase-1/` and committed (workflow validated 2026-09-25 — see D23).
 
 ## Risks & Mitigations
 
@@ -113,7 +113,7 @@ All checks run against the real sibling repos on this machine.
 3. `curl -s localhost:3001/api/status/all | jq .summary` → totals match file counts (`ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates/*.json | wc -l` → 322).
 4. PATCH then history via curl; verify `status_history` row.
 5. `npm test` → all unit tests green.
-6. UI walkthrough driven by playwright-mcp (D23 tier 2, HTTP-served — `file://` is blocked): shell → settings → sync → toast; dropdown smoke test on a stub page; screenshots copied into `Docs/evidence/phase-1/`.
+6. UI walkthrough driven by playwright-mcp (D23 tier 2, HTTP-served — `file://` is blocked): shell → settings → sync → toast; dropdown smoke test on a stub page; screenshots copied into `docs/evidence/phase-1/`.
 7. `npm run test:ui` → shell spec green headless.
 
 **Done when:** all acceptance criteria checked with evidence recorded in the PR; decisions/deviations appended to [plan-overview.md](./plan-overview.md).

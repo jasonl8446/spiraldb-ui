@@ -54,7 +54,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
 /**
  * Normalises any thrown value into the `{ "error": "..." }` envelope
- * (Docs/spec-api.md L227). `status` is preserved when the error carries one
+ * (docs/spec-api.md L227). `status` is preserved when the error carries one
  * (body-parser sets 400 for malformed JSON).
  */
 function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {

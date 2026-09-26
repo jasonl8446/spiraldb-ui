@@ -68,7 +68,7 @@ List/detail/create/edit/save+commit flows for the remaining 8 object types: Drop
 - [ ] GlobalRegistry (D22): merged view equals the manual merge of all registry files; save produces a commit containing the new `globalregistry.json` **and the deletion of `GlobalRegistryModels_1-A.json`**; afterwards the directory holds exactly one file; type absent from dashboard and status routes (Q1 resolved: no tracking).
 - [ ] TreasureCardInventory: SpellName not present in synced spells → warning (not blocking); Save succeeds.
 - [ ] Status flows: Mark Reviewed with notes on a DropTable → history endpoint + list-page dot + filter-tab counts all update.
-- [ ] Mobile (≤768px) pass evidenced via Playwright viewport (D23, screenshots in `Docs/evidence/phase-4/`): every list page renders as card list; detail forms usable; JSON panel is a full overlay.
+- [ ] Mobile (≤768px) pass evidenced via Playwright viewport (D23, screenshots in `docs/evidence/phase-4/`): every list page renders as card list; detail forms usable; JSON panel is a full overlay.
 - [ ] **UI test suite (D23 tier 1)**: committed `tests/ui/object-editors.spec.ts` passes headless in CI for ≥2 representative types (DropTable + one simple type): list → detail → edit → save → success toast + StatusBadge unchanged; DropTable items repeater add/remove rows; NpcInventory multi-select chips add/remove.
 
 ## Risks & Mitigations

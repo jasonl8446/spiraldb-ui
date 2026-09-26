@@ -4,7 +4,7 @@
 # Usage: scripts/spike-wad-characterize.sh <unpack-dir>
 #
 # Prints bounded summaries only — never a full file listing — so it is safe to run
-# against a ~173k-file tree (see Docs/evidence/phase-1/spike-1.4a.md).
+# against a ~173k-file tree (see docs/evidence/phase-1/spike-1.4a.md).
 set -euo pipefail
 
 DIR="${1:?usage: $0 <unpack-dir>}"

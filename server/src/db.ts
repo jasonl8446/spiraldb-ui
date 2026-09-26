@@ -7,13 +7,13 @@ import Database from 'better-sqlite3';
 /** Instance type of a better-sqlite3 connection. */
 export type Db = Database.Database;
 
-/** Database file name, relative to the project root (Docs/spec-data-model.md L3). */
+/** Database file name, relative to the project root (docs/spec-data-model.md L3). */
 export const DB_FILE_NAME = 'spiraldb-ui.db';
 
 /** `:memory:` — the in-memory database used by unit tests. */
 export const MEMORY_DB = ':memory:';
 
-/** The five `settings` keys (Docs/spec-data-model.md L161, L164-169). */
+/** The five `settings` keys (docs/spec-data-model.md L161, L164-169). */
 export const SETTINGS_KEYS = [
   'aurorium_path',
   'imcodec_path',
@@ -25,7 +25,7 @@ export const SETTINGS_KEYS = [
 export type SettingKey = (typeof SETTINGS_KEYS)[number];
 
 /**
- * Seed defaults (Docs/spec-data-model.md L164-169).
+ * Seed defaults (docs/spec-data-model.md L164-169).
  *
  * `imcodec_path` is the verified prebuilt binary from the environment baseline
  * (decision D3) — the sync path needs no .NET SDK. `spiraldb_path` is the owner's
@@ -67,7 +67,7 @@ const ROOT_PACKAGE_NAME = 'spiraldb-ui';
  *
  * The emitted layout is `server/dist/server/src/db.js` while tsx runs
  * `server/src/db.ts`, so a fixed number of `..` segments would be wrong in one of
- * the two modes ([spec-architecture.md](./Docs/spec-architecture.md) L150: the db
+ * the two modes ([spec-architecture.md](./docs/spec-architecture.md) L150: the db
  * lives at `data/spiraldb-ui.db` **relative to project root**).
  */
 export function resolveRepoRoot(startDir: string = MODULE_DIR): string {

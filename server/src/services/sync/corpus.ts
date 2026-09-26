@@ -7,14 +7,14 @@ import { isPlainObject, parseJsonLenient } from './json.js';
  * Corpus-derived rows — task 1.4d, decision **D21** (owner-approved).
  *
  * Two friendly-name tables have no WAD source and are derived from the SpiralDB
- * corpus instead ([plan-phase-1-foundation.md](../../../../Docs/plan-phase-1-foundation.md) §1.4d):
+ * corpus instead ([plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4d):
  *
  * - `quests` — scan `QuestTemplates/*.json` for `m_questName`, `m_questLevel`,
  *   `m_mainline`; the title is a string-table lookup of `m_questTitle` with the
  *   raw-key fallback.
  * - `zones` — all distinct `ZoneName` + `m_destinationZone` values across the
  *   1,207 `ZoneTransfer/*.json` files; `display_name` is the humanized path
- *   ([spec-domain-reference.md](../../../../Docs/spec-domain-reference.md) L700-702).
+ *   ([spec-domain-reference.md](../../../../docs/spec-domain-reference.md) L700-702).
  *
  * `drop_tables` rows come from the `DropTables/*.json` corpus (`Name` +
  * `Description`, [spec-data-model.md] L121-126).

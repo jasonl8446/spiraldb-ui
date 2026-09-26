@@ -3,8 +3,8 @@ import path from 'node:path';
 
 /**
  * `.lang` string-table parser — task 1.4e
- * ([plan-phase-1-foundation.md](../../../../Docs/plan-phase-1-foundation.md) §1.4e,
- * [spec-domain-reference.md](../../../../Docs/spec-domain-reference.md) L662-695,
+ * ([plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4e,
+ * [spec-domain-reference.md](../../../../docs/spec-domain-reference.md) L662-695,
  * decision **D33(d)/(e)**).
  *
  * Format (measured, spike 1.4a §5): **UTF-16LE with BOM `\xFF\xFE`**, header line

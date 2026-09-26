@@ -10,12 +10,12 @@ SpiralDB UI is a web tool for extracting, reviewing, editing, and verifying Spir
 
 Read these before making changes, **in this order**:
 
-1. `Docs/spec-domain-reference.md` — ⚠️ **READ FIRST**. Complete SpiralDB domain reference: JSON schemas for all 9 object types, goal/requirement/result type enumerations, NPCDialogEntry fields, validation rules, CLI wrapper spec, WAD/string-table details. An autonomous agent MUST follow this exactly.
-2. `Docs/spec-architecture.md` — System architecture, tech stack, data flow diagrams, external dependencies, server configuration
-3. `Docs/spec-data-model.md` — SQLite schemas, verification lifecycle, file naming conventions, git branch strategy, JSON parsing rules, sync strategy
-4. `Docs/spec-api.md` — Complete REST API reference (all endpoints with request/response shapes), frontend URL routes
-5. `Docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
-6. `Docs/plan-overview.md` — **Before implementing any phase, read this.** The executable build plan: verified environment baseline, execution model (owner-fixed — currently **D29**: degraded-ralph PRD loop, one story per round; phase branches + PRs with agent self-merge at CI-green + gate-story evidence; regression gate-stories at every phase boundary; ultragoal 3-part final gate), and owner-approved decisions **D1–D29** that refine the specs (test-clone policy D17, sandbox-safe .NET builds D18, content-keyed file index D19, metadata pairing by content D20, corpus-derived quests/zones sync D21, GlobalRegistry consolidate-and-replace D22, Playwright evidence protocol D23). Per-phase tasks and acceptance criteria: `Docs/plan-phase-{1..5}-*.md`.
+1. `docs/spec-domain-reference.md` — ⚠️ **READ FIRST**. Complete SpiralDB domain reference: JSON schemas for all 9 object types, goal/requirement/result type enumerations, NPCDialogEntry fields, validation rules, CLI wrapper spec, WAD/string-table details. An autonomous agent MUST follow this exactly.
+2. `docs/spec-architecture.md` — System architecture, tech stack, data flow diagrams, external dependencies, server configuration
+3. `docs/spec-data-model.md` — SQLite schemas, verification lifecycle, file naming conventions, git branch strategy, JSON parsing rules, sync strategy
+4. `docs/spec-api.md` — Complete REST API reference (all endpoints with request/response shapes), frontend URL routes
+5. `docs/spec-ui-design.md` — Visual design spec (layout, components, color palette, responsive behavior, interaction patterns)
+6. `docs/plan-overview.md` — **Before implementing any phase, read this.** The executable build plan: verified environment baseline, execution model (owner-fixed — currently **D29**: degraded-ralph PRD loop, one story per round; phase branches + PRs with agent self-merge at CI-green + gate-story evidence; regression gate-stories at every phase boundary; ultragoal 3-part final gate), and owner-approved decisions **D1–D34** that refine the specs (test-clone policy D17, sandbox-safe .NET builds D18, content-keyed file index D19, metadata pairing by content D20, corpus-derived quests/zones sync D21, GlobalRegistry consolidate-and-replace D22, Playwright evidence protocol D23, dependency pins D30/D31, settings API contract D32, measured WAD/string-table reality D33, lowercase `docs/` convention D34). Per-phase tasks and acceptance criteria: `docs/plan-phase-{1..5}-*.md`.
 
 ## External Dependencies
 
@@ -59,7 +59,7 @@ Status transitions require optional notes. Full history is preserved in `status_
 
 ## SpiralDB Object Types
 
-All 9 types need editors. The 8 types below **except GlobalRegistry** also carry verification tracking; GlobalRegistry is editor-only (a single merged dictionary of global flags has no meaningful per-entry lifecycle — owner decision Q1, see `Docs/plan-overview.md`):
+All 9 types need editors. The 8 types below **except GlobalRegistry** also carry verification tracking; GlobalRegistry is editor-only (a single merged dictionary of global flags has no meaningful per-entry lifecycle — owner decision Q1, see `docs/plan-overview.md`):
 
 | Type | Directory | Key Field | Complexity |
 |------|-----------|-----------|------------|
@@ -79,7 +79,7 @@ All agent-authored commits must end with the DeepSeek Harness watermark trailer.
 
 ## Implementation Phases
 
-The ordered build plan (detailed tasks, acceptance criteria, and risks per phase live in `Docs/plan-phase-{n}-*.md`; execution model and binding decisions in `Docs/plan-overview.md`):
+The ordered build plan (detailed tasks, acceptance criteria, and risks per phase live in `docs/plan-phase-{n}-*.md`; execution model and binding decisions in `docs/plan-overview.md`):
 
 1. **Foundation** — Project scaffolding (React + Express + SQLite), friendly name sync script + SQLite schema, basic API endpoints for names, sidebar navigation shell, status tracking schema + API
 2. **Quest Extraction** — Imview.PacketReader CLI wrapper, quest import/upload UI, quest review view (read-only structured display), save to SpiralDB + auto-commit + metadata generation, status transitions with notes

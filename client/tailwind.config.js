@@ -1,6 +1,6 @@
 /**
  * Tailwind configuration. Task 1.1 only proves the pipeline works; the dark-only
- * palette, surfaces and typography tokens from Docs/spec-ui-design.md L18-43 are
+ * palette, surfaces and typography tokens from docs/spec-ui-design.md L18-43 are
  * added in task 1.8.
  *
  * `content` globs are resolved from the process cwd (npm scripts run from the

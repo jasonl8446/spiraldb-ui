@@ -7,7 +7,7 @@ import { SETTINGS_KEYS, readSettings, type Db, type SettingKey } from '../db.js'
 
 /**
  * Settings API — `GET /api/settings` / `PUT /api/settings` (task 1.3,
- * Docs/spec-api.md L291-321).
+ * docs/spec-api.md L291-321).
  *
  * GET returns the five settings as one flat string map. PUT takes a partial
  * subset of those keys, validates the whole body, and answers 200 with the full

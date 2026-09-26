@@ -107,6 +107,6 @@ Turn the read-only quest detail page into a full editor: all 5 goal types, the g
 3. Manual: edit → save → `git -C data/test-spiraldb diff HEAD~1 -- QuestTemplates/{file}` → only intended fields.
 4. Manual: load the saved quest back (`GET /api/quests/{name}`) → form state identical to pre-save editing state.
 5. Validation negatives via UI and curl (criteria above).
-6. Flowchart/requirement/dialog walkthrough on 2–3 diverse real quests (one mainline multi-goal, one dialog-heavy) — driven and evidenced via Playwright MCP (D23): DOM assertions + screenshots into `Docs/evidence/phase-3/`.
+6. Flowchart/requirement/dialog walkthrough on 2–3 diverse real quests (one mainline multi-goal, one dialog-heavy) — driven and evidenced via Playwright MCP (D23): DOM assertions + screenshots into `docs/evidence/phase-3/`.
 
 **Done when:** all acceptance criteria checked with evidence in the PR; any 3.5 fallback decision recorded in [plan-overview.md](./plan-overview.md).

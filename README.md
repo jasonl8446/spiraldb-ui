@@ -4,7 +4,7 @@ A web-based tool for extracting, reviewing, editing, and verifying [SpiralDB](ht
 
 > ⚠️ **Unofficial project:** SpiralDB UI is not an official [Revive101](https://github.com/Revive101) project. It is an independent tool, not endorsed by or affiliated with Revive101. All referenced projects and game data belong to their respective owners.
 
-> **Project status (2026-09-25):** specifications and the phased implementation plan are complete; no code has been written yet. The build plan of record is [Docs/plan-overview.md](Docs/plan-overview.md) (execution model + owner-approved decisions D1–D27) with per-phase tasks in `Docs/plan-phase-{1..5}-*.md`.
+> **Project status (2026-09-25):** specifications and the phased implementation plan are complete; no code has been written yet. The build plan of record is [docs/plan-overview.md](docs/plan-overview.md) (execution model + owner-approved decisions D1–D27) with per-phase tasks in `docs/plan-phase-{1..5}-*.md`.
 
 ## Purpose
 
@@ -66,16 +66,16 @@ npm run dev
 
 **Specifications** (authoritative):
 
-- [Domain Reference](Docs/spec-domain-reference.md) — SpiralDB JSON schemas, type enumerations, validation rules, CLI wrapper spec, WAD/string-table details
-- [Architecture](Docs/spec-architecture.md) — System design, tech stack, data flow, external dependencies
-- [Data Model](Docs/spec-data-model.md) — SQLite schemas, verification lifecycle, file naming, git branch strategy
-- [API Reference](Docs/spec-api.md) — REST endpoints and frontend URL routes
-- [UI Design](Docs/spec-ui-design.md) — Layout, components, color palette, interaction patterns
+- [Domain Reference](docs/spec-domain-reference.md) — SpiralDB JSON schemas, type enumerations, validation rules, CLI wrapper spec, WAD/string-table details
+- [Architecture](docs/spec-architecture.md) — System design, tech stack, data flow, external dependencies
+- [Data Model](docs/spec-data-model.md) — SQLite schemas, verification lifecycle, file naming, git branch strategy
+- [API Reference](docs/spec-api.md) — REST endpoints and frontend URL routes
+- [UI Design](docs/spec-ui-design.md) — Layout, components, color palette, interaction patterns
 
 **Implementation plan** (how the specs get built):
 
-- [Plan Overview](Docs/plan-overview.md) — Roadmap, environment baseline, execution model, decisions D1–D27
-- [Phase 1 — Foundation](Docs/plan-phase-1-foundation.md) · [Phase 2 — Quest Extraction](Docs/plan-phase-2-quest-extraction.md) · [Phase 3 — Quest Editing](Docs/plan-phase-3-quest-editing.md) · [Phase 4 — Object Editors](Docs/plan-phase-4-object-editors.md) · [Phase 5 — Dashboard & Polish](Docs/plan-phase-5-dashboard-polish.md)
+- [Plan Overview](docs/plan-overview.md) — Roadmap, environment baseline, execution model, decisions D1–D27
+- [Phase 1 — Foundation](docs/plan-phase-1-foundation.md) · [Phase 2 — Quest Extraction](docs/plan-phase-2-quest-extraction.md) · [Phase 3 — Quest Editing](docs/plan-phase-3-quest-editing.md) · [Phase 4 — Object Editors](docs/plan-phase-4-object-editors.md) · [Phase 5 — Dashboard & Polish](docs/plan-phase-5-dashboard-polish.md)
 
 Agent instructions: [AGENTS.md](AGENTS.md).
 

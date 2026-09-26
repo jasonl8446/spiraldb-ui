@@ -5,7 +5,7 @@ import { app } from '@server/app';
 
 /**
  * Task 1.1 acceptance: the Express bootstrap answers with the `{ "error": ... }`
- * envelope (Docs/spec-api.md L227) instead of the SPA HTML for unknown routes,
+ * envelope (docs/spec-api.md L227) instead of the SPA HTML for unknown routes,
  * and the error middleware preserves the error status.
  */
 describe('Express bootstrap', () => {

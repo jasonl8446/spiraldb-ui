@@ -5,7 +5,7 @@ import { isPlainObject, parseJsonLenient } from './json.js';
 
 /**
  * Template parsers — task 1.4d
- * ([plan-phase-1-foundation.md](../../../../Docs/plan-phase-1-foundation.md) §1.4d,
+ * ([plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4d,
  * decision **D33(a)/(b)**, spike 1.4a §4).
  *
  * Three spec assumptions are wrong in the real data (D33):

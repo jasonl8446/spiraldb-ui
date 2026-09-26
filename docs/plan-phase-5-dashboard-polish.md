@@ -54,7 +54,7 @@ Complete the verification dashboard (stats cards, per-type progress, activity fe
 - [ ] Kill the Express server while the UI is open → offline banner appears within one failed request cycle; restart server → banner clears and data refreshes.
 - [ ] Every API route returns the `{ "error": ... }` envelope with an appropriate status code on failure (audit test hits each route with malformed input).
 - [ ] Keyboard-only pass: complete extract→save, mark reviewed, edit DropTable item, and dashboard navigation without a mouse; visible focus ring on every stop.
-- [ ] axe-core scan **via Playwright MCP (D23)** on Dashboard, Quest list, Quest detail (edit mode), DropTable detail: zero critical/serious violations; reports + screenshots in `Docs/evidence/phase-5/`.
+- [ ] axe-core scan **via Playwright MCP (D23)** on Dashboard, Quest list, Quest detail (edit mode), DropTable detail: zero critical/serious violations; reports + screenshots in `docs/evidence/phase-5/`.
 - [ ] All icon-only buttons expose ARIA labels (automated query in a component test).
 - [ ] With `prefers-reduced-motion: reduce` (Playwright `emulateMedia`, D23), no CSS transitions/React Flow animations play — evidenced by before/after screenshots mid-transition.
 - [ ] Responsive checklist complete at 375/768/1440px for all routes: sidebar hamburger + swipe-close at 375px; tables→cards; JSON panel→overlay; tablet sidebar 200px.
@@ -80,7 +80,7 @@ Complete the verification dashboard (stats cards, per-type progress, activity fe
 2. Two-browser session: change status in one, observe feed/dashboard update in the other after refresh.
 3. `npm run build && npm start` → curl `localhost:3001/quests` returns index.html (SPA fallback); UI walkthrough.
 4. Playwright viewport passes at 375/768/1440 across the route checklist (`tests/ui/responsive.spec.ts` + MCP screenshots as evidence).
-5. Playwright-driven axe scan on the four named pages (D23); reports archived under `Docs/evidence/phase-5/`.
+5. Playwright-driven axe scan on the four named pages (D23); reports archived under `docs/evidence/phase-5/`.
 6. Fresh-clone dry run in `/tmp` per 5.8, timed and recorded.
 
 **Done when:** all acceptance criteria checked with evidence; regression sweep green; README + docs accurate; project declared v1 in the PR summary.

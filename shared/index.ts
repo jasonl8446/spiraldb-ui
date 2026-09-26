@@ -10,7 +10,7 @@
 export const APP_NAME = 'SpiralDB UI';
 
 /**
- * Envelope every non-2xx JSON response uses (Docs/spec-api.md L227).
+ * Envelope every non-2xx JSON response uses (docs/spec-api.md L227).
  * Error middleware and the JSON 404 handler both emit this shape.
  */
 export interface ApiError {

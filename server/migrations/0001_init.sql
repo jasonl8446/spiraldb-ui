@@ -1,6 +1,6 @@
 -- SpiralDB UI — initial schema (task 1.2)
 --
--- Source of truth: Docs/spec-data-model.md L21-162 (SQLite Schema).
+-- Source of truth: docs/spec-data-model.md L21-162 (SQLite Schema).
 -- Column names, types, defaults and the UNIQUE constraint are copied verbatim
 -- from the spec; nothing here is invented.
 --

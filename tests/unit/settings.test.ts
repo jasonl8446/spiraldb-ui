@@ -24,7 +24,7 @@ import {
 
 /**
  * Task 1.3 acceptance: `GET /api/settings` returns the five flat string keys
- * (Docs/spec-api.md L291-321), `PUT /api/settings` persists a partial update and
+ * (docs/spec-api.md L291-321), `PUT /api/settings` persists a partial update and
  * answers with the full updated map, and an invalid body is rejected with a 400
  * carrying an actionable message — without persisting any of its good keys.
  *
@@ -32,7 +32,7 @@ import {
  * the real `data/spiraldb-ui.db` is never opened (decision D17).
  */
 
-/** Independently re-typed from Docs/spec-api.md — deliberately not imported from db.ts. */
+/** Independently re-typed from docs/spec-api.md — deliberately not imported from db.ts. */
 const EXPECTED_SETTINGS_KEYS = [
   'aurorium_path',
   'git_branch',

@@ -3,8 +3,8 @@ import path from 'node:path';
 
 /**
  * Revision resolver — task 1.4b (
- * [plan-phase-1-foundation.md](../../../../Docs/plan-phase-1-foundation.md) §1.4b,
- * [spec-domain-reference.md](../../../../Docs/spec-domain-reference.md) L640-647).
+ * [plan-phase-1-foundation.md](../../../../docs/plan-phase-1-foundation.md) §1.4b,
+ * [spec-domain-reference.md](../../../../docs/spec-domain-reference.md) L640-647).
  *
  * Aurorium keeps one directory per game build under `{aurorium_path}/data/`:
  *
