@@ -146,6 +146,16 @@ Decisions the specs leave open, resolved here. Amend this list when reality disa
 
 
 
+## Phase log (merged milestones)
+
+Each phase ends with a gate story, its own PR and the required `ci` check run; the
+entry here records the merge so the durable doc carries it (the full run log lives
+in the gitignored `.omd/prd/progress.txt`).
+
+| Phase | Branch / PR | Required `ci` check run | Merged | Gate story | Notes |
+|---|---|---|---|---|---|
+| 1 — Foundation | `phase-1-foundation`, [PR #3](https://github.com/jasonl8446/spiraldb-ui/pull/3) | [36224267657](https://github.com/jasonl8446/spiraldb-ui/actions/runs/36224267657) (job 108355143405, 39 s, all 14 steps) | `23d4b8a` | gate-1 | 19/19 Phase-1 checkboxes re-run fresh from `rm -rf data`; evidence in [`docs/evidence/phase-1/`](./evidence/phase-1/). Two gaps carried forward with homes: **D42** (API-only `git_branch`) and **D43** (identity dialog has no Phase-1 caller). Branch deleted after merge; `main` carries the full branch history (the merge commit has two parents). |
+
 ## Spec gaps & open questions — ALL RESOLVED (2026-09-25)
 
 - **Q1 — GlobalRegistry verification tracking → RESOLVED: no tracking.** 8 types carry the extracted→reviewed→verified lifecycle; GlobalRegistry gets an editor only. Follows the detailed specs ([spec-data-model.md](./spec-data-model.md) L32–37, L277; [spec-api.md](./spec-api.md) L56) over AGENTS.md's "all 9 types" wording. Owner-confirmed. AGENTS.md wording to be corrected in task 5.7.
