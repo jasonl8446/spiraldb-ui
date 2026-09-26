@@ -9,3 +9,7 @@ tools
 Docs
 package-lock.json
 *.md
+
+# Test fixtures are verbatim copies of real Root.wad output; reformatting them
+# would destroy the byte-exactness the sync parsers are tested against.
+server/test/fixtures

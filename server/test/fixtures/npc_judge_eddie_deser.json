@@ -1,0 +1,72 @@
+{
+  "_fileName": "ObjectData/WL/WL-StandIn-JudgeEddie.xml",
+  "_flags": 7,
+  "_className": "WizGameObjectTemplate",
+  "_hash": 701229577,
+  "_deserializedOn": "2026-09-25 21:55:43",
+  "_imcodecVersion": "1.0.0.0",
+  "_object": {
+    "m_lootTable": [],
+    "m_deathParticles": "",
+    "m_deathSound": "",
+    "m_hitSound": "",
+    "m_castSound": "",
+    "m_aggroSound": "",
+    "m_primarySchoolName": "",
+    "m_locationPreference": "",
+    "m_leashOffsetOverride": null,
+    "m_objectName": "WL-StandIn-JudgeEddie",
+    "m_templateID": 1608380,
+    "m_visualID": 0,
+    "m_adjectiveList": [
+      "WL-StandIn-JudgeEddie.AdjRef",
+      "EditorOnly"
+    ],
+    "m_exemptFromAOI": false,
+    "m_displayName": "NPCs_01749407",
+    "m_description": "",
+    "m_nObjectType": "OT_UNDEFINED",
+    "m_sIcon": "",
+    "m_behaviors": [
+      {
+        "m_behaviorName": "BasicEffectsBehavior"
+      },
+      {
+        "m_behaviorName": "BasicMobileBehavior"
+      },
+      {
+        "m_skeletonID": 0,
+        "m_dataLookupAssetName": "AnimationData/MasterAnimationList.xml",
+        "m_animationAssetName": "|Mob2|WorldData|Character/Kangaroo/Judges/Kangaroo_Judge.kfm",
+        "m_movementScale": 1.0,
+        "m_idleAnimationName": "",
+        "m_animationEventList": [],
+        "m_assetName": "|Mob2|WorldData|Character/Kangaroo/Judges/Kangaroo_Judge_B.nif",
+        "m_proxyName": "",
+        "m_height": 0.0,
+        "m_bStaticObject": false,
+        "m_bCastsShadow": true,
+        "m_bFadesIn": true,
+        "m_opacity": 1.0,
+        "m_bFadesOut": true,
+        "m_bPortalExcluded": false,
+        "m_scale": 1.0,
+        "m_bCanBeHiddenByCamera": false,
+        "m_nLightType": "Env",
+        "m_shadowAssetName": null,
+        "m_enableReqs": null,
+        "m_behaviorName": "AnimationBehavior"
+      },
+      {
+        "m_behaviorName": "DeletedBehavior"
+      },
+      {
+        "m_stateSetName": "NPCMobileStates",
+        "m_behaviorName": "BasicObjectStateBehavior"
+      },
+      {
+        "m_behaviorName": "DeletedBehavior"
+      }
+    ]
+  }
+}
