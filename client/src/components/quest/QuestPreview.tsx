@@ -228,6 +228,10 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   const endResults = arrayOf(nested(quest.m_endResults, 'm_results'));
   return (
     <section aria-label="Results" className="flex flex-col gap-4">
+      <p className="text-xs text-zinc-500">
+        Read-only JSON — this preview is the extraction page's; the structured result editor is in
+        the Results tab of the quest detail page.
+      </p>
       {endResults.length > 0 ? (
         <ul className="flex flex-wrap gap-2">
           {endResults.map((result, index) => (

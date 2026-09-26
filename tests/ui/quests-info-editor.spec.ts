@@ -371,11 +371,16 @@ test.describe('the other tabs stay read-only', () => {
       main_(page).getByRole('region', { name: 'Quest requirements editor' }),
     ).toBeVisible();
 
+    // …and the Results tab is the fifth as of story p3-07 (its own spec,
+    // `quests-results-editor.spec.ts`, drives it)…
+    await main_(page).getByRole('tab', { name: 'Results' }).click();
+    await expect(main_(page).getByRole('region', { name: 'Quest results editor' })).toBeVisible();
+
     // …and the rest are still the read-only preview (p2-08's contract). The Goal Logic
     // flowchart is a live editor too (p3-05) and stays in this list on purpose: it renders
     // no plain form control until a node or an edge is opened, which is exactly what this
-    // assertion is about.
-    for (const tab of ['Goal Logic', 'Results', 'Dialog'] as const) {
+    // assertion is about. Dialog is the last read-only tab after p3-07.
+    for (const tab of ['Goal Logic', 'Dialog'] as const) {
       await main_(page).getByRole('tab', { name: tab }).click();
       await expect(
         main_(page).getByRole('tabpanel').locator('input, select, textarea'),

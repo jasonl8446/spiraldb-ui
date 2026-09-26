@@ -7,6 +7,7 @@ import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
 import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
 import QuestRequirementsEditor from '../components/quest/QuestRequirementsEditor';
+import QuestResultsEditor from '../components/quest/QuestResultsEditor';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
@@ -223,6 +224,9 @@ function LoadedQuest({
               ),
               Requirements: (
                 <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
+              ),
+              Results: (
+                <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />
               ),
             }}
           />

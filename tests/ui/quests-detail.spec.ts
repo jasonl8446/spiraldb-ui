@@ -96,7 +96,7 @@ test.describe('header', () => {
 });
 
 test.describe('tabs', () => {
-  test('renders the six tabs through QuestPreview, two of them read-only', async ({ page }) => {
+  test('renders the six tabs through QuestPreview, one of them read-only', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -105,9 +105,10 @@ test.describe('tabs', () => {
       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
     }
 
-    // Info is the landing tab and, since p3-03, the live editor — two of the other five
-    // tabs (Results, Dialog) are still p2-07's read-only bodies, which is what the rest of
-    // this test checks; the other two became live editors in p3-05 and p3-06.
+    // Info is the landing tab and, since p3-03, the live editor — Dialog is the last tab
+    // still on p2-07's read-only body, which is what the end of this test checks; the other
+    // four became live editors in p3-04 (Goals), p3-05 (Goal Logic), p3-06 (Requirements)
+    // and p3-07 (Results).
     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
     await expect(main.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
 
@@ -153,13 +154,25 @@ test.describe('tabs', () => {
     await expect(main.getByText('m_prepRequirements', { exact: true })).toBeVisible();
     await expect(main.getByText('m_pruneRequirements', { exact: true })).toBeVisible();
 
+    // The Results tab is the fifth live editor (story p3-07): its own spec
+    // (`quests-results-editor.spec.ts`) drives the 14-type forms, so this pins that the
+    // detail page really mounts it — and that the seeded end result's raw drop-table id is
+    // on screen. That id resolves in no names table this spec mocks, so the trigger shows
+    // the id itself, which is the documented miss path rather than an error.
     await main.getByRole('tab', { name: 'Results' }).click();
+    await expect(main.getByRole('region', { name: 'Quest results editor' })).toBeVisible();
+    await expect(main.getByRole('region', { name: 'End results', exact: true })).toBeVisible();
+    await expect(
+      main.getByRole('article', { name: 'ResDropTable m_endResults.m_results[0]' }),
+    ).toBeVisible();
     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();
 
     await main.getByRole('tab', { name: 'Dialog' }).click();
     await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
 
-    for (const tab of ['Results', 'Dialog'] as const) {
+    // Dialog is the only tab left on the read-only preview. This assertion was narrowed
+    // when Results became an editor (p3-07) — a phase transition, not a weakened check.
+    for (const tab of ['Dialog'] as const) {
       await main.getByRole('tab', { name: tab }).click();
       await expect(
         main.getByRole('tabpanel').locator('input, select, textarea'),
