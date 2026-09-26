@@ -1,0 +1,301 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - complementary "Sidebar" [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e6]
+          - generic [ref=e8]: SpiralDB UI
+        - navigation "Main navigation" [ref=e9]:
+          - generic [ref=e10]:
+            - button "OVERVIEW" [expanded] [ref=e11] [cursor=pointer]:
+              - img [ref=e12]
+              - generic [ref=e14]: OVERVIEW
+              - img [ref=e15]
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - link "Dashboard" [ref=e19] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e20]
+                  - generic [ref=e25]: Dashboard
+          - generic [ref=e26]:
+            - button "QUESTS" [expanded] [ref=e27] [cursor=pointer]:
+              - img [ref=e28]
+              - generic [ref=e37]: QUESTS
+              - img [ref=e38]
+            - list [ref=e40]:
+              - listitem [ref=e41]:
+                - link "Extract Quests" [ref=e42] [cursor=pointer]:
+                  - /url: /quests/extract
+                  - img [ref=e43]
+                  - generic [ref=e46]: Extract Quests
+              - listitem [ref=e47]:
+                - link "Browse Quests" [ref=e48] [cursor=pointer]:
+                  - /url: /quests
+                  - img [ref=e49]
+                  - generic [ref=e52]: Browse Quests
+          - generic [ref=e53]:
+            - button "DATA" [expanded] [ref=e54] [cursor=pointer]:
+              - img [ref=e55]
+              - generic [ref=e59]: DATA
+              - img [ref=e60]
+            - list [ref=e62]:
+              - listitem [ref=e63]:
+                - link "Drop Tables" [ref=e64] [cursor=pointer]:
+                  - /url: /drop-tables
+                  - img [ref=e65]
+                  - generic [ref=e69]: Drop Tables
+              - listitem [ref=e70]:
+                - link "NPC Inventories" [ref=e71] [cursor=pointer]:
+                  - /url: /npc-inventories
+                  - img [ref=e72]
+                  - generic [ref=e76]: NPC Inventories
+              - listitem [ref=e77]:
+                - link "NPC Spell Inventories" [ref=e78] [cursor=pointer]:
+                  - /url: /npc-spell-inventories
+                  - img [ref=e79]
+                  - generic [ref=e81]: NPC Spell Inventories
+              - listitem [ref=e82]:
+                - link "Creature Spellbooks" [ref=e83] [cursor=pointer]:
+                  - /url: /creature-spellbooks
+                  - img [ref=e84]
+                  - generic [ref=e86]: Creature Spellbooks
+              - listitem [ref=e87]:
+                - link "NPC Drop Tables" [ref=e88] [cursor=pointer]:
+                  - /url: /npc-drop-tables
+                  - img [ref=e89]
+                  - generic [ref=e99]: NPC Drop Tables
+              - listitem [ref=e100]:
+                - link "Treasure Card Inventory" [ref=e101] [cursor=pointer]:
+                  - /url: /treasure-card-inventories
+                  - img [ref=e102]
+                  - generic [ref=e106]: Treasure Card Inventory
+              - listitem [ref=e107]:
+                - link "Zone Transfers" [ref=e108] [cursor=pointer]:
+                  - /url: /zone-transfers
+                  - img [ref=e109]
+                  - generic [ref=e111]: Zone Transfers
+              - listitem [ref=e112]:
+                - link "Global Registry" [ref=e113] [cursor=pointer]:
+                  - /url: /global-registry
+                  - img [ref=e114]
+                  - generic [ref=e117]: Global Registry
+          - generic [ref=e118]:
+            - button "SETTINGS" [expanded] [ref=e119] [cursor=pointer]:
+              - img [ref=e120]
+              - generic [ref=e123]: SETTINGS
+              - img [ref=e124]
+            - list [ref=e126]:
+              - listitem [ref=e127]:
+                - link "Sync Friendly Names" [ref=e128] [cursor=pointer]:
+                  - /url: /settings
+                  - img [ref=e129]
+                  - generic [ref=e134]: Sync Friendly Names
+      - generic [ref=e135]:
+        - banner [ref=e136]:
+          - heading "Dashboard" [level=2] [ref=e137]
+          - status [ref=e138]
+          - button "Sync friendly names" [ref=e139] [cursor=pointer]:
+            - img
+            - generic [ref=e140]: Sync
+          - generic "Current user" [ref=e141]:
+            - generic [ref=e142]: J
+            - generic [ref=e143]: Jason
+        - main [ref=e144]:
+          - generic [ref=e145]:
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - generic [ref=e148]: Dashboard
+                - generic [ref=e149]: Arrives in Phase 5
+              - generic [ref=e150]:
+                - paragraph [ref=e151]: This route is wired into the shell; the page itself is built in Phase 5.
+                - paragraph [ref=e152]: /
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - generic [ref=e155]: Shared components — smoke test
+                - generic [ref=e156]: FriendlyNameDropdown and StatusBadge against the real synced data. Each dropdown submits the raw id in a hidden field, exactly as the editors will.
+              - generic [ref=e157]:
+                - generic [ref=e158]:
+                  - generic [ref=e159]: items
+                  - combobox "Preview items friendly name dropdown" [expanded] [ref=e161] [cursor=pointer]:
+                    - generic [ref=e162]: Search items…
+                    - img
+                  - paragraph [ref=e163]: "raw id: (none)"
+                - generic [ref=e164]:
+                  - generic [ref=e165]: spells
+                  - combobox "Preview spells friendly name dropdown" [ref=e167] [cursor=pointer]:
+                    - generic [ref=e168]: Search spells…
+                    - img
+                  - paragraph [ref=e169]: "raw id: (none)"
+                - generic [ref=e170]:
+                  - generic [ref=e171]: npcs
+                  - combobox "Preview npcs friendly name dropdown" [ref=e173] [cursor=pointer]:
+                    - generic [ref=e174]: Search npcs…
+                    - img
+                  - paragraph [ref=e175]: "raw id: (none)"
+                - generic [ref=e176]:
+                  - generic [ref=e177]: "StatusBadge:"
+                  - 'generic "Status: Extracted" [ref=e178]': Extracted
+                  - 'generic "Status: Reviewed" [ref=e180]': Reviewed
+                  - 'generic "Status: Verified" [ref=e182]': Verified
+    - region "Notifications alt+T"
+  - dialog [ref=e185]:
+    - generic [ref=e186]:
+      - generic [ref=e188]:
+        - img [ref=e189]
+        - combobox "Search items" [expanded] [active] [ref=e192]
+      - listbox "Suggestions" [ref=e193]:
+        - group [ref=e195]:
+          - option "None" [selected] [ref=e196]:
+            - img [ref=e197]
+            - text: None
+          - option "+100 Energy Elixir" [ref=e199]:
+            - img [ref=e200]
+            - generic [ref=e202]: +100 Energy Elixir
+          - option "Lounging Pigswick Student" [ref=e203]:
+            - img [ref=e204]
+            - generic [ref=e206]: Lounging Pigswick Student
+          - option "Placeholder" [ref=e207]:
+            - img [ref=e208]
+            - generic [ref=e210]: Placeholder
+          - option "'Porters of the Spiral Bundle" [ref=e211]:
+            - img [ref=e212]
+            - generic [ref=e214]: "'Porters of the Spiral Bundle"
+          - option "+1 Character & Lvl 50 Elixirs" [ref=e215]:
+            - img [ref=e216]
+            - generic [ref=e218]: +1 Character & Lvl 50 Elixirs
+          - option "+10 Energy Elixir" [ref=e219]:
+            - img [ref=e220]
+            - generic [ref=e222]: +10 Energy Elixir
+          - option "+25 Energy Elixir" [ref=e223]:
+            - img [ref=e224]
+            - generic [ref=e226]: +25 Energy Elixir
+          - option "+5 Energy Elixir" [ref=e227]:
+            - img [ref=e228]
+            - generic [ref=e230]: +5 Energy Elixir
+          - option "+50 Energy Elixir" [ref=e231]:
+            - img [ref=e232]
+            - generic [ref=e234]: +50 Energy Elixir
+          - option "1 Month Prepaid Time" [ref=e235]:
+            - img [ref=e236]
+            - generic [ref=e238]: 1 Month Prepaid Time
+          - option "1 Month Prepaid Time - Promo" [ref=e239]:
+            - img [ref=e240]
+            - generic [ref=e242]: 1 Month Prepaid Time - Promo
+          - option "10 X 10 Pets & Snacks Bundle" [ref=e243]:
+            - img [ref=e244]
+            - generic [ref=e246]: 10 X 10 Pets & Snacks Bundle
+          - option "100 Black Lotus Bundle" [ref=e247]:
+            - img [ref=e248]
+            - generic [ref=e250]: 100 Black Lotus Bundle
+          - option "100 Bone Bundle" [ref=e251]:
+            - img [ref=e252]
+            - generic [ref=e254]: 100 Bone Bundle
+          - option "100 Bronze Gear Bundle" [ref=e255]:
+            - img [ref=e256]
+            - generic [ref=e258]: 100 Bronze Gear Bundle
+          - option "100 Cat Tail Bundle" [ref=e259]:
+            - img [ref=e260]
+            - generic [ref=e262]: 100 Cat Tail Bundle
+          - option "100 Deep Mushroom Bundle" [ref=e263]:
+            - img [ref=e264]
+            - generic [ref=e266]: 100 Deep Mushroom Bundle
+          - option "100 Ectoplasm Bundle" [ref=e267]:
+            - img [ref=e268]
+            - generic [ref=e270]: 100 Ectoplasm Bundle
+          - option "100 Fish Fin Bundle" [ref=e271]:
+            - img [ref=e272]
+            - generic [ref=e274]: 100 Fish Fin Bundle
+          - option "100 Fish Scales Bundle" [ref=e275]:
+            - img [ref=e276]
+            - generic [ref=e278]: 100 Fish Scales Bundle
+          - option "100 Frost Flower Bundle" [ref=e279]:
+            - img [ref=e280]
+            - generic [ref=e282]: 100 Frost Flower Bundle
+          - option "100 Kelp Bundle" [ref=e283]:
+            - img [ref=e284]
+            - generic [ref=e286]: 100 Kelp Bundle
+          - option "100 Lava Lily Bundle" [ref=e287]:
+            - img [ref=e288]
+            - generic [ref=e290]: 100 Lava Lily Bundle
+          - option "100 Leather Strap Bundle" [ref=e291]:
+            - img [ref=e292]
+            - generic [ref=e294]: 100 Leather Strap Bundle
+          - option "100 Mist Wood Bundle" [ref=e295]:
+            - img [ref=e296]
+            - generic [ref=e298]: 100 Mist Wood Bundle
+          - option "100 Ore Bundle" [ref=e299]:
+            - img [ref=e300]
+            - generic [ref=e302]: 100 Ore Bundle
+          - option "100 Parchment Bundle" [ref=e303]:
+            - img [ref=e304]
+            - generic [ref=e306]: 100 Parchment Bundle
+          - option "100 Pearl Bundle" [ref=e307]:
+            - img [ref=e308]
+            - generic [ref=e310]: 100 Pearl Bundle
+          - option "100 Red Mandrake Bundle" [ref=e311]:
+            - img [ref=e312]
+            - generic [ref=e314]: 100 Red Mandrake Bundle
+          - option "100 Sandstone Bundle" [ref=e315]:
+            - img [ref=e316]
+            - generic [ref=e318]: 100 Sandstone Bundle
+          - option "100 Scrap Iron Bundle" [ref=e319]:
+            - img [ref=e320]
+            - generic [ref=e322]: 100 Scrap Iron Bundle
+          - option "100 Shell Bundle" [ref=e323]:
+            - img [ref=e324]
+            - generic [ref=e326]: 100 Shell Bundle
+          - option "100 Spider Silk Bundle" [ref=e327]:
+            - img [ref=e328]
+            - generic [ref=e330]: 100 Spider Silk Bundle
+          - option "100 Stone Block Bundle" [ref=e331]:
+            - img [ref=e332]
+            - generic [ref=e334]: 100 Stone Block Bundle
+          - option "12 Month Prepaid Time" [ref=e335]:
+            - img [ref=e336]
+            - generic [ref=e338]: 12 Month Prepaid Time
+          - option "12 Packs @ Price of 10 YuE23" [ref=e339]:
+            - img [ref=e340]
+            - generic [ref=e342]: 12 Packs @ Price of 10 YuE23
+          - option "12 Packs @ the Price of 10 BuR" [ref=e343]:
+            - img [ref=e344]
+            - generic [ref=e346]: 12 Packs @ the Price of 10 BuR
+          - option "12 Packs @ the Price of 10 DAS" [ref=e347]:
+            - img [ref=e348]
+            - generic [ref=e350]: 12 Packs @ the Price of 10 DAS
+          - option "12 Packs @ the Price of 10 For" [ref=e351]:
+            - img [ref=e352]
+            - generic [ref=e354]: 12 Packs @ the Price of 10 For
+          - option "12 Packs @ the Price of 10 FrF" [ref=e355]:
+            - img [ref=e356]
+            - generic [ref=e358]: 12 Packs @ the Price of 10 FrF
+          - option "12 Packs @ the Price of 10 L&L" [ref=e359]:
+            - img [ref=e360]
+            - generic [ref=e362]: 12 Packs @ the Price of 10 L&L
+          - option "12 Packs @ the Price of 10 MAL" [ref=e363]:
+            - img [ref=e364]
+            - generic [ref=e366]: 12 Packs @ the Price of 10 MAL
+          - option "12 Packs @ the Price of 10 MOR" [ref=e367]:
+            - img [ref=e368]
+            - generic [ref=e370]: 12 Packs @ the Price of 10 MOR
+          - option "12 Packs @ the Price of 10 NMi" [ref=e371]:
+            - img [ref=e372]
+            - generic [ref=e374]: 12 Packs @ the Price of 10 NMi
+          - option "12 Packs @ the Price of 10 SPR" [ref=e375]:
+            - img [ref=e376]
+            - generic [ref=e378]: 12 Packs @ the Price of 10 SPR
+          - option "12 Packs @ the Price of 10 SkF" [ref=e379]:
+            - img [ref=e380]
+            - generic [ref=e382]: 12 Packs @ the Price of 10 SkF
+          - option "12 Packs @ the Price of 10 WaW" [ref=e383]:
+            - img [ref=e384]
+            - generic [ref=e386]: 12 Packs @ the Price of 10 WaW
+          - option "12 Packs @ the Price of 10 WiH" [ref=e387]:
+            - img [ref=e388]
+            - generic [ref=e390]: 12 Packs @ the Price of 10 WiH
+          - option "12 Packs @ the Price of 10FFK" [ref=e391]:
+            - img [ref=e392]
+            - generic [ref=e394]: 12 Packs @ the Price of 10FFK
+          - option "12 Packs @ the Price of 10FFK2" [ref=e395]:
+            - img [ref=e396]
+            - generic [ref=e398]: 12 Packs @ the Price of 10FFK2
+      - generic [ref=e399]: showing 50 of 79,835 matches — keep typing
