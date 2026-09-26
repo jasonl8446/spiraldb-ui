@@ -1,0 +1,103 @@
+# p3-07 tier-2 evidence — the Results editor on the real stack (lead-run, D23)
+
+Subagents have no playwright-mcp, so the browser pass is the lead's (D23). Rig as p3-04…p3-06: a
+**copy** of the live DB (`cp data/spiraldb-ui.db /tmp/p307-tier2.db`), the real corpus clone
+(`SPIRALDB_PATH=data/test-spiraldb`), the freshly built `dist`, and
+`NODE_ENV=test … PORT=3216 npx tsx server/src/index.ts`. **Save was never pressed**: every value
+below is the in-memory document read back through the JSON panel's `[Copy]` (the clipboard is wiped
+and re-polled, so a read cannot pass on a stale value).
+
+The targets were chosen because the corpus puts each type in a specific quest — the lead measured
+that **all 14 types have at least one real live target**, clustered in five quests:
+
+| Quest | Types it carries (measured) |
+|---|---|
+| `WC-TUT-C05-001` | ResPlaySound (**the only router**), ResDespawn, ResPostEvent, ResWait, ResAddDynaMod, ResDropTable |
+| `WC-TUT-C03-001` | **all 8 ResDrawHand** (the split field), ResAddSpell, ResGiveSpell |
+| `Tutorial_Intro` | ResAddHealth, ResAddMana (the fieldless pair), **7 ResLearnSpell** with nested trees |
+| `WC-COMMONS-MAIN-001` | ResModifyEntry (`m_questName: ""`), ResAddDynaMod, ResTeleport |
+| everywhere | ResDropTable (317 nodes) |
+
+## 1. The tab, the homes and the per-type field sets (`WC-TUT-C05-001`)
+
+Nine cards rendered across five homes, each list its own region: `Start results`, `End results`,
+`Goal results`, `Complete results for <goal name>`, `Activate results for <goal name>`, under the
+host's `Quest results editor`. Every card's accessible name is its **absolute document path** —
+e.g. `ResPlaySound m_goals[0].m_completeResults.m_results[0]` — and every control names its node
+(`Delete <address>`, `m_locX`, …).
+
+Control labels read straight off the rendered cards give the exact per-type field sets, and they
+match the corpus key order:
+
+| Card (live) | Controls rendered |
+|---|---|
+| `ResDropTable` | `m_tableName`, `m_maxRolls` |
+| `ResPlaySound` | `m_locX`, `m_locY`, `m_locZ`, `m_routingType`, `m_useLocation`, `m_useTriggerLocation`, `m_soundName`, `m_blocking`, `m_reinteractTime` — the **router sub-object's measured 6-key order** inside the result's own order |
+| `ResAddDynaMod` | `m_dynaModClientTag`, `m_dynaModRemove`, `m_useQuestAsOriginator`, `m_dynaModState`, `m_zoneName` |
+| `ResDespawn` | `m_spawnID`, `m_despawnEffect`, `m_templateID` |
+| `ResGiveSpell` | `m_templateID`, `m_spellID` |
+
+## 2. The 14-type selector and a fieldless add
+
+Every list's selector is labelled `New result type` with **exactly 14 options**:
+`ResDropTable, ResModifyEntry, ResAddDynaMod, ResLearnSpell, ResPostEvent, ResAddHealth, ResAddMana,
+ResAddSpell, ResDespawn, ResDrawHand, ResGiveSpell, ResPlaySound, ResTeleport, ResWait` — the
+domain reference's own order, with the two fieldless types present.
+
+Choosing `ResAddHealth` and pressing `Add Result` wrote a node whose keys are **exactly `['$type']`**
+— `"Imcodec.ObjectProperty.TypeCache.ResAddHealth, Imcodec.ObjectProperty"` — i.e. a fieldless type
+is added with **no padding**, the wrapper stayed `['m_results']` (untagged), and the document still
+had 36 top-level keys. An earlier add (the default `ResDropTable`) likewise produced
+`[$type, m_tableName, m_maxRolls]`.
+
+## 3. The split field, live (`WC-TUT-C03-001` — all 8 corpus ResDrawHand nodes)
+
+Each card carries a UI-only source toggle: `Spells for m_templateID <address>` /
+`NPCs for m_templateID <address>`, with `aria-pressed` and help text that states the measurement
+(*"measured 6 of 8 distinct values resolve in spells and 2 in npcs (never both)"*).
+
+| Node value | Source pressed | What the card displayed |
+|---|---|---|
+| 35528 | **NPCs** | `Draconian (35528)` — the friendly name **and** the raw id |
+| 126461 | **NPCs** | `Draconian (126461)` |
+| 625720646 | **Spells** | `Troll` |
+| 625720646 after switching the source to NPCs | NPCs | `625720646` — a **miss shows the raw id**, never a wrong name |
+
+And the point that matters: after that source switch the document's ResDrawHand template ids were
+**still `[35528, 126461, 625720646, 1356552154]`** — a pure source switch writes nothing.
+
+The panel showed one console error during the switch:
+`Failed to load resource: 404 @ /api/names/npcs/625720646`. That is the **documented miss path**
+(D59(d): a miss answers 404 and the UI shows the raw key verbatim), not a defect — recorded here
+because a 404 in the console is exactly the kind of thing that should not be discovered later.
+
+## 4. The shared requirement tree inside a result (`Tutorial_Intro`)
+
+Seven `ResLearnSpell` cards rendered, and each mounted the **p3-06 shared editor** at its own path:
+`Requirements for m_goals[0].m_completeResults.m_results[2]` → `Group
+…m_results[2].m_requirements` → `ReqSchoolOfFocus …m_requirements[0]`, whose School select offers
+`Fire, Ice, Storm, Balance, Life, Death, Myth` and whose type select offers the 4 requirement
+classes. The card also showed the spell's friendly name (`Thunder Snake`, `Frost Beetle`) with the
+honest help *"all 16 distinct measured values resolve in spells"*. `ResAddHealth` and `ResAddMana`
+rendered as real cards too — the fieldless pair.
+
+Screenshots: `p3-07-results-tab.png`, `p3-07-nested-requirement-tree.png`.
+
+## 5. Server lifecycle
+
+The rig ran as a managed background job on :3216 and was killed at the end of the pass; nothing was
+left listening on 5173, 3001 or 3216.
+
+## What this pass did **not** prove
+
+- No image input in this model, so the two screenshots' **pixels** were not inspected; every claim
+  is a DOM, ARIA-name, `aria-pressed`, input-value or clipboard read.
+- 9 of the 14 types were exercised live (their cards rendered, their fields read off the DOM); the
+  remaining 5 were added/edited only in tier-1. The **add** path was driven live for `ResDropTable`
+  and `ResAddHealth`.
+- No Save was pressed, so "saved" means the live document and the JSON panel, not a file on disk;
+  the save pipeline is D49's contract and this story does not change it.
+- `ResModifyEntry`'s `m_questName: ""` and the null zone cases were measured on the real card list
+  (the card renders with an empty reference) but the "0 lookup requests" count is tier-1's, since
+  counting requests per control is what the spec does deterministically.
+- 768px/mobile was not re-checked for this tab.
