@@ -1,0 +1,40 @@
+# L101 — the phase PR's own check run (raw excerpts from the GitHub Actions job log)
+# PR #3 head, run 36224106420, job ci (id 108354702747), runner ubuntu-24.04
+# started 2026-09-26T06:33:25Z, completed 2026-09-26T06:34:17Z (52s), conclusion: success
+
+## steps (gh run view --json jobs)
+  success  Set up job
+  success  Run actions/checkout@v4
+  success  Detect Node project
+  success  Run actions/setup-node@v4
+  success  Install dependencies
+  success  Unit tests
+  success  Build
+  success  Lint and formatting
+  success  Typecheck tests
+  success  Install headless chromium
+  success  UI tests
+  success  Post Run actions/setup-node@v4
+  success  Post Run actions/checkout@v4
+  success  Complete job
+
+## Unit tests (runner)
+ Test Files  20 passed (20)
+
+## Install headless chromium (runner)
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium
+Chrome for Testing 153.0.8010.12 (playwright chromium v1243) downloaded to /home/runner/work/spiraldb-ui/spiraldb-ui/tools/.playwright-browsers/chromium-1243
+Chrome Headless Shell 153.0.8010.12 (playwright chromium-headless-shell v1243) downloaded to /home/runner/work/spiraldb-ui/spiraldb-ui/tools/.playwright-browsers/chromium_headless_shell-1243
+
+## UI tests (runner)
+ Test Files  20 passed (20)
+Running 8 tests using 1 worker
+  ✓  1 [chromium] › tests/ui/shell.spec.ts:189:3 › sidebar navigation › every route is reachable, renders a real page, and highlights its item (5.2s)
+  ✓  2 [chromium] › tests/ui/shell.spec.ts:233:3 › sidebar navigation › collapsing a group hides its items and flips aria-expanded (466ms)
+  ✓  3 [chromium] › tests/ui/shell.spec.ts:258:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (655ms)
+  ✓  4 [chromium] › tests/ui/shell.spec.ts:292:3 › sidebar navigation › a non-root deep link is served the SPA shell, and an unknown path is the SPA 404 (586ms)
+  ✓  5 [chromium] › tests/ui/shell.spec.ts:316:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (468ms)
+  ✓  6 [chromium] › tests/ui/shell.spec.ts:357:3 › settings › renders the settings values, the last sync and the history (393ms)
+  ✓  7 [chromium] › tests/ui/shell.spec.ts:376:1 › the dev stack answers a real API request through the Vite proxy (360ms)
+  ✓  8 [chromium] › tests/ui/shell.spec.ts:388:3 › harness self-check › the console-error guard itself is live (324ms)
+  8 passed (10.8s)

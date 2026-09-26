@@ -49,7 +49,7 @@ next to this file; the durable tier-2 record for the UI halves is
 | 14 | sidebar navigates every route, collapse, active highlight, Sync spinner → toast (L98) | `npm run test:ui` (L102) covers the 12-route sweep, collapse and one-active-item; this run additionally re-verified the **live** button on the rebuilt DB: spinner after **88 ms** (`Syncing…`, `lucide-loader-circle … animate-spin`, disabled) → success toast after **22.6 s** (the cold full-unpack path this time) `"Sync complete: 79,835 items · 18,173 spells · 23,033 NPCs · 322 quests · 1,241 zones"`, `data-type=success`, emerald accent `rgb(16,185,129)` with `borderTopWidth: 0px` — screenshot `p1-gate-1-02-sync-toast-fresh.png`. |
 | 15 | `FriendlyNameDropdown` real names for items/spells/npcs, raw id stored (L99) | Fresh on the rebuilt tables: items "Twice Stitched Boots" → hidden `preview_items=4808`; spells "Firecat Alley" → `preview_spells=607923`; npcs "AZ-Parrot-Darkshaman-A_StandIn (1397242)" → `preview_npcs=1397242`; **each raw id cross-checked against `GET /api/names/<type>/<id>`** so a hardcoded table could not pass. Unfiltered opens report `showing 50 of 79,835`, `… of 18,173`, `… of 23,033` (D39 cap). |
 | 16 | unit tests green (L100) | `tests.txt`: `Test Files 20 passed (20)`, `Tests 512 passed (512)`. |
-| 17 | `ci.yml` runs on pull_request — **verified by this PR's own check run** (L101) | Recorded in the PR section below from the live check run (including the headless-chromium install step). |
+| 17 | `ci.yml` runs on pull_request — **verified by this PR's own check run** (L101) | PR **#3**'s own check run: **run 36224106420**, job `ci` (id 108354702747), `conclusion: success` in **52 s** (2026-09-26T06:33:25Z → 06:34:17Z) on `ubuntu-24.04`. All 14 steps green including `Install headless chromium` — `Chrome for Testing 153.0.8010.12 (playwright chromium v1243)` downloaded to `tools/.playwright-browsers/chromium-1243`, the same path `playwright.config.ts` reads — plus `Unit tests` (`Test Files 20 passed`) and `UI tests` (**8 passed**, 10.8 s, all eight specs green). Raw excerpts: [`ci-check-run.txt`](./ci-check-run.txt). Every push to the PR re-runs `ci` and the merge is gated on the **final** head's run, whose id is logged in `.omd/prd/progress.txt` with the merge. |
 | 18 | `npm run test:ui` green; browsers dir gitignored (L102) | `tests.txt`: `8 passed`; `git check-ignore -v tools/.playwright-browsers data/` → `.gitignore:23:tools/.playwright-browsers/` and `.gitignore:5:data/`. |
 | 19 | UI criteria evidenced per D23 tier 2 (L103) | Committed: `../tier-2-ui-pass.md` + 5 screenshots (p1-14), plus this round's `p1-gate-1-01/02` screenshots and the JSON assertions above. |
 
@@ -81,3 +81,17 @@ that endpoint defines no `limit` parameter.
 behaviour) — which sharpens D42: the seeded branch advances on its own and the user
 still has no UI field to change it. A cold UI sync (fresh unpack, no reusable tree)
 took 22.6 s against 2.4 s warm; both paths succeed with identical counts.
+## PR and check run
+
+| Item | Value |
+|---|---|
+| PR | [#3 — Phase 1 — Foundation](https://github.com/jasonl8446/spiraldb-ui/pull/3) (`phase-1-foundation` → `main`, 36 commits) |
+| Required check | `ci` (job key; `main`'s protection requires the check named `ci`, 0 approvals, enforce-admins) |
+| First green run | run [36224106420](https://github.com/jasonl8446/spiraldb-ui/actions/runs/36224106420/job/108354702747) — success in 52 s, all 14 steps green, including the headless-chromium install and all 8 UI specs |
+| Merge | performed through the GitHub MCP only after the final head's `ci` was green (merging earlier is rejected with 405 by design); the merge commit, the final run id and the branch deletion are logged in `.omd/prd/progress.txt` (gitignored run log) |
+
+The first green run also retires the two CI risks that were open going into Phase 1:
+the browsers-path single source of truth (the runner downloaded chromium into
+`tools/.playwright-browsers/`, so `npm run test:ui` found it without any env
+juggling) and the `ci` job-name requirement (the check appears as `ci`, because no
+job-level `name:` was added).
