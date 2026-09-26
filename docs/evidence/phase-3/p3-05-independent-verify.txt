@@ -1,0 +1,427 @@
+# p3-05 — lead's independent verification of the goal-logic model
+#
+# Written by the lead from the specs + the real 322-file corpus, deliberately NOT derived
+# from the executor's own tests. Every assertion recomputes the expected value from the raw
+# JSON with its own algorithm, so it can disagree with the model wherever the model is wrong.
+# Run with: npx vitest run --config /tmp/vitest.p305.config.ts   (the config aliases
+# @shared -> shared/, root = the repo, and includes this one file from outside tests/)
+#
+# The spec source is appended below so this file is self-contained and auditable.
+#
+## Run output
+```
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ ../../../../../tmp/p305-lead-verify.test.ts (11 tests) 56ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  16:22:10
+   Duration  1.03s (transform 113ms, setup 0ms, collect 632ms, tests 56ms, environment 0ms, prepare 126ms)
+
+```
+
+## What it independently established
+- corpus loads: 322 quests / 772 goals / 742 m_goalLogic entries.
+- edge counts: for EVERY quest the model's edges equal my own from-scratch expectation
+  (conditions x (targets + complete)) - zero mismatches across all 322; 746 edges total,
+  0 of them dashed, 6 of them kind 'complete'.
+- every edge endpoint is a real node; dashed === (kind === 'or').
+- one node per goal + exactly one Complete node per quest; isStart matches m_startGoals.
+- reachability: my own fixpoint vs validateGoalLogic().unreachable agree on ALL 322, and the
+  flagged quests are exactly the 5 the corpus contains (WC-CYCLOPS-MAIN-002, WC-TRITON-MAIN-008,
+  WC-TUT-C03-001, WC-TUT-C05-001, WC-TUT-C08-001).
+- layout: positions exist for every node, none collide, every edge points rightwards and the
+  Complete node is the rightmost column (a readable left-to-right DAG).
+- absence (D57): among the 15 quests with no entries, BOTH corpus shapes are handled - an absent
+  key takes one `set`, m_goalLogic: [] keeps its key via one `insert` - and every other top-level
+  key stays byte-identical either way.
+- add/delete/edit through the real shared/document primitives: the new entry has the corpus's
+  five keys in the corpus's key order; pre-existing entries and m_goals/m_startGoals are untouched.
+- the D59(c) empty-input rule and the no-edit-when-absent rule hold; an unmodelled key is never written.
+
+CORPUS FACT this verification pinned (see D61): across all 742 entries m_goalsOR is EMPTY (742/742)
+and m_requiredORCount is 1 (742/742), so the corpus contains ZERO OR dependencies. The graph shape
+is exactly two kinds of entry: 435 x "goal A done -> add goal B" and 307 x "goal A done -> complete
+the quest" (the 307 completing entries are precisely the 307 with an empty m_goalsToAdd). One entry
+in the whole corpus has 5 AND conditions. The dashed OR edge, m_requiredORCount > 1 and the
+'unsatisfiable-or-count' finding are therefore FIXTURE-ONLY - proven in tier-1/tier-2 with a
+synthetic graph, never by corpus data.
+
+## My own four first-pass mistakes (recorded: a verification spec is code too)
+The first run was 6 passed / 4 failed, and all four failures were MY spec's fault, not the model's:
+(1) I asserted totalAll > 1000 - the real total is 746, and the per-quest equality check, which is
+    the real assertion, had already passed with zero mismatches;
+(2) I expected hasGoalLogicKey(doc) to be false for the 15 quests with no entries - but 14 of them
+    carry `m_goalLogic: []`, so the key IS present and the model's boolean is right (the name says
+    "key", not "non-empty");
+(3) I passed the whole DOCUMENT to addGoalLogicEntryEdits, whose documented parameter is the
+    m_goalLogic VALUE - so I got its replace branch and then looked for an index that no longer
+    existed;
+(4) I called updateGoalLogicEntryEdits with a patch object, but its signature is
+    (index, key, present, raw) returning ONE edit or null - not an array.
+Two of those are API-shape misreadings on my side; the other two were wrong expectations about
+correct behaviour. Recorded because the value of an independent spec is that it dares to disagree,
+and it must then report honestly when the disagreement is its own.
+
+## Appendix - the verification spec source
+```ts
+/**
+ * LEAD INDEPENDENT VERIFICATION — p3-05 goal-logic model (task 3.5).
+ *
+ * Written by the lead from the specs + the corpus, deliberately NOT derived from the
+ * executor's own test file, and run against the real 322-file corpus. Its job is to
+ * disagree with the model wherever the model is wrong, so every assertion recomputes
+ * the expected value from the raw JSON with an algorithm of its own.
+ *
+ * Run: npx vitest run --config /tmp/vitest.p305.config.ts
+ */
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { describe, expect, it } from 'vitest';
+
+import * as M from '/home/jason/Documents/git-projects/spiraldb-ui/client/src/lib/quest-goal-logic';
+import { applyEdits, getAtPath } from '/home/jason/Documents/git-projects/spiraldb-ui/shared/document';
+
+const require = createRequire('/home/jason/Documents/git-projects/spiraldb-ui/');
+const JSON5 = require('json5');
+const DIR = '/home/jason/Documents/git-projects/spiraldb/QuestTemplates';
+
+interface Case {
+  file: string;
+  doc: Record<string, unknown>;
+  goals: Record<string, unknown>[];
+  names: Set<string>;
+  logic: Record<string, unknown>[];
+}
+
+const cases: Case[] = readdirSync(DIR)
+  .filter((f) => f.endsWith('.json'))
+  .sort()
+  .flatMap((file) => {
+    let doc: Record<string, unknown>;
+    try {
+      doc = JSON5.parse(readFileSync(`${DIR}/${file}`, 'utf8')) as Record<string, unknown>;
+    } catch {
+      return [];
+    }
+    const goals = Array.isArray(doc.m_goals) ? (doc.m_goals as Record<string, unknown>[]) : [];
+    const logic = Array.isArray(doc.m_goalLogic) ? (doc.m_goalLogic as Record<string, unknown>[]) : [];
+    const names = new Set(
+      goals.map((g) => g.m_goalName).filter((n): n is string => typeof n === 'string'),
+    );
+    return [{ file, doc, goals, names, logic }];
+  });
+
+/** My own reachability fixpoint — deliberately a different implementation from the model's. */
+function reachableNames(c: Case): Set<string> {
+  const start = Array.isArray(c.doc.m_startGoals) ? (c.doc.m_startGoals as unknown[]) : [];
+  const reached = new Set(start.filter((n): n is string => typeof n === 'string' && c.names.has(n)));
+  for (let pass = 0; pass < c.logic.length + 2; pass += 1) {
+    let grew = false;
+    for (const entry of c.logic) {
+      const and = (Array.isArray(entry.m_goalsAND) ? entry.m_goalsAND : []).filter(
+        (n): n is string => typeof n === 'string' && c.names.has(n),
+      );
+      const or = (Array.isArray(entry.m_goalsOR) ? entry.m_goalsOR : []).filter(
+        (n): n is string => typeof n === 'string' && c.names.has(n),
+      );
+      const need =
+        typeof entry.m_requiredORCount === 'number' ? entry.m_requiredORCount : or.length;
+      const andOk = and.every((n) => reached.has(n));
+      const orOk = or.length === 0 ? true : or.filter((n) => reached.has(n)).length >= Math.max(1, need);
+      if (andOk && orOk) {
+        for (const n of Array.isArray(entry.m_goalsToAdd) ? entry.m_goalsToAdd : []) {
+          if (typeof n === 'string' && c.names.has(n) && !reached.has(n)) {
+            reached.add(n);
+            grew = true;
+          }
+        }
+      }
+    }
+    if (!grew) break;
+  }
+  return reached;
+}
+
+const names = (entry: Record<string, unknown>, key: string): string[] =>
+  (Array.isArray(entry[key]) ? entry[key] : []).filter((n): n is string => typeof n === 'string');
+
+const expectedEdgeCount = (c: Case): { all: number; dashed: number; complete: number } => {
+  let all = 0;
+  let dashed = 0;
+  let complete = 0;
+  for (const entry of c.logic) {
+    const conds = names(entry, 'm_goalsAND').length + names(entry, 'm_goalsOR').length;
+    const targets = names(entry, 'm_goalsToAdd').filter((n) => c.names.has(n)).length;
+    const completes = entry.m_completeQuest === true;
+    all += conds * (targets + (completes ? 1 : 0));
+    dashed += names(entry, 'm_goalsOR').length * (targets + (completes ? 1 : 0));
+    complete += completes ? conds : 0;
+  }
+  return { all, dashed, complete };
+};
+
+describe('p3-05 lead verification — the corpus agrees with the model', () => {
+  it('loads the real corpus (322 quests / 772 goals / 742 entries)', () => {
+    expect(cases.length).toBe(322);
+    expect(cases.reduce((n, c) => n + c.goals.length, 0)).toBe(772);
+    expect(cases.reduce((n, c) => n + c.logic.length, 0)).toBe(742);
+  });
+
+  it('builds the exactly-expected number of edges for every quest', () => {
+    let totalAll = 0;
+    let totalDashed = 0;
+    let totalComplete = 0;
+    const mismatches: string[] = [];
+    for (const c of cases) {
+      const graph = M.buildGoalLogicGraph(c.doc);
+      const want = expectedEdgeCount(c);
+      const got = {
+        all: graph.edges.length,
+        dashed: graph.edges.filter((e) => e.dashed).length,
+        complete: graph.edges.filter((e) => e.kind === 'complete').length,
+      };
+      totalAll += got.all;
+      totalDashed += got.dashed;
+      totalComplete += got.complete;
+      if (got.all !== want.all || got.dashed !== want.dashed || got.complete !== want.complete) {
+        mismatches.push(`${c.file} want ${JSON.stringify(want)} got ${JSON.stringify(got)}`);
+      }
+    }
+    expect(mismatches).toEqual([]);
+    // The corpus-scale totals, recomputed from the raw JSON above (746 edges across 742
+    // entries: most entries carry exactly one condition and one target).
+    expect(totalAll).toBe(746);
+    // MEASURED: m_goalsOR is empty in all 742 entries and m_requiredORCount is 1 in all of
+    // them, so the corpus contains ZERO OR dependencies — the dashed edge is fixture-only.
+    expect(totalDashed).toBe(0);
+    expect(totalComplete).toBeGreaterThan(0);
+  });
+
+  it('pins the corpus shape: one condition per entry, OR always empty', () => {
+    const andLengths = new Map<number, number>();
+    const orLengths = new Map<number, number>();
+    const addLengths = new Map<number, number>();
+    const orCounts = new Map<string, number>();
+    let entries = 0;
+    let completingWithTargets = 0;
+    for (const c of cases) {
+      for (const entry of c.logic) {
+        entries += 1;
+        const len = (key: string): number => names(entry, key).length;
+        andLengths.set(len('m_goalsAND'), (andLengths.get(len('m_goalsAND')) ?? 0) + 1);
+        orLengths.set(len('m_goalsOR'), (orLengths.get(len('m_goalsOR')) ?? 0) + 1);
+        addLengths.set(len('m_goalsToAdd'), (addLengths.get(len('m_goalsToAdd')) ?? 0) + 1);
+        const orCount = String(entry.m_requiredORCount);
+        orCounts.set(orCount, (orCounts.get(orCount) ?? 0) + 1);
+        if (entry.m_completeQuest === true && len('m_goalsToAdd') > 0) completingWithTargets += 1;
+      }
+    }
+    expect(entries).toBe(742);
+    expect(orLengths.get(0)).toBe(742);
+    expect(orCounts.size).toBe(1);
+    expect([...orCounts.keys()]).toEqual(['1']);
+    // 435 "A done -> add B" entries + 307 "A done -> complete" entries == 742.
+    expect(addLengths.get(1)).toBe(435);
+    expect(addLengths.get(0)).toBe(307);
+    expect(completingWithTargets).toBe(0);
+  });
+
+  it('every edge endpoint is a real node, and OR edges are the dashed ones', () => {
+    const problems: string[] = [];
+    for (const c of cases) {
+      const graph = M.buildGoalLogicGraph(c.doc);
+      const ids = new Set(graph.nodes.map((n) => n.id));
+      for (const e of graph.edges) {
+        if (!ids.has(e.source)) problems.push(`${c.file} edge source ${e.source} is not a node`);
+        if (!ids.has(e.target)) problems.push(`${c.file} edge target ${e.target} is not a node`);
+        if (e.dashed !== (e.kind === 'or')) {
+          problems.push(`${c.file} edge ${e.id} kind=${e.kind} dashed=${e.dashed}`);
+        }
+      }
+    }
+    expect(problems.slice(0, 20)).toEqual([]);
+  });
+
+  it('models one node per goal plus one Complete node, and marks start goals', () => {
+    const problems: string[] = [];
+    for (const c of cases) {
+      const graph = M.buildGoalLogicGraph(c.doc);
+      const goalNodes = graph.nodes.filter((n) => n.kind === 'goal');
+      const completeNodes = graph.nodes.filter((n) => n.kind === 'complete');
+      if (goalNodes.length !== c.goals.length) {
+        problems.push(`${c.file} goals ${c.goals.length} vs nodes ${goalNodes.length}`);
+      }
+      if (completeNodes.length !== 1 || completeNodes[0].name !== M.COMPLETE_NODE_LABEL) {
+        problems.push(`${c.file} Complete nodes ${completeNodes.length}`);
+      }
+      const start = new Set(
+        (Array.isArray(c.doc.m_startGoals) ? c.doc.m_startGoals : []).filter(
+          (n): n is string => typeof n === 'string',
+        ),
+      );
+      for (const node of goalNodes) {
+        if (node.isStart !== start.has(node.name)) {
+          problems.push(`${c.file} node ${node.name} isStart=${node.isStart}`);
+        }
+      }
+    }
+    expect(problems.slice(0, 20)).toEqual([]);
+  });
+
+  it('agrees with my own reachability fixpoint on all 322 quests', () => {
+    const disagreements: string[] = [];
+    const questsWithUnreachable: string[] = [];
+    for (const c of cases) {
+      const mine = reachableNames(c);
+      const theirs = M.validateGoalLogic(c.doc);
+      const myUnreachable = [...c.names].filter((n) => !mine.has(n)).sort();
+      const theirUnreachable = [...theirs.unreachable].sort();
+      if (myUnreachable.join('|') !== theirUnreachable.join('|')) {
+        disagreements.push(
+          `${c.file} mine=[${myUnreachable.join(',')}] theirs=[${theirUnreachable.join(',')}]`,
+        );
+      }
+      if (myUnreachable.length > 0) questsWithUnreachable.push(c.file);
+    }
+    expect(disagreements).toEqual([]);
+    // The corpus really does contain disconnected graphs — the banner has live data.
+    expect(questsWithUnreachable.length).toBe(5);
+    expect(questsWithUnreachable.map((f) => f.replace('questtemplates_', ''))).toEqual([
+      'WC-CYCLOPS-MAIN-002.json',
+      'WC-TRITON-MAIN-008.json',
+      'WC-TUT-C03-001.json',
+      'WC-TUT-C05-001.json',
+      'WC-TUT-C08-001.json',
+    ]);
+  });
+
+  it('lays out a real multi-goal quest as a readable left-to-right DAG', () => {
+    const c = cases.find((x) => x.file.includes('DS-ACAD1-C01-001'))!;
+    expect(c).toBeTruthy();
+    const graph = M.buildGoalLogicGraph(c.doc);
+    const positions = M.layoutGoalLogicGraph(graph);
+    expect(Object.keys(positions).length).toBe(graph.nodes.length);
+    for (const node of graph.nodes) {
+      const p = positions[node.id];
+      expect(p, node.id).toBeTruthy();
+      expect(Number.isFinite(p.x) && Number.isFinite(p.y), node.id).toBe(true);
+    }
+    // No two nodes share a position.
+    const seen = new Map<string, string>();
+    const collisions: string[] = [];
+    for (const [id, p] of Object.entries(positions)) {
+      const key = `${p.x},${p.y}`;
+      if (seen.has(key)) collisions.push(`${seen.get(key)} and ${id} at ${key}`);
+      seen.set(key, id);
+    }
+    expect(collisions).toEqual([]);
+    // Every edge points rightwards, and the Complete node is the graph's sink column.
+    const validation = M.validateGoalLogic(c.doc);
+    expect(validation.hasGraphShapeFinding).toBe(false);
+    for (const e of graph.edges) {
+      if (positions[e.source].x >= positions[e.target].x) {
+        throw new Error(`edge ${e.id} does not point rightwards`);
+      }
+    }
+    const maxX = Math.max(...Object.values(positions).map((p) => p.x));
+    expect(positions[M.COMPLETE_NODE_ID].x).toBe(maxX);
+  });
+
+  it('keeps a quest with no m_goalLogic entries absence-preserving (D57)', () => {
+    const noLogic = cases.filter((c) => c.logic.length === 0);
+    expect(noLogic.length).toBe(15);
+    let absent = 0;
+    let emptyArray = 0;
+    for (const c of noLogic) {
+      const has = M.hasGoalLogicKey(c.doc);
+      const value = c.doc.m_goalLogic;
+      if (!has) {
+        absent += 1;
+        expect(value, c.file).toBeUndefined();
+      } else {
+        emptyArray += 1;
+        expect(Array.isArray(value) && value.length === 0, c.file).toBe(true);
+      }
+      // The builder takes the m_goalLogic VALUE, not the document (its documented contract).
+      const edits = M.addGoalLogicEntryEdits(value);
+      expect(edits.length, c.file).toBe(1);
+      if (has) {
+        expect(edits[0], c.file).toMatchObject({ op: 'insert', path: ['m_goalLogic'], index: 0 });
+      } else {
+        expect(edits[0], c.file).toMatchObject({ op: 'set', path: ['m_goalLogic'] });
+      }
+      const after = applyEdits(c.doc as never, edits) as Record<string, unknown>;
+      expect(Array.isArray(after.m_goalLogic), c.file).toBe(true);
+      expect((after.m_goalLogic as unknown[]).length, c.file).toBe(1);
+      // Only m_goalLogic may differ; everything else stays byte-identical.
+      for (const key of Object.keys(c.doc)) {
+        if (key === 'm_goalLogic') continue;
+        expect(JSON.stringify(after[key]), `${c.file}#${key}`).toBe(JSON.stringify(c.doc[key]));
+      }
+    }
+    // Both corpus shapes exist among the 15 — the empty array must keep its key.
+    expect(emptyArray).toBeGreaterThan(0);
+    expect(absent + emptyArray).toBe(15);
+  });
+
+  it('adds and deletes entries through the real document primitives', () => {
+    const c = cases.find((x) => x.logic.length >= 2 && x.goals.length >= 3)!;
+    const added = applyEdits(
+      c.doc as never,
+      M.addGoalLogicEntryEdits(c.doc.m_goalLogic),
+    ) as Record<string, unknown>;
+    const after = getAtPath(added as never, ['m_goalLogic', c.logic.length]) as Record<string, unknown>;
+    expect(after).toBeTruthy();
+    expect(Object.keys(after).sort()).toEqual([...M.GOAL_LOGIC_ENTRY_KEYS].sort());
+    expect(JSON.stringify(added['m_goals'])).toBe(JSON.stringify(c.doc['m_goals']));
+    // Every pre-existing entry is untouched, in place.
+    expect(JSON.stringify((added.m_goalLogic as unknown[]).slice(0, c.logic.length))).toBe(
+      JSON.stringify(c.logic),
+    );
+
+    const removed = applyEdits(c.doc as never, M.deleteGoalLogicEntryEdits(1)) as Record<string, unknown>;
+    expect((removed.m_goalLogic as unknown[]).length).toBe(c.logic.length - 1);
+    expect(JSON.stringify(removed.m_goals)).toBe(JSON.stringify(c.doc.m_goals));
+    // The entries that survived are the same ones, by value.
+    expect(JSON.stringify((removed.m_goalLogic as unknown[])[0])).toBe(JSON.stringify(c.logic[0]));
+    expect(JSON.stringify((removed.m_goalLogic as unknown[])[1])).toBe(JSON.stringify(c.logic[2]));
+  });
+
+  it('edits one entry field without touching its siblings or m_goals', () => {
+    const c = cases.find((x) => x.logic.length >= 2)!;
+    const edit = M.updateGoalLogicEntryEdits(1, 'm_requiredORCount', true, '2');
+    expect(edit).toBeTruthy();
+    const after = applyEdits(c.doc as never, [edit!]) as Record<string, unknown>;
+    const entry = (after.m_goalLogic as Record<string, unknown>[])[1];
+    expect(entry.m_requiredORCount).toBe(2);
+    expect(entry.m_completeQuest).toBe(c.logic[1].m_completeQuest);
+    expect(JSON.stringify((after.m_goalLogic as unknown[])[0])).toBe(JSON.stringify(c.logic[0]));
+    expect(JSON.stringify(after.m_goals)).toBe(JSON.stringify(c.doc.m_goals));
+    expect(JSON.stringify(after.m_startGoals)).toBe(JSON.stringify(c.doc.m_startGoals));
+    // Key order of the edited entry is the corpus order, not a rebuilt order.
+    expect(Object.keys(entry)).toEqual(Object.keys(c.logic[1]));
+
+    // The D59(c) empty-input rule: deleting an existing key, but NO edit when it is absent.
+    expect(M.updateGoalLogicEntryEdits(1, 'm_goalsAND', true, '  ')).toMatchObject({ op: 'delete' });
+    expect(M.updateGoalLogicEntryEdits(1, 'm_goalsAND', false, '  ')).toBeNull();
+    // A name list splits on commas; a non-finite number yields no edit rather than NaN.
+    expect(M.updateGoalLogicEntryEdits(1, 'm_goalsOR', true, ' a , b ')).toMatchObject({
+      value: ['a', 'b'],
+    });
+    expect(M.updateGoalLogicEntryEdits(1, 'm_requiredORCount', true, '1e')).toBeNull();
+    // An unmodelled key is never written.
+    expect(M.updateGoalLogicEntryEdits(1, 'm_notAKey', true, 'x')).toBeNull();
+  });
+
+  it('never rewrites the goal type axes while the logic changes (D57/D60a)', () => {
+    const c = cases.find((x) => x.goals.length >= 3 && x.logic.length >= 2)!;
+    const before = JSON.stringify(c.doc.m_goals);
+    const after = applyEdits(c.doc as never, M.addGoalLogicEntryEdits(c.doc)) as Record<string, unknown>;
+    expect(JSON.stringify(after.m_goals)).toBe(before);
+    const goalTypes = (after.m_goals as Record<string, unknown>[]).map((g) => g.m_goalType);
+    expect(goalTypes).toEqual(c.goals.map((g) => g.m_goalType));
+  });
+});```

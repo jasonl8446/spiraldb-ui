@@ -1,0 +1,117 @@
+# p3-05 tier-2 evidence — the flowchart on the real stack (lead-run, D23)
+
+Subagents have no playwright-mcp, so the browser pass is the lead's (D23). Rig, exactly as
+p3-04's: a **copy** of the live DB (`cp data/spiraldb-ui.db /tmp/p305-tier2.db`), the real
+corpus clone (`SPIRALDB_PATH=data/test-spiraldb`), the freshly built `dist`, and
+
+```
+NODE_ENV=test SPIRALDB_UI_DB=/tmp/p305-tier2.db SPIRALDB_PATH="$PWD/data/test-spiraldb" \
+  SPIRALDB_UI_SKIP_IMPORT=1 PORT=3216 npx tsx server/src/index.ts
+```
+
+**Save was never pressed**, so the live DB and the real SpiralDB repo were never written: every
+measurement below is the in-memory document read back through the JSON panel's own `[Copy]`
+affordance (the panel is a virtualised tree, not a `<pre>`), with the clipboard polled until the
+JSON arrives.
+
+## 1. The real corpus chain renders — `DS-ACAD1-C01-001` (7 goals, 6 start goals)
+
+| Measured | Value |
+|---|---|
+| nodes | **8** = 7 goals + `✓ Complete` |
+| edges | **7** |
+| edge accessible names | `Edge from goal:1_WizardQuestGoals_00000058 to goal:2_…` … `Edge from goal:6_… to goal:7_WizardQuestGoals_TalkNPC`, then `… goal:7_WizardQuestGoals_TalkNPC to goal-logic:complete` |
+| node text | name + `Start` badge + TypeName badge (`WaypointGoalTemplate`, `PersonaGoalTemplate`) + subtitle (`Zone: DragonSpire/DS_A3_Kings/DS_A3Z1_CrystalGrove`, `Persona: (empty)`) |
+| toolbar buttons | `Zoom in`, `Zoom out`, `Fit to view`, `Auto-layout`, `Add GoalLogicEntry` |
+| per-goal handles | `Goal dependency input`, `AND dependency (solid)`, `OR dependency (dashed)` × 7 |
+| inspector | `role="group" aria-label="Goal logic entry inspector"` with 5 labelled inputs: `m_goalsAND`, `m_goalsOR`, `m_goalsToAdd` (text), `m_completeQuest` (checkbox), `m_requiredORCount` (number) — the corpus's own key order |
+| dashed edges | **0** |
+
+The node type badges match the Goals tab's convention (D60h) because the model reuses the p3-04
+helpers; the panel text begins `ANDANDANDANDANDANDComplete` — the six solid AND edge labels plus
+the completing edge, which is exactly this quest's corpus shape.
+
+## 2. AC clause 3 — the toolbar's add, proven against `m_goalLogic`
+
+Before: the entry list showed **Entry 1…Entry 7** (6 chain entries + the completing entry).
+After one click on `Add GoalLogicEntry`, the list showed **Entry 8: (no conditions)**, and the
+document read back as:
+
+| Field | Before | After |
+|---|---|---|
+| `m_goalLogic` length | 7 | **8** |
+| new entry | — | `{m_goalsAND: [], m_goalsOR: [], m_goalsToAdd: [], m_completeQuest: false, m_requiredORCount: 1}` |
+| new entry key order | — | `m_goalsAND, m_goalsOR, m_goalsToAdd, m_completeQuest, m_requiredORCount` (the corpus's own) |
+| `m_goals` | 7 | 7 (untouched) |
+| `m_startGoals` | 6 | 6 (untouched) |
+| top-level key count | 36 | **36** (D56's measured width) |
+
+## 3. AC clause 5 — the node context menu
+
+Right-click on `7_WizardQuestGoals_TalkNPC` (a goal that was **not** a start goal) opened a menu
+whose items were exactly `['Edit Goal', 'Delete', 'Set as Start Goal']`
+(`p3-05-node-context-menu.png`). Choosing `Set as Start Goal` then:
+
+| Measured | Value |
+|---|---|
+| `m_startGoals` | 6 → **7** members, with `7_WizardQuestGoals_TalkNPC` appended |
+| Start badge on that node | appeared |
+| re-opened menu | `['Edit Goal', 'Delete', 'Unset as Start Goal']` — the label follows the membership |
+| `m_goals` / `m_goalLogic` | unchanged (7 goals; the 8 entries my edit had made) |
+
+## 4. AC clause 4 — the warning banner, on a genuinely disconnected quest
+
+`Delete` on the spine goal `4_…` of `DS-ACAD1-C01-001` produced 8 → 7 nodes and 7 → 5 edges, and
+the validation details listed `Entry 3 references unknown goal(s): 4_…` / `Entry 4 references …`.
+The verbatim sentence did **not** render, and that is correct: I had just made goal 7 a start goal,
+so goals 5–7 remained reachable from `m_startGoals`, and the only findings were
+`unknown-goal-reference` — a kind the spec's sentence is not pinned to (D61).
+
+So the banner was proven where the condition actually exists — a **real corpus quest**, no edits:
+`WC-CYCLOPS-MAIN-002`, one of the 5 quests my independent corpus verification had already flagged.
+The live result:
+
+| Measured | Value |
+|---|---|
+| status region | `role="status"` with the spec's **verbatim** sentence: `⚠️ Goal logic has disconnected nodes. All goals must be reachable from start goals.` |
+| details list | **6** findings, naming `1_…` … `6_WizardQuestGoals_TalkNPC` — the same 6 unreachable goals my corpus fixpoint computed independently |
+| nodes / edges | 7 / 6 |
+
+Screenshot: `p3-05-disconnected-banner.png`. The corpus→model→UI chain agrees at all three layers,
+which is the strongest evidence this pass produced.
+
+## 5. The bundle containment, measured live (D61)
+
+The story added React Flow + dagre (+24 transitive packages): on the pre-containment tree the
+single app chunk grew 574,044 B → 868,865 B raw and **+95.1 kB gzip**, every byte of it on the
+entry path of every route. The lead contained it behind `React.lazy` + `Suspense` in the panel
+map, and measured the result on the real stack by reading `performance.getEntriesByType('resource')`:
+
+| Moment | `QuestGoalLogicEditor*` resources loaded |
+|---|---|
+| quest detail page fully loaded, tab **not** opened | **0** |
+| after clicking the `Goal Logic` tab | **2** (`QuestGoalLogicEditor-BY0-EKeF.js`, `QuestGoalLogicEditor-BnuhLJ6X.css`) |
+
+Post-containment build: entry `index-BujkeyMJ.js` 575.86 kB / **gzip 177.23 kB** (pre-story:
+574.04 kB / 176.16 kB), flowchart `QuestGoalLogicEditor-BY0-EKeF.js` 293.59 kB / gzip 97.76 kB,
+plus a 15.87 kB CSS chunk. Without the containment every route in the app would have paid the
+97.8 kB gzip.
+
+## 6. Server lifecycle
+
+The rig ran as a managed background job on :3216 and was killed at the end of the pass; nothing was
+left listening on 5173, 3001 or 3216, and `git worktree list` shows the main tree only.
+
+## What this pass did **not** prove
+
+- No image input in this model, so the three screenshots' **pixels** were not inspected; every
+  claim above is a DOM, ARIA-name, class-list or clipboard read.
+- Dragging a **new edge between two handles** (`onConnect`) was wired and unit-tested but not
+  driven in the browser: creating a valid new connection changes which goals are reachable, and
+  the AC does not name it. Recorded rather than claimed.
+- The 768px/mobile layout of this tab was not re-checked (the editor renders inside the desktop
+  tab panel p2-07/p3-03 already cover).
+- No Save was pressed, so "appears in **saved** `m_goalLogic`" is proven to the live document and
+  the JSON panel, not to disk — the save pipeline's formatting-only diff contract is D49's and is
+  unchanged by this story.
+- The dashed OR edge could not be exercised with corpus data (there is none); it is tier-1 only.
