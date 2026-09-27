@@ -1,0 +1,99 @@
+p4-05 (plan task 4.7, TreasureCardInventory editor) — the LIVE rig transcript
+Recorded by the story executor during the D3 evidence run. Nothing was committed; the lead commits.
+
+D70(h) rig discipline, item by item:
+  * a FRESH port (3137) and a FRESH database: the DB is a copy of the owner’s
+    data/spiraldb-ui.db with `DELETE FROM settings` run first (D65(g)), so the boot seeds
+    spiraldb_path/user_name from the environment instead of inheriting the copy’s rows.
+  * the running server’s identity was asserted BEFORE any probe was trusted.
+  * `spiraldb_path` points at the D17 CLONE (data/test-spiraldb), never the owner’s fork.
+  * the clone was restored to 18dc924 afterwards and the restore is proven below.
+  * the rig was killed by PID; nothing is left listening on 3137/5173/3001.
+
+$ rm -rf /tmp/p405-live && mkdir -p /tmp/p405-live
+$ cp data/spiraldb-ui.db /tmp/p405-live/p405-live.db
+$ python3 -c "import sqlite3; c=sqlite3.connect('/tmp/p405-live/p405-live.db'); c.execute('DELETE FROM settings'); c.commit()"
+  settings rows after delete: 0
+  spells rows in the copy: 18173
+
+$ git -C data/test-spiraldb rev-parse HEAD   -> 18dc92477d54b1e911796960407ce7710e703697
+$ git -C data/test-spiraldb status --porcelain | wc -l  -> 0
+$ md5sum data/test-spiraldb/TreasureCardInventory/NpcTreasureCards_2019-A.json
+  9479cb2fe6c5e2e2c95c3539179c0060   (identical to the owner’s fork copy)
+$ ss -ltnp | grep -E "5173|3001|3137"   -> nothing listening
+
+$ setsid env PORT=3137 SPIRALDB_UI_DB=/tmp/p405-live/p405-live.db \
+      SPIRALDB_PATH=$PWD/data/test-spiraldb USER_NAME=p4-05-executor \
+      SPIRALDB_UI_SKIP_IMPORT=1 npx tsx server/src/index.ts > /tmp/p405-live/server.log &
+  [spiraldb-ui] database ready at /tmp/p405-live/p405-live.db
+  [spiraldb-ui] API listening on http://localhost:3137
+
+  identity probe (the assertion that the server is MINE, before anything else):
+  $ curl -s localhost:3137/api/settings
+  {"aurorium_path": "/home/jason/Documents/git-projects/Aurorium", "git_branch": "content/2026-09-27", "imcodec_path": "/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec", "spiraldb_path": "/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb", "user_name": "p4-05-executor"}
+  $ ss -ltnp | grep 3137  -> LISTEN *:3137 (pid of THIS rig)
+
+  live reads:
+  $ curl -s localhost:3137/api/names/spells
+    rows 18173, distinct names 4104 (the reference the warn rule injects)
+  $ curl -s localhost:3137/api/treasure-card-inventories
+    objects ['38214'], missing_directory False, duplicates [], skipped []
+  $ curl -s localhost:3137/api/treasure-card-inventories/38214
+    keys ['TemplateID', 'TreasureCards'], TemplateID 38214, entries 71, prices [100, 150, 200, 250]
+    literal matches 0 of 71
+    suffix-stripped matches 71 of 71
+
+  the shared engine (the same module the client form runs) over the two live API responses:
+  $ npx tsx /tmp/p405-live/engine.ts
+    injectedNames: 4104
+    warnings: 71      <- the whole real file, as the decision predicts
+    blocking: 0
+    blocked: false
+    referenceUsed: true
+    first: TreasureCards[0].SpellName "Fire Shield TC" is not a synced spell name
+    last:  TreasureCards[70].SpellName "Balanceblade TC" is not a synced spell name
+
+  the save arm (the AC’s "Save succeeds" on the real file, with 71 warnings present):
+  $ curl -s -o /tmp/p405-live/post-response.json -w "HTTP %{http_code}" -X POST \
+      localhost:3137/api/treasure-card-inventories -H "content-type: application/json" \
+      --data-binary @/tmp/p405-live/post.json      # {"object": <the served document, unmodified>}
+  HTTP 200
+    key: "38214"
+    file_type: "treasurecardinventory"
+    object_type: "treasure_card_inventory"
+    outcome: "updated"
+    action: "update"
+    commit: "8a074f2a3be97f4c9d40e3cca69f5b4a786362a5"
+    commit_message: "spiraldb: update treasure_card_inventory 38214"
+    file: "TreasureCardInventory/NpcTreasureCards_2019-A.json"
+    status_created: false
+    warnings: []
+    status: {"object_type": "treasure_card_inventory", "object_key": "38214", "status": "extracted", "extracted_at": "2026-09-26T06:22:38.849Z", "reviewed_at": null, "verified_at": null, "latest_notes": null}   (unchanged: an update does not move status)
+
+  what landed in the clone, and the restore:
+  $ git -C data/test-spiraldb log -2 --format="%H %s"
+    8a074f2a3be97f4c9d40e3cca69f5b4a786362a5 spiraldb: update treasure_card_inventory 38214
+    18dc92477d54b1e911796960407ce7710e703697 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+  $ git -C data/test-spiraldb diff --numstat HEAD~1 HEAD
+    284  71  TreasureCardInventory/NpcTreasureCards_2019-A.json
+      (the plan’s own "one-time formatting normalization": each inline entry becomes 5 lines;
+       the document is deep-equal to what was served — 2 top-level keys, 71 two-key entries)
+  $ kill -TERM <rig pid>   -> nothing listening on 3137/5173/3001, no tsx server processes left
+  $ git -C data/test-spiraldb reset --hard 18dc924
+    HEAD is now at 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+  $ git -C data/test-spiraldb status --porcelain | wc -l  -> 0
+  $ git -C data/test-spiraldb rev-parse HEAD  -> 18dc92477d54b1e911796960407ce7710e703697
+  $ md5sum data/test-spiraldb/TreasureCardInventory/NpcTreasureCards_2019-A.json
+    9479cb2fe6c5e2e2c95c3539179c0060   <- byte-identical to the pre-run file
+  $ md5sum /home/jason/Documents/git-projects/spiraldb/TreasureCardInventory/NpcTreasureCards_2019-A.json
+    9479cb2fe6c5e2e2c95c3539179c0060   and  git status --porcelain on the owner fork: 0 lines
+
+What this transcript proves, and what it does not:
+  PROVES  the real 71-row file produces 71 warnings and 0 blocking findings when the real
+          4,104-name synced table is injected, the server accepts the save with those
+          warnings present (HTTP 200, update, legacy path kept), and the clone is back at
+          18dc924 with the file byte-identical.
+  DOES NOT prove the browser rendering of those 71 warnings: this rig drove the API with
+          curl. The rendering, the enabled Save button and the toast are the hermetic
+          tier-1 arms (tests/ui/treasure-card-inventory-editor.spec.ts, 10 passed).
+  NOT RUN  no screen was photographed (D23 tier-2 screenshots are the phase PR’s).
