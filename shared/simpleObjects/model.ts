@@ -28,8 +28,12 @@ import type { DocEdit, DocPath } from '../document.js';
  * duplicated per kind, and the two readers are one implementation with two predicates
  * ({@link readNumberList} / {@link readStringList}). One multi-select
  * (`client/src/components/objects/ObjectIdMultiSelect.tsx`) carries the kind the same way —
- * D71(i) forbids a second chips implementation, and a Phase-4 sibling family (4.7's
- * TreasureCardInventory) is numeric again, so the kind must be a parameter and not a fork.
+ * D71(i) forbids a second chips implementation — so the kind is a **parameter**, not a fork.
+ * (Corrected by story p4-05: this sentence previously called 4.7's TreasureCardInventory
+ * "numeric again". It is not — its `TreasureCards` is an array of `{SpellName, Price}`
+ * **objects**, measured 71/71 entries in the one corpus file, which is why the object-list
+ * reader and its builders live in `./treasureCardInventory.js` beside these primitives
+ * instead of here.)
  *
  * ## Index-addressed removal is not a detail
  *
@@ -83,6 +87,12 @@ export type SimpleFieldKind =
   | 'drop-table-multi-select'
   /** The spell-entry repeater (`NPCSpellEntry[]`). */
   | 'spell-entry-list'
+  /**
+   * The `{SpellName, Price}` object repeater (`TreasureCards[]`, story p4-05) — the one list
+   * in this vocabulary that is an array of **objects** rather than of values, so its reader
+   * and builders live in `./treasureCardInventory.js`.
+   */
+  | 'treasure-card-list'
   /** The reorderable spell list (`SpellTemplateIds`). */
   | 'spell-order-list'
   /** A plain text control (`DeckName`). */

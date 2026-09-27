@@ -18,6 +18,7 @@ import QuestDetailPage from './pages/QuestDetailPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
 import StubPage from './pages/StubPage';
+import TreasureCardInventoryDetailPage from './pages/TreasureCardInventoryDetailPage';
 import { UserNameGateProvider } from './hooks/useUserNameGate';
 import { APP_ROUTES, type AppRoute } from './lib/routes';
 import {
@@ -47,8 +48,10 @@ import {
  * is driven by its own page so the duplicate-name rule can inject the corpus); story
  * p4-03 added the third and fourth (NpcSpellInventory and CreatureSpellbook, both
  * plain `ObjectDetailPage` + form pairs); story p4-06 added the fifth (NpcDropTable,
- * whose list page is the family with a genuinely absent directory). The remaining
- * three keep their Phase-4 stub until their own tasks (4.7-4.9) supply a form. Both
+ * whose list page is the family with a genuinely absent directory); story p4-05 added
+ * the sixth (TreasureCardInventory, whose detail route is its own page so the
+ * warn-not-block rule can inject the synced `spells` names). The remaining two keep
+ * their Phase-4 stub until their own tasks (4.8-4.9) supply a form. Both
  * route paths and the config rows come from `shared/objectTypes.ts`, so a page and
  * the API path the server mounts cannot disagree.
  */
@@ -79,6 +82,7 @@ const NPC_INVENTORY = objectTypeConfig('npcinventory');
 const NPC_SPELL_INVENTORY = objectTypeConfig('npcspellinventory');
 const CREATURE_SPELLBOOK = objectTypeConfig('creaturespellbook');
 const NPC_DROP_TABLE = objectTypeConfig('npcdroptable');
+const TREASURE_CARD_INVENTORY = objectTypeConfig('treasurecardinventory');
 const DROP_TABLE = objectTypeConfig('droptable');
 
 function elementFor(route: AppRoute): JSX.Element {
@@ -166,6 +170,19 @@ function elementFor(route: AppRoute): JSX.Element {
           )}
         />
       );
+    case '/treasure-card-inventories':
+      return (
+        <ObjectListPage
+          config={TREASURE_CARD_INVENTORY}
+          nounPlural="treasure card inventories"
+          keyHeader="NPC"
+        />
+      );
+    case '/treasure-card-inventories/:id':
+      // Story p4-05: the detail route is its own page rather than a `renderForm` inline here,
+      // because the warn-not-block name rule needs the synced `spells` names at validation time
+      // and a hook cannot live in a render prop (the DropTable detail page's own reason).
+      return <TreasureCardInventoryDetailPage />;
     default:
       return <StubPage route={route} />;
   }

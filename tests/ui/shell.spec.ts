@@ -216,6 +216,49 @@ async function mockShellApi(page: Page): Promise<void> {
       json: { m_questName: 'DS-ACAD-C01-001', m_questLevel: 1, m_mainline: true },
     }),
   );
+
+  // Story p4-05 replaced `/treasure-card-inventories`' stub with the real generic object list
+  // (plan task 4.7), and this branch mocks the family's own endpoints — unlike the earlier
+  // object families, whose branches read whatever the D17 clone happens to hold. The fixtures
+  // are the real corpus's one entry (TemplateID 38214, the legacy file) plus its status row, so
+  // the assertion below is the same on a developer's machine and on CI, where no clone exists.
+  // The page's own contract is `tests/ui/treasure-card-inventory-editor.spec.ts`.
+  await page.route('**/api/treasure-card-inventories', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: '38214',
+            title: '38214',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/status/treasure_card_inventories', (route) =>
+    route.fulfill({
+      json: {
+        entries: [
+          {
+            object_type: 'treasure_card_inventory',
+            object_key: '38214',
+            status: 'extracted',
+            extracted_at: '2026-09-24T15:22:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+      },
+    }),
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -305,6 +348,22 @@ test.describe('sidebar navigation', () => {
         await expect(page.getByRole('main').getByText('No NPC drop tables found.')).toBeVisible();
         await expect(
           page.getByRole('main').getByText(/The NpcDropTable\/ directory does not exist/),
+        ).toBeVisible();
+      } else if (item.path === '/treasure-card-inventories') {
+        // Story p4-05 replaced this route's stub with the real generic object list (plan task
+        // 4.7) — the phase transition p4-02/p4-03/p4-06 recorded, so `phase` in the row above
+        // still means the phase that *owns* the page. Unlike those branches this one is fully
+        // mocked (see `mockShellApi`), so it asserts the populated shape rather than whatever
+        // the D17 clone holds: the family's own search field, its key column, and the one real
+        // entry's key. `tests/ui/treasure-card-inventory-editor.spec.ts` owns the editor.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search treasure card inventories...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'NPC' }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('link', { name: '38214', exact: true }),
         ).toBeVisible();
       } else {
         await expect(
