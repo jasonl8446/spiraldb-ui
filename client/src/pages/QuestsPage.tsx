@@ -12,6 +12,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useStatusFilter } from '../hooks/useStatusFilter';
 import { useStatusTransition } from '../hooks/useStatusTransition';
 import { listQuests, QUESTS_QUERY_KEY, type QuestListRow } from '../lib/api';
 import { serverMessage } from '../lib/extract';
@@ -27,7 +28,6 @@ import {
   QUESTS_SEARCH_LABEL,
   QUESTS_SEARCH_PLACEHOLDER,
   questFilterTabs,
-  type QuestFilter,
   type QuestSort,
   type QuestSummary,
 } from '../lib/quests';
@@ -52,6 +52,11 @@ const SKELETON_ROWS = 8;
  * The filter tabs' count badges come from the response's own `summary` (D49), so a
  * tab counts exactly what the table holds.
  *
+ * **The filter is the one piece of page state that is not local (story p5-03).** It
+ * lives in the URL (`?filter=Extracted`) through the shared `useStatusFilter` hook —
+ * the same mechanism the seven object list views use — so a hard reload and the
+ * browser's Back/Forward both keep it, and the default `All` writes no param at all.
+ *
  * Below `md` the table is replaced by the card list and the whole page — tabs,
  * search and pagination included — stays usable (spec L270).
  *
@@ -66,7 +71,7 @@ export default function QuestsPage(): JSX.Element {
   const isMobile = useIsMobile();
   const transition = useStatusTransition('quests');
 
-  const [filter, setFilter] = useState<QuestFilter>('All');
+  const [filter, setFilter] = useStatusFilter();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<QuestSort>(DEFAULT_QUEST_SORT);
   const [page, setPage] = useState(1);

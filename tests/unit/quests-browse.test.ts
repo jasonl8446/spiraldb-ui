@@ -3,6 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { ApiError, type QuestListRow } from '../../client/src/lib/api';
 import { RELATIVE_TIME_FALLBACK, relativeTime } from '../../client/src/lib/display';
 import {
+  DEFAULT_OBJECT_FILTER,
+  OBJECT_FILTERS,
+  OBJECT_FILTER_PARAM,
+  objectFilterParam,
+  parseObjectFilter,
+  type ObjectFilter,
+} from '../../client/src/lib/object-list';
+import {
   DEFAULT_QUEST_SORT,
   deriveQuests,
   EDIT_DISABLED_TOOLTIP,
@@ -157,6 +165,52 @@ describe('filter tabs', () => {
     expect(questStatus(row({ quest_name: 'A', status: 'reviewed' }))).toBe('reviewed');
     expect(questStatus(undefined)).toBe('extracted');
     expect(questStatus({ status: 'nonsense' as QuestListRow['status'] })).toBe('extracted');
+  });
+});
+
+describe('the filter URL param (story p5-03)', () => {
+  it('names one param, and defaults to All', () => {
+    expect(OBJECT_FILTER_PARAM).toBe('filter');
+    expect(DEFAULT_OBJECT_FILTER).toBe('All');
+  });
+
+  it('renders the default as no param at all, and every other tab canonically', () => {
+    expect(objectFilterParam('All')).toBeNull();
+    expect(objectFilterParam('Extracted')).toBe('Extracted');
+    expect(objectFilterParam('Reviewed')).toBe('Reviewed');
+    expect(objectFilterParam('Verified')).toBe('Verified');
+  });
+
+  it('reads an absent, empty or unknown value as the default', () => {
+    expect(parseObjectFilter(null)).toBe('All');
+    expect(parseObjectFilter(undefined)).toBe('All');
+    expect(parseObjectFilter('')).toBe('All');
+    expect(parseObjectFilter('verifiedish')).toBe('All');
+    expect(parseObjectFilter('all')).toBe('All');
+  });
+
+  it('accepts a hand-typed lower-case value and canonicalises on the way out', () => {
+    expect(parseObjectFilter('extracted')).toBe('Extracted');
+    expect(parseObjectFilter('reviewed')).toBe('Reviewed');
+    expect(parseObjectFilter('verified')).toBe('Verified');
+  });
+
+  it('round-trips every tab: write the param, parse it back', () => {
+    for (const filter of OBJECT_FILTERS) {
+      expect(parseObjectFilter(objectFilterParam(filter))).toBe(filter);
+    }
+  });
+
+  it('leaves a default page URL bare — the pinned path set plus nothing', () => {
+    // `tests/ui/shell.spec.ts:526` pins `new URL(page.url()).pathname` against the
+    // spec's path list, and a `?filter=` suffix does not change a pathname.
+    const url = (filter: ObjectFilter): string => {
+      const value = objectFilterParam(filter);
+      return value === null ? '/quests' : `/quests?${OBJECT_FILTER_PARAM}=${value}`;
+    };
+    expect(url('All')).toBe('/quests');
+    expect(url('Verified')).toBe('/quests?filter=Verified');
+    expect(new URL(`http://x${url('Verified')}`).pathname).toBe('/quests');
   });
 });
 

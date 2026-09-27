@@ -7,7 +7,7 @@ Three parts: (a) the hermetic tier-1 spec, (b) the `< 300 ms` claim **measured a
 
 ## (a) The hermetic tier-1 spec (D40/D81)
 
-`tests/ui/search-palette.spec.ts` — 542 lines, 7 arms, one dispatcher mocking **every**
+`tests/ui/search-palette.spec.ts` — 546 lines, 7 arms, one dispatcher mocking **every**
 `/api/**` path the run touches, and an **unmocked-path guard** that records any path it had no
 fixture for, answers it 404, and is asserted empty at the end of every arm.
 
@@ -230,11 +230,11 @@ from the endpoint rather than from a client-side guess.
 
 ## The six-check gate (every rc)
 
-Every line below ran on the **final** tree; the full transcript is `p5-02-gate.txt`.
+Every line below ran on the **final** tree; the full transcript is `p5-02-executor-gate.txt`.
 
 | check | rc | result |
 |---|---|---|
-| `npm test` | 0 | `Test Files 61 passed (61)` / `Tests 1408 passed (1408)` — both new suites in it (`search.test.ts 43 tests`, `search-ui.test.ts 14 tests`); p5-01's boundary was 59 files / 1351 tests, so this story adds exactly 2 files and 57 tests |
+| `npm test` | 0 | `Test Files 61 passed (61)` / `Tests 1410 passed (1410)` — both new suites in it (`search.test.ts 43 tests`, `search-ui.test.ts 16 tests`); p5-01's boundary was 59 files / 1351 tests, so this story adds exactly 2 files and 59 tests |
 | `npm run lint` | 0 | `eslint .` clean and `All matched files use Prettier code style!` |
 | `npm run typecheck:tests` | 0 | silent |
 | `npx tsc -p server/tsconfig.json --noEmit` | 0 | silent |
@@ -242,7 +242,7 @@ Every line below ran on the **final** tree; the full transcript is `p5-02-gate.t
 | `npm run build` | 0 | `✓ built in 6.21s`; client index chunk `756.75 kB` (p5-01) → **`761.37 kB`**, i.e. **+4.62 kB** for the palette because cmdk was already bundled (D39) |
 | `npm run test:ui -- --config tests/ui/p4-10-altport.config.ts` | 0 | **313 passed (1.0m)**, this story's 7 arms included — the **alt-port** config, not the official one: `[::1]:5173` is the owner's other project and is not ours to kill (D78(b)) |
 
-**No new dependency**: `package.json` and `package-lock.json` are untouched (`p5-02-gate.txt` §9).
+**No new dependency**: `package.json` and `package-lock.json` are untouched (`p5-02-executor-gate.txt` §9).
 `tests/ui/search-palette.spec.ts` adds no package either.
 
 **The full `test:ui` run rewrote committed phase-4 evidence, and it was repaired.** The run

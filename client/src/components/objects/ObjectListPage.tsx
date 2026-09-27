@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ObjectTypeConfig } from '@shared/objectTypes';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useStatusFilter } from '../../hooks/useStatusFilter';
 import { relativeTime } from '../../lib/display';
 import { serverMessage } from '../../lib/extract';
 import {
@@ -23,7 +24,6 @@ import {
   sortRows,
   filterByStatus,
   searchRows,
-  type ObjectFilter,
   type ObjectSort,
   type ObjectStatusSummary,
 } from '../../lib/object-list';
@@ -59,6 +59,12 @@ import { Skeleton } from '../ui/skeleton';
  * and everything else is client-side, so typing a search never issues a request. The
  * tab counts come from the response's own `summary` (D49), so a tab counts exactly
  * what the table holds.
+ *
+ * **Story p5-03 moved the active filter into the URL** (`?filter=Verified`, through the one
+ * `useStatusFilter` hook the quest page shares), so it survives a hard reload and the browser's
+ * Back/Forward; the default `All` renders no param, so a default page's path is unchanged and
+ * `tests/ui/shell.spec.ts`'s pinned route set is untouched. Search, sort and page stay local —
+ * the AC asks the filter to survive, not the whole view state.
  *
  * Story p4-09 adds the one create affordance this page was missing (`NewObjectControl`): a
  * `New <type>` button beside the search box that opens the shared create dialog for every tracked
@@ -101,7 +107,11 @@ export default function ObjectListPage({
   const isMobile = useIsMobile();
   const idPrefix = config.fileType;
 
-  const [filter, setFilter] = useState<ObjectFilter>('All');
+  // Story p5-03: the filter lives in the URL (`?filter=Verified`), shared with the
+  // quest page through the one hook, so it survives a hard reload and Back/Forward
+  // and the default `All` stays out of the URL. The tab vocabulary stays
+  // `lib/object-list.ts`'s; this is only its storage.
+  const [filter, setFilter] = useStatusFilter();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<ObjectSort>(DEFAULT_OBJECT_SORT);
   const [page, setPage] = useState(1);

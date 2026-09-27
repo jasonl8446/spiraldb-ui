@@ -4,12 +4,12 @@
 
 | file | change |
 |---|---|
-| `client/src/components/layout/SearchPalette.tsx` | new, 249 lines: the dialog over `ui/command.tsx` + `ui/dialog.tsx`, the one `GET /api/search?q=&limit=20` read, the five states, the rows |
+| `client/src/components/layout/SearchPalette.tsx` | new, 255 lines: the dialog over `ui/command.tsx` + `ui/dialog.tsx`, the one `GET /api/search?q=&limit=20` read, the five states, the rows |
 | `client/src/lib/search.ts` | new, 208 lines: the palette's pure half (copy, row identity, click-through, state ladder, sentences, the ⌘K predicate) |
 | `client/src/lib/api.ts` | +85: `SEARCH_DEFAULT_LIMIT`, `SearchResultRow` / `SearchGroup` / `SearchResponse`, `SEARCH_QUERY_KEY`, `searchQueryKey`, `searchPath`, `searchObjects` |
 | `client/src/components/layout/Header.tsx` | +35: the header trigger (⌘K hint), `HeaderProps.onOpenSearch` |
 | `client/src/components/layout/AppLayout.tsx` | +25: the palette is mounted in the shell (every route), with the ⌘K/Ctrl+K listener |
-| `tests/unit/search-ui.test.ts` | new, 228 lines / 14 tests (node, D10) |
+| `tests/unit/search-ui.test.ts` | new, 242 lines / 16 tests (node, D10) |
 
 **No new dependency**: `cmdk@^1.1.1` was already there and `ui/command.tsx` is its vendored
 wrapper (D39). `CommandDialog` stays unvendored — the palette composes the same `ui/dialog.tsx`
@@ -25,8 +25,8 @@ Everything the palette decides is a plain function in `lib/search.ts`, asserted 
 
 ```
 $ npx vitest run tests/unit/search-ui.test.ts
- ✓ tests/unit/search-ui.test.ts (14 tests) 6ms
-      Tests  14 passed (14)
+ ✓ tests/unit/search-ui.test.ts (16 tests) 10ms
+      Tests  16 passed (16)
 $ npx tsc -p client/tsconfig.json --noEmit     # rc=0
 ```
 
@@ -85,7 +85,7 @@ it is that a user can read it.
 
 ## Hermetic proof (D3's part (a), reported here because it is this file's spec)
 
-`tests/ui/search-palette.spec.ts`, 542 lines / 7 arms, all green on the alt-port harness:
+`tests/ui/search-palette.spec.ts`, 546 lines / 7 arms, all green on the alt-port harness:
 
 ```
 $ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers \
@@ -157,7 +157,7 @@ overflow:
 expect(measured.scrollWidth).toBeLessThanOrEqual(measured.clientWidth);   // line 507
 ```
 
-Both full tier-1 runs of this story (`p5-02-gate.txt` §7, `p5-02-uish-full.txt`) passed **all
+Both full tier-1 runs of this story (`p5-02-executor-gate.txt` §7, `p5-02-uish-full.txt`) passed **all
 313 arms**, that assertion included, with the trigger in the header — so the new button fits at
 375 px on every route that spec walks. Task 5.6 owns the responsive pass proper; this is the
 side-effect check that keeps this story from being a regression it did not measure.

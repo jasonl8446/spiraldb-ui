@@ -1,0 +1,82 @@
+=== p5-02 EXECUTOR gate transcript (HEAD c960cdd, branch phase-5-dashboard-polish) ===
+=== written by the story's executor; the lead's own boundary gate lives in p5-02-gate.txt ===
+=== every check below ran on the FINAL tree (the diff listed in section 9) ===
+
+--- 0. npx prettier --write (every file this story touched, before lint) ---
+server/src/services/search.ts, server/src/routes/search.ts, server/src/routes/index.ts,
+server/src/services/names.ts, client/src/lib/api.ts, client/src/lib/search.ts,
+client/src/components/layout/SearchPalette.tsx, client/src/components/layout/Header.tsx,
+client/src/components/layout/AppLayout.tsx, tests/unit/search.test.ts, tests/unit/search-ui.test.ts,
+tests/ui/search-palette.spec.ts, docs/evidence/phase-5/p5-02-*.md
+rc=0 (and section 2 re-checks the whole repo with prettier --check .)
+
+--- 1. npm test ---
+
+ Test Files  61 passed (61)
+      Tests  1410 passed (1410)
+   Start at  15:44:05
+   Duration  10.87s (transform 9.57s, setup 0ms, collect 36.85s, tests 82.24s, environment 22ms, prepare 10.66s)
+
+rc=0
+  (both new suites are in it:)
+ ✓ tests/unit/search.test.ts (43 tests) 338ms
+ ✓ tests/unit/search-ui.test.ts (16 tests) 10ms
+
+--- 2. npm run lint ---
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+rc=0
+
+--- 3. npm run typecheck:tests ---
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+rc=0
+
+--- 4. npx tsc -p server/tsconfig.json --noEmit ---
+rc=0
+
+--- 5. npx tsc -p client/tsconfig.json --noEmit ---
+rc=0
+
+--- 6. npm run build ---
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-nExvvXaW.css                  35.07 kB │ gzip:   7.35 kB
+dist/assets/QuestGoalLogicEditor-DatrmZA7.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-CI5Rzt9T.js                  761.37 kB │ gzip: 224.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.21s
+rc=0
+note: the client index chunk went 756.75 kB (p5-01) -> 761.37 kB, i.e. +4.62 kB for the palette,
+      because cmdk was already in the bundle (ui/command.tsx, D39). No new dependency:
+      package.json and package-lock.json are untouched by this story (section 9).
+
+--- 7. npm run test:ui -- --config tests/ui/p4-10-altport.config.ts ---
+  (NOT the official config: [::1]:5173 is held by the owner's other project and is not ours
+   to kill, D78(b). The alt-port config changes only the client port. The official command
+   answers rc=1 'http://localhost:5173/api/status/_import is already used' while 5173 is held
+   — reproduced by the lead's own run at 15:42, recorded in p5-02-gate.txt.)
+  ✓  269 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (1.1s)
+  ✓  273 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (1.3s)
+  313 passed (1.0m)
+rc=0
+the full 313-arm transcript is p5-02-uish-full.txt (this story's 7 arms included)
+
+--- 8. side effect of the full UI run, and its repair ---
+the run rewrote 15 committed PNGs under docs/evidence/phase-4/ (the 375px screenshots
+object-mobile.spec.ts writes). Restored and verified:
+  git checkout -- docs/evidence/phase-4/
+  git status --porcelain docs/evidence/phase-4/ | wc -l                    -> 0
+  md5sum of all 22 PNGs in that directory vs the committed bytes           -> 22/22 identical
+
+--- 9. the working tree this gate covers ---
+?? docs/evidence/phase-5/p5-02-executor-gate.txt
