@@ -1,9 +1,11 @@
 import { Router } from 'express';
 
+import { mountPathFor, OBJECT_TYPES } from '../../../shared/objectTypes.js';
 import { getDb } from '../db.js';
 import { createDashboardRouter } from './dashboard.js';
 import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
+import { createObjectRouter } from './objects.js';
 import { createQuestsRouter } from './quests.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
@@ -117,3 +119,30 @@ apiRouter.use('/quests', (req, res, next) => {
   questsRouter ??= createQuestsRouter({ db: getDb() });
   questsRouter(req, res, next);
 });
+
+/**
+ * The eight generic object families (task 4.1) — `/api/drop-tables`,
+ * `/api/npc-inventories`, `/api/npc-spell-inventories`, `/api/creature-spellbooks`,
+ * `/api/npc-drop-tables`, `/api/treasure-card-inventories`, `/api/zone-transfers`
+ * and `/api/global-registry` (docs/spec-api.md L310-319), each with
+ * `GET /`, `GET /:key` and `POST /`.
+ *
+ * Same lazy pattern as every router above — one `Router` per family, built on the
+ * first request to that family, so importing `app.ts` never opens
+ * `data/spiraldb-ui.db` (D32) and a family nobody visits costs nothing. The paths
+ * and the configs come from `shared/objectTypes.ts`, the single table the client
+ * reads too, so a mount path cannot drift from the page that calls it.
+ */
+const objectRouters = new Map<string, Router>();
+
+for (const config of OBJECT_TYPES) {
+  const mountPath = mountPathFor(config);
+  apiRouter.use(mountPath, (req, res, next) => {
+    let router = objectRouters.get(config.fileType);
+    if (router === undefined) {
+      router = createObjectRouter({ db: getDb(), config });
+      objectRouters.set(config.fileType, router);
+    }
+    router(req, res, next);
+  });
+}
