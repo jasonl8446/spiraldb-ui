@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import type { ObjectTypeConfig } from '@shared/objectTypes';
+import { updateObjectBody } from '@shared/objectSave';
 
 import ObjectDetailLayout from '../components/objects/ObjectDetailLayout';
 import { FieldValidationProvider } from '../components/shared/FieldValidation';
@@ -310,20 +311,11 @@ function LoadedEntry({
   const blocked = useMemo(() => fieldHasError(messages), [messages]);
 
   const save = useMutation({
-    mutationFn: () =>
-      saveObject(config, {
-        object: document,
-        // **The entry's own identity, for the server's family validator** (the `{ object, notes?,
-        // key? }` envelope's third field). `body.key` is "the route key the client opened, which
-        // the form sends back unchanged" (`server/src/services/dropTables.ts`): the DropTable
-        // duplicate rule forgives exactly that one corpus occurrence, because `Name` is both the
-        // key and the checked field. Story p4-08's per-type AC2 assertion found that this page
-        // never sent it, so an **unmodified save of an existing drop table 400'd against itself**
-        // — the one family with a server-side validator, hence the only one where it showed.
-        // Omitted for the unkeyed family (`globalregistry`), whose POST rejects a supplied key
-        // (`server/src/services/objects.ts`).
-        ...(config.keyField === null ? {} : { key: objectKey }),
-      }),
+    // The envelope has **one home** (`shared/objectSave.ts`) rather than living inline here: the
+    // third field is `key`, the entry's own identity, which is what the DropTable duplicate rule
+    // forgives (D70b) and what p4-08 found this page was not sending (D76a). Omitted for the
+    // unkeyed family, whose POST rejects a supplied key.
+    mutationFn: () => saveObject(config, updateObjectBody(config, objectKey, document)),
     onSuccess: (result) => {
       state.markSaved();
       setMode('view');

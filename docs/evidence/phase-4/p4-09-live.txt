@@ -1,0 +1,288 @@
+[p4-09 d3] rig=http://localhost:3199 clone=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+[p4-09 d3] before: branch=content/2026-09-27 HEAD=18dc924 main=f3f8b5c commits=42 porcelain=""
+  ok   clone starts clean
+
+[p4-09 ac2] droptable original=DropTables/droptables_ds-acad-c01-001.json key="DS-ACAD-C01-001" (first save also normalises the legacy JSON5 formatting (named))
+  ok   GET /:key resolves the entry (200) — status=200
+  ok   GET /:key answers the document on disk
+  ok   POST update answered 200 — status=200 {"key":"DS-ACAD-C01-001","file_type":"droptable","object_type":"drop_table","outcome":"updated","action":"update","commit":"d623725279e54050c2d7cb6eaecc2793e5313c10","branch":"content/2026-09-27","commit_message":"spiral
+  ok   outcome = updated — updated
+  ok   action = update — update
+  ok   commit subject is `spiraldb: update <object_type> <key>` — spiraldb: update drop_table DS-ACAD-C01-001
+  ok   the API reports the ORIGINAL path — DropTables/droptables_ds-acad-c01-001.json vs DropTables/droptables_ds-acad-c01-001.json
+  ok   the path is not the convention twin — basename=droptables_ds-acad-c01-001.json convention=droptable_DS-ACAD-C01-001.json
+  ok   git diff HEAD~1 --name-only is exactly the original path — ["DropTables/droptables_ds-acad-c01-001.json"]
+  ok   the data diff is only under [Description] — ["Description: \"\" -> \"p4-09 one-field sweep\""]
+  byte diff numstat: 5	5	DropTables/droptables_ds-acad-c01-001.json
+  written file ends with a single newline: true
+  ok   entry_status row unchanged by the edit — [{"object_type":"drop_table","object_key":"DS-ACAD-C01-001","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}] -> [{"object_type":"drop_table","object_key":"DS-ACAD-C01-001","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}]
+  commit: d623725 spiraldb: update drop_table DS-ACAD-C01-001
+
+[p4-09 ac2] npcinventory original=NpcInventory/NPCInventories_1-A.json key="87112"
+  ok   GET /:key resolves the entry (200) — status=200
+  ok   GET /:key answers the document on disk
+  ok   POST update answered 200 — status=200 {"key":"87112","file_type":"npcinventory","object_type":"npc_inventory","outcome":"updated","action":"update","commit":"a1d04595e46d240120c5e707dfaf31218bba26ec","branch":"content/2026-09-27","commit_message":"spiraldb: 
+  ok   outcome = updated — updated
+  ok   action = update — update
+  ok   commit subject is `spiraldb: update <object_type> <key>` — spiraldb: update npc_inventory 87112
+  ok   the API reports the ORIGINAL path — NpcInventory/NPCInventories_1-A.json vs NpcInventory/NPCInventories_1-A.json
+  ok   the path is not the convention twin — basename=NPCInventories_1-A.json convention=npcinventory_87112.json
+  ok   git diff HEAD~1 --name-only is exactly the original path — ["NpcInventory/NPCInventories_1-A.json"]
+  ok   the data diff is only under [Inventory] — ["Inventory: length 10 -> 11","Inventory[10]: added"]
+  byte diff numstat: 2	1	NpcInventory/NPCInventories_1-A.json
+  written file ends with a single newline: true
+  ok   entry_status row unchanged by the edit — [{"object_type":"npc_inventory","object_key":"87112","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}] -> [{"object_type":"npc_inventory","object_key":"87112","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}]
+  commit: a1d0459 spiraldb: update npc_inventory 87112
+
+[p4-09 ac2] npcspellinventory original=NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json key="38226"
+  ok   GET /:key resolves the entry (200) — status=200
+  ok   GET /:key answers the document on disk
+  ok   POST update answered 200 — status=200 {"key":"38226","file_type":"npcspellinventory","object_type":"npc_spell_inventory","outcome":"updated","action":"update","commit":"eba11c3cecbbdbf442c64bb2d7cff19d0a0fcbe7","branch":"content/2026-09-27","commit_message":
+  ok   outcome = updated — updated
+  ok   action = update — update
+  ok   commit subject is `spiraldb: update <object_type> <key>` — spiraldb: update npc_spell_inventory 38226
+  ok   the API reports the ORIGINAL path — NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json vs NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json
+  ok   the path is not the convention twin — basename=7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json convention=npcspellinventory_38226.json
+  ok   git diff HEAD~1 --name-only is exactly the original path — ["NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json"]
+  ok   the data diff is only under [Spells[0].Level] — ["Spells[0].Level: 0 -> 1"]
+  byte diff numstat: 1	1	NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json
+  written file ends with a single newline: true
+  ok   entry_status row unchanged by the edit — [{"object_type":"npc_spell_inventory","object_key":"38226","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}] -> [{"object_type":"npc_spell_inventory","object_key":"38226","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}]
+  commit: eba11c3 spiraldb: update npc_spell_inventory 38226
+
+[p4-09 ac2] creaturespellbook original=CreatureSpellbook/CreatureSpellbooks_1-A.json key="Mdeck-L-BR-DS-SylviaDrake-A-50"
+  ok   GET /:key resolves the entry (200) — status=200
+  ok   GET /:key answers the document on disk
+  ok   POST update answered 200 — status=200 {"key":"Mdeck-L-BR-DS-SylviaDrake-A-50","file_type":"creaturespellbook","object_type":"creature_spellbook","outcome":"updated","action":"update","commit":"36291131e326f4ef806a73fc718b78cbae27db4b","branch":"content/2026-
+  ok   outcome = updated — updated
+  ok   action = update — update
+  ok   commit subject is `spiraldb: update <object_type> <key>` — spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50
+  ok   the API reports the ORIGINAL path — CreatureSpellbook/CreatureSpellbooks_1-A.json vs CreatureSpellbook/CreatureSpellbooks_1-A.json
+  ok   the path is not the convention twin — basename=CreatureSpellbooks_1-A.json convention=creaturespellbook_Mdeck-L-BR-DS-SylviaDrake-A-50.json
+  ok   git diff HEAD~1 --name-only is exactly the original path — ["CreatureSpellbook/CreatureSpellbooks_1-A.json"]
+  ok   the data diff is only under [SpellTemplateIds] — ["SpellTemplateIds: length 11 -> 12","SpellTemplateIds[11]: added"]
+  byte diff numstat: 2	1	CreatureSpellbook/CreatureSpellbooks_1-A.json
+  written file ends with a single newline: true
+  ok   entry_status row unchanged by the edit — [{"object_type":"creature_spellbook","object_key":"Mdeck-L-BR-DS-SylviaDrake-A-50","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}] -> [{"object_type":"creature_spellbook","object_key":"Mdeck-L-BR-DS-SylviaDrake-A-50","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}]
+  commit: 3629113 spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50
+
+[p4-09 ac2] treasurecardinventory original=TreasureCardInventory/NpcTreasureCards_2019-A.json key="38214"
+  ok   GET /:key resolves the entry (200) — status=200
+  ok   GET /:key answers the document on disk
+  ok   POST update answered 200 — status=200 {"key":"38214","file_type":"treasurecardinventory","object_type":"treasure_card_inventory","outcome":"updated","action":"update","commit":"9a0e28562b4906d1a69c7175c3798dbfde3c87cd","branch":"content/2026-09-27","commit_m
+  ok   outcome = updated — updated
+  ok   action = update — update
+  ok   commit subject is `spiraldb: update <object_type> <key>` — spiraldb: update treasure_card_inventory 38214
+  ok   the API reports the ORIGINAL path — TreasureCardInventory/NpcTreasureCards_2019-A.json vs TreasureCardInventory/NpcTreasureCards_2019-A.json
+  ok   the path is not the convention twin — basename=NpcTreasureCards_2019-A.json convention=treasurecardinventory_38214.json
+  ok   git diff HEAD~1 --name-only is exactly the original path — ["TreasureCardInventory/NpcTreasureCards_2019-A.json"]
+  ok   the data diff is only under [TreasureCards[0].Price] — ["TreasureCards[0].Price: 100 -> 101"]
+  byte diff numstat: 284	71	TreasureCardInventory/NpcTreasureCards_2019-A.json
+  written file ends with a single newline: true
+  ok   entry_status row unchanged by the edit — [{"object_type":"treasure_card_inventory","object_key":"38214","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}] -> [{"object_type":"treasure_card_inventory","object_key":"38214","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}]
+  commit: 9a0e285 spiraldb: update treasure_card_inventory 38214
+
+[p4-09 ac2] zonetransfer original=ZoneTransfer/WizardZoneDatas_1-A.json key="WizardCity/WC_Hub"
+  ok   GET /:key resolves the entry (200) — status=200
+  ok   GET /:key answers the document on disk
+  ok   POST update answered 200 — status=200 {"key":"WizardCity/WC_Hub","file_type":"zonetransfer","object_type":"zone_transfer","outcome":"updated","action":"update","commit":"4c88de7747be25affb53b1d89778ee14757831e0","branch":"content/2026-09-27","commit_message"
+  ok   outcome = updated — updated
+  ok   action = update — update
+  ok   commit subject is `spiraldb: update <object_type> <key>` — spiraldb: update zone_transfer WizardCity/WC_Hub
+  ok   the API reports the ORIGINAL path — ZoneTransfer/WizardZoneDatas_1-A.json vs ZoneTransfer/WizardZoneDatas_1-A.json
+  ok   the path is not the convention twin — basename=WizardZoneDatas_1-A.json convention=zonetransfer_WizardCity_WC_Hub.json
+  ok   git diff HEAD~1 --name-only is exactly the original path — ["ZoneTransfer/WizardZoneDatas_1-A.json"]
+  ok   the data diff is only under [Teleports[0].Teleport.m_transitionID] — ["Teleports[0].Teleport.m_transitionID: 0 -> 1"]
+  byte diff numstat: 1	1	ZoneTransfer/WizardZoneDatas_1-A.json
+  written file ends with a single newline: true
+  ok   entry_status row unchanged by the edit — [{"object_type":"zone_transfer","object_key":"WizardCity/WC_Hub","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}] -> [{"object_type":"zone_transfer","object_key":"WizardCity/WC_Hub","status":"extracted","extracted_at":"2026-09-27T14:06:23.900Z","reviewed_at":null,"verified_at":null,"latest_notes":null}]
+  commit: 4c88de7 spiraldb: update zone_transfer WizardCity/WC_Hub
+
+[p4-09 ac2] the named one-time normalisation: ZoneTransfer/WizardZoneDatas_Tutorial_Interior-A.json
+  ok   the file ends in two newlines on disk — "\n}\n\n"
+  ok   the writer emits exactly one final newline
+  ok   and the value change is whitespace only
+  limit (D74h): this file shares ZoneName WizardCity/Tutorial_Interior with WizardZoneDatas_10274-A.json, and the index resolves the first file in name order — so the second file behind a duplicated key is not addressable through the route and cannot be saved live. The normalisation is asserted at the serializer here and by D1’s byte census.
+  ok   GET on a duplicated key resolves the first file in name order — status=200
+  ok   POST on the duplicated key answered 200 — status=200
+  ok   the save landed on the first file behind the duplicated key — ["ZoneTransfer/WizardZoneDatas_10274-A.json"]
+  ok   the duplicate-pair edit changed only [Teleports[0].Teleport.m_transitionID] — ["Teleports[0].Teleport.m_transitionID: 0 -> 1"]
+  ok   the second file behind the key was untouched
+  reachable duplicate-pair arm byte diff: 1	1	ZoneTransfer/WizardZoneDatas_10274-A.json
+  ok   every ZoneTransfer legacy name starts with WizardZoneDatas_
+
+[p4-09 ac3] droptable key="P4-09-SWEEP-001" fileName=droptable_P4-09-SWEEP-001.json
+  ok   POST create answered 200 — status=200 {"key":"P4-09-SWEEP-001","file_type":"droptable","object_type":"drop_table","outcome":"created","action":"create","commit":"e571f2ea14403ec7d5d7abdb9e895672df85326a","branch":"content/2026-09-27","commit_message":"spiraldb: create drop_table P4-09-SW
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create drop_table P4-09-SWEEP-001
+  ok   committed file is <directory>/<fileNameFor name> — DropTables/droptable_P4-09-SWEEP-001.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["DropTables/droptable_P4-09-SWEEP-001.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: e571f2e spiraldb: create drop_table P4-09-SWEEP-001
+  ok   no plural legacy twin was created
+  ok   entry_status row exists — {"object_type":"drop_table","object_key":"P4-09-SWEEP-001","status":"extracted","extracted_at":"2026-09-27T14:06:49.103Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 ac3] npcinventory key="99001" fileName=npcinventory_99001.json
+  ok   POST create answered 200 — status=200 {"key":"99001","file_type":"npcinventory","object_type":"npc_inventory","outcome":"created","action":"create","commit":"66f89c2cd2ee803d76dd0590e85df6bd82c24776","branch":"content/2026-09-27","commit_message":"spiraldb: create npc_inventory 99001","f
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create npc_inventory 99001
+  ok   committed file is <directory>/<fileNameFor name> — NpcInventory/npcinventory_99001.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["NpcInventory/npcinventory_99001.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: 66f89c2 spiraldb: create npc_inventory 99001
+  ok   entry_status row exists — {"object_type":"npc_inventory","object_key":"99001","status":"extracted","extracted_at":"2026-09-27T14:06:49.267Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 ac3] npcspellinventory key="99002" fileName=npcspellinventory_99002.json
+  ok   POST create answered 200 — status=200 {"key":"99002","file_type":"npcspellinventory","object_type":"npc_spell_inventory","outcome":"created","action":"create","commit":"856535b45e985aa6d50ea973c681c96b5ed713ec","branch":"content/2026-09-27","commit_message":"spiraldb: create npc_spell_in
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create npc_spell_inventory 99002
+  ok   committed file is <directory>/<fileNameFor name> — NpcSpellInventory/npcspellinventory_99002.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["NpcSpellInventory/npcspellinventory_99002.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: 856535b spiraldb: create npc_spell_inventory 99002
+  ok   entry_status row exists — {"object_type":"npc_spell_inventory","object_key":"99002","status":"extracted","extracted_at":"2026-09-27T14:06:49.426Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 ac3] creaturespellbook key="P4-09-Deck-001" fileName=creaturespellbook_P4-09-Deck-001.json
+  ok   POST create answered 200 — status=200 {"key":"P4-09-Deck-001","file_type":"creaturespellbook","object_type":"creature_spellbook","outcome":"created","action":"create","commit":"db75df1d1021ca4620c60d255be33c9c816dae38","branch":"content/2026-09-27","commit_message":"spiraldb: create crea
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create creature_spellbook P4-09-Deck-001
+  ok   committed file is <directory>/<fileNameFor name> — CreatureSpellbook/creaturespellbook_P4-09-Deck-001.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["CreatureSpellbook/creaturespellbook_P4-09-Deck-001.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: db75df1 spiraldb: create creature_spellbook P4-09-Deck-001
+  ok   entry_status row exists — {"object_type":"creature_spellbook","object_key":"P4-09-Deck-001","status":"extracted","extracted_at":"2026-09-27T14:06:49.587Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 ac3] npcdroptable key="99003" fileName=npcdroptable_99003.json
+  ok   NpcDropTable/ is absent before the create
+  ok   POST create answered 200 — status=200 {"key":"99003","file_type":"npcdroptable","object_type":"npc_drop_table","outcome":"created","action":"create","commit":"b679a0fb11849917444e5b28168be423632f3d17","branch":"content/2026-09-27","commit_message":"spiraldb: create npc_drop_table 99003",
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create npc_drop_table 99003
+  ok   committed file is <directory>/<fileNameFor name> — NpcDropTable/npcdroptable_99003.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["NpcDropTable/npcdroptable_99003.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: b679a0f spiraldb: create npc_drop_table 99003
+  ok   the create bootstrapped NpcDropTable/
+  ok   entry_status row exists — {"object_type":"npc_drop_table","object_key":"99003","status":"extracted","extracted_at":"2026-09-27T14:06:49.750Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 ac3] treasurecardinventory key="99004" fileName=treasurecardinventory_99004.json
+  ok   POST create answered 200 — status=200 {"key":"99004","file_type":"treasurecardinventory","object_type":"treasure_card_inventory","outcome":"created","action":"create","commit":"85ba9c1ae72bb15f7b21f0a7d655758c2da89faf","branch":"content/2026-09-27","commit_message":"spiraldb: create trea
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create treasure_card_inventory 99004
+  ok   committed file is <directory>/<fileNameFor name> — TreasureCardInventory/treasurecardinventory_99004.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["TreasureCardInventory/treasurecardinventory_99004.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: 85ba9c1 spiraldb: create treasure_card_inventory 99004
+  ok   entry_status row exists — {"object_type":"treasure_card_inventory","object_key":"99004","status":"extracted","extracted_at":"2026-09-27T14:06:49.907Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 ac3] zonetransfer key="P4-09_Sweep/Zone_Hub" fileName=zonetransfer_P4-09_Sweep_Zone_Hub.json
+  ok   POST create answered 200 — status=200 {"key":"P4-09_Sweep/Zone_Hub","file_type":"zonetransfer","object_type":"zone_transfer","outcome":"created","action":"create","commit":"1ffd6c2a5a8a5f03064393badb65f5435c014964","branch":"content/2026-09-27","commit_message":"spiraldb: create zone_tra
+  ok   outcome = created — created
+  ok   action = create — create
+  ok   commit subject is `spiraldb: create <object_type> <key>` — spiraldb: create zone_transfer P4-09_Sweep/Zone_Hub
+  ok   committed file is <directory>/<fileNameFor name> — ZoneTransfer/zonetransfer_P4-09_Sweep_Zone_Hub.json
+  ok   status_created = true — true
+  ok   git diff HEAD~1 --name-only is exactly the new file — ["ZoneTransfer/zonetransfer_P4-09_Sweep_Zone_Hub.json"]
+  ok   the created document is the client builder’s document
+  ok   git log subject matches
+  commit: 1ffd6c2 spiraldb: create zone_transfer P4-09_Sweep/Zone_Hub
+  ok   entry_status row exists — {"object_type":"zone_transfer","object_key":"P4-09_Sweep/Zone_Hub","status":"extracted","extracted_at":"2026-09-27T14:06:50.078Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}
+  ok   entry_status status = extracted — extracted
+  ok   history carries the `Created via UI` note — ["Created via UI"]
+
+[p4-09 finding] unmodified save of an already-canonical file: NpcInventory/NPCInventories_1-A.json
+  status=200 outcome=updated action=update commit=""
+  ok   a no-op save answers 200 and reports updated/update
+  ok   and it writes no commit (the returned commit is empty)
+  ok   and the file is byte-identical afterwards
+
+[p4-09 falsification] unmodified drop-table save WITHOUT body.key -> 400
+  ok   without `key` the family validator answers 400 (the D76a defect class) — {"error":"DropTable validation failed with 1 validation error (Duplicate name).","fields":{"Name":["The name \"P4-09-SWEEP-001\" is already used by another drop table. Names must be unique across all 
+  ok   the rejected probe wrote no commit
+
+[p4-09 d3] checks=168 failures=0 commits 42 -> 56 (+14, expected +14)
+[p4-09 d3] ALL LIVE CHECKS PASSED
+
+=== post-sweep clone state (the writes the sweep left) ===
+branch=content/2026-09-27 HEAD=1ffd6c2a5a8a5f03064393badb65f5435c014964 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=56
+porcelain:
+commits added: 14
+
+created files (the seven AC3 creations):
+d623725 spiraldb: update drop_table DS-ACAD-C01-001
+a1d0459 spiraldb: update npc_inventory 87112
+eba11c3 spiraldb: update npc_spell_inventory 38226
+3629113 spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50
+9a0e285 spiraldb: update treasure_card_inventory 38214
+4c88de7 spiraldb: update zone_transfer WizardCity/WC_Hub
+7488fb5 spiraldb: update zone_transfer WizardCity/Tutorial_Interior
+e571f2e spiraldb: create drop_table P4-09-SWEEP-001
+66f89c2 spiraldb: create npc_inventory 99001
+856535b spiraldb: create npc_spell_inventory 99002
+db75df1 spiraldb: create creature_spellbook P4-09-Deck-001
+b679a0f spiraldb: create npc_drop_table 99003
+85ba9c1 spiraldb: create treasure_card_inventory 99004
+1ffd6c2 spiraldb: create zone_transfer P4-09_Sweep/Zone_Hub
+
+=== restore (D76b, five axes) ===
+before: branch=content/2026-09-27 HEAD=1ffd6c2a5a8a5f03064393badb65f5435c014964 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=56 porcelain_lines=0 npcdroptable_dir=1
+after:  branch=content/2026-09-27 HEAD=18dc92477d54b1e911796960407ce7710e703697 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=42 porcelain_lines=0 npcdroptable_dir=0
+expected: branch=content/2026-09-27 HEAD=18dc92477d54b1e911796960407ce7710e703697 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=42 porcelain_lines=0 npcdroptable_dir=0 (D72c: an empty directory would flip missing_directory back)
+residual p4-09 files: 0
+md5 of the first DropTable after restore: 80a595ac0575a8fddecc4e09f1dcc217
+md5 at 18dc924: 80a595ac0575a8fddecc4e09f1dcc217
+
+=== tier-2 live browser run (tests/ui/p4-09-live.rig.ts, real client + real server + real clone) ===
+(node:2307556) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/p4-09-live.rig.ts:39:3 › p4-09 live rig — the built client against the real server and the real clone › AC2: Edit → one field → Save commits the ORIGINAL legacy path on the settings branch (568ms)
+  ✓  2 [chromium] › tests/ui/p4-09-live.rig.ts:78:3 › p4-09 live rig — the built client against the real server and the real clone › AC3: `New NPC drop table` creates the convention file, the directory and the status row (732ms)
+
+  2 passed (1.8s)
+
+commits added by the browser run:
+41a580b spiraldb: update drop_table DS-ACAD-C01-001
+2f32d6d spiraldb: create npc_drop_table 87113
+
+the AC2 update commit (HEAD~1): subject=spiraldb: update drop_table DS-ACAD-C01-001
+  git diff --no-renames --name-only HEAD~2 HEAD~1 = DropTables/droptables_ds-acad-c01-001.json 
+  data diff = -  "Description": "", -  "RollChance": 1.0, +  "Description": "p4-09 live rig edit", +  "RollChance": 1, -  "NoneChance": 0.0, -  "PityCounter": 0.0, +  "NoneChance": 0, +  "PityCounter": 0, -} +} 
+the AC3 create commit (HEAD): subject=spiraldb: create npc_drop_table 87113
+  git diff --no-renames --name-only HEAD~1 HEAD = NpcDropTable/npcdroptable_87113.json 
+  file content = {"TemplateID":87113,"DropTableNames":[]}
+  branch = content/2026-09-27
+
+=== final restore (D76b, five axes) after the browser run ===
+before: branch=content/2026-09-27 HEAD=2f32d6da35092d994d548b717fa8818a76e76b0a main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=44 porcelain_lines=0 npcdroptable_dir=1
+after:  branch=content/2026-09-27 HEAD=18dc92477d54b1e911796960407ce7710e703697 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=42 porcelain_lines=0 npcdroptable_dir=0
+expected: branch=content/2026-09-27 HEAD=18dc92477d54b1e911796960407ce7710e703697 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 commits=42 porcelain_lines=0 npcdroptable_dir=0
+md5 droptables_ds-acad-c01-001.json = 80a595ac0575a8fddecc4e09f1dcc217 (at 18dc924: 80a595ac0575a8fddecc4e09f1dcc217)

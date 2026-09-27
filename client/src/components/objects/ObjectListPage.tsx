@@ -35,6 +35,7 @@ import {
   type ObjectListRow,
 } from '../../lib/objects';
 import { cn } from '../../lib/utils';
+import NewObjectControl from './NewObjectControl';
 import ObjectCardList from './ObjectCardList';
 import ObjectTable, { type ObjectListColumn } from './ObjectTable';
 import StatusBadge from '../StatusBadge';
@@ -58,6 +59,12 @@ import { Skeleton } from '../ui/skeleton';
  * and everything else is client-side, so typing a search never issues a request. The
  * tab counts come from the response's own `summary` (D49), so a tab counts exactly
  * what the table holds.
+ *
+ * Story p4-09 adds the one create affordance this page was missing (`NewObjectControl`): a
+ * `New <type>` button beside the search box that opens the shared create dialog for every tracked
+ * family. It lives here rather than on seven pages because the seven families share this page
+ * (AC3; D71(i)); GlobalRegistry is the one family that does not render this page (its single route
+ * *is* its editor, D75(a)) and it has no create form — its dictionary gains a row, not an entry.
  *
  * The **quest** page keeps its own JSX (`pages/QuestsPage.tsx`): its DOM is pinned by
  * 170 committed UI specs, and "quests keep their tabbed page" is the plan's own
@@ -177,19 +184,24 @@ export default function ObjectListPage({
           })}
         </div>
 
-        <div className="relative md:w-64">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-            aria-hidden="true"
-          />
-          <Input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={objectSearchPlaceholder(nounPlural)}
-            aria-label={objectSearchLabel(nounPlural)}
-            className="pl-9"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative md:w-64">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={objectSearchPlaceholder(nounPlural)}
+              aria-label={objectSearchLabel(nounPlural)}
+              className="pl-9"
+            />
+          </div>
+          {/* Story p4-09 (AC3): the one shared create affordance, mounted here so every tracked
+              family's list page has it and none of them owns a variant (D71(i)). */}
+          <NewObjectControl config={config} nounPlural={nounPlural} />
         </div>
       </div>
 

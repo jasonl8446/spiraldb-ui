@@ -34,6 +34,14 @@ import {
   type KnownTypeName,
 } from '@shared/quest';
 
+import {
+  collectNullPaths,
+  describeValue,
+  firstDiff,
+  isPlainObject,
+  orderedKeyPaths,
+} from '../helpers/roundtrip-fidelity';
+
 /**
  * Task 3.2 / story p3-02 — the round-trip fidelity harness that gates Phase 3 (D5 + D57).
  *
@@ -102,102 +110,10 @@ if (CORPORA.length === 0) {
 
 /* ------------------------------------------------------------------ helpers (test-local) */
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/** A short description of a value, for the harness's own messages. */
-function describeValue(value: unknown): string {
-  if (value === null) {
-    return 'null';
-  }
-  if (Array.isArray(value)) {
-    return `an array of length ${value.length}`;
-  }
-  if (isPlainObject(value)) {
-    return 'an object';
-  }
-  return `${typeof value} (${JSON.stringify(value)})`;
-}
-
-/**
- * The first difference between two documents, as a path and a reason — or `undefined` when they are
- * identical **including key order**.
- *
- * Deliberately not `isDeepStrictEqual` alone: property order is not part of deep equality, so a
- * serializer that reorders keys would pass a value-only comparison while rewriting every line of a
- * file. This walk compares key sets *and their order* at every level, then array lengths and
- * elements, and only then the scalars — so a failure can always name one concrete path.
- */
-function firstDiff(left: unknown, right: unknown, at = '<root>'): string | undefined {
-  if (isPlainObject(left) && isPlainObject(right)) {
-    const leftKeys = Object.keys(left);
-    const rightKeys = Object.keys(right);
-    const missingRight = leftKeys.filter((key) => !rightKeys.includes(key));
-    const missingLeft = rightKeys.filter((key) => !leftKeys.includes(key));
-    if (missingRight.length > 0 || missingLeft.length > 0) {
-      return `${at}: key sets differ (missing on the left: [${missingLeft.join(', ')}], missing on the right: [${missingRight.join(', ')}])`;
-    }
-    if (leftKeys.join('\u0000') !== rightKeys.join('\u0000')) {
-      return `${at}: key order differs (left: [${leftKeys.join(', ')}] vs right: [${rightKeys.join(', ')}])`;
-    }
-    for (const key of leftKeys) {
-      const nested = firstDiff(left[key], right[key], `${at}.${key}`);
-      if (nested !== undefined) {
-        return nested;
-      }
-    }
-    return undefined;
-  }
-  if (Array.isArray(left) && Array.isArray(right)) {
-    if (left.length !== right.length) {
-      return `${at}: array length differs (${left.length} vs ${right.length})`;
-    }
-    for (let index = 0; index < left.length; index += 1) {
-      const nested = firstDiff(left[index], right[index], `${at}[${index}]`);
-      if (nested !== undefined) {
-        return nested;
-      }
-    }
-    return undefined;
-  }
-  return isDeepStrictEqual(left, right)
-    ? undefined
-    : `${at}: ${describeValue(left)} !== ${describeValue(right)}`;
-}
-
-/** Every key path of a value, in document order (`<key>`, `<key>.m_goals[0]`, …). */
-function orderedKeyPaths(value: unknown, at = ''): string[] {
-  const paths: string[] = [];
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => paths.push(...orderedKeyPaths(item, `${at}[${index}]`)));
-  } else if (isPlainObject(value)) {
-    for (const [key, item] of Object.entries(value)) {
-      const here = at === '' ? key : `${at}.${key}`;
-      paths.push(here);
-      paths.push(...orderedKeyPaths(item, here));
-    }
-  }
-  return paths;
-}
-
-/** Every path in a document whose value is an explicit `null`. */
-function collectNullPaths(value: unknown, at: DocPath = [], paths: DocPath[] = []): DocPath[] {
-  if (value === null) {
-    if (at.length > 0) {
-      paths.push(at);
-    }
-    return paths;
-  }
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectNullPaths(item, [...at, index], paths));
-  } else if (isPlainObject(value)) {
-    for (const [key, item] of Object.entries(value)) {
-      collectNullPaths(item, [...at, key], paths);
-    }
-  }
-  return paths;
-}
+// The D5 fidelity walk — `isPlainObject`, `describeValue`, `firstDiff`, `orderedKeyPaths` and
+// `collectNullPaths` — lives in `tests/helpers/roundtrip-fidelity.ts` (story p4-09 gave it a
+// second consumer, the six-family AC4 sweep, so it has one home). Its behaviour is unchanged;
+// this suite passing is the extraction's proof.
 
 /** Every `$type` string occurring anywhere in a document. */
 function collectTypeStrings(value: unknown, found = new Set<string>()): Set<string> {
