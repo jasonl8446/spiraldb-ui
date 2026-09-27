@@ -363,6 +363,83 @@ describe('committing one saved object (D13, docs/spec-data-model.md L216-232)', 
     expect(commitCount(target)).toBe(1);
     expect(target.git(['status', '--porcelain']).trim()).toBe('?? QuestTemplates/');
   });
+
+  /**
+   * The `removePaths` half story p4-07 (D22) added: a save can **replace** files. Two properties
+   * of the mechanism are pinned here — the deletion lands in the **same** commit as the write,
+   * and a removal path git does not know is a no-op rather than the `pathspec did not match any
+   * files` failure a plain `git add` raises (the file the tool removed from the working tree was
+   * never tracked).
+   */
+  it('stages a replaced file’s deletion in the same commit as the write', async () => {
+    const target = repo();
+    // A tracked legacy file, committed in the initial commit.
+    writeRepoFile(target, 'GlobalRegistry/GlobalRegistryModels_1-A.json', '{"Old":1}\n');
+    target.git(['add', '--', 'GlobalRegistry/GlobalRegistryModels_1-A.json']);
+    target.git(['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'legacy']);
+
+    const git = createGitService({
+      repoPath: target.dir,
+      settingsBranch: () => 'content/2026-09-26',
+    });
+    await git.ensureSessionBranch();
+    const before = commitCount(target);
+
+    // What the pipeline does: write the replacement, delete the file it replaces, one commit.
+    writeRepoFile(
+      target,
+      'GlobalRegistry/globalregistry.json',
+      '{"GlobalRegistryValues":{"Old":1}}\n',
+    );
+    fs.rmSync(path.join(target.dir, 'GlobalRegistry/GlobalRegistryModels_1-A.json'));
+    const result = await git.commitObject({
+      action: 'update',
+      objectType: 'global_registry',
+      objectKey: 'globalregistry',
+      author,
+      paths: [path.join(target.dir, 'GlobalRegistry/globalregistry.json')],
+      removePaths: [path.join(target.dir, 'GlobalRegistry/GlobalRegistryModels_1-A.json')],
+    });
+
+    expect(commitCount(target)).toBe(before + 1);
+    expect(result.paths).toEqual([
+      'GlobalRegistry/globalregistry.json',
+      'GlobalRegistry/GlobalRegistryModels_1-A.json',
+    ]);
+    const show = target.git(['show', '--stat', '--format=', 'HEAD']);
+    expect(show).toContain('GlobalRegistry/globalregistry.json');
+    expect(show).toContain('GlobalRegistry/GlobalRegistryModels_1-A.json');
+    expect(target.git(['show', '--name-status', '--format=', 'HEAD']).trim().split('\n')).toEqual([
+      'D\tGlobalRegistry/GlobalRegistryModels_1-A.json',
+      'A\tGlobalRegistry/globalregistry.json',
+    ]);
+    expect(target.git(['status', '--porcelain']).trim()).toBe('');
+  });
+
+  it('ignores a removal path git never knew instead of failing the commit', async () => {
+    const target = repo();
+    writeRepoFile(target, 'GlobalRegistry/globalregistry.json', '{"GlobalRegistryValues":{}}\n');
+    const git = createGitService({
+      repoPath: target.dir,
+      settingsBranch: () => 'content/2026-09-26',
+    });
+    await git.ensureSessionBranch();
+
+    const result = await git.commitObject({
+      action: 'update',
+      objectType: 'global_registry',
+      objectKey: 'globalregistry',
+      author,
+      paths: [path.join(target.dir, 'GlobalRegistry/globalregistry.json')],
+      removePaths: [path.join(target.dir, 'GlobalRegistry/never-tracked.json')],
+    });
+
+    expect(result.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(target.git(['show', '--name-only', '--format=', 'HEAD']).trim()).toBe(
+      'GlobalRegistry/globalregistry.json',
+    );
+    expect(target.git(['status', '--porcelain']).trim()).toBe('');
+  });
 });
 
 describe('the injected client seam', () => {

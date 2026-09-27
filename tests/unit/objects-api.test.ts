@@ -27,6 +27,7 @@ import { SPIRALDB_COLLECTIONS, collectionSpec } from '@server/services/spiraldbF
 import { STATUS_OBJECT_TYPES, STATUS_TYPE_BY_ROUTE } from '@server/services/status';
 import { getStatusEntry, getStatusHistory } from '@server/services/status';
 import {
+  commitCount,
   createTempGitRepo,
   removeTempGitRepo,
   repoFileExists,
@@ -356,6 +357,64 @@ describe('GET /:key: detail resolves through the index (D19)', () => {
     });
     expect(detail?.path).toBe(path.join(h.root, 'GlobalRegistry/GlobalRegistryModels_1-A.json'));
   });
+
+  /**
+   * AC1 at the service level: the unkeyed read is the **merge** of every file in the directory,
+   * not the one file the route key names. The fixture holds one file, so the two-file arms below
+   * are written into a throwaway repository — the live corpus cannot prove "later wins" because
+   * it has exactly one file (the merge rule's own test says so).
+   */
+  it('serves the merged registry view, case-sensitively and later file wins', () => {
+    const h = harness();
+    writeRepoFile(
+      h.repo,
+      'GlobalRegistry/a-extra.json',
+      JSON.stringify({
+        GlobalRegistryValues: { Localization: 9, localization: 7, Christmas: 5 },
+      }),
+    );
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'a second registry file']);
+    const { index } = objectRuntimeFor(h.db, h.root);
+
+    const detail = readObject({
+      config: objectTypeConfig('globalregistry'),
+      index,
+      // Any key names the family's one logical entry — including the legacy stem.
+      key: 'GlobalRegistryModels_1-A',
+    });
+
+    // Name order is the injected merge order — plain code-unit order, so `a-extra.json` sorts
+    // AFTER the uppercase `GlobalRegistryModels_1-A.json` and its `Christmas: 5` wins. That the
+    // winner follows *name* order, not enumeration, is the point (D22: Imlight's order is
+    // unsorted; this tool replaces it with one deterministic order). `localization` is a
+    // different key from `Localization` (case-sensitive), so both survive with their own values.
+    expect(detail?.object).toEqual({
+      GlobalRegistryValues: {
+        Localization: 9,
+        localization: 7,
+        Christmas: 5,
+        Halloween: 0,
+      },
+    });
+  });
+
+  it('answers an unknown unkeyed key instead of 404ing, while no file means 404', () => {
+    const h = harness();
+    const { index } = objectRuntimeFor(h.db, h.root);
+    const config = objectTypeConfig('globalregistry');
+
+    // The family has one logical entry, so the route key is a name, not a selector.
+    const byAnyKey = readObject({ config, index, key: 'not-a-file-stem' });
+    expect(byAnyKey?.object).toEqual({
+      GlobalRegistryValues: { Christmas: 0, Halloween: 0 },
+    });
+    expect(byAnyKey?.path).toBe(path.join(h.root, 'GlobalRegistry/GlobalRegistryModels_1-A.json'));
+
+    // Nothing to read is a 404: the create path, not an empty registry.
+    fs.rmSync(path.join(h.root, 'GlobalRegistry'), { recursive: true });
+    expect(readObject({ config, index, key: 'anything' })).toBeUndefined();
+  });
 });
 
 describe('POST /: the save path', () => {
@@ -475,9 +534,65 @@ describe('POST /: the save path', () => {
     });
   });
 
-  it('reports the GlobalRegistry leftovers a save leaves behind (task 4.9 owns them)', async () => {
+  /**
+   * **Phase transition (story p4-07, task 4.9 / D22).** p4-01 pinned the opposite: a save wrote
+   * `globalregistry.json` and *left every other file in place*, reporting them as a warning —
+   * a deliberate deferral whose test was literally named "task 4.9 owns them". Task 4.9 is this
+   * story, so the assertion changes into the behaviour it deferred: **one commit adds the new file
+   * and deletes the legacy one**, the directory afterwards holds exactly one file, and the commit
+   * message is `spiraldb: update global_registry globalregistry` even though the written file did
+   * not exist before (the entry existed in the file being replaced).
+   */
+  it('consolidates the registry into one file in a single commit (task 4.9 / D22)', async () => {
     const h = harness();
     const runtime = objectRuntimeFor(h.db, h.root);
+    const legacy = 'GlobalRegistry/GlobalRegistryModels_1-A.json';
+    expect(repoFileExists(h.repo, legacy)).toBe(true);
+    const commitsBefore = commitCount(h.repo);
+
+    const result = await saveObjectEntry({
+      db: h.db,
+      config: objectTypeConfig('globalregistry'),
+      index: runtime.index,
+      pipeline: runtime.pipeline,
+      body: { object: { GlobalRegistryValues: { Christmas: 1, Halloween: 0 } } },
+    });
+
+    expect(result.file).toBe('GlobalRegistry/globalregistry.json');
+    expect(result.object_type).toBeNull();
+    expect(result.status).toBeNull();
+    expect(result.action).toBe('update');
+    expect(result.commit_message).toBe('spiraldb: update global_registry globalregistry');
+    // ONE commit, and it carries both the addition and the deletion (AC2a/b).
+    expect(commitCount(h.repo)).toBe(commitsBefore + 1);
+    expect(h.repo.git(['show', '--name-status', '--format=', 'HEAD']).trim().split('\n')).toEqual([
+      `D\t${legacy}`,
+      'A\tGlobalRegistry/globalregistry.json',
+    ]);
+    // …and afterwards the directory holds exactly one file (AC2c).
+    expect(fs.readdirSync(path.join(h.root, 'GlobalRegistry'))).toEqual(['globalregistry.json']);
+    expect(result.warnings.join(' ')).toContain('Consolidated 1 file(s)');
+    // No tracking row is created (AC2d / Q1), queried by the type's REAL `object_type`
+    // name (D74(c)).
+    expect(
+      h.db
+        .prepare<[string], { count: number }>(
+          'SELECT COUNT(*) AS count FROM entry_status WHERE object_type = ?',
+        )
+        .get('global_registry'),
+    ).toEqual({ count: 0 });
+  });
+
+  it('leaves a file the merge could not account for in place, and says so', async () => {
+    const h = harness();
+    const runtime = objectRuntimeFor(h.db, h.root);
+    // A document with no `GlobalRegistryValues` wrapper: nothing the merge can account for. The
+    // save must not destroy it (the named failure mode "deleting a file the merge did not
+    // account for") — and a file whose text cannot be parsed at all is the same case.
+    writeRepoFile(h.repo, 'GlobalRegistry/not-a-registry.json', '{"SomethingElse": 1}\n');
+    writeRepoFile(h.repo, 'GlobalRegistry/broken.json', '{ not json at all\n');
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'two files the merge cannot account for']);
 
     const result = await saveObjectEntry({
       db: h.db,
@@ -487,11 +602,12 @@ describe('POST /: the save path', () => {
       body: { object: { GlobalRegistryValues: { Christmas: 1 } } },
     });
 
-    expect(result.file).toBe('GlobalRegistry/globalregistry.json');
-    expect(result.object_type).toBeNull();
-    expect(result.status).toBeNull();
-    expect(result.warnings.join(' ')).toContain('GlobalRegistryModels_1-A.json');
-    expect(repoFileExists(h.repo, 'GlobalRegistry/GlobalRegistryModels_1-A.json')).toBe(true);
+    expect(repoFileExists(h.repo, 'GlobalRegistry/not-a-registry.json')).toBe(true);
+    expect(repoFileExists(h.repo, 'GlobalRegistry/broken.json')).toBe(true);
+    // The legacy file the merge DID account for is gone; the two it could not are reported.
+    expect(repoFileExists(h.repo, 'GlobalRegistry/GlobalRegistryModels_1-A.json')).toBe(false);
+    expect(result.warnings.join(' ')).toContain('not-a-registry.json');
+    expect(result.warnings.join(' ')).toContain('broken.json');
   });
 
   it('rejects a body it cannot key, with an actionable message', async () => {
@@ -756,7 +872,13 @@ describe('POST creates with the convention name, one case per family', () => {
     });
 
     expect(result.outcome).toBe('created');
-    expect(result.action).toBe('create');
+    // **Phase transition (story p4-07 / D22)**: the fixture already holds
+    // `GlobalRegistry/GlobalRegistryModels_1-A.json`, so the unkeyed family's save is a
+    // *consolidation*. The **outcome** stays `created` (the convention file `globalregistry.json`
+    // did not exist) while the **action** is `update` — the commit replaced the file that already
+    // held this family's entry. Every other family does both as `created`/`create`; the
+    // empty-directory create arm for this one is the test right after this.
+    expect(result.action).toBe(fileType === 'globalregistry' ? 'update' : 'create');
     const relative =
       config.keyField === null
         ? path.join(config.directory, 'globalregistry.json')
@@ -766,5 +888,29 @@ describe('POST creates with the convention name, one case per family', () => {
     expect(readSpiraldbJson(path.join(h.root, relative))).toEqual(document);
     // The name is the spec convention, never the legacy prefix of the existing files.
     expect(relative).not.toContain('droptables_');
+  });
+
+  it('creates globalregistry.json when the directory is empty (nothing to consolidate)', async () => {
+    const h = harness();
+    const runtime = objectRuntimeFor(h.db, h.root);
+    const config = objectTypeConfig('globalregistry');
+    // The empty-directory arm: remove every file, so the save is a genuine create.
+    fs.rmSync(path.join(h.root, 'GlobalRegistry'), { recursive: true });
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'empty the registry directory']);
+
+    const result = await saveObjectEntry({
+      db: h.db,
+      config,
+      index: runtime.index,
+      pipeline: runtime.pipeline,
+      body: { object: { GlobalRegistryValues: { Christmas: 1 } } },
+    });
+
+    expect(result.outcome).toBe('created');
+    expect(result.action).toBe('create');
+    expect(result.commit_message).toBe('spiraldb: create global_registry globalregistry');
+    expect(result.warnings).toEqual([]);
+    expect(fs.readdirSync(path.join(h.root, 'GlobalRegistry'))).toEqual(['globalregistry.json']);
   });
 });

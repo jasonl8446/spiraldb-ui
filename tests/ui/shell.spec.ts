@@ -62,9 +62,10 @@ const MOCK_QUEST_ROW = {
  * `phase` is the "Arrives in Phase N" text a stub route renders (Dashboard 5, the
  * eight data types 4, `/quests` 2 — `client/src/lib/routes.ts`). `/settings`
  * (p1-08), `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01),
- * `/drop-tables` (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03)
- * and `/npc-drop-tables` (p4-06) are real pages, so the loop below asserts their own
- * content instead of the stub text.
+ * `/drop-tables` (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03),
+ * `/npc-drop-tables` + `/treasure-card-inventories` + `/zone-transfers` (p4-04…p4-06)
+ * and `/global-registry` (p4-07, the editor itself) are real pages, so the loop below
+ * asserts their own content instead of the stub text.
  */
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', title: 'Dashboard', phase: '5' },
@@ -319,6 +320,40 @@ async function mockShellApi(page: Page): Promise<void> {
       },
     }),
   );
+
+  // Story p4-07 replaced `/global-registry`' stub with the real **editor** (plan task 4.9) —
+  // docs/spec-api.md L474 gives this family one route and it is the editor, because the directory
+  // is one merged dictionary rather than a collection. So there is no list page to assert here:
+  // the branch below asserts the editor's own chrome. Both endpoints are mocked (the family's
+  // list — one row per FILE, keyed by the file stem — and the merged detail), so the assertion is
+  // the same on a developer's machine and on CI, where no clone exists. The merged document is
+  // the real corpus's shape: the wrapper plus its 23 mixed-case integer values, of which two are
+  // shown. The editor's own contract is `tests/ui/global-registry-editor.spec.ts`.
+  await page.route('**/api/global-registry', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'GlobalRegistryModels_1-A',
+            title: 'GlobalRegistryModels_1-A',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: null,
+          },
+        ],
+        summary: null,
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/global-registry/*', (route) =>
+    route.fulfill({
+      json: {
+        GlobalRegistryValues: { Localization: 1, Christmas: 0, Halloween: 0 },
+      },
+    }),
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -448,6 +483,20 @@ test.describe('sidebar navigation', () => {
             exact: true,
           }),
         ).toBeVisible();
+      } else if (item.path === '/global-registry') {
+        // Story p4-07 replaced this route's stub with the real **editor** (plan task 4.9) — the
+        // same phase transition p4-01…p4-06 recorded, so `phase` in the row above still means the
+        // phase that *owns* the page. It is the one family whose route is the editor rather than
+        // a list (docs/spec-api.md L474), so this branch asserts the editor's own literals: the
+        // merged table and the pre-save disclosure naming the file the save replaces. Like the
+        // p4-05/p4-06 branches it mocks its own endpoints (D73(g)).
+        // `tests/ui/global-registry-editor.spec.ts` owns the editor's contract.
+        await expect(
+          page.getByRole('main').getByRole('list', { name: 'Registry values' }),
+        ).toBeVisible();
+        await expect(page.getByRole('main').locator('[data-consolidation="1"]')).toContainText(
+          'GlobalRegistryModels_1-A.json',
+        );
       } else {
         await expect(
           page.getByRole('main').getByText(`Arrives in Phase ${item.phase}`),

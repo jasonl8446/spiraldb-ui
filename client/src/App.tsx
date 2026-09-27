@@ -15,6 +15,7 @@ import ObjectDetailPage from './pages/ObjectDetailPage';
 import ObjectListPage from './components/objects/ObjectListPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ExtractionPage from './pages/ExtractionPage';
+import GlobalRegistryPage from './pages/GlobalRegistryPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -54,8 +55,12 @@ import {
  * the sixth (TreasureCardInventory, whose detail route is its own page so the
  * warn-not-block rule can inject the synced `spells` names); story p4-06 added the
  * seventh (ZoneTransfer, whose one rule consults no synced table and so renders inline
- * through the generic page). The last one (GlobalRegistry) keeps its Phase-4 stub until
- * task 4.9 supplies the merged-dictionary editor. Both
+ * through the generic page); story p4-07 added the **eighth and last** (GlobalRegistry,
+ * whose single route *is* the editor — docs/spec-api.md L474, no list and no detail
+ * route — because the family is one merged dictionary; it is also the only page that
+ * passes `editable`, since the registry has no `entry_status` row yet its document is
+ * exactly what the editor edits). All
+ * eight Phase-4 families are now built; both
  * route paths and the config rows come from `shared/objectTypes.ts`, so a page and
  * the API path the server mounts cannot disagree.
  */
@@ -206,6 +211,14 @@ function elementFor(route: AppRoute): JSX.Element {
           )}
         />
       );
+    case '/global-registry':
+      // Story p4-07: the eighth and last family. docs/spec-api.md L474 says exactly what this
+      // route is — "GlobalRegistry editor" — with **no list and no detail route**, because the
+      // family is one merged dictionary, not a collection: the page below is the editor itself,
+      // and `tests/unit/ui-shell.test.ts` pins the spec's route table (which lists no
+      // `/global-registry/:key`). Its disclosure needs the family's list query all the same, so
+      // the page owns that hook rather than a render prop.
+      return <GlobalRegistryPage />;
     default:
       return <StubPage route={route} />;
   }

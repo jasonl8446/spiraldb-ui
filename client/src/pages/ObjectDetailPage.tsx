@@ -72,6 +72,13 @@ export interface ObjectFormProps {
 
 export interface ObjectDetailPageProps {
   config: ObjectTypeConfig;
+  /**
+   * The entry's key when the route does not carry one. Defaults to the route's `:id`/`:name`
+   * segment, which is every family's case except GlobalRegistry (story p4-07): its single route
+   * *is* the editor of one merged dictionary (docs/spec-api.md L474), so it names the convention
+   * file it saves to instead of reading a URL segment.
+   */
+  objectKey?: string;
   /** Plural noun used in copy (`NPC inventories`). */
   nounPlural: string;
   /** The Back link's text (`Back to NPC Inventories`). */
@@ -84,6 +91,16 @@ export interface ObjectDetailPageProps {
    * Omitted means the type has no rules and nothing is blocked.
    */
   validate?: (document: Record<string, unknown>) => readonly FieldValidationMessage[];
+  /**
+   * Whether the header shows the Edit/Save pair. Defaults to `status !== null` — a family with a
+   * lifecycle badge is editable, one without a badge has no row to move.
+   *
+   * **GlobalRegistry** is the one family that must override it (story p4-07): it has no
+   * `entry_status` row (Q1) yet its document *is* the editor's subject, so its page passes
+   * `editable` explicitly. Stated per page rather than inferred from `objectType === null`, so a
+   * future lifecycle-free family does not silently become editable.
+   */
+  editable?: boolean;
 }
 
 /** The status joined to this entry, or `null` for a family with no lifecycle. */
@@ -101,13 +118,15 @@ function statusForEntry(
 
 export default function ObjectDetailPage({
   config,
+  objectKey,
   nounPlural,
   backLabel,
   renderForm,
   validate,
+  editable,
 }: ObjectDetailPageProps): JSX.Element {
   const params = useParams<{ id?: string; name?: string }>();
-  const key = displayKeyFor(config, params.id ?? params.name ?? '');
+  const key = objectKey ?? displayKeyFor(config, params.id ?? params.name ?? '');
   const routeType = statusRouteTypeFor(config);
   const backTo = objectListPath(config);
 
@@ -198,6 +217,7 @@ export default function ObjectDetailPage({
       backLabel={backLabel}
       renderForm={renderForm}
       {...(validate === undefined ? {} : { validate })}
+      {...(editable === undefined ? {} : { editable })}
     />
   );
 }
@@ -252,6 +272,7 @@ function LoadedEntry({
   backLabel,
   renderForm,
   validate,
+  editable,
 }: {
   config: ObjectTypeConfig;
   objectKey: string;
@@ -261,6 +282,7 @@ function LoadedEntry({
   backLabel: string;
   renderForm: ObjectDetailPageProps['renderForm'];
   validate?: ObjectDetailPageProps['validate'];
+  editable?: boolean;
 }): JSX.Element {
   const client = useQueryClient();
   const state = useQuestDocument(source);
@@ -314,6 +336,7 @@ function LoadedEntry({
       saveBlocked={blocked}
       blockReason={blockReason(messages)}
       document={document}
+      {...(editable === undefined ? {} : { editable })}
     >
       <FieldValidationProvider messages={messages}>
         {renderForm({ document, mode, state, messages })}

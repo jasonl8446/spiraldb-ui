@@ -163,6 +163,13 @@ export interface CommitObjectOptions {
   author: string;
   /** Absolute or repo-relative paths that make up this save. */
   paths: string[];
+  /**
+   * Paths this save **deletes** in the same commit (D22's consolidate-and-replace). They are
+   * staged as deletions with `git rm --cached --ignore-unmatch`, so a tracked file's removal is
+   * staged and a path git never knew (an untracked leftover the tool removed from the working
+   * tree) is a no-op instead of the `pathspec did not match` failure plain `git add` raises.
+   */
+  removePaths?: string[];
 }
 
 export interface CommitObjectResult {
@@ -310,13 +317,26 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
       const paths = commitOptions.paths.map((candidate) =>
         path.isAbsolute(candidate) ? path.relative(repoPath, candidate) : candidate,
       );
+      const removePaths = (commitOptions.removePaths ?? []).map((candidate) =>
+        path.isAbsolute(candidate) ? path.relative(repoPath, candidate) : candidate,
+      );
       const message = buildCommitMessage(commitOptions);
 
       client.env(commitEnv(commitOptions.author));
+      // The write first, so a removal can never be committed without the file that replaces it
+      // (the D22 failure mode): both are staged before the single commit below.
       await client.add(paths);
+      if (removePaths.length > 0) {
+        await client.raw('rm', '--cached', '--ignore-unmatch', '--', ...removePaths);
+      }
       const result = await client.commit(message);
 
-      return { sha: result.commit, branch: result.branch, message, paths };
+      return {
+        sha: result.commit,
+        branch: result.branch,
+        message,
+        paths: [...paths, ...removePaths],
+      };
     },
   };
 }

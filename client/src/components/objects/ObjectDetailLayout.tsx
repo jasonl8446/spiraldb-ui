@@ -30,9 +30,12 @@ import { Button } from '../ui/button';
  * is typed `unknown`); only its title differs per family.
  *
  * `StatusBadge` is omitted when the family has no lifecycle (`status === null`,
- * GlobalRegistry per Q1), and the Edit/Save pair is hidden for it too: there is no
- * `entry_status` row to move, and the registry's consolidate-and-replace save is task
- * 4.9's.
+ * GlobalRegistry per Q1). The Edit/Save pair is hidden for such a family **unless**
+ * {@link ObjectDetailLayoutProps.editable} says otherwise: a lifecycle badge is about the
+ * `entry_status` row, not about whether the document may be edited, and story p4-07's
+ * GlobalRegistry editor is exactly the document that must be editable without one. The flag is
+ * explicit rather than inferred, so a future lifecycle-free family cannot silently become
+ * editable.
  */
 export interface ObjectDetailLayoutProps {
   /** One row of `shared/objectTypes.ts` — the type name in the header. */
@@ -41,6 +44,12 @@ export interface ObjectDetailLayoutProps {
   objectKey: string;
   /** The entry's lifecycle status; `null` renders no badge and no actions. */
   status: StatusValue | null;
+  /**
+   * Show the Edit/Save pair anyway. Defaults to `status !== null`; GlobalRegistry (story p4-07)
+   * is the only caller that passes it, because its document is editable while it has no
+   * `entry_status` row at all (Q1).
+   */
+  editable?: boolean;
   /** Where the Back link goes and what it says (`Back to NPC Inventories`). */
   backTo: string;
   backLabel: string;
@@ -70,6 +79,7 @@ export default function ObjectDetailLayout({
   config,
   objectKey,
   status,
+  editable: editableProp,
   backTo,
   backLabel,
   mode,
@@ -85,7 +95,9 @@ export default function ObjectDetailLayout({
 }: ObjectDetailLayoutProps): JSX.Element {
   const isMobile = useIsMobile();
   const [jsonOpen, setJsonOpen] = useState(false);
-  const editable = status !== null;
+  // A lifecycle badge means the entry has a status to move; an explicit `editable` overrides it
+  // for a document-editable family with no lifecycle (GlobalRegistry, story p4-07).
+  const editable = editableProp ?? status !== null;
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>

@@ -4,6 +4,12 @@ import path from 'node:path';
 import type { ObjectFileType } from '../../../shared/naming.js';
 import { ULong } from '../../../shared/ulong.js';
 import type { ObjectTypeConfig } from '../../../shared/objectTypes.js';
+import {
+  GLOBAL_REGISTRY_FILE_NAME,
+  globalRegistryFileOrder,
+  mergeGlobalRegistry,
+  type GlobalRegistryFile,
+} from '../../../shared/simpleObjects/globalRegistry.js';
 import type { Db } from '../db.js';
 import {
   collectionSpec,
@@ -49,14 +55,28 @@ import { isPlainObject } from './sync/json.js';
  * 2. `NpcSpellInventory/` holds one **unprefixed** file (a UUID name). It is indexed
  *    like any other file and never renamed; the list reads it through the same key
  *    field as its siblings.
- * 3. `ZoneTransfer/` and `GlobalRegistry/` have **no `entry_status` rows at all**.
- *    The status join is a lookup that tolerates a missing row rather than an inner
- *    join, so every row defaults to `extracted` (the schema default) instead of
- *    vanishing from the list.
+ * 3. `GlobalRegistry/` has **no `entry_status` rows at all** (it is editor-only, Q1),
+ *    and this header originally claimed `ZoneTransfer/` had none either — **wrong**:
+ *    `zone_transfer` carries 1205 rows from the first-startup import (D74(c)). The
+ *    status join is a lookup that tolerates a missing row rather than an inner join,
+ *    so a row without a status defaults to `extracted` (the schema default) instead
+ *    of vanishing from the list.
  * 4. The four `TemplateID` families store a **number** in JSON and a **string** in
  *    `entry_status.object_key`. `shared/ulong.ts` is the only place that converts;
  *    this module uses its text direction for keys coming off disk and its number
  *    direction for the field being written.
+ *
+ * Story p4-07 (task 4.9, D22) completed the unkeyed family's two special paths, which p4-01
+ * deliberately left open:
+ *
+ * - **read** — `readObject` serves the **merged view** of every `GlobalRegistry/*.json`
+ *   (case-sensitive keys, later files win, in an explicit name order) instead of the one file a
+ *   key names. The route key is therefore not a selector for this family, and a stale bookmark
+ *   keeps working across a consolidation;
+ * - **save** — a POST is a **consolidation**: one commit writes `globalregistry.json` and deletes
+ *   the files the merge accounted for. A file the merge could not read, or that carries no
+ *   wrapper object, is **left in place and reported** — this tool never deletes a file it did
+ *   not read.
  *
  * Load: ~2,000 corpus files, no caching (D12) — the list scans and parses per
  * request. The per-root index is built once per process/root (`objectRuntimeFor`) and
@@ -187,7 +207,8 @@ export function listObjects(options: ListObjectsOptions): ObjectListResult {
   }
 
   // The status join, tolerant by construction: an absent row is a lookup miss, not
-  // an inner join — ZoneTransfer/ and GlobalRegistry/ have no rows at all.
+  // an inner join — the unkeyed GlobalRegistry family has no rows at all, and a
+  // future family may not either.
   const statusByKey = new Map<string, string>();
   if (config.objectType !== null) {
     for (const entry of listStatus(db, [config.objectType]).entries) {
@@ -266,6 +287,49 @@ export interface ReadObjectOptions {
 }
 
 /**
+ * The **merged** registry view — the unkeyed family's read (AC1, D22).
+ *
+ * docs/spec-domain-reference.md L102-119: `GlobalRegistry/` is *one merged dictionary* spread
+ * over all its files. So the unkeyed family's detail read merges **every** `*.json` in the
+ * directory, in {@link globalRegistryFileOrder}'s explicit name order (later files win), rather
+ * than serving the one file the route key happens to name.
+ *
+ * Three consequences are deliberate:
+ *
+ * - **The route key is not an identity.** The family has exactly one logical entry, so any key
+ *   resolves to the merged view while at least one file exists. That is what keeps a bookmark
+ *   working. That is what keeps a bookmark working across a consolidation (the route key before
+ *   a save is the legacy file stem; after it the only file is `globalregistry.json`) and it is
+ *   why a stale detail URL does not 404 — the file whose stem matches is still picked for
+ *   `path`, and `path` is the only thing the key decides.
+ * - **No file means no entry** (`undefined` ⇒ 404): a directory with nothing to read is the
+ *   create path, not an empty registry.
+ * - **An unreadable file does not 500 the view.** It is reported by the list's `skipped[]`
+ *   instead. That omission is *consistent* with the save path, which never deletes a file the
+ *   merge did not account for — so a file this read could not include is also a file the next
+ *   save leaves alone.
+ */
+function readUnkeyedObject(options: ReadObjectOptions): ObjectDetail | undefined {
+  const { config, index, key } = options;
+  const directory = path.join(index.root, config.directory);
+  const entries = jsonEntries(directory) ?? [];
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  const { merge } = mergeRegistryDirectory(directory, entries);
+
+  // The file the route key names, when one does; otherwise the convention file; otherwise the
+  // first in name order. `path` is informational for this family (the view merges them all).
+  const resolved =
+    entries.find((entry) => entry.name === `${key}.json`) ??
+    entries.find((entry) => entry.name === GLOBAL_REGISTRY_FILE_NAME) ??
+    entries[0];
+
+  return { path: path.join(directory, resolved.name), key, object: merge.document };
+}
+
+/**
  * One entry's full JSON (`undefined` ⇒ 404).
  *
  * The path comes from `index.pathFor` (D19), never from `fileNameFor` — that is what
@@ -277,6 +341,10 @@ export interface ReadObjectOptions {
  */
 export function readObject(options: ReadObjectOptions): ObjectDetail | undefined {
   const { config, index, key } = options;
+  if (config.keyField === null) {
+    return readUnkeyedObject(options);
+  }
+
   const filePath = resolveObjectPath({ config, index, key });
   if (filePath === undefined) {
     return undefined;
@@ -293,28 +361,57 @@ export function readObject(options: ReadObjectOptions): ObjectDetail | undefined
   return { path: filePath, key, object: parsed };
 }
 
-/** The path `key` resolves to, without reading it: the index, or a file stem for the unkeyed family. */
-function resolveObjectPath(options: ReadObjectOptions): string | undefined {
-  const { config, index, key } = options;
-
-  if (config.keyField !== null) {
-    return index.pathFor(config.fileType, key);
-  }
-
-  // The unkeyed family: the convention file wins, and any other file in the
-  // directory is reachable by its stem (the legacy `GlobalRegistryModels_1-A`
-  // shape). Task 4.9 owns merging these into the single file.
-  const directory = path.join(index.root, config.directory);
-  const convention = path.join(directory, `${key}.json`);
-  if (fs.existsSync(convention)) {
-    return convention;
-  }
-  for (const entry of jsonEntries(directory) ?? []) {
-    if (entry.name.slice(0, -'.json'.length) === key) {
-      return path.join(directory, entry.name);
+/**
+ * The merged view of one `GlobalRegistry/` directory, plus the files that did **not** take part.
+ *
+ * The read path uses `merge` (its `skipped[]` names the documents that carry no wrapper object);
+ * the save path uses both lists, because only a file the merge **accounted for** may be deleted.
+ * A file whose text `readSpiraldbJson` cannot parse is listed in `unreadable` rather than
+ * throwing: the list endpoint reports it in `skipped[]`, and the consolidating save refuses to
+ * delete it. That is the whole point of the split — a file the tool did not understand is never
+ * destroyed by the tool.
+ */
+function mergeRegistryDirectory(
+  directory: string,
+  entries: readonly fs.Dirent[],
+): {
+  merge: ReturnType<typeof mergeGlobalRegistry>;
+  unreadable: string[];
+} {
+  const readable: GlobalRegistryFile[] = [];
+  const unreadable: string[] = [];
+  for (const entry of entries) {
+    try {
+      readable.push({
+        name: entry.name,
+        document: readSpiraldbJson(path.join(directory, entry.name)),
+      });
+    } catch {
+      unreadable.push(entry.name);
     }
   }
-  return undefined;
+
+  // The merge order is injected and explicit, never `readdir`'s (D22).
+  const order = globalRegistryFileOrder(readable.map((file) => file.name));
+  const byName = new Map(readable.map((file) => [file.name, file]));
+  const merge = mergeGlobalRegistry(
+    order.map((name) => byName.get(name) ?? { name, document: undefined }),
+  );
+  return { merge, unreadable };
+}
+
+/**
+ * The path a **keyed** family's `key` resolves to, without reading it: the D19 content-keyed
+ * index, never a derived filename.
+ *
+ * The keyed families are all this has to answer for — the unkeyed `GlobalRegistry/` family is
+ * resolved by {@link readUnkeyedObject}, which merges the whole directory and picks the file its
+ * route key names (or the convention file) for `path`. There is deliberately **one** resolution
+ * rule per family shape rather than a second one left behind here.
+ */
+function resolveObjectPath(options: ReadObjectOptions): string | undefined {
+  const { config, index, key } = options;
+  return index.pathFor(config.fileType, key);
 }
 
 /* --------------------------------------------------------------------- the runtime */
@@ -588,16 +685,27 @@ export async function saveObjectEntry(
 
   const data = withJsonKey(config, body.object, key ?? config.fileType);
 
+  // Task 4.9 / D22: the unkeyed family's save is a **consolidation**. The delete list is computed
+  // from the live directory (never assumed) and restricted to the files this save actually
+  // accounts for: a file the merge could not read, or that carries no wrapper object, is
+  // reported and **left in place** rather than destroyed (the named failure mode "deleting a file
+  // the merge did not account for").
+  const consolidation =
+    config.fileType === 'globalregistry' ? registryConsolidation(config, index) : null;
+
   const result = await pipeline.saveObject({
     fileType: config.fileType,
     data,
     ...(key === undefined ? {} : { key }),
     action: 'create',
     ...(typeof body.notes === 'string' ? { notes: body.notes } : {}),
+    ...(consolidation === null || consolidation.remove.length === 0
+      ? {}
+      : { removePaths: consolidation.remove }),
     historyNotesOnCreate: CREATED_VIA_UI_NOTE,
   });
 
-  const warnings = unkeyedWarnings(config, index);
+  const warnings = consolidation === null ? [] : consolidationWarnings(consolidation, index.root);
 
   return {
     key: result.key,
@@ -615,24 +723,79 @@ export async function saveObjectEntry(
   };
 }
 
-/** The GlobalRegistry leftovers a save leaves behind, reported rather than hidden. */
-function unkeyedWarnings(config: ObjectTypeConfig, index: SpiraldbIndex): string[] {
-  if (config.fileType !== 'globalregistry') {
-    return [];
-  }
+/** What one unkeyed save consolidates: the files it replaces, and the ones it must leave. */
+interface RegistryConsolidation {
+  /** Absolute paths of the files this save deletes in **the same commit**. */
+  remove: string[];
+  /** Absolute paths of the files the save could not account for, so it leaves them alone. */
+  leftovers: string[];
+}
+
+/**
+ * The consolidation plan for one `GlobalRegistry/` save, computed from the directory as it is at
+ * save time (D22).
+ *
+ * A file is deletable only when the merge **accounted for** it — i.e. it parsed *and* carried a
+ * `GlobalRegistryValues` object. Everything else (unreadable text, a JSON array, a document with
+ * no wrapper) stays on disk and is reported in the save's `warnings`, which is deliberately
+ * narrower than "delete every other `*.json`": this tool never destroys a file it did not read.
+ * The convention file itself is never in the delete list.
+ */
+function registryConsolidation(
+  config: ObjectTypeConfig,
+  index: SpiraldbIndex,
+): RegistryConsolidation {
   const directory = path.join(index.root, config.directory);
-  const others = (jsonEntries(directory) ?? []).filter(
-    (entry) => entry.name !== `${config.fileType}.json`,
-  );
-  if (others.length === 0) {
-    return [];
+  const entries = jsonEntries(directory) ?? [];
+  const { merge, unreadable } = mergeRegistryDirectory(directory, entries);
+  const accountedFor = new Set(merge.files);
+  const remove: string[] = [];
+  const leftovers: string[] = [];
+
+  for (const entry of entries) {
+    if (entry.name === GLOBAL_REGISTRY_FILE_NAME) {
+      continue;
+    }
+    if (accountedFor.has(entry.name)) {
+      remove.push(path.join(directory, entry.name));
+    } else {
+      leftovers.push(path.join(directory, entry.name));
+    }
   }
-  return [
-    `${config.directory}/ still holds ${others.length} file(s) besides ` +
-      `${config.fileType}.json (${others.map((entry) => entry.name).join(', ')}). They are ` +
-      `loaded by the game in filesystem order, so task 4.9's consolidate-and-replace save ` +
-      `removes them in one commit; this save wrote the convention file and left them alone.`,
-  ];
+  for (const name of unreadable) {
+    const candidate = path.join(directory, name);
+    if (!leftovers.includes(candidate)) {
+      leftovers.push(candidate);
+    }
+  }
+  return { remove, leftovers };
+}
+
+/**
+ * The two sentences a consolidation reports.
+ *
+ * A success note names exactly what the one commit replaced (the PR diff is the review surface,
+ * D22); a leftover note names what was **not** deleted and why — the honest half of a
+ * consolidate-and-replace that refuses to guess.
+ */
+function consolidationWarnings(consolidation: RegistryConsolidation, root: string): string[] {
+  const warnings: string[] = [];
+  const relative = (candidate: string): string => path.relative(root, candidate);
+  if (consolidation.remove.length > 0) {
+    warnings.push(
+      `Consolidated ${consolidation.remove.length} file(s) into GlobalRegistry/${GLOBAL_REGISTRY_FILE_NAME} ` +
+        `in one commit: ${consolidation.remove.map(relative).join(', ')}.`,
+    );
+  }
+  if (consolidation.leftovers.length > 0) {
+    warnings.push(
+      `Left ${consolidation.leftovers.length} file(s) in GlobalRegistry/ that this save could not ` +
+        `account for (${consolidation.leftovers
+          .map((candidate) => path.basename(candidate))
+          .join(', ')}); they are not part of the merged view and were not deleted.`,
+    );
+  }
+  return warnings;
 }
 
 /** The path a **new** entry of `config`/`key` would be created at (D26 convention). */

@@ -23,6 +23,7 @@
  * | `./npcDropTable.js` | task 4.6: the shape, the two fields, the 0-file corpus facts and the 317-name source |
  * | `./treasureCardInventory.js` | task 4.7: the `{TemplateID, TreasureCards[{SpellName, Price}]}` shape, **the object-list reader and its edit builders**, the `Price 0` hint as data, and the phase's first **warn-not-block** engine (the literal `spells.name` match), with the 1-file corpus facts and the `" TC"` suffix finding |
  * | `./zoneTransfer.js` | task 4.8 / story p4-06: the `{ZoneName, Teleports[{TriggerName, Teleport}]}` shape, **the first nested-object repeater's reader and edit builders**, the `m_destinationLoc` regex with its proven scientific-notation arm, the `m_teleportType` known-member/preserved-value decision, the `Events` drift guard and the raw-fields disclosure's data, with the 1,207-file corpus facts |
+ * | `./globalRegistry.js` | task 4.9 / story p4-07: the `{GlobalRegistryValues: {key: value}}` wrapper, **the merge rule with an injected file order** (case-sensitive keys, later wins), the key→value **map** row model (key-addressed, not index-addressed), and the consolidation plan (which files one save replaces, D22), with the 1-file corpus facts and the `GlobalRegistryModels_1-A.json` legacy name |
  *
  * Usage is the same on both halves of the app, like `shared/dropTable/index.ts`:
  *
@@ -52,3 +53,4 @@ export * from './creatureSpellbook.js';
 export * from './npcDropTable.js';
 export * from './treasureCardInventory.js';
 export * from './zoneTransfer.js';
+export * from './globalRegistry.js';
