@@ -102,6 +102,7 @@ export default function NpcInventoryForm({
         <CardContent>
           <ObjectIdMultiSelect
             type="items"
+            idKind="number"
             noun="item"
             idPrefix="npc-inventory"
             values={inventory}

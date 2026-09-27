@@ -6,6 +6,7 @@ import { objectTypeConfig } from '@shared/objectTypes';
 
 import AppLayout from './components/layout/AppLayout';
 import CreatureSpellbookForm from './components/objects/CreatureSpellbookForm';
+import NpcDropTableForm from './components/objects/NpcDropTableForm';
 import NpcInventoryForm from './components/objects/NpcInventoryForm';
 import NpcSpellInventoryForm from './components/objects/NpcSpellInventoryForm';
 import DropTableDetailPage from './pages/DropTableDetailPage';
@@ -45,10 +46,11 @@ import {
  * (DropTable, whose form mounts the shared requirement tree inline and whose route
  * is driven by its own page so the duplicate-name rule can inject the corpus); story
  * p4-03 added the third and fourth (NpcSpellInventory and CreatureSpellbook, both
- * plain `ObjectDetailPage` + form pairs). The remaining four keep their Phase-4 stub
- * until their own tasks (4.6-4.9) supply a form. Both route paths and the config rows
- * come from `shared/objectTypes.ts`, so a page and the API path the server mounts
- * cannot disagree.
+ * plain `ObjectDetailPage` + form pairs); story p4-06 added the fifth (NpcDropTable,
+ * whose list page is the family with a genuinely absent directory). The remaining
+ * three keep their Phase-4 stub until their own tasks (4.7-4.9) supply a form. Both
+ * route paths and the config rows come from `shared/objectTypes.ts`, so a page and
+ * the API path the server mounts cannot disagree.
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +78,7 @@ const queryClient = new QueryClient({
 const NPC_INVENTORY = objectTypeConfig('npcinventory');
 const NPC_SPELL_INVENTORY = objectTypeConfig('npcspellinventory');
 const CREATURE_SPELLBOOK = objectTypeConfig('creaturespellbook');
+const NPC_DROP_TABLE = objectTypeConfig('npcdroptable');
 const DROP_TABLE = objectTypeConfig('droptable');
 
 function elementFor(route: AppRoute): JSX.Element {
@@ -142,6 +145,24 @@ function elementFor(route: AppRoute): JSX.Element {
           backLabel="Back to Creature Spellbooks"
           renderForm={({ document, mode, state }) => (
             <CreatureSpellbookForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/npc-drop-tables':
+      // Story p4-06: this family's directory does not exist in the fork, so `GET` answers an
+      // empty list with `missing_directory: true` and the page renders its own empty state plus
+      // the "the first save creates it" notice (`ObjectListPage`'s `CorpusNotices`).
+      return (
+        <ObjectListPage config={NPC_DROP_TABLE} nounPlural="NPC drop tables" keyHeader="NPC" />
+      );
+    case '/npc-drop-tables/:id':
+      return (
+        <ObjectDetailPage
+          config={NPC_DROP_TABLE}
+          nounPlural="NPC drop tables"
+          backLabel="Back to NPC Drop Tables"
+          renderForm={({ document, mode, state }) => (
+            <NpcDropTableForm document={document} mode={mode} state={state} />
           )}
         />
       );

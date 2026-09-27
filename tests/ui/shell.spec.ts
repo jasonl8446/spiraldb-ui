@@ -61,8 +61,9 @@ const MOCK_QUEST_ROW = {
  *
  * `phase` is the "Arrives in Phase N" text a stub route renders (Dashboard 5, the
  * eight data types 4, `/quests` 2 — `client/src/lib/routes.ts`). `/settings`
- * (p1-08), `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01)
- * and `/drop-tables` (p4-02) are real pages, so the loop below asserts their own
+ * (p1-08), `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01),
+ * `/drop-tables` (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03)
+ * and `/npc-drop-tables` (p4-06) are real pages, so the loop below asserts their own
  * content instead of the stub text.
  */
 const NAV_ITEMS = [
@@ -288,6 +289,22 @@ test.describe('sidebar navigation', () => {
         await expect(page.getByRole('main').getByPlaceholder(expected.placeholder)).toBeVisible();
         await expect(
           page.getByRole('main').getByRole('columnheader', { name: expected.column }),
+        ).toBeVisible();
+      } else if (item.path === '/npc-drop-tables') {
+        // Story p4-06 replaced this route's stub with the real generic object list for the
+        // family whose directory genuinely does not exist (plan task 4.6) — the same phase
+        // transition p4-02/p4-03 recorded, and `phase` in the row above still means the phase
+        // that owns the page. The search field renders whatever the row set is, so it is the
+        // branch's stable literal; with no `NpcDropTable/` in the clone there are no rows, so
+        // the page renders its empty state instead of a table and says why (AC1's clause, here
+        // against the real stack rather than a mock). `tests/ui/npc-drop-table-editor.spec.ts`
+        // owns the editor's contract.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search NPC drop tables...'),
+        ).toBeVisible();
+        await expect(page.getByRole('main').getByText('No NPC drop tables found.')).toBeVisible();
+        await expect(
+          page.getByRole('main').getByText(/The NpcDropTable\/ directory does not exist/),
         ).toBeVisible();
       } else {
         await expect(

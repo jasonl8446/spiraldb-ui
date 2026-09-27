@@ -208,6 +208,7 @@ export default function CreatureSpellbookForm({
 
               <RawIdAddControl
                 id="creature-spellbook-raw-id"
+                idKind="number"
                 label="Add a spell id"
                 help="1 of the corpus's 369 distinct spell ids has no synced name and shows as a raw id."
                 onAdd={(id) => {
