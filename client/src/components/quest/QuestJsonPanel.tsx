@@ -155,14 +155,21 @@ function QuestJsonBody({ quest, wrap }: { quest: QuestJsonData; wrap: boolean })
 export interface QuestJsonPanelProps {
   quest: QuestJsonData;
   className?: string;
+  /**
+   * The panel's accessible name. Defaults to the quest copy
+   * ({@link JSON_PANEL_TITLE}); task 4.1's generic detail layout passes
+   * `` `${label} JSON` `` so an NPC inventory's panel does not claim to be a quest's.
+   * The component renders any document either way — only this name differs.
+   */
+  title?: string;
 }
 
 /** The desktop side panel: exactly {@link JSON_PANEL_WIDTH_PX} wide, slides in. */
-export function QuestJsonPanel({ quest, className }: QuestJsonPanelProps): JSX.Element {
+export function QuestJsonPanel({ quest, className, title }: QuestJsonPanelProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
   return (
     <aside
-      aria-label={JSON_PANEL_TITLE}
+      aria-label={title ?? JSON_PANEL_TITLE}
       style={{ width: JSON_PANEL_WIDTH_PX }}
       className={cn(
         'flex shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right',
@@ -184,6 +191,10 @@ export interface QuestJsonOverlayProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   quest: QuestJsonData;
+  /** The dialog's title; defaults to {@link JSON_PANEL_TITLE}. See {@link QuestJsonPanelProps.title}. */
+  title?: string;
+  /** The dialog's visually hidden description; defaults to the quest wording. */
+  description?: string;
 }
 
 /** The mobile full-screen overlay (< 768px) carrying the same toolbar + tree. */
@@ -191,6 +202,8 @@ export function QuestJsonOverlay({
   open,
   onOpenChange,
   quest,
+  title,
+  description,
 }: QuestJsonOverlayProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
   return (
@@ -198,9 +211,11 @@ export function QuestJsonOverlay({
       <DialogContent className="inset-0 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 p-0 sm:rounded-none">
         <DialogHeader className="border-b border-zinc-800 p-3 pr-12">
           <DialogTitle className="font-mono text-sm font-semibold text-zinc-50">
-            {JSON_PANEL_TITLE}
+            {title ?? JSON_PANEL_TITLE}
           </DialogTitle>
-          <DialogDescription className="sr-only">Read-only JSON of this quest.</DialogDescription>
+          <DialogDescription className="sr-only">
+            {description ?? 'Read-only JSON of this quest.'}
+          </DialogDescription>
         </DialogHeader>
         <QuestJsonToolbar
           quest={quest}

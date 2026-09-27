@@ -2,7 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
+import { objectTypeConfig } from '@shared/objectTypes';
+
 import AppLayout from './components/layout/AppLayout';
+import NpcInventoryForm from './components/objects/NpcInventoryForm';
+import ObjectDetailPage from './pages/ObjectDetailPage';
+import ObjectListPage from './components/objects/ObjectListPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ExtractionPage from './pages/ExtractionPage';
 import QuestDetailPage from './pages/QuestDetailPage';
@@ -27,9 +32,15 @@ import {
  * Routing is generated from the `APP_ROUTES` table, so the spec-api L325-350
  * route list has exactly one home and cannot drift from the sidebar: every route
  * exists, the built pages (`/settings` from p1-08, `/quests/extract` from p2-07,
- * `/quests` and `/quests/:questName` from p2-08) render for real, and every other
- * route renders the "Arrives in Phase N" stub with the phase recorded in the table
- * (decision D39 item 7).
+ * `/quests` and `/quests/:questName` from p2-08, `/npc-inventories` and its detail
+ * route from p4-01) render for real, and every other route renders the "Arrives in
+ * Phase N" stub with the phase recorded in the table (decision D39 item 7).
+ *
+ * Task 4.1 wires **one** of the eight object families end to end (NpcInventory) so
+ * the generic scaffolding is provably used; the other seven keep their Phase-4 stub
+ * until their own tasks (4.2, 4.4-4.9) supply a form. The two route paths and the
+ * config row come from `shared/objectTypes.ts`, so the page and the API path the
+ * server mounts cannot disagree.
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +65,8 @@ const queryClient = new QueryClient({
  * router ranks the static path higher regardless, so the detail route can never
  * shadow the extraction page.
  */
+const NPC_INVENTORY = objectTypeConfig('npcinventory');
+
 function elementFor(route: AppRoute): JSX.Element {
   switch (route.path) {
     case '/settings':
@@ -64,6 +77,19 @@ function elementFor(route: AppRoute): JSX.Element {
       return <QuestsPage />;
     case '/quests/:questName':
       return <QuestDetailPage />;
+    case '/npc-inventories':
+      return <ObjectListPage config={NPC_INVENTORY} nounPlural="NPC inventories" keyHeader="NPC" />;
+    case '/npc-inventories/:id':
+      return (
+        <ObjectDetailPage
+          config={NPC_INVENTORY}
+          nounPlural="NPC inventories"
+          backLabel="Back to NPC Inventories"
+          renderForm={({ document, mode, onSet }) => (
+            <NpcInventoryForm document={document} mode={mode} onSet={onSet} />
+          )}
+        />
+      );
     default:
       return <StubPage route={route} />;
   }

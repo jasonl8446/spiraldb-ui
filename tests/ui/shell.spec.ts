@@ -253,6 +253,18 @@ test.describe('sidebar navigation', () => {
         await expect(
           page.getByRole('main').getByRole('columnheader', { name: 'Quest Name' }),
         ).toBeVisible();
+      } else if (item.path === '/npc-inventories') {
+        // Story p4-01 replaced this route's stub with the real generic object list
+        // (the one family the scaffolding is wired end to end for). The literals are
+        // copied on purpose; `tests/ui/object-list.spec.ts` owns the page's full
+        // contract (tabs, counts, search, pagination, cards, missing-directory empty
+        // state).
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search NPC inventories...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'NPC' }),
+        ).toBeVisible();
       } else {
         await expect(
           page.getByRole('main').getByText(`Arrives in Phase ${item.phase}`),

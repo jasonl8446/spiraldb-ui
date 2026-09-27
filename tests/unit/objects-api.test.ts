@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import express, { type Express } from 'express';
 import request from 'supertest';
-import { afterAll, afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { createNameFor, OBJECT_TYPES, objectTypeConfig } from '@shared/objectTypes';
 import { fileNameFor } from '@shared/naming';
+import { ULong } from '@shared/ulong';
 import { openDb, MEMORY_DB, writeSettings, type Db } from '@server/db';
 import {
   createPathFor,
@@ -641,5 +643,128 @@ describe('the router: the spec mount paths and their HTTP contract', () => {
     );
     const missingPath = await request(unconfiguredApp).get('/api/drop-tables').expect(400);
     expect(missingPath.body.error).toMatch(/SpiralDB path is not configured/);
+  });
+});
+
+/* ------------------------------------------------- the live AC3 checks (D17 clone) */
+
+/**
+ * The AC3 live check, one per ulong-keyed family: against the **real corpus** in
+ * `data/test-spiraldb` (read-only — nothing here writes it, so the D66 shared-clone
+ * hazard cannot apply), every `TemplateID` the fork holds must
+ *
+ * 1. be indexed under its **text** key (the form `entry_status.object_key` stores),
+ * 2. resolve to a real file through `index.pathFor` — the D19 lookup the router and
+ *    `GET /:key` use,
+ * 3. carry that same key as a **number** in JSON, round-tripping through
+ *    `shared/ulong.ts`'s one helper in both directions.
+ *
+ * The clone is checked inside `beforeAll` (never at module/collection scope, D68) and
+ * a missing clone is reported loudly and skipped rather than silently passed.
+ */
+const CLONE_ROOT = path.resolve(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '../../data/test-spiraldb'),
+);
+
+const ULONG_FAMILIES = [
+  'npcinventory',
+  'npcspellinventory',
+  'npcdroptable',
+  'treasurecardinventory',
+] as const;
+
+let cloneReady = false;
+let cloneSkipReason = '';
+
+beforeAll(() => {
+  if (!fs.existsSync(path.join(CLONE_ROOT, '.git'))) {
+    cloneSkipReason = `the D17 clone ${CLONE_ROOT} is absent`;
+    console.warn(`[p4-01 AC3] skipping the live corpus checks: ${cloneSkipReason}`);
+    return;
+  }
+  cloneReady = true;
+});
+
+describe("the D17 clone's ulong entries (live, one family at a time)", () => {
+  it.each(ULONG_FAMILIES)('%s: every real TemplateID resolves by its text key', (fileType) => {
+    if (!cloneReady) {
+      console.warn(`[p4-01 AC3] skipped: ${cloneSkipReason}`);
+      return;
+    }
+    const config = objectTypeConfig(fileType);
+    const index = createSpiraldbIndex(CLONE_ROOT);
+    index.rebuild();
+
+    const keys = index.keys(fileType);
+    if (config.keyField === null) {
+      throw new Error(`${fileType} has no key field`);
+    }
+
+    for (const key of keys) {
+      const resolved = index.pathFor(fileType, key);
+      expect(resolved, `${fileType}/${key} must resolve to a file`).toBeDefined();
+
+      const document = readSpiraldbJson(resolved as string) as Record<string, unknown>;
+      const value = document[config.keyField];
+      expect(ULong.toKey(value), `${fileType}/${key}: text direction`).toBe(key);
+      expect(ULong.toJson(value), `${fileType}/${key}: number direction`).toBe(Number(key));
+      expect(typeof value, `${fileType}/${key} must be a number in JSON`).toBe('number');
+    }
+
+    // NpcDropTable/ is absent in the fork: an empty set is the measured reality, not
+    // a vacuous pass, and the other three families do hold entries.
+    if (fileType === 'npcdroptable') {
+      expect(fs.existsSync(path.join(CLONE_ROOT, config.directory))).toBe(false);
+      expect(keys).toEqual([]);
+    } else {
+      expect(keys.length, `${config.directory}/ should hold entries`).toBeGreaterThan(0);
+    }
+  });
+});
+
+/* -------------------------------------------- a create for every one of the eight */
+
+/**
+ * AC1's POST half, for **all eight** families: each one creates its first file with
+ * `fileNameFor`'s convention name — including the singular `droptable_…` prefix D26
+ * chooses although every legacy file is `droptables_…` — and the unkeyed registry as
+ * the single `globalregistry.json`.
+ *
+ * The harness is hermetic (a throwaway git repository per family), so this is the
+ * breadth proof for the eight POST routes: the four families the HTTP block above
+ * does not drive (creature books, spell inventories, treasure cards, zone transfers)
+ * cannot silently lack a save path.
+ */
+describe('POST creates with the convention name, one case per family', () => {
+  it.each(OBJECT_TYPES.map((config) => config.fileType))('%s', async (fileType) => {
+    const h = harness();
+    const runtime = objectRuntimeFor(h.db, h.root);
+    const config = objectTypeConfig(fileType);
+
+    const key = config.keyType === 'ulong' ? '424242' : 'P4-01-NEW';
+    const document: Record<string, unknown> =
+      config.keyField === null
+        ? { GlobalRegistryValues: { Christmas: 1 } }
+        : { [config.keyField]: config.keyType === 'ulong' ? Number(key) : key };
+
+    const result = await saveObjectEntry({
+      db: h.db,
+      config,
+      index: runtime.index,
+      pipeline: runtime.pipeline,
+      body: { object: document },
+    });
+
+    expect(result.outcome).toBe('created');
+    expect(result.action).toBe('create');
+    const relative =
+      config.keyField === null
+        ? path.join(config.directory, 'globalregistry.json')
+        : path.join(config.directory, createNameFor(config, key));
+    expect(result.file).toBe(relative);
+    expect(repoFileExists(h.repo, relative)).toBe(true);
+    expect(readSpiraldbJson(path.join(h.root, relative))).toEqual(document);
+    // The name is the spec convention, never the legacy prefix of the existing files.
+    expect(relative).not.toContain('droptables_');
   });
 });
