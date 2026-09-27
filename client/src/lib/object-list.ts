@@ -242,3 +242,21 @@ export function objectLoadError(nounPlural: string): string {
 export function objectLoadingLabel(nounPlural: string): string {
   return `Loading ${nounPlural}…`;
 }
+
+/**
+ * The **singular** of a family's plural noun (`'NPC inventories'` → `'NPC inventory'`,
+ * `'zone transfers'` → `'zone transfer'`), for the sentences that name one entry.
+ *
+ * The plural forms are hand-written per route (`App.tsx`) and the only regular one is the
+ * trailing `s`, but two of the seven are `…ies` plurals, so the naive `replace(/s$/, '')` this
+ * story found in `ObjectDetailPage` produced "NPC inventor". Two rules, both from the strings
+ * that actually exist here; a noun with no plural suffix (`'global registry'`) is returned
+ * unchanged. Deliberately not a general English pluraliser — an irregular noun would be a
+ * wrong word, so a future family must be checked rather than trusted.
+ */
+export function objectSingularNoun(nounPlural: string): string {
+  if (nounPlural.endsWith('ies')) {
+    return `${nounPlural.slice(0, -3)}y`;
+  }
+  return nounPlural.endsWith('s') ? nounPlural.slice(0, -1) : nounPlural;
+}

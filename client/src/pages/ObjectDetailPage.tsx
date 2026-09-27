@@ -23,6 +23,7 @@ import {
   saveObject,
   statusRouteTypeFor,
 } from '../lib/objects';
+import { objectSingularNoun } from '../lib/object-list';
 import { isNotFoundError, questStatus } from '../lib/quests';
 import { fieldHasError, type FieldValidationMessage } from '../lib/validation-message';
 
@@ -147,7 +148,11 @@ export default function ObjectDetailPage({
     retry: false,
   });
 
-  const loadError = `Could not load this ${nounPlural.replace(/s$/, '')}.`;
+  // One singular noun for every sentence that names a single entry: the load failure and the
+  // status unit's untracked copy (story p4-08). `objectSingularNoun` handles the two `…ies`
+  // plurals, which the previous inline `replace(/s$/, '')` turned into "NPC inventor".
+  const noun = objectSingularNoun(nounPlural);
+  const loadError = `Could not load this ${noun}.`;
 
   if (key === '') {
     return (
@@ -213,6 +218,7 @@ export default function ObjectDetailPage({
       objectKey={key}
       source={object.data}
       status={statusForEntry(status.data?.entries, key, routeType !== undefined)}
+      noun={noun}
       backTo={backTo}
       backLabel={backLabel}
       renderForm={renderForm}
@@ -268,6 +274,7 @@ function LoadedEntry({
   objectKey,
   source,
   status,
+  noun,
   backTo,
   backLabel,
   renderForm,
@@ -278,6 +285,8 @@ function LoadedEntry({
   objectKey: string;
   source: Record<string, unknown>;
   status: StatusValue | null;
+  /** Singular family noun for the status copy (`'drop table'`, `'NPC inventory'`). */
+  noun: string;
   backTo: string;
   backLabel: string;
   renderForm: ObjectDetailPageProps['renderForm'];
@@ -301,7 +310,20 @@ function LoadedEntry({
   const blocked = useMemo(() => fieldHasError(messages), [messages]);
 
   const save = useMutation({
-    mutationFn: () => saveObject(config, { object: document }),
+    mutationFn: () =>
+      saveObject(config, {
+        object: document,
+        // **The entry's own identity, for the server's family validator** (the `{ object, notes?,
+        // key? }` envelope's third field). `body.key` is "the route key the client opened, which
+        // the form sends back unchanged" (`server/src/services/dropTables.ts`): the DropTable
+        // duplicate rule forgives exactly that one corpus occurrence, because `Name` is both the
+        // key and the checked field. Story p4-08's per-type AC2 assertion found that this page
+        // never sent it, so an **unmodified save of an existing drop table 400'd against itself**
+        // — the one family with a server-side validator, hence the only one where it showed.
+        // Omitted for the unkeyed family (`globalregistry`), whose POST rejects a supplied key
+        // (`server/src/services/objects.ts`).
+        ...(config.keyField === null ? {} : { key: objectKey }),
+      }),
     onSuccess: (result) => {
       state.markSaved();
       setMode('view');
@@ -326,6 +348,7 @@ function LoadedEntry({
       config={config}
       objectKey={objectKey}
       status={status}
+      noun={noun}
       backTo={backTo}
       backLabel={backLabel}
       mode={mode}

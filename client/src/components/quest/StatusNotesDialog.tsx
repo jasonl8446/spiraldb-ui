@@ -28,10 +28,10 @@ import {
  * know about `user_name`, and the `PATCH`, the optimistic badge and the toast stay
  * in the hook.
  *
- * It **names the quest and the target status** — the title is the action label
- * verbatim ("Mark Reviewed") and the description is `Mark {quest} as {status}?` —
- * and the notes field is explicitly optional, with the hint that notes are shown in
- * the history.
+ * It **names the entry and the target status** — the title is the action label
+ * verbatim ("Mark Reviewed") and the description is `Mark {entry key} as {status}?` — and the
+ * notes field is explicitly optional, with the hint that notes are shown in the
+ * history.
  *
  * While the request is in flight both buttons are disabled and the confirm button
  * shows a spinner, so the request cannot be issued twice. On failure the caller
@@ -46,8 +46,12 @@ import {
  */
 export interface StatusNotesDialogProps {
   open: boolean;
-  /** The quest the transition applies to. */
-  questName: string;
+  /**
+   * The entry the transition applies to — its key, the quest name for quests and the
+   * canonical `object_key` for the seven object families (story p4-08 renamed the prop from
+   * `questName`; the quest call sites spread the hook's dialog props, so nothing else moved).
+   */
+  objectKey: string;
   target: TransitionTarget;
   notes: string;
   /** True while the PATCH is in flight. */
@@ -61,7 +65,7 @@ export interface StatusNotesDialogProps {
 
 export default function StatusNotesDialog({
   open,
-  questName,
+  objectKey,
   target,
   notes,
   submitting,
@@ -76,7 +80,7 @@ export default function StatusNotesDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{transitionDialogTitle(target)}</DialogTitle>
-          <DialogDescription>{transitionDialogDescription(questName, target)}</DialogDescription>
+          <DialogDescription>{transitionDialogDescription(objectKey, target)}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-1.5">

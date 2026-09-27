@@ -12,11 +12,12 @@
  *    continues by itself). A dismissed dialog rejects with
  *    `UserNameCancelledError` and nothing at all is attempted.
  * 2. **The notes dialog** collects the optional notes and confirms.
- * 3. **The PATCH** optimistically rewrites the row in the cached
- *    `GET /api/quests` payload — the one status source both the `StatusBadge` and
- *    the browse table read (D51(e)) — toasts on success, and on failure rolls the
- *    cache back and surfaces the error **in the still-open dialog**, so the typed
- *    notes survive and the user can retry.
+ * 3. **The PATCH** optimistically rewrites the row in the cached list payload — for
+ *    quests the one status source both the `StatusBadge` and the browse table read
+ *    (D51(e)), for the seven generic object families `GET /api/<type>` (story p4-08's
+ *    {@link StatusListScope}) — toasts on success, and on failure rolls the cache back
+ *    and surfaces the error **in the still-open dialog**, so the typed notes survive and
+ *    the user can retry.
  *
  * `changed_by` is never sent (the server attributes from the persisted name), and
  * blank notes are omitted rather than sent as `""` — both decided in
@@ -31,19 +32,18 @@ import { useCallback, useState } from 'react';
 
 import {
   patchStatus,
-  QUESTS_QUERY_KEY,
   STATUS_HISTORY_QUERY_KEY,
-  type QuestsListResult,
   type StatusEntry,
   type StatusRouteType,
 } from '../lib/api';
 import { serverMessage } from '../lib/extract';
 import { notifyError, notifySuccess } from '../lib/notify';
 import {
-  applyOptimisticQuestStatus,
+  QUEST_STATUS_SCOPE,
   transitionErrorMessage,
   transitionPatch,
   transitionSuccessMessage,
+  type StatusListScope,
   type TransitionTarget,
 } from '../lib/status-transition';
 import { UserNameCancelledError } from '../lib/user-name';
@@ -51,7 +51,7 @@ import { useUserNameGate } from './useUserNameGate';
 
 /** The entry a confirmed dialog will transition. */
 export interface PendingTransition {
-  /** The object key — the quest name; the dialog names it. */
+  /** The object key — the quest name for quests, the canonical `object_key` otherwise. */
   key: string;
   target: TransitionTarget;
 }
@@ -59,7 +59,8 @@ export interface PendingTransition {
 /** Everything `<StatusNotesDialog>` needs, so a page spreads it in one line. */
 export interface StatusTransitionDialogProps {
   open: boolean;
-  questName: string;
+  /** The entry's key; the dialog names it. */
+  objectKey: string;
   target: TransitionTarget;
   notes: string;
   submitting: boolean;
@@ -83,7 +84,20 @@ export interface StatusTransitionController {
   isPending: boolean;
 }
 
-export function useStatusTransition(type: StatusRouteType = 'quests'): StatusTransitionController {
+/**
+ * One transition flow for one entry.
+ *
+ * @param type the plural status route the `PATCH` targets.
+ * @param scope which list surface this entry's row feeds — its query key (invalidated on
+ * settle, and the cache the optimistic write rewrites) and the singular noun the untracked
+ * copy uses. Defaults to {@link QUEST_STATUS_SCOPE}: both Phase-2 call sites pass no scope
+ * and behave exactly as they did (story p4-08 added the parameter, it did not change the
+ * quest path).
+ */
+export function useStatusTransition(
+  type: StatusRouteType = 'quests',
+  scope: StatusListScope = QUEST_STATUS_SCOPE,
+): StatusTransitionController {
   const client = useQueryClient();
   const { requireUserName } = useUserNameGate();
   const [pending, setPending] = useState<PendingTransition | null>(null);
@@ -94,14 +108,14 @@ export function useStatusTransition(type: StatusRouteType = 'quests'): StatusTra
     StatusEntry,
     Error,
     PendingTransition & { notes: string },
-    { previous: QuestsListResult | undefined }
+    { previous: unknown }
   >({
     mutationFn: ({ key, target, notes: entered }) =>
       patchStatus(type, key, transitionPatch(target, entered)),
     onMutate: ({ key, target }) => {
       // The pre-mutation cache, for the rollback. Captured before the write.
-      const previous = client.getQueryData<QuestsListResult>(QUESTS_QUERY_KEY);
-      applyOptimisticQuestStatus(client, key, target);
+      const previous = client.getQueryData(scope.listQueryKey);
+      scope.applyOptimistic(client, key, target);
       return { previous };
     },
     onError: (caught, _variables, context) => {
@@ -110,9 +124,9 @@ export function useStatusTransition(type: StatusRouteType = 'quests'): StatusTra
       // tracked entry 404s and must say so instead of looking like a generic
       // failure).
       if (context?.previous !== undefined) {
-        client.setQueryData(QUESTS_QUERY_KEY, context.previous);
+        client.setQueryData(scope.listQueryKey, context.previous);
       }
-      setError(transitionErrorMessage(caught));
+      setError(transitionErrorMessage(caught, scope.noun));
     },
     onSuccess: (_updated, { key, target }) => {
       setPending(null);
@@ -121,10 +135,12 @@ export function useStatusTransition(type: StatusRouteType = 'quests'): StatusTra
       notifySuccess(transitionSuccessMessage(key, target));
     },
     onSettled: async () => {
-      // The transition moved three things: the list rows, the status table and the
-      // entry's history. Only the list was written optimistically; the other two
-      // are re-read on settle.
-      await client.invalidateQueries({ queryKey: QUESTS_QUERY_KEY });
+      // The transition moved three things: the list rows (the dot and the summary the
+      // filter tabs count), the status table and the entry's history. Only the list was
+      // written optimistically; all three are re-read on settle — the list refetch is the
+      // half of AC1 that must not be lost, because a scope whose optimistic write found no
+      // cached list has nothing else to move it.
+      await client.invalidateQueries({ queryKey: scope.listQueryKey });
       await client.invalidateQueries({ queryKey: ['status'] });
       await client.invalidateQueries({ queryKey: STATUS_HISTORY_QUERY_KEY });
     },
@@ -174,7 +190,7 @@ export function useStatusTransition(type: StatusRouteType = 'quests'): StatusTra
     isPending: transition.isPending,
     dialog: {
       open: pending !== null,
-      questName: pending?.key ?? '',
+      objectKey: pending?.key ?? '',
       target: pending?.target ?? 'reviewed',
       notes,
       submitting: transition.isPending,

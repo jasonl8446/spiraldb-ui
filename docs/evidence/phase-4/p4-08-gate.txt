@@ -1,0 +1,77 @@
+# p4-08 gate — lead-run on f7b191d + the story tree
+# started 2026-09-27T09:27:11-04:00
+=== 1. npm test
+$ npm test
+   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  308ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  392ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  657ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  576ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  418ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  425ms
+
+ Test Files  53 passed (53)
+      Tests  1275 passed (1275)
+   Start at  09:27:11
+   Duration  8.17s (transform 5.63s, setup 0ms, collect 21.89s, tests 61.11s, environment 13ms, prepare 6.02s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+    > 498 |       .toBeGreaterThan(listRequestsBeforePatch);
+          |        ^
+      499 |
+      500 |     // Back to the list: the dot and the counts render the payload the refetch replaced.
+      501 |     await page.getByRole('link', { name: /Back to Drop Tables/ }).click();
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/status-integration.spec.ts:498:8
+
+    Error Context: test-results/status-integration-AC1-Mar-fdd50--row-dot-and-the-tab-counts-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/ui/status-integration.spec.ts:433:3 › AC1: Mark Reviewed with notes on a DropTable moves the entry, its history and its list › the dialog, the PATCH body, the history note, the row dot and the tab counts 
+  261 passed (48.6s)
+--- rc=1
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-D3wF0opM.css                  34.39 kB │ gzip:   7.25 kB
+dist/assets/QuestGoalLogicEditor-C7KLzrlm.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-BBCtsy5a.js                  738.40 kB │ gzip: 219.44 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.95s
+--- rc=0
+
+# finished 2026-09-27T09:28:32-04:00

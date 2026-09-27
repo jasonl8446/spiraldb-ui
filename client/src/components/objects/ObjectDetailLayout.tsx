@@ -10,7 +10,9 @@ import { JSON_PANEL_LABEL } from '../../lib/quests';
 import { cn } from '../../lib/utils';
 import StatusBadge from '../StatusBadge';
 import { QuestJsonOverlay, QuestJsonPanel } from '../quest/QuestJsonPanel';
+import StatusHistoryPanel from '../quest/StatusHistoryPanel';
 import { Button } from '../ui/button';
+import ObjectStatusActions from './ObjectStatusActions';
 
 /**
  * `ObjectDetailLayout` — the generic detail header + shell of task 4.1, generalised
@@ -42,8 +44,17 @@ export interface ObjectDetailLayoutProps {
   config: ObjectTypeConfig;
   /** The entry's canonical key, shown beside the type name. */
   objectKey: string;
-  /** The entry's lifecycle status; `null` renders no badge and no actions. */
+  /**
+   * The entry's lifecycle status; `null` renders no badge, no mark actions and no history
+   * panel (GlobalRegistry, Q1).
+   */
   status: StatusValue | null;
+  /**
+   * Singular family noun for the status copy (`'drop table'`, `'NPC inventory'`). Only used
+   * when the family is tracked; omitted falls back to the config label, which is correct but
+   * capitalized.
+   */
+  noun?: string;
   /**
    * Show the Edit/Save pair anyway. Defaults to `status !== null`; GlobalRegistry (story p4-07)
    * is the only caller that passes it, because its document is editable while it has no
@@ -80,6 +91,7 @@ export default function ObjectDetailLayout({
   objectKey,
   status,
   editable: editableProp,
+  noun,
   backTo,
   backLabel,
   mode,
@@ -98,6 +110,13 @@ export default function ObjectDetailLayout({
   // A lifecycle badge means the entry has a status to move; an explicit `editable` overrides it
   // for a document-editable family with no lifecycle (GlobalRegistry, story p4-07).
   const editable = editableProp ?? status !== null;
+  /**
+   * The one gate every status surface hangs off (story p4-08): a family is *tracked* when it has
+   * both a D4 status route and a joined status. `global_registry` has neither (Q1/D75(j)) — it
+   * has no route and `statusForEntry` returns `null` — so it renders no badge, no mark actions
+   * and no history panel, and issues no status request at all.
+   */
+  const tracked = status !== null && config.routeType !== null;
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -118,6 +137,21 @@ export default function ObjectDetailLayout({
         {status === null ? null : <StatusBadge status={status} />}
 
         <div className="ml-auto flex items-center gap-2">
+          {/*
+            The mark actions and their notes dialog, from the one shared unit (story p4-08).
+            Mounted only for a tracked family, which is what keeps `global_registry` free of
+            them by construction rather than by a comment.
+          */}
+          {tracked ? (
+            <ObjectStatusActions
+              config={config}
+              type={config.routeType}
+              objectKey={objectKey}
+              status={status}
+              {...(noun === undefined ? {} : { noun })}
+            />
+          ) : null}
+
           <Button
             type="button"
             variant="outline"
@@ -166,6 +200,19 @@ export default function ObjectDetailLayout({
           <QuestJsonPanel quest={document} title={`${config.label} JSON`} />
         ) : null}
       </div>
+
+      {/*
+        The history timeline, for a tracked family only. It is the panel `StatusHistoryPanel`
+        already was (p2-09), generalised to take the family's route; the quest page keeps
+        mounting it itself.
+      */}
+      {tracked ? (
+        <StatusHistoryPanel
+          type={config.routeType}
+          objectKey={objectKey}
+          {...(noun === undefined ? {} : { noun })}
+        />
+      ) : null}
 
       {isMobile ? (
         <QuestJsonOverlay

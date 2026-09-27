@@ -365,8 +365,13 @@ test.describe('the generic object detail (NpcInventory)', () => {
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
 
     expect(recorded.savePosts).toHaveLength(1);
+    // Story p4-08 added `key`: the save envelope carries the route key the client opened, which
+    // is what the server's family validator uses to forgive the entry's own name (the DropTable
+    // duplicate rule). See `client/src/pages/ObjectDetailPage.tsx` and
+    // `tests/unit/object-status-pipeline.test.ts`.
     expect(recorded.savePosts[0]).toEqual({
       object: { TemplateID: 2001, Inventory: [160936, 160943, 160999] },
+      key: '2001',
     });
   });
 
