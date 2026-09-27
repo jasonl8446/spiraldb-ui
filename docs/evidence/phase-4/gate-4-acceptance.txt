@@ -1,0 +1,82 @@
+# gate-4 acceptance — f32623e on phase-4-object-editors; started 2026-09-27T13:06:56-04:00
+=== A. Phase 1-4 unit suites
+$ npm test
+   ✓ POST /api/quests — save pipeline (ac3) > round-trips GET → POST unmodified with no field loss (explicit nulls preserved)  325ms
+stdout | tests/unit/quest-results.test.ts > the real corpus of result nodes > matches the measured key order for every node, and re-sets every field byte-for-byte
+   ✓ the real corpus of result nodes > matches the measured key order for every node, and re-sets every field byte-for-byte  4808ms
+[p3-02 ac2 real] ScavengeGoalTemplate     set    m_goals[0].m_goalName                          changed=✓ everything-else=✓ [questtemplates_DS-ACAD1-C04-001.json] (the type's signature field m_itemTotal is absent on this node → probed m_goalName)
+   ✓ the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field  5390ms
+   ✓ updating an existing quest (ac5, server half) > normalises a legacy file to clean JSON on update without losing a field  302ms
+ Test Files  57 passed (57)
+      Tests  1311 passed (1311)
+--- rc=0
+
+=== B. Phase 1-4 tier-1 UI suites (ALTPORT config: 5173 is held by the owner's other project)
+$ npx playwright test --config tests/ui/p4-10-altport.config.ts
+    [chromium] › tests/ui/quests-info-editor.spec.ts:81:3 › the two-column form › renders every field of spec L296-298 with its kind 
+    [chromium] › tests/ui/quests-info-editor.spec.ts:311:3 › edits and the JSON panel › clearing a string field deletes it, and clearing an absent one is a no-op 
+    [chromium] › tests/ui/quests-results-editor.spec.ts:455:3 › AC1 — every one of the 14 types › is addable with its exact field set, its key order and its character-for-character $type 
+    [chromium] › tests/ui/quests-results-editor.spec.ts:526:3 › an existing corpus node › keeps its own key order, its empty reference and its unknown keys when a field is edited 
+    [chromium] › tests/ui/quests-results-editor.spec.ts:675:3 › the m_router sub-object › keeps a corpus router’s own order when one sub-field is edited 
+    [chromium] › tests/ui/quests-status.spec.ts:184:3 › the transition flow › a blank notes field omits the key from the PATCH body entirely 
+    [chromium] › tests/ui/quests-status.spec.ts:257:3 › failure paths › a failed PATCH rolls the badge back and shows the error in the dialog 
+    [chromium] › tests/ui/quests-validation.spec.ts:238:3 › AC1 — a dangling m_startGoals reference blocks the save › the same fault typed into a goal name surfaces inline on that field 
+--- rc=1
+
+=== C. Corpus round-trip audit (the real-reader sweep)
+$ npm run audit:corpus
+corpus:    /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+quests:    322 real corpus quest(s) attempted
+verified:  181/322 round-trip identically through the real reader (1810 field check(s), 0 mismatch(es), 0 known-defect row(s))
+PASS: 181/322 verified, 141 not covered by the synthetic harness, 0 failure(s) (109.8s).
+--- rc=0
+
+=== D. Capture-chain verification (Phase 2)
+$ npm run verify:captures
+  field                                 corpus                             read back
+  field                                 corpus                             read back
+  field                                 corpus                             read back
+  field                                 corpus                             read back
+  field                                 corpus                             read back
+PASS: 5 fixture(s), 50 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).
+--- rc=0
+
+=== E1. lint
+$ npm run lint
+--- rc=0
+
+=== E2. typecheck:tests
+$ npm run typecheck:tests
+--- rc=0
+
+=== E3. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== E4. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== E5. build
+$ npm run build
+--- rc=0
+
+# finished 2026-09-27T13:09:44-04:00
+
+# CORRECTION to section B above (lead's own error, found by the task executor and re-verified here)
+#
+# Section B's rc=1 was a HARNESS ARTIFACT, not a failing suite. The runner invoked Playwright without
+# PLAYWRIGHT_BROWSERS_PATH (the lead's launcher had a typo — `.playwright_browsers` — and its fallback
+# dropped the variable), so playwright-core looked in ~/.cache/ms-playwright, which holds chromium-1217,
+# while the repo's vendored tools/.playwright-browsers holds chromium-1243:
+#     Error: browserType.launch: Executable doesn't exist at
+#       /home/jason/.cache/ms-playwright/chromium_headless_shell-1243/...
+# so every test died at launch (299 failed, 0 passed) and the runner's grep|tail -8 then printed the
+# log's last eight lines containing "field "/"failed" as if they were failing arms. The executor
+# reproduced that byte-identically, and the lead re-ran it correctly:
+#
+#   $ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers npx playwright test --config tests/ui/p4-10-altport.config.ts
+#   299 passed (56.8s)   --- rc=0
+#
+# The runner is fixed as well: a nonzero rc now keeps the error text instead of grepping it away.
+# With that correction the acceptance is NINE of nine rc=0 (A, B, C, D, E1-E5).

@@ -240,7 +240,8 @@ test.describe('AC1 — a dangling m_startGoals reference blocks the save', () =>
     const region = await openGoals(page);
 
     // The other zero-corpus blocking rule that the Goals tab can produce from its own controls:
-    // a duplicate `m_goalName`. Fixture-only — no corpus quest has one.
+    // a duplicate `m_goalName`. Fixture-only — and re-measured at the owner's 328-quest
+    // baseline, not assumed: 328 quests / 796 goals / 0 duplicate `m_goalName`.
     const secondCard = region.getByRole('article').nth(1);
     await expandCard(secondCard);
     // `exact` on purpose: `getByLabel('m_goalName')` is a substring match and also resolves

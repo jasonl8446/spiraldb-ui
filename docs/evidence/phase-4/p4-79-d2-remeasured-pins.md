@@ -98,3 +98,13 @@ $ npm test
 
 rc=0, no flake this run (`status-integration.spec.ts`'s AC1 refetch arm is the known load-sensitive
 one and belongs to gate-4; it did not fire).
+
+---
+
+## CORRECTION (lead, gate-4): one number in this record is not reproducible
+
+This file records `npm test` as **58 passed / 1,314 tests**. Every run at `f32623e` — the boundary gate's
+§A, this task's own D3, and `p4-79-gate.txt` — reads **57 files / 1,311 tests**. The 1,314 figure does not
+reproduce, so **57 / 1,311 is the authoritative pair**; the eight touched files alone were 154 passed, which
+is where the extra three tests in that count most likely came from (a run taken while an interim
+measurement test still existed, before it was deleted at task end). Recorded rather than quietly edited.

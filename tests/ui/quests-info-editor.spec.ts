@@ -128,8 +128,9 @@ test.describe('the two-column form', () => {
     await expect(form.getByLabel('m_onStartQuestScript', { exact: true })).toBeVisible();
     await expect(form.getByLabel('m_onEndQuestScript', { exact: true })).toBeVisible();
     await expect(form.getByLabel('m_clientTags', { exact: true })).toBeVisible();
-    // The fixture carries `m_clientTags: null` (as all 322 corpus files do), so the
-    // tag input is empty rather than pre-filled.
+    // The fixture carries `m_clientTags: null` (as all 328 corpus files do — re-measured at
+    // the owner's current baseline: 328 files, 328 `null`, 0 absent, 0 any other value), so
+    // the tag input is empty rather than pre-filled.
     await expect(form.getByLabel('m_clientTags', { exact: true })).toHaveValue('');
 
     // The spec's read-only timestamps (L298) — the browse row's own `modified_at`.

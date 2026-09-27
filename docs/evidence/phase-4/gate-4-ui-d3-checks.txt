@@ -1,0 +1,52 @@
+=== D3.1 npm test
+$ npm test
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  451ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  475ms
+
+ Test Files  57 passed (57)
+      Tests  1311 passed (1311)
+   Start at  13:31:25
+   Duration  9.06s (transform 7.29s, setup 0ms, collect 28.30s, tests 68.15s, environment 20ms, prepare 7.23s)
+
+--- rc=0
+
+=== D3.2 npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== D3.3 npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== D3.4 tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== D3.5 tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== D3.6 npm run build
+$ npm run build
+dist/assets/QuestGoalLogicEditor-D5extTkK.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-JxTSifgK.js                  748.53 kB │ gzip: 222.44 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.29s
+--- rc=0
+
+=== every rc ===
+6

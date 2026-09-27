@@ -1,0 +1,20 @@
+# gate-4 UI D1 — the four quest specs on the alt-port config (48 arms)
+
+## before the claim edits (13:1x)
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers npx playwright test \
+    --config tests/ui/p4-10-altport.config.ts quests-{info,results,status,validation}-editor-less specs
+  ✓  48 [chromium] › tests/ui/quests-results-editor.spec.ts:1021:3 › delete and the five mounted homes › adds into an absent wrapper as the corpus’s untagged shape (789ms)
+
+  48 passed (20.7s)
+rc=0
+
+## after the claim edits (13:2x)
+  ✓  48 [chromium] › tests/ui/quests-results-editor.spec.ts:1042:3 › delete and the five mounted homes › adds into an absent wrapper as the corpus’s untagged shape (890ms)
+
+  48 passed (21.4s)
+rc=0
+
+## the D2 flake's own arm, in isolation (7.4 s)
+$ ... tests/ui/extraction.spec.ts -g "Save All asks for confirmation"
+  ✓  1 [chromium] › tests/ui/extraction.spec.ts:774:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (7.4s)
+  1 passed (8.7s)

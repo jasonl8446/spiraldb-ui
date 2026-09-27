@@ -13,6 +13,13 @@ import type { Page, Route } from '@playwright/test';
  * 322 quests — 45 extracted, 120 reviewed, 157 verified — so the filter tabs' count
  * badges and the pagination line ("Showing 1-50 of 322") are the documented ones,
  * not invented numbers.
+ *
+ * That 322 is the **UI-design spec's example**, not a measurement of the owner's
+ * fork — which held **328** quest files at `f9a1055` when this was last re-measured.
+ * The two numbers must not be conflated: the mocks below are a fixture for the wire
+ * contract, so a corpus move must never be "fixed" by editing these rows, and a
+ * failure here is never evidence about the corpus. Corpus-facing counts live in the
+ * unit suites and in the specs' own measured comments.
  */
 
 /** One `quests[]` element, copied from `docs/spec-api.md` L190-208. */

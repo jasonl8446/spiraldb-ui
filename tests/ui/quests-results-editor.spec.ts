@@ -11,9 +11,17 @@ import { mockQuestsApi } from './quests-mocks';
  *
  * What this file proves, clause by clause of the story's acceptance criteria:
  *
- * - the Add Result selector offers **exactly the 14** corpus classes, and all 14 can be
+ * - the Add Result selector offers **exactly the 14 creatable** classes, and all 14 can be
  *   **added through the UI with their exact field set** (one control per declared field,
- *   addressed by role) and the **character-for-character** `$type`;
+ *   addressed by role) and the **character-for-character** `$type`. The corpus knows **15**
+ *   (re-measured at the owner's 328-quest baseline: 421 result nodes, 15 classes, of which
+ *   `ResActorDialog` occurs 5× as `{$type, m_dialog}`); the 15th is deliberately **corpus-only**
+ *   — this module owns no control for `m_dialog`, so a create would write `{$type}` alone, a
+ *   shape the corpus has never had (D79/D80; `corpusOnly` in `lib/quest-results.ts`). The
+ *   "known and renderable" half is the unit tier's pin (`tests/unit/quest-results.test.ts`:
+ *   "the 15 result classes", "resolves the corpus-only ResActorDialog and discloses its nested
+ *   dialog read-only", and the census's `ResActorDialog 5`); **this file's subject is the
+ *   offered vocabulary**, i.e. what a create writes;
  * - a saved result's **key order equals the corpus's** for its type — asserted against the
  *   literals written out below, not imported from the app (a spec that imported the copy it
  *   asserts could only prove the app agrees with itself) — and an existing corpus-shaped
@@ -30,11 +38,14 @@ import { mockQuestsApi } from './quests-mocks';
  * - delete removes exactly one card, and all five homes mount (including the guarded tally
  *   slot, which is absent for a goal with no tally counter).
  *
- * Coverage honesty: the corpus exercises 7 of the 14 forms exactly once, so the fixture
- * values below are largely synthetic — the corpus-shaped nodes the spec seeds (the
+ * Coverage honesty: the corpus exercises **5** of the 14 offered forms exactly once, so the
+ * fixture values below are largely synthetic — the corpus-shaped nodes the spec seeds (the
  * `ResModifyEntry` with `m_questName: ""`, the `ResAddDynaMod` with `null`/`""` zones, the
  * `ResDrawHand` split) are the real measured shapes. The `$type` strings and key orders are
- * the measured ones.
+ * the measured ones. (The "5" is a re-measurement, not a re-pin: at the 322-quest baseline
+ * seven forms had exactly one node; the owner's merge took `ResTeleport` 1 → 8 and
+ * `ResPlaySound` 1 → 2, leaving `ResAddHealth`, `ResAddMana`, `ResModifyEntry`, `ResDespawn`
+ * and `ResWait` as the singletons — 5 of the 14 offered forms, of 421 nodes.)
  */
 
 /* ------------------------------------------------------------------- fixtures */
@@ -59,7 +70,7 @@ const QUEST_NAME = 'DS-ACAD1-C01-001';
 const GOAL_A = '1_WizardQuestGoals_GotoZone';
 const GOAL_B = '2_WizardQuestGoals_KillMobs';
 
-/** The ARIA roles the 14 classes' fields render as. */
+/** The ARIA roles the 14 offered classes' fields render as. */
 type ControlRole = 'combobox' | 'spinbutton' | 'textbox' | 'checkbox' | 'region' | 'group';
 
 interface TypeCase {
@@ -73,7 +84,7 @@ interface TypeCase {
   controls: Array<[string, ControlRole]>;
 }
 
-/** The 14 classes, their measured key orders and their rendered controls. */
+/** The 14 offered classes, their measured key orders and their rendered controls. */
 const TYPES: TypeCase[] = [
   {
     name: 'ResDropTable',
@@ -439,19 +450,29 @@ test.beforeEach(async ({ page }) => {
 /* --------------------------------------------------------------- the selector */
 
 test.describe('the result type selector', () => {
-  test('offers exactly the 14 corpus classes', async ({ page }) => {
+  test('offers exactly the 14 creatable classes, and never the corpus-only ResActorDialog', async ({
+    page,
+  }) => {
     await openResults(page);
     const options = await addSelector(list(page, 'Start results'))
       .locator('option')
       .allTextContents();
     expect(options).toEqual(TYPES.map((type) => type.name));
     expect(options).toHaveLength(14);
+    // The corpus's 15th class is *known* — `ResActorDialog`, 5 nodes at the 328-quest
+    // baseline, every one `{$type, m_dialog}` — and it *renders* (the unit suite's
+    // "resolves the corpus-only ResActorDialog and discloses its nested dialog read-only").
+    // It is never **offered** here: with no control for `m_dialog`, a create would write
+    // `{$type}` with no dialog block, a shape the corpus has never had (D79/D80). The deep
+    // equality above already excludes it; naming it here is what keeps the decision legible
+    // to a reader who only skims the option list.
+    expect(options).not.toContain('ResActorDialog');
   });
 });
 
-/* ------------------------------------------------- AC1: all 14 types, fields */
+/* --------------------------------------------- AC1: all 14 offered types, fields */
 
-test.describe('AC1 — every one of the 14 types', () => {
+test.describe('AC1 — every one of the 14 offered types', () => {
   test('is addable with its exact field set, its key order and its character-for-character $type', async ({
     page,
   }) => {
