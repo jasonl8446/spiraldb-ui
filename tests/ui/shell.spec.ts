@@ -224,6 +224,94 @@ async function mockShellApi(page: Page): Promise<void> {
   // are the real corpus's one entry (TemplateID 38214, the legacy file) plus its status row, so
   // the assertion below is the same on a developer's machine and on CI, where no clone exists.
   // The page's own contract is `tests/ui/treasure-card-inventory-editor.spec.ts`.
+  await page.route('**/api/drop-tables', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'DS-ACAD-C01-001',
+            title: 'DS-ACAD-C01-001',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/npc-inventories', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: '87112',
+            title: '87112',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/npc-spell-inventories', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: '99002',
+            title: '99002',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/creature-spellbooks', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'Mdeck-L-BR-DS-SylviaDrake-A-50',
+            title: 'Mdeck-L-BR-DS-SylviaDrake-A-50',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  // The four object families below (plus the absent-directory one) are mocked for the same reason
+  // the treasure-card and zone families are: the shell spec must not depend on the developer's
+  // corpus. `/api/drop-tables` asserted a real table header while reading the REAL endpoint, which
+  // passes on a machine with the 317-file corpus and fails on CI (no corpus -> empty state -> no
+  // header). Found by gate-4's CI run.
+  await page.route('**/api/npc-drop-tables', (route) =>
+    route.fulfill({
+      json: {
+        objects: [],
+        summary: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: true,
+        duplicate_keys: [],
+      },
+    }),
+  );
   await page.route('**/api/treasure-card-inventories', (route) =>
     route.fulfill({
       json: {
