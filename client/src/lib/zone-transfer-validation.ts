@@ -14,9 +14,11 @@ import type { FieldValidationMessage } from './validation-message';
  * Pure data, no React and no fetch: `/zone-transfers/:name`'s branch in `App.tsx` passes
  * {@link validateZoneTransferDocument} to the generic `ObjectDetailPage` and the **shared**
  * engine (`shared/simpleObjects/zoneTransfer.ts`) runs there, so the form renders one
- * inline message per malformed `m_destinationLoc` through the shared `FieldValidation` plumbing
- * and the Save gate keeps its single rule (`fieldHasError` → `severity === 'error'`, which this
- * family's finding **is**: a malformed location disables Save, L542-546).
+ * inline message per malformed `m_destinationLoc` through the shared `FieldValidation` plumbing.
+ * The Save gate keeps its single rule (`fieldHasError` → `severity === 'error'`) and this
+ * family's finding is a **warning** now (D80a, amending D74): a malformed location is shown,
+ * and it never disables Save — three real corpus teleports carry prose there, so a blocking rule
+ * would refuse to save the owner's data.
  *
  * ## Why the sentence lives here, and not in `shared/`
  *
@@ -38,7 +40,7 @@ import type { FieldValidationMessage } from './validation-message';
 export function zoneTransferFindingMessage(finding: ZoneTransferFinding): string {
   switch (finding.kind) {
     case 'destination-loc-not-four-numbers':
-      return `${finding.detail}. The format is four comma-separated numbers and scientific notation counts (e.g. -1.671345E-05 appears in 133 real corpus values), so this is an error: Save is disabled until it is fixed.`;
+      return `${finding.detail}. The format is four comma-separated numbers and scientific notation counts (e.g. -1.671345E-05 appears in 135 real corpus values). This is a warning: Save stays enabled, because three real corpus teleports carry prose here instead of coordinates.`;
   }
 }
 
@@ -91,9 +93,11 @@ export function zoneTransferBlockingCount(messages: readonly FieldValidationMess
  * The form-level summary sentence for a blocking count, or `null` when there are none.
  *
  * L547 puts a **banner** on the form for errors, and it says what the error does — Save is
- * disabled while it is present — rather than repeating the per-field sentence. It is a small
- * sentence because only an edited document can trip it: **0 of 2,365 real values** fail the
- * format, so no corpus file produces a banner at all.
+ * disabled while it is present — rather than repeating the per-field sentence. **It is
+ * unreachable for this family since D80a**: the one rule is a warning, so the blocking count is
+ * always 0 and the banner never renders. Kept because the count is the shared plumbing's own
+ * input (the generic page and every other family's form use the same shape), and because a
+ * future error-severity rule in this engine would make it live again in one place.
  */
 export function zoneTransferBlockingHeadline(count: number): string | null {
   if (count === 0) {

@@ -18,27 +18,29 @@
  *
  * ## Measured corpus facts this model is built on
  *
- * Re-measured by this story against the real checkout
- * (`/home/jason/Documents/git-projects/spiraldb/QuestTemplates`, 322 files, 2026-09-26):
- * **381 result nodes** across the four homes — `m_startResults` 4, `m_endResults` 331,
- * `m_goals[].m_completeResults` 45, `m_goals[].m_activateResults` 1 — and the type
- * counts are ResDropTable **317**, ResLearnSpell **21**, ResAddDynaMod **13**,
- * ResGiveSpell **10**, ResDrawHand **8**, ResPostEvent **3**, ResAddSpell **2**, and
- * **exactly one each** of ResAddHealth, ResAddMana, ResModifyEntry, ResTeleport,
- * ResPlaySound, ResDespawn, ResWait. So **7 of the 14 forms are exercised by a single
- * corpus node and the other 7 by eight or fewer**; ResDropTable is the only common one.
+ * Re-measured at the owner's `f9a1055` baseline
+ * (`/home/jason/Documents/git-projects/spiraldb/QuestTemplates`, 328 files, D79; the
+ * 322-file numbers are the parentheses): **421 result nodes** (was 381) and the type counts are
+ * ResDropTable **323** (317), ResAddDynaMod **34** (13), ResLearnSpell **21**, ResGiveSpell
+ * **10**, ResDrawHand **8**, ResTeleport **8** (1), ResActorDialog **5** (0, new),
+ * ResPostEvent **3**, ResPlaySound **2** (1), ResAddSpell **2**, and **exactly one each** of
+ * ResAddHealth, ResAddMana, ResModifyEntry, ResDespawn, ResWait. So **7 of the 15 forms are
+ * exercised by five or fewer corpus nodes**; ResDropTable is the only common one.
  * Nothing in this module claims more coverage than that, and the unit test's corpus sweep
  * counts the nodes rather than assuming a healthy population.
  *
- * - **One key order per type, preserved byte-for-byte.** The 14 measured orders are
- *   exactly {@link RESULT_TYPE_SPECS}' field lists (checked by the corpus sweep). A **new**
+ * - **One key order per type, preserved byte-for-byte.** The 15 measured orders are
+ *   exactly {@link RESULT_TYPE_SPECS}' field lists (checked by the corpus sweep; the
+ *   corpus-only `ResActorDialog`'s list is `$type, m_dialog` and its second key is unowned). A **new**
  *   node is built in its type's own order; an **existing** node is never rebuilt — every
  *   builder writes one key, so a corpus node keeps its order (the one thing a
  *   sort-then-serialize writer would destroy, see D58e).
- * - **No undocumented extra keys.** Field presence matches the spec exactly for all 14
+ * - **No undocumented extra keys.** Field presence matches the spec exactly for the spec's 14
  *   types (unlike `ReqHasEntry` in p3-06), so {@link KNOWN_RESULT_KEYS} is the union of
- *   `$type`, the 14 types' fields and `m_router`'s own keys, and the card's raw-fields
- *   disclosure exists only for a `$type` this table does not know.
+ *   `$type`, those 14 types' fields and `m_router`'s own keys. The one exception is
+ *   `ResActorDialog`, whose `m_dialog` is **deliberately unowned** and therefore reaches the
+ *   card's raw-fields disclosure — which is the honest rendering for a nested dialog block this
+ *   module has no control for (D79).
  * - **The wrapper is `{"m_results": [...]}` with NO `$type`** — measured in **2206 of
  *   2206** wrappers, each holding exactly that one key (322 `m_startResults` + 322
  *   `m_endResults` + 772 `m_completeResults` + 772 `m_activateResults` + 18
@@ -207,7 +209,7 @@ export const NPCS_SOURCE_LABEL = 'NPCs';
 /** The dual-source group's accessible-name stem (`m_templateID source <address>`). */
 export const NAME_SOURCE_LABEL = 'source';
 
-/** The new node's default class — the commonest result (317 of 381 corpus nodes). */
+/** The new node's default class — the commonest result (323 of 421 corpus nodes at f9a1055). */
 export const DEFAULT_RESULT_TYPE: ResultShortTypeName = 'ResDropTable';
 
 /* ------------------------------------------------------------- type specs */
@@ -262,6 +264,16 @@ export interface ResultTypeSpec {
    * the domain reference lists its fields in) — the saved shape wins.
    */
   fields: readonly ResultFieldSpec[];
+  /**
+   * `true` for a class the corpus carries but this editor must **not offer to create**
+   * ({@link resultTypeSelectOptions} skips it): `ResActorDialog`, whose every measured node
+   * carries a nested `m_dialog` this module owns no control for. A *new* node would therefore
+   * be `{$type}` alone — a shape the corpus has never had — which is the same
+   * shape-invention rule a new dialog group follows (it carries one entry because 0 of 774
+   * groups is empty). The class still **resolves**: an existing node renders its title and its
+   * raw `m_dialog` disclosure, and nothing about it is rewritten (D79/D57).
+   */
+  corpusOnly?: boolean;
 }
 
 /** The `m_router` sub-object's key in a `ResPlaySound` node. */
@@ -301,8 +313,9 @@ export const SOUND_ROUTER_FIELD_SPECS: readonly ResultFieldSpec[] = [
 ];
 
 /**
- * The 14 result classes (docs/spec-domain-reference.md L354-412) in the reference's own
- * order, each with the fields the corpus actually carries in the order it carries them.
+ * The 15 result classes (docs/spec-domain-reference.md L354-412, plus the corpus-only
+ * `ResActorDialog` appended — D79) in the reference's own order, each with the fields the corpus
+ * actually carries in the order it carries them.
  *
  * `ResDrawHand.m_templateID`'s two sources are the module header's ambiguity: the corpus
  * splits 6/2 between `spells` and `npcs` and the domain reference names only NPCs, so the
@@ -589,6 +602,32 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
       },
     ],
   },
+  /**
+   * `ResActorDialog` — the corpus-only 15th class (D79; the spec's L354-412 list has 14 and
+   * this baseline's corpus carries 5 of these, in 3 quests).
+   *
+   * Its measured shape is `{$type, m_dialog}`, where `m_dialog` is a **nested typed dialog
+   * block** (`ActorDialogSchema`: `$type, m_dialogTag, m_dialogEntries, m_madlibs,
+   * m_dialogEvents, m_noAggroWhileDialogIsUp, m_noAggroNoDelay`).
+   *
+   * **`fields` is deliberately empty.** The dialog block has no control in this module — the
+   * dialog editor's own model (`lib/quest-dialog.ts`) owns dialog nodes, and the block's
+   * `m_dialogEntries` are full 66-key `NPCDialogEntry` nodes — so claiming `m_dialog` as one of
+   * *this* spec's fields would either need a new field kind with a renderer nobody has built, or
+   * invite a text control that could overwrite an object with a string. Leaving it unowned puts
+   * the whole `m_dialog` value in the card's existing **raw-fields disclosure**
+   * ({@link rawResultFields}), which renders it verbatim, read-only, and never writes it: the
+   * node survives a save untouched, and the user can see exactly what is there
+   * (D57 — acknowledge, never normalise; a control for this sub-tree is editor work, not a
+   * baseline re-measure).
+   */
+  {
+    shortName: 'ResActorDialog',
+    label: 'ResActorDialog',
+    $type: RESULT_TYPES.ResActorDialog,
+    fields: [],
+    corpusOnly: true,
+  },
 ];
 
 /**
@@ -811,7 +850,7 @@ export function resultSelectOptions(
 
 /** The 14 classes, in the domain reference's order (the Add selector's vocabulary). */
 export function resultTypeSelectOptions(): ResultSelectOption[] {
-  return RESULT_TYPE_SPECS.map((spec) => ({
+  return RESULT_TYPE_SPECS.filter((spec) => spec.corpusOnly !== true).map((spec) => ({
     value: spec.shortName,
     label: spec.label,
     unlisted: false,

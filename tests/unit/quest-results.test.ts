@@ -30,6 +30,7 @@ import {
   newSoundRouter,
   RAW_FIELDS_LABEL,
   readResultCards,
+  rawResultFields,
   REQUIREMENTS_KEY,
   resultField,
   resultFieldPath,
@@ -77,10 +78,12 @@ import {
  * The `$type` literals are **spelled out in full** rather than imported, so the test cannot
  * prove the model agrees with itself.
  *
- * The measured corpus facts (381 result nodes over the four homes; ResDropTable 317,
- * ResLearnSpell 21, ResAddDynaMod 13, ResGiveSpell 10, ResDrawHand 8, ResPostEvent 3,
- * ResAddSpell 2 and one each of the other seven) are re-measured by the sweep at the
- * bottom, which is skipped with an explicit reason when no corpus exists on the machine.
+ * The measured corpus facts — re-measured at the owner's `f9a1055` baseline (D79): **421**
+ * result nodes (was 381); ResDropTable 323, ResAddDynaMod 34, ResLearnSpell 21, ResGiveSpell 10,
+ * ResDrawHand 8, ResTeleport 8, **ResActorDialog 5** (the corpus-only class), ResPostEvent 3,
+ * ResPlaySound 2, ResAddSpell 2, and one each of ResAddHealth/ResAddMana/ResModifyEntry/
+ * ResDespawn/ResWait — are re-measured by the sweep at the bottom, which is skipped with an
+ * explicit reason when no corpus exists on the machine.
  */
 
 /* ------------------------------------------------------------- fixtures */
@@ -117,12 +120,15 @@ const LITERALS: Record<ResultShortTypeName, string> = {
   ResPlaySound: RSOUND,
   ResTeleport: RTELE,
   ResWait: RWAIT,
+  // The corpus-only class (D79), spelled out exactly as the grep prints it.
+  ResActorDialog: 'Imcodec.ObjectProperty.TypeCache.ResActorDialog, Imcodec.ObjectProperty',
 };
 
 /**
- * The **exact field set, in the corpus's own key order**, for each of the 14 classes —
+ * The **exact field set, in the corpus's own key order**, for each of the **15** classes —
  * hand-written from the measured key orders. `ResModifyEntry` is the one whose corpus
- * order differs from the domain reference's prose order.
+ * order differs from the domain reference's prose order, and `ResActorDialog` is the
+ * corpus-only 15th class (D79).
  */
 const EXPECTED_ORDER: Record<ResultShortTypeName, string[]> = {
   ResDropTable: ['$type', 'm_tableName', 'm_maxRolls'],
@@ -154,6 +160,9 @@ const EXPECTED_ORDER: Record<ResultShortTypeName, string[]> = {
     'm_transitionID',
   ],
   ResWait: ['$type', 'm_secondsToWait'],
+  // The corpus-only class: `{$type, m_dialog}` in all 5 measured nodes, the nested `m_dialog`
+  // being the typed dialog block (`ActorDialog`, 7 keys) that the module owns no field for.
+  ResActorDialog: ['$type', 'm_dialog'],
 };
 
 /** The friendly-name source(s) of every ID field — the AC's per-field dropdown fact. */
@@ -213,11 +222,15 @@ function docWithOne(node: unknown): Record<string, unknown> {
 
 const START: DocPath = [START_RESULTS_PATH];
 
-/* ------------------------------------------------------- the 14 classes */
+/* ------------------------------------------------------- the 15 classes */
 
-describe('the 14 result classes', () => {
-  it('is exactly the constant table’s 14 classes, character-for-character', () => {
-    expect(RESULT_TYPE_SPECS).toHaveLength(14);
+describe('the 15 result classes', () => {
+  it('is exactly the constant table’s 15 classes, character-for-character', () => {
+    // The spec's 14 plus the corpus-only ResActorDialog (D79).
+    expect(RESULT_TYPE_SPECS).toHaveLength(15);
+    expect(
+      RESULT_TYPE_SPECS.filter((spec) => spec.corpusOnly === true).map((s) => s.shortName),
+    ).toEqual(['ResActorDialog']);
     expect(RESULT_TYPE_SPECS.map((spec) => spec.shortName)).toEqual(Object.keys(RESULT_TYPES));
     for (const spec of RESULT_TYPE_SPECS) {
       expect(spec.$type, spec.shortName).toBe(RESULT_TYPES[spec.shortName]);
@@ -231,7 +244,10 @@ describe('the 14 result classes', () => {
   });
 
   it('gives every class exactly its measured field set, in the measured key order', () => {
-    for (const spec of RESULT_TYPE_SPECS) {
+    // The corpus-only class is excluded here and pinned separately below: its node's second key
+    // (`m_dialog`) is deliberately unowned, so `newResultObject` writes `$type` alone — which is
+    // why it is not offered as a new node.
+    for (const spec of RESULT_TYPE_SPECS.filter((candidate) => candidate.corpusOnly !== true)) {
       expect(
         spec.fields.map((field) => field.key),
         spec.shortName,
@@ -247,6 +263,24 @@ describe('the 14 result classes', () => {
     expect(newResultObject('ResAddMana')).toEqual({ $type: RMANA });
     expect(specOf('ResAddHealth').fields).toEqual([]);
     expect(specOf('ResAddMana').fields).toEqual([]);
+  });
+
+  it('resolves the corpus-only ResActorDialog and discloses its nested dialog read-only', () => {
+    const spec = specOf('ResActorDialog');
+    expect(spec.corpusOnly).toBe(true);
+    expect(spec.fields).toEqual([]);
+    // Its measured shape is `{$type, m_dialog}`, and `m_dialog` is unowned → raw disclosure.
+    const node = {
+      $type: spec.$type,
+      m_dialog: { $type: TYPE_STRINGS.ActorDialog, m_dialogTag: 'Hyperlink', m_dialogEntries: [] },
+    };
+    const card = readResultCards(START, { m_results: [node] })[0];
+    expect(card.spec?.shortName).toBe('ResActorDialog');
+    expect(card.fields).toEqual([]);
+    expect(Object.keys(rawResultFields(node))).toEqual(['m_dialog']);
+    // It is not offered as a new node: creating one would write `{$type}` with no `m_dialog`,
+    // a shape the corpus has never had.
+    expect(resultTypeSelectOptions().map((option) => option.value)).not.toContain('ResActorDialog');
   });
 
   it('lists every friendly-name field against the table the corpus measures it in', () => {
@@ -422,13 +456,15 @@ describe('reading a result wrapper', () => {
 /* ------------------------------------------------------------- selectors */
 
 describe('the selectors', () => {
-  it('offers the 14 classes in the reference’s order with the short name as the value', () => {
+  it('offers the 14 creatable classes in the reference’s order with the short name as the value', () => {
     const options = resultTypeSelectOptions();
+    // The spec's 14 — `ResActorDialog` resolves but is not offered (no control for `m_dialog`).
     expect(options.map((option) => option.value)).toEqual(
-      RESULT_TYPE_SPECS.map((spec) => spec.shortName),
+      RESULT_TYPE_SPECS.filter((spec) => spec.corpusOnly !== true).map((spec) => spec.shortName),
     );
     expect(options.every((option) => !option.unlisted)).toBe(true);
     expect(options).toHaveLength(14);
+    expect(options.map((option) => option.value)).toEqual(Object.keys(RESULT_TYPES).slice(0, 14));
   });
 
   it('keeps a value the listed options do not contain and leads with — when unset', () => {
@@ -705,7 +741,9 @@ describe('validate, never normalise (D57)', () => {
   it('never adds a $type to the wrapper and never reorders its keys', () => {
     const doc: Record<string, unknown> = { m_startResults: { m_results: [] } };
     let edited: unknown = doc;
-    for (const type of RESULT_TYPE_SPECS) {
+    // The creatable classes: `ResActorDialog` resolves but is not offered as a new node (its
+    // `m_dialog` is unowned, so a new node would be a shape the corpus never has).
+    for (const type of RESULT_TYPE_SPECS.filter((spec) => spec.corpusOnly !== true)) {
       edited = applyEdits(
         edited,
         addResultEdits(
@@ -720,11 +758,12 @@ describe('validate, never normalise (D57)', () => {
     const wrapper = getAtPath(editedRecord, START) as object;
     expect(Object.keys(wrapper)).toEqual(['m_results']);
     expect(hasAtPath(wrapper, ['$type'])).toBe(false);
+    const creatable = RESULT_TYPE_SPECS.filter((spec) => spec.corpusOnly !== true);
     const items = getAtPath(editedRecord, resultItemsPath(START)) as Array<Record<string, unknown>>;
     expect(items).toHaveLength(14);
     items.forEach((node, index) => {
-      expect(Object.keys(node), RESULT_TYPE_SPECS[index]?.shortName).toEqual(
-        EXPECTED_ORDER[RESULT_TYPE_SPECS[index]?.shortName as ResultShortTypeName],
+      expect(Object.keys(node), creatable[index]?.shortName).toEqual(
+        EXPECTED_ORDER[creatable[index]?.shortName as ResultShortTypeName],
       );
     });
   });
@@ -970,7 +1009,7 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of result nodes', (
       }
     }
 
-    // The sweep is not vacuous, and all 14 forms are exercised by the corpus.
+    // The sweep is not vacuous, and all 15 classes are exercised by the corpus.
     expect(files).toBeGreaterThan(0);
     expect(wrappers).toBeGreaterThan(0);
     expect(nodes).toBeGreaterThan(0);
@@ -980,20 +1019,27 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of result nodes', (
     expect(counts.get('ResDropTable')).toBeGreaterThan(0);
 
     // The measured totals, asserted against the real checkout when it exists (CI has only
-    // the clone, which is why this is conditional rather than a hard 381).
+    // the clone, which is why this is conditional rather than a hard number).
     if (existsSync(REAL_QUEST_DIR)) {
-      expect(realNodes).toBe(381);
-      expect(realCounts.get('ResDropTable')).toBe(317);
+      // Re-measured at the owner's f9a1055 baseline (D79). 381 before the merge; the whole
+      // delta is ResActorDialog +5, ResDropTable 317→323, ResAddDynaMod 13→34,
+      // ResTeleport 1→8, ResPlaySound 1→2.
+      expect(realNodes).toBe(421);
+      expect(realCounts.get('ResActorDialog')).toBe(5);
+      expect(realCounts.get('ResDropTable')).toBe(323);
       expect(realCounts.get('ResLearnSpell')).toBe(21);
-      expect(realCounts.get('ResAddDynaMod')).toBe(13);
+      expect(realCounts.get('ResAddDynaMod')).toBe(34);
       expect(realCounts.get('ResGiveSpell')).toBe(10);
       expect(realCounts.get('ResDrawHand')).toBe(8);
       expect(realCounts.get('ResPostEvent')).toBe(3);
       expect(realCounts.get('ResAddSpell')).toBe(2);
+      expect(realCounts.get('ResTeleport')).toBe(8);
+      expect(realCounts.get('ResPlaySound')).toBe(2);
     }
     console.log(
       `[p3-07 corpus] ${files} files, ${wrappers} wrappers (${wrappersWithType} tagged), ` +
-        `${nodes} result nodes (${realNodes} in the real checkout, all 14 types present), ` +
+        `${nodes} result nodes (${realNodes} in the real checkout, all 15 types present, ` +
+        `ResActorDialog ${realCounts.get('ResActorDialog')}), ` +
         `ResDropTable ${realCounts.get('ResDropTable')}, ResLearnSpell ` +
         `${realCounts.get('ResLearnSpell')}, ${routers} router sub-objects — key order and ` +
         `bytes identical to both corpora`,

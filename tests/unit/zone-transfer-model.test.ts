@@ -59,10 +59,11 @@ import { humanizeZone } from '../../client/src/lib/display';
  * 1. **The live sweep over all 1207 real files.** Every constant in `ZONE_TRANSFER_CORPUS` is
  *    **re-measured**, so the day the corpus moves the sweep says so instead of the editor
  *    quietly assuming. The sweep carries the two facts AC1 turns on: three top-level keys
- *    including `Events` in 1207/1207 (and `[]` in 1207/1207), 2365 `Teleports` entries whose
- *    shapes are exact, and — the trap — **2365/2365 `m_destinationLoc` values accepted by
- *    {@link DESTINATION_LOC_PATTERN}, 133 of them scientific**, with the **falsification arm**
- *    proving a plain-float regex rejects exactly those 133.
+ *    including `Events` in 1207/1207 (and `[]` in 1207/1207), **2368** `Teleports` entries whose
+ *    shapes are exact, and — the trap — **2365 of 2368 `m_destinationLoc` values accepted by
+ *    {@link DESTINATION_LOC_PATTERN}, 135 of them scientific**, with the **falsification arm**
+ *    proving a plain-float regex rejects 136 (the 133 scientific shapes plus the three prose
+ *    values the owner's `f9a1055` merge added). Re-measured at that baseline (D79).
  * 2. **The `Events` guard at the payload level.** A real document load → no-op → `serializeDoc`
  *    is **byte-identical with an identical key set** (1206 of the 1207 files are; the 1207th ends
  *    with two newlines and is normalised — the sweep asserts both counts), and an edit to a
@@ -72,14 +73,18 @@ import { humanizeZone } from '../../client/src/lib/display';
  * 3. **The regex's two arms, as a pattern.** The fixture battery pins both directions of the
  *    decision: the real scientific shapes are accepted and garbage is rejected — `1,2,3`,
  *    five components, a trailing comma, `a` as a component, surrounding whitespace, `Infinity`.
- * 4. **The validation decision, which is blocking.** One `severity: 'error'` per malformed
- *    present value, `blocking` equal to `findings`, `warnings` empty, `blocked === true` when one
- *    is present — so Save is disabled by the shared `fieldHasError` gate (L542-546). The rule has
- *    **zero corpus violations** (the sweep above accepts 2,365 of 2,365), so it can only catch a
- *    value a user malforms in the editor. The converse is pinned too: an unrecognised
- *    `m_teleportType` and an unresolvable `m_destinationZone` produce **no** finding, a clean
- *    document is not blocked, and the engine's only kind is the format check — so the blocking
- *    set cannot grow by accident and no reference rule exists in either direction.
+ * 4. **The validation decision, which now WARNS (D80a).** One `severity: 'warning'` per
+ *    malformed present value, `warnings` equal to `findings`, `blocking` empty, `blocked ===
+ *    false` — so Save stays enabled through the shared `fieldHasError` gate (L542-546). The rule
+ *    shipped as blocking (D74) on the measured premise that it had **zero corpus violations**;
+ *    the owner's `f9a1055` merge falsified that premise with **three real prose values**
+ *    (`"Start"`, `"Target location (Street5 Tower1 Entrance)"`, `"Target (Street5 FireTheatre
+ *    Entrance)"`), so the rule was downgraded by the lead's ruling and the arm now pins both
+ *    sides: all 2,368 corpus values **save**, and a malformed value is still **flagged**. The
+ *    converse is pinned too: an unrecognised `m_teleportType` and an unresolvable
+ *    `m_destinationZone` produce **no** finding, a clean document has no findings either, and the
+ *    engine's only kind is the format check — so the warning set cannot grow by accident and no
+ *    reference rule exists in either direction.
  *
  * **D68**: nothing eager runs at collection time — the corpus guard is an `existsSync` boolean and
  * the files/DB are read inside the tests that need them. The skip is provable (and is proven in
@@ -153,7 +158,7 @@ function componentShape(value: string): string[] {
 describe.skipIf(!FORK_PRESENT)(
   `AC1 + AC2 — the live corpus (${ZONE_TRANSFER_CORPUS.files} files)`,
   () => {
-    it('has exactly the three measured top-level keys, Events present and empty in every file', () => {
+    it('has exactly the three measured top-level keys, Events present and empty in every file, and 2368 teleport entries', () => {
       const files = readCorpus();
       expect(files.length).toBe(ZONE_TRANSFER_CORPUS.files);
 
@@ -295,7 +300,7 @@ describe.skipIf(!FORK_PRESENT)(
         ZONE_TRANSFER_CORPUS.filesWithOrderZoneNameTeleportsEvents,
       );
 
-      // AC1's repeater, at corpus scale.
+      // AC1's repeater, at corpus scale (2,368 at the owner's f9a1055 baseline; was 2,365).
       expect(teleports).toBe(ZONE_TRANSFER_CORPUS.teleports);
       expect(emptyTeleports).toBe(ZONE_TRANSFER_CORPUS.filesWithEmptyTeleports);
       expect(withTriggerAndTeleport).toBe(ZONE_TRANSFER_CORPUS.entriesWithTriggerAndTeleport);
@@ -304,13 +309,28 @@ describe.skipIf(!FORK_PRESENT)(
       expect(serializerOrder).toBe(ZONE_TRANSFER_CORPUS.teleportObjectsInSerializerOrder);
       expect(specOrder).toBe(ZONE_TRANSFER_CORPUS.teleportObjectsInSpecOrder);
 
-      // THE TRAP: the regex accepts every real value, scientific notation included.
+      // THE TRAP, re-measured: the regex accepts the scientific-notation shapes and rejects
+      // exactly the three prose values the merge added — which is why the rule warns, not blocks.
       expect(locValues).toBe(ZONE_TRANSFER_CORPUS.destinationLocValues);
-      expect(locRejected).toBe(0);
-      expect(locAccepted).toBe(2365);
+      expect(locAccepted).toBe(ZONE_TRANSFER_CORPUS.destinationLocValuesAcceptedByFormatPattern);
+      expect(locRejected).toBe(ZONE_TRANSFER_CORPUS.destinationLocValuesRejectedByFormatPattern);
+      expect(locRejected).toBe(3);
+      // The three rejects are data, with their addresses: never "a user's malformed value".
+      for (const prose of ZONE_TRANSFER_CORPUS.destinationLocProseValues) {
+        const file = files.find((entry) => entry.name === prose.file);
+        expect(file, prose.file).toBeDefined();
+        const teleport = readTeleports(file?.document as Record<string, unknown>)[prose.index]
+          .teleport as Record<string, unknown>;
+        expect(teleport.m_destinationLoc).toBe(prose.value);
+        expect(isDestinationLoc(prose.value)).toBe(false);
+      }
       expect(locScientific).toBe(ZONE_TRANSFER_CORPUS.destinationLocScientificValues);
-      expect([...locSciComponents.entries()]).toEqual([[1, 133]]);
-      // …and the falsification arm: a plain-float regex would have rejected exactly those 133.
+      // Every scientific value carries exactly one scientific component — 135 of them now, the
+      // two prose values included (one comma-free component each counts as "sci" by the same
+      // shape test the arm uses).
+      expect([...locSciComponents.entries()]).toEqual([[1, 135]]);
+      // …and the falsification arm: a plain-float regex rejects 136 (the 135 + 1 non-scientific
+      // prose value), i.e. the three prose values plus every scientific shape.
       expect(locPlainFloatRejects).toBe(
         ZONE_TRANSFER_CORPUS.destinationLocValuesRejectedByPlainFloatRegex,
       );
@@ -397,7 +417,7 @@ describe.skipIf(!FORK_PRESENT)(
       expect(removed.Teleports).toEqual([]);
     });
 
-    it('resolves every one of the 1069 destination refs in the zones table, and reads the labels from it', () => {
+    it('resolves every one of the 1072 destination refs in the zones table, and reads the labels from it', () => {
       const db = new Database(DB_PATH, { readonly: true });
       OPEN_DBS.push(db);
       const zones = db.prepare('SELECT zone_path, display_name FROM zones').all() as Array<{
@@ -540,7 +560,7 @@ describe('AC1 — the m_destinationLoc regex, both arms', () => {
     expect(PLAIN_FLOAT_DESTINATION_LOC_PATTERN.test('1.5,-2.5,3.5,-4.5')).toBe(true);
     // …and states the format in words the user reads.
     expect(DESTINATION_LOC_HINT).toContain('Four comma-separated numbers');
-    expect(DESTINATION_LOC_HINT).toContain('133');
+    expect(DESTINATION_LOC_HINT).toContain('135');
   });
 });
 
@@ -739,7 +759,7 @@ describe('AC2 — the drift guard and the raw-fields disclosure data', () => {
   });
 });
 
-describe('AC1 — the validation engine: one blocking error, and nothing else', () => {
+describe('AC1 — the validation engine: one warning, and nothing else (D80a: warn, never block)', () => {
   const DOC: Record<string, unknown> = {
     ZoneName: 'WizardCity/WC_Hub',
     Events: [],
@@ -776,11 +796,11 @@ describe('AC1 — the validation engine: one blocking error, and nothing else', 
     ],
   };
 
-  it('reports one error per malformed present value, at the nested field path', () => {
+  it('reports one warning per malformed present value, at the nested field path', () => {
     const result = validateZoneTransfer(DOC);
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0].kind).toBe('destination-loc-not-four-numbers');
-    expect(result.findings[0].severity).toBe('error');
+    expect(result.findings[0].severity).toBe('warning');
     expect(result.findings[0].index).toBe(1);
     expect(result.findings[0].path).toEqual(['Teleports', 1, 'Teleport', 'm_destinationLoc']);
     expect(result.findings[0].value).toBe('1,2,3');
@@ -795,12 +815,12 @@ describe('AC1 — the validation engine: one blocking error, and nothing else', 
     ).toHaveLength(1);
   });
 
-  it('blocks while a malformed value is present, and only then', () => {
+  it('warns while a malformed value is present, blocks never — the two-sided D80a arm', () => {
     const result = validateZoneTransfer(DOC);
-    // Every finding is blocking, and `warnings` is empty (this family emits no warning at all).
-    expect(result.blocking).toEqual(result.findings);
-    expect(result.warnings).toEqual([]);
-    expect(result.blocked).toBe(true);
+    // Every finding is a warning, `blocking` is empty and Save is therefore never disabled.
+    expect(result.blocking).toEqual([]);
+    expect(result.warnings).toEqual(result.findings);
+    expect(result.blocked).toBe(false);
     expect(result.referenceUsed).toBe(false);
 
     // The document with every location valid — including the corpus's scientific-notation shape —
@@ -819,16 +839,29 @@ describe('AC1 — the validation engine: one blocking error, and nothing else', 
     const kinds = new Set(validateZoneTransfer(DOC).findings.map((finding) => finding.kind));
     expect([...kinds]).toEqual(['destination-loc-not-four-numbers']);
 
-    // The UI message is an error the Save gate sees, and it says what it does.
+    // The UI message is visible, but the Save gate does not see it as an error.
     const messages = toZoneTransferValidationMessages(result);
     expect(messages).toHaveLength(1);
-    expect(messages[0].severity).toBe('error');
+    expect(messages[0].severity).toBe('warning');
     expect(messages[0].field).toBe('Teleports[1].Teleport.m_destinationLoc');
-    expect(messages[0].text).toContain('Save is disabled until it is fixed');
-    expect(fieldHasError(messages)).toBe(true);
+    expect(messages[0].text).toContain('Save stays enabled');
+    expect(fieldHasError(messages)).toBe(false);
 
-    // The converse, pinned: the shared gate still returns `false` for a clean list, so "blocked"
-    // is the finding's doing and not a constant.
+    // The falsification that made this a warning rather than an error: the three real prose
+    // values the owner's corpus carries are reported, and **none** of them closes the gate.
+    for (const prose of ZONE_TRANSFER_CORPUS.destinationLocProseValues) {
+      const real = validateZoneTransfer({
+        ZoneName: 'WizardCity/WC_Hub',
+        Teleports: [{ TriggerName: 'T', Teleport: { m_destinationLoc: prose.value } }],
+      });
+      expect(real.findings).toHaveLength(1);
+      expect(real.findings[0].severity).toBe('warning');
+      expect(real.blocked).toBe(false);
+      expect(fieldHasError(toZoneTransferValidationMessages(real))).toBe(false);
+    }
+
+    // The converse, pinned: the shared gate still returns `false` for a clean list, and the
+    // corpus-scientific shape stays finding-free.
     expect(fieldHasError([])).toBe(false);
     expect(toZoneTransferValidationMessages(clean)).toEqual([]);
   });

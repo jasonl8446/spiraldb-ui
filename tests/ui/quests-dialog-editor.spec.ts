@@ -32,7 +32,9 @@ import { mockQuestsApi } from './quests-mocks';
  * - the numeric `m_cameraHidePlayers` select keeps an unlisted value selected.
  *
  * Coverage honesty: the fixture's field *values* are largely synthetic (the corpus's own
- * `m_requirements` is null in 1706/1706 and only a handful of fields carry content), while the
+ * `m_requirements` is null on every one of the 1,882 corpus entries that carry the key (of 1,884 at
+ * the owner's f9a1055 baseline; 1,706/1,706 before, D79) and only a handful of fields carry
+ * content), while the
  * **key sets, key orders, `$type` literals, tags and the two sparse shapes are the measured
  * ones** and are hand-written below rather than imported from the app.
  */
@@ -603,7 +605,7 @@ test.describe('the entry actions', () => {
     expect(group.m_dialogEvents).toBeNull();
     expect(group.m_noAggroWhileDialogIsUp).toBe(false);
     expect(group.m_noAggroNoDelay).toBe(false);
-    // 0 of the 739 corpus groups has an empty m_dialogEntries, so a new group carries one entry
+    // 0 of the 774 corpus groups has an empty m_dialogEntries, so a new group carries one entry
     // rather than a shape the corpus has never had.
     expect(Object.keys(entryOf(doc, 2, 0))).toEqual(ENTRY_ORDER);
   });
@@ -922,7 +924,9 @@ test.describe('the m_requirements slot', () => {
       exact: true,
     });
     await expect(tree).toBeVisible();
-    await expect(questCard.getByText(/null on all 1706 corpus entries/)).toBeVisible();
+    await expect(
+      questCard.getByText(/null on all 1882 corpus entries that carry the key/),
+    ).toBeVisible();
 
     // The first Add writes the shared tree's own wrapper — the corpus never carries one, so
     // this is the fixture-only path and it must not disturb the entry around it.

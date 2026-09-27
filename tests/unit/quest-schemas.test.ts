@@ -149,7 +149,7 @@ describe('the discriminated unions resolve on $type', () => {
     }
   });
 
-  it('resolves each of the 14 result classes', () => {
+  it('resolves each of the 15 result classes', () => {
     const results = [
       TYPE_STRINGS.ResDropTable,
       TYPE_STRINGS.ResModifyEntry,
@@ -165,8 +165,11 @@ describe('the discriminated unions resolve on $type', () => {
       TYPE_STRINGS.ResPlaySound,
       TYPE_STRINGS.ResTeleport,
       TYPE_STRINGS.ResWait,
+      // The corpus-only 15th class (D79): absent from the spec's list, present 5 times in the
+      // owner's corpus, always `{$type, m_dialog}`.
+      TYPE_STRINGS.ResActorDialog,
     ];
-    expect(results).toHaveLength(14);
+    expect(results).toHaveLength(15);
     for (const $type of results) {
       const result = ResultTemplateSchema.safeParse({ $type });
       expect(result.success, `result ${$type}`).toBe(true);
@@ -472,17 +475,20 @@ describe('the POST /api/quests request schema', () => {
 
 /**
  * The corpus-wide claim ("schemas must accept every corpus value") is asserted against the
- * live checkout when it is present — 322 JSON5 files, no fixtures — and skipped with a reason
- * otherwise (CI has no sibling repository; task 3.2 owns the committed-fixture round-trip).
+ * live checkout when it is present — **328** files (322 before the owner's `f9a1055` merge, D79),
+ * no fixtures — and skipped with a reason otherwise (CI has no sibling repository; task 3.2 owns
+ * the committed-fixture round-trip). This arm is what proves the schema extension: the 3 quests
+ * carrying `ResActorDialog`/`ActorDialog` parse, and the 2 dialog entries with **no `$type`**
+ * parse after `NPCDialogEntrySchema.$type` was relaxed to `.nullish()`.
  */
 const CORPUS_DIR =
   process.env.SPIRALDB_QUEST_CORPUS ?? path.join(DEFAULT_SPIRALDB_PATH, 'QuestTemplates');
 const CORPUS_PRESENT = existsSync(CORPUS_DIR);
 
 describe.skipIf(!CORPUS_PRESENT)('the live corpus (owner run)', () => {
-  it('accepts all 322 corpus quests and loses nothing on parse', () => {
+  it('accepts all 328 corpus quests and loses nothing on parse', () => {
     const quests = readdirSync(CORPUS_DIR).filter((file) => file.endsWith('.json'));
-    expect(quests).toHaveLength(322);
+    expect(quests).toHaveLength(328);
 
     const rejected: string[] = [];
     const changed: string[] = [];

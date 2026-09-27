@@ -1,0 +1,71 @@
+# p4-79 gate — lead-run on 09ca64e + the story tree
+# started 2026-09-27T13:01:10-04:00
+=== 1. npm test
+$ npm test
+   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  338ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  471ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  694ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  584ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  450ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  406ms
+
+ Test Files  57 passed (57)
+      Tests  1311 passed (1311)
+   Start at  13:01:11
+   Duration  8.35s (transform 7.07s, setup 0ms, collect 24.27s, tests 61.52s, environment 23ms, prepare 7.62s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+Error: http://localhost:5173/api/status/_import is already used, make sure that nothing is running on the port/url or set reuseExistingServer:true in config.webServer.
+
+--- rc=1
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-FBSyqtm2.css                  34.56 kB │ gzip:   7.27 kB
+dist/assets/QuestGoalLogicEditor-D5extTkK.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-JxTSifgK.js                  748.53 kB │ gzip: 222.44 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.88s
+--- rc=0
+
+# finished 2026-09-27T13:01:41-04:00

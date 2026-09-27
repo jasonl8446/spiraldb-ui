@@ -23,6 +23,8 @@ import {
   ADD_DIALOG_TAG_LABEL,
   DIALOG_ACCORDIONS,
   DIALOG_ENTRY_FIELD_SPECS,
+  DIALOG_ENTRY_KEY_ORDER,
+  DIALOG_ENTRY_KEY_SHAPES,
   DIALOG_SELECT_UNSET_LABEL,
   EMPTY_TAG_LABEL,
   KNOWN_ENTRY_KEYS,
@@ -78,13 +80,19 @@ import {
  * applied to real documents through `applyEdits` so the assertions are about documents rather
  * than intermediate objects.
  *
- * The `$type` literals and the 66-key order are **spelled out in full** rather than imported,
- * so the test cannot prove the model agrees with itself.
+ * The `$type` literals and the 66-key order are **spelled out in full** rather than imported —
+ * and the arm below asserts they equal the model's own {@link DIALOG_ENTRY_KEY_ORDER} and
+ * {@link DIALOG_ENTRY_KEY_SHAPES}, so the test cannot prove the model agrees with itself while
+ * the model still cannot disagree with the measurement (D79).
  *
- * The measured corpus facts (322 files, 767 lists, 739 tag groups, 1706 entries, the three
- * entry shapes 1698/6/2, 43 empty lists, tags Completion 418 / Prep 316 / "" 5) are
- * re-measured by the sweep at the bottom, which prints an explicit reason and skips when no
- * corpus exists on the machine (CI has no corpus — the `quest-roundtrip.test.ts` pattern).
+ * The measured corpus facts (**328** files, **797** lists, **769** list-mounted tag groups out
+ * of the corpus's 774, **1876** entries in those groups — 1884 with the 5 typed `ActorDialog`
+ * blocks, which the results sweep owns — the **five** entry shapes 1860/7/6/2/1, 43 empty lists,
+ * tags Completion 442 / Prep 322 / "" 5 / Hyperlink 5) are re-measured at the owner's `f9a1055`
+ * baseline (D79; the 322-file numbers were 767/739/1706 in three shapes 1698/6/2 and tags
+ * 418/316/5). The sweep at the bottom does the measuring and prints the numbers; it skips with an
+ * explicit reason when no corpus exists on the machine (CI has no corpus — the
+ * `quest-roundtrip.test.ts` pattern).
  */
 
 /* ------------------------------------------------------------- fixtures */
@@ -165,7 +173,7 @@ const FULL_ORDER = [
   'm_displayButtonsOnTimedDialog',
 ];
 
-/** The 6-key sparse order's missing keys (`WC-TRITON-MAIN-002` / `-009`). */
+/** The 6-key sparse order's missing keys (`WC-TRITON-MAIN-002`; was two entries). */
 const MISSING_60 = [
   'm_personaName',
   'm_nameOverride',
@@ -200,17 +208,34 @@ const MISSING_45 = [
   'm_displayButtonsOnTimedDialog',
 ];
 
-/** The documented entry shapes, hand-written from the measurement. */
-const SHAPE_FULL = FULL_ORDER;
-const SHAPE_60 = FULL_ORDER.filter((key) => !MISSING_60.includes(key));
-const SHAPE_45 = FULL_ORDER.filter((key) => !MISSING_45.includes(key));
 /**
- * The fourth shape, measured in the **D17 clone** only: 65 keys with `m_requirements`
- * omitted, in the two files this tool itself wrote (`WC-CYCLOPS-MAIN-002`,
- * `WC-UNICORN-MAIN-004`) — the `NullValueHandling.Ignore` shape D57(a) names. Their tag
- * groups likewise omit the null-valued `m_dialogEvents` ({@link GROUP_ORDER_NULL_OMITTED}).
+ * The **documented entry shapes**. The key lists live in the model
+ * (`lib/quest-dialog.ts`'s {@link DIALOG_ENTRY_KEY_SHAPES}, one home for every measured key
+ * list, count and provenance address — D79); this test keeps its own hand-written
+ * {@link FULL_ORDER} and asserts the two are equal, so the model cannot silently disagree with
+ * the corpus's own order, and the sweep below then checks every real entry against them.
  */
-const SHAPE_65 = FULL_ORDER.filter((key) => key !== 'm_requirements');
+function moduleShape(name: string): readonly string[] {
+  const shape = DIALOG_ENTRY_KEY_SHAPES.find((candidate) => candidate.name === name);
+  expect(shape, name).toBeDefined();
+  return (shape as { keys: readonly string[] }).keys;
+}
+
+/** The full shape is the test's own pin (see the header). */
+const SHAPE_FULL = FULL_ORDER;
+/** The 65-key shape with the null-valued `m_dialogEvent` omitted (new at `f9a1055`). */
+const SHAPE_NO_DIALOG_EVENT = moduleShape('noDialogEvent65');
+const SHAPE_60 = moduleShape('sparse60');
+const SHAPE_45 = moduleShape('truncated45');
+/**
+ * The shape measured in the **D17 clone** only: 65 keys with `m_requirements` omitted, in the
+ * two files this tool itself wrote (`WC-CYCLOPS-MAIN-002`, `WC-UNICORN-MAIN-004`) — the
+ * `NullValueHandling.Ignore` shape D57(a) names. Their tag groups likewise omit the null-valued
+ * `m_dialogEvents` ({@link GROUP_ORDER_NULL_OMITTED}).
+ */
+const SHAPE_65 = moduleShape('nullOmitted65');
+/** The 58-key shape with no `$type`, no persona prefix and no `m_requirements` (new). */
+const SHAPE_58 = moduleShape('sparse58NoType');
 
 /** The corpus's own 6-key group order. */
 const GROUP_ORDER = [
@@ -259,6 +284,33 @@ describe('the 66-key inventory', () => {
     expect(dialogFieldSpec('m_defaultDialogAnimation')?.synthetic).toBe(true);
     expect(dialogFieldSpec('m_requirements')?.synthetic).toBe(true);
     expect(dialogFieldSpec('m_action')?.synthetic).toBeUndefined();
+  });
+
+  it('agrees with the model’s measured shape table, which is the one home for the key lists', () => {
+    // The model carries the measurement (DIALOG_ENTRY_KEY_ORDER / DIALOG_ENTRY_KEY_SHAPES); this
+    // test carries an independent hand-written order. Both are asserted, so neither can drift.
+    expect(DIALOG_ENTRY_KEY_ORDER).toEqual(FULL_ORDER);
+    expect(DIALOG_ENTRY_KEY_SHAPES.map((shape) => shape.name)).toEqual([
+      'full66',
+      'noDialogEvent65',
+      'sparse60',
+      'truncated45',
+      'sparse58NoType',
+      'nullOmitted65',
+    ]);
+    // The five corpus shapes cover the 1,884 measured entries exactly (the sixth is the D17
+    // clone's own write), so the counts are a partition of the measurement, not a decoration.
+    const corpusCounts = DIALOG_ENTRY_KEY_SHAPES.filter(
+      (shape) => shape.name !== 'nullOmitted65',
+    ).map((shape) => shape.measuredCount);
+    expect(corpusCounts.reduce((sum, count) => sum + count, 0)).toBe(1884);
+    expect(
+      DIALOG_ENTRY_KEY_SHAPES.find((shape) => shape.name === 'nullOmitted65')?.measuredCount,
+    ).toBe(35);
+    // Every shape's key list is a real subset of the full order, in the full order.
+    for (const shape of DIALOG_ENTRY_KEY_SHAPES) {
+      expect(shape.keys).toEqual(FULL_ORDER.filter((key) => shape.keys.includes(key)));
+    }
   });
 
   it('spells out the two $type literals from the 3.1 constant table', () => {
@@ -349,7 +401,7 @@ describe('the 66-key inventory', () => {
     expect(Object.keys(group)).toEqual(GROUP_ORDER);
     expect(group).toEqual({
       m_dialogTag: 'Prep',
-      // 0 of the 739 corpus groups has an empty m_dialogEntries, so a new group starts with
+      // 0 of the 774 corpus groups has an empty m_dialogEntries, so a new group starts with
       // one entry (p3-06's rule for a new requirement group) rather than an empty array.
       m_dialogEntries: [newDialogEntry()],
       m_madlibs: null,
@@ -387,7 +439,7 @@ describe('the read helpers', () => {
       expect(view.typeString).toBeNull();
     }
 
-    // The measured empty-array state (43 of 767 lists) is a readable list with no groups.
+    // The measured empty-array state (43 of 797 lists) is a readable list with no groups.
     const empty = readDialogList(['m_dialogList'], { $type: LIST_TYPE, m_dialogs: [] });
     expect(empty.readable).toBe(true);
     expect(empty.typeString).toBe(LIST_TYPE);
@@ -998,7 +1050,8 @@ function dialogSlots(doc: unknown): DocPath[] {
  * move what those builders touch, so a byte-identical serialization proves that absent keys,
  * explicit `null`s, unmodelled keys, the `$type` and the key order all survive.
  *
- * `m_requirements` (null in 1706/1706) and the synthetic raw-object field are skipped: the
+ * `m_requirements` (null on every entry that carries it) and the synthetic raw-object field are
+ * skipped: the
  * shared tree is `requirement-tree.test.ts`'s subject and neither value exists to re-set.
  */
 function benignEdits(
@@ -1153,7 +1206,7 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
             realLists += 1;
           }
           const wrapper = getAtPath(doc, slot) as Record<string, unknown>;
-          // The list is exactly {$type, m_dialogs}, in that order, in 767/767 measured lists.
+          // The list is exactly {$type, m_dialogs}, in that order, in 797/797 measured lists.
           expect(Object.keys(wrapper), `${file} ${slot.join('.')}`).toEqual(['$type', 'm_dialogs']);
           if (hasAtPath(wrapper, ['$type'])) {
             taggedLists += 1;
@@ -1199,17 +1252,23 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
                 realEntries += 1;
               }
               const record = entry.value as Record<string, unknown>;
-              expect(entry.typeString, `${file} ${entry.address}`).toBe(ENTRY_TYPE);
-              if (entry.typeString === ENTRY_TYPE) {
-                taggedEntries += 1;
-              }
-              // The entry's own key list is one of the three documented shapes, in order.
               const keys = Object.keys(record);
+              // The entry's own key list is one of the six documented shapes, in order.
               const shape = shapesMatch(keys);
               expect(
                 shape,
                 `${file} ${entry.address} has an undocumented entry shape`,
               ).not.toBeNull();
+              // A `$type` is present on five of the six shapes; the `sparse58NoType` shape has
+              // none at all (2 real entries, new at f9a1055), and nothing here invents one.
+              if (shape === 'sparse58NoType') {
+                expect(entry.typeString, `${file} ${entry.address}`).toBeNull();
+              } else {
+                expect(entry.typeString, `${file} ${entry.address}`).toBe(ENTRY_TYPE);
+              }
+              if (entry.typeString === ENTRY_TYPE) {
+                taggedEntries += 1;
+              }
               shapeCounts.set(String(shape), (shapeCounts.get(String(shape)) ?? 0) + 1);
               if (dir === REAL_QUEST_DIR) {
                 realShapeCounts.set(String(shape), (realShapeCounts.get(String(shape)) ?? 0) + 1);
@@ -1265,10 +1324,12 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
     expect(shapeCounts.get('sparse60')).toBeGreaterThan(0);
     expect(shapeCounts.get('truncated45')).toBeGreaterThan(0);
     expect(shapeCounts.get('nullOmitted65')).toBeGreaterThan(0);
+    expect(shapeCounts.get('noDialogEvent65')).toBeGreaterThan(0);
+    expect(shapeCounts.get('sparse58NoType')).toBeGreaterThan(0);
     expect(taggedGroups).toBe(groups);
-    expect(taggedEntries).toBe(entries);
+    expect(taggedEntries).toBe(entries - (shapeCounts.get('sparse58NoType') ?? 0));
     expect(taggedLists).toBe(lists);
-    // No corpus entry carries a non-null m_requirements: the slot is corpus-empty (1706/1706).
+    // No corpus entry carries a non-null m_requirements: the slot is corpus-empty.
     expect(requirementsNotNull).toBe(0);
     expect(nullRequirements).toBeGreaterThan(0);
     expect(stringListElements).toBeGreaterThan(0);
@@ -1278,31 +1339,43 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
     // The measured totals, asserted against the real checkout when it exists (CI has only the
     // clone, which is why these are conditional rather than hard).
     if (existsSync(REAL_QUEST_DIR)) {
-      expect(realFiles).toBe(322);
-      expect(realLists).toBe(767);
-      expect(realGroups).toBe(739);
-      expect(realEntries).toBe(1706);
-      expect(realShapeCounts.get('full')).toBe(1698);
+      expect(realFiles).toBe(328);
+      expect(realLists).toBe(797);
+      // The sweep walks the `m_dialogList` slots the editor mounts: 769 of the corpus's 774
+      // groups. The other 5 are the typed `ActorDialog` blocks inside `ResActorDialog.m_dialog`
+      // (8 entries, all full 66-key), which the results sweep and D79's byte-exact check cover.
+      expect(realGroups).toBe(769);
+      expect(realEntries).toBe(1876);
+      expect(realShapeCounts.get('full')).toBe(1860);
       expect(realEmptyLists).toBe(43);
-      expect(realShapeCounts.get('sparse60')).toBe(2);
+      expect(realShapeCounts.get('sparse60')).toBe(1);
       expect(realShapeCounts.get('truncated45')).toBe(6);
+      expect(realShapeCounts.get('noDialogEvent65')).toBe(7);
+      expect(realShapeCounts.get('sparse58NoType')).toBe(2);
       expect(realShapeCounts.get('nullOmitted65') ?? 0).toBe(0);
       // The real checkout's groups are all the full 6-key order; the null-omitted 5-key
       // shape exists only in the two files this tool wrote (the D17 clone).
       expect(realNullOmittedGroups).toBe(0);
-      expect(realTagCounts.get('Completion')).toBe(418);
-      expect(realTagCounts.get('Prep')).toBe(316);
+      expect(realTagCounts.get('Completion')).toBe(442);
+      expect(realTagCounts.get('Prep')).toBe(322);
       expect(realTagCounts.get('')).toBe(5);
+      // `Hyperlink` (5 occurrences) exists ONLY on the typed `ActorDialog` blocks, which are not
+      // list-mounted, so this sweep correctly sees none of them — the results sweep owns those.
+      expect(realTagCounts.get('Hyperlink') ?? 0).toBe(0);
       console.log(
         `[p3-08 corpus] ${realFiles} real + ${files - realFiles} clone files, ` +
           `${realLists} real dialog lists / ${lists} total (${realGroups} real tag groups / ` +
-          `${groups} total), ${realEntries} real entries in three real shapes (full ` +
-          `${realShapeCounts.get('full')} / 60-key ${realShapeCounts.get('sparse60')} / 45-key ` +
-          `${realShapeCounts.get('truncated45')}) plus the clone's 65-key null-omitted shape ` +
-          `(${shapeCounts.get('nullOmitted65')}), real tags Completion ` +
+          `${groups} total), ${realEntries} real entries in five corpus shapes (full ` +
+          `${realShapeCounts.get('full')} / no-m_dialogEvent 65-key ` +
+          `${realShapeCounts.get('noDialogEvent65')} / 60-key ${realShapeCounts.get('sparse60')} / ` +
+          `45-key ${realShapeCounts.get('truncated45')} / no-$type 58-key ` +
+          `${realShapeCounts.get('sparse58NoType')}), plus the clone's 65-key null-omitted shape ` +
+          `(${shapeCounts.get('nullOmitted65')}); the 5 typed ActorDialog blocks (8 entries) are ` +
+          `covered by the results sweep; real tags Completion ` +
           `${realTagCounts.get('Completion')} / Prep ${realTagCounts.get('Prep')} / "" ` +
-          `${realTagCounts.get('')}, ${stringListElements} string-list elements round-tripped, ` +
-          `byte-identical in both corpora`,
+          `${realTagCounts.get('')} / Hyperlink ${realTagCounts.get('Hyperlink') ?? 0} ` +
+          `(typed ActorDialog blocks only — not list-mounted), ` +
+          `${stringListElements} string-list elements round-tripped, byte-identical in both corpora`,
       );
     } else {
       console.log(
@@ -1313,12 +1386,25 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
   });
 });
 
-/** Which of the three documented shapes {@link keys} is, or a printable marker otherwise. */
+/** Which of the six documented shapes {@link keys} is, or a printable marker otherwise. */
 function shapesMatch(
   keys: readonly string[],
-): 'full' | 'sparse60' | 'truncated45' | 'nullOmitted65' | null {
+):
+  | 'full'
+  | 'noDialogEvent65'
+  | 'sparse58NoType'
+  | 'sparse60'
+  | 'truncated45'
+  | 'nullOmitted65'
+  | null {
   if (isDeepStrictEqual(keys, SHAPE_FULL)) {
     return 'full';
+  }
+  if (isDeepStrictEqual(keys, SHAPE_NO_DIALOG_EVENT)) {
+    return 'noDialogEvent65';
+  }
+  if (isDeepStrictEqual(keys, SHAPE_58)) {
+    return 'sparse58NoType';
   }
   if (isDeepStrictEqual(keys, SHAPE_60)) {
     return 'sparse60';

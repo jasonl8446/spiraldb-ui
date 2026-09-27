@@ -46,63 +46,74 @@ import type { SimpleFieldSpec } from './model.js';
  * | files `serializeDoc` normalises | **1** (`WizardZoneDatas_Tutorial_Interior-A.json` ends with two newlines; the phase AC allows the one-time whitespace-only diff) |
  * | files carrying `Events` | **1207 / 1207** |
  * | `Events` value | an **empty array `[]`** in **1207 / 1207** — the drift field is universal and never carries content |
- * | `Teleports` entries | **2365** across the corpus |
+ * | `Teleports` entries | **2368** across the corpus (was 2,365) |
  * | files with an empty `Teleports` array | **2** |
- * | entries whose keys are exactly `TriggerName` + `Teleport` | **2365 / 2365** |
- * | `TriggerName` values that are strings | **2365 / 2365** |
- * | nested `Teleport` objects carrying exactly the six spec fields | **2365 / 2365** — **no drift inside** the nested object |
+ * | entries whose keys are exactly `TriggerName` + `Teleport` | **2368 / 2368** |
+ * | `TriggerName` values that are strings | **2368 / 2368** |
+ * | nested `Teleport` objects carrying exactly the six spec fields | **2368 / 2368** — **no drift inside** the nested object |
  * | nested key *orders* | the serializer's `m_exitTeleporter, m_teleporterTag, m_teleportType, m_transitionID, m_destinationLoc, m_destinationZone` in **2353**; the spec table's `m_destinationLoc, m_destinationZone, m_exitTeleporter, m_teleporterTag, m_teleportType, m_transitionID` in **12** |
- * | `m_destinationLoc` values that are four comma-separated numeric components | **2365 / 2365** |
- * | …of those, values using **scientific notation** | **133** (5.6%; every one has exactly one scientific component) |
- * | …values a **plain-float** regex rejects | **133** — the trap this module's regex exists for |
- * | distinct `m_teleportType` values | **1**: `TELEPORT_STATIC` in **2365 / 2365** |
+ * | `m_destinationLoc` values that are four comma-separated numeric components | **2365 / 2368** — the 3 rejects are the owner's prose (see below) |
+ * | …of those, values using **scientific notation** | **135** (5.7%; every one has exactly one scientific component) |
+ * | …values a **plain-float** regex rejects | **136** — 133 scientific + the 3 prose values; the trap this module's regex exists for |
+ * | distinct `m_teleportType` values | **1**: `TELEPORT_STATIC` in **2368 / 2368** |
  * | distinct `ZoneName` values | **1205** of 1207 (two duplicate pairs — see below) |
  * | `entry_status` rows for `zone_transfer` | **1205**, all `extracted` — created by the first-startup corpus import (D21); the brief said 0 and task 4.10 owns the UI integration, not the rows |
- * | distinct `m_destinationZone` refs | **1069** |
- * | …refs resolving in the `zones` table | **1069 / 1069** — there is **no unknown-reference case** in this corpus |
+ * | distinct `m_destinationZone` refs | **1072** (was 1069) |
+ * | …refs resolving in the `zones` table | **1072 / 1072** — there is **no unknown-reference case** in this corpus |
  * | …refs with **no `ZoneTransfer` file of their own** | **36** — still valid zones, so a dropdown sourced from `zones` covers every reference |
  * | `zones` rows | **1241**, 0 duplicate `zone_path`, 0 blank `display_name` |
  * | `zones` rows whose synced `display_name` **equals** the existing `humanizeZone` | **1172**; differing: **69** |
- * | …restricted to the 1069 referenced zones | **1010** agree, **59** differ |
+ * | …restricted to the 1072 referenced zones | **1013** agree, **59** differ |
+ *
+ * Re-measured at the owner's `f9a1055` baseline (D79/D80): `Teleports` 2,365 → **2,368**,
+ * distinct destination zones 1,069 → **1,072**, the nested objects in serializer order
+ * 2,353 → **2,355** and in spec order 12 → **13**. All three new entries are real, and **all
+ * three carry prose in `m_destinationLoc`** — see the validation decision below.
  *
  * ## The `m_destinationLoc` regex, and why the scientific-notation arm is not optional
  *
  * {@link DESTINATION_LOC_PATTERN} accepts four comma-separated numeric components, each of which
  * may be an integer, a decimal, or **scientific notation** with an optional exponent sign. The
- * scientific arm is load-bearing: **133 of the 2365 real values** (5.6%) carry one, e.g.
- * `1.545422,-1118.252,-1.671345E-05,-3.128352`, and a plain-float regex rejects **all 133** —
- * the sweep asserts **2365 accept / 0 reject** against the live corpus, and the same sweep
- * asserts the plain-float arm would reject exactly those 133, so the two arms are both pinned.
+ * scientific arm is load-bearing: **135 of the 2368 real values** carry one, e.g.
+ * `1.545422,-1118.252,-1.671345E-05,-3.128352`, and a plain-float regex rejects **136** —
+ * **2,365 accept / 3 reject** against the live corpus now (it was 2,365 / 0 before the merge), and
+ * the same sweep asserts the plain-float arm would reject the 136, so the two arms are both pinned.
+ *
+ * The three rejects are the merge's own prose values, and they are **not** malformed data a user
+ * typed: `WizardZoneDatas_1-A.json` `Teleports[12]` = `"Start"`, and
+ * `WizardZoneDatas_323-A.json` `Teleports[5]`/`[6]` = `"Target location (Street5 Tower1
+ * Entrance)"` / `"Target (Street5 FireTheatre Entrance)"`. The owner annotates a teleport's
+ * purpose there instead of giving coordinates.
  *
  * The other arm matters just as much: the pattern is **anchored and exact** — no surrounding
  * whitespace, no trailing separator, exactly four components, each component a *number* — so it
  * rejects `1,2,3`, `1,2,3,4,5`, `1.5e-05,2,3,4,`, `1.5e-05, a, 3, 4` and `Infinity,1,2,3`.
  *
- * ## The validation decision: **the format check is the only rule, and it BLOCKS**
+ * ## The validation decision: **the format check is the only rule, and it WARNS (D80a)**
  *
- * AC1 says `m_destinationLoc` is "**regex-validated** 4-float string". The reading implemented
- * here, and the reason, stated plainly (the lead reversed the earlier non-blocking call on this
- * exact question; the reasoning below is the one that now holds, and it is D65(a)'s
- * severity-follows-the-corpus test):
+ * AC1 says `m_destinationLoc` is "**regex-validated** 4-float string". This module first shipped
+ * the rule as **blocking** (D74), on a premise that was stated and measured at the time: a
+ * blocking rule is safe *because it has zero corpus violations*, so it can only ever catch a
+ * value a user malforms in the editor. **The owner's `f9a1055` merge falsified that premise** —
+ * three real teleports carry prose — so the rule was downgraded to a **warning** and the premise
+ * was replaced by the measurement that broke it (the lead's ruling, logged as D80a; it amends
+ * D74 by measurement, which is D65(a)'s rule: severity follows what the data actually does):
  *
  * - {@link isDestinationLoc} is the regex gate, and {@link zoneTransferFindings} applies it to
  *   **every** `Teleport` of the document — an absent or `null` value produces no finding (an
  *   untouched absent control writes nothing, the p4-02 rule) while a present value that fails
  *   the pattern gets one inline message at `Teleports[i].Teleport.m_destinationLoc`.
- * - The finding is `severity: 'error'`, it appears in `blocking`, and `blocked` is `true` when
- *   there is one — so Save is disabled while it is present (L542-546's "Save button disabled
- *   while validation **errors** exist"). **A blocking format rule cannot trap a real file**:
- *   the sweep proves `DESTINATION_LOC_PATTERN` accepts 2,365 of 2,365 corpus values, so the rule
- *   has **zero corpus violations** and can only ever catch a value a user malforms in the editor.
- *   That is the same reasoning that made the six quest rules blocking, and the opposite of
- *   D73(e)'s "do not invent a rule the corpus cannot exercise" — this rule *is* exercised, by
- *   every one of the 2,365 values, as an acceptance.
+ * - The finding is `severity: 'warning'`, it appears in `warnings`, `blocking` is empty and
+ *   `blocked` is `false` for every document — so **Save stays enabled** on the three real files
+ *   the owner ships (the D73(a) warn-not-block mechanism, and the same reason p4-08's spurious
+ *   400 was a defect: the tool must not reject the owner's data). The inline message still says
+ *   what the format is, so the warning remains visible rather than silent.
  * - **No reference rule at all** exists here, invented or otherwise. The spec's L542-546
- *   "Zone paths must match known zones" would fire zero times on this corpus (1069 of 1069
+ *   "Zone paths must match known zones" would fire zero times on this corpus (1,072 of 1,072
  *   references resolve), so a rule would be pure copy with no surface; {@link
  *   ZONE_TRANSFER_CORPUS.destinationZonesResolvingInZonesTable} records the measurement instead
  *   of a rule. The converse is pinned in the tests: an unknown `m_teleportType` and an
- *   unresolvable destination zone produce **no** finding, so nothing else became blocking by
+ *   unresolvable destination zone produce **no** finding, so nothing else became a warning by
  *   accident.
  *
  * ## The drift guard: `Events` is *known*, *unmodelled*, and preserved
@@ -198,27 +209,52 @@ export const ZONE_TRANSFER_CORPUS = {
   /** Files whose `Events` value is an empty array. */
   filesWithEmptyEvents: 1207,
   /** `Teleports` entries across the corpus. */
-  teleports: 2365,
+  teleports: 2368,
   /** Files carrying an empty `Teleports` array. */
   filesWithEmptyTeleports: 2,
   /** Entries whose keys are exactly `TriggerName` + `Teleport`. */
-  entriesWithTriggerAndTeleport: 2365,
+  entriesWithTriggerAndTeleport: 2368,
   /** `TriggerName` values that are strings. */
-  triggerNameStrings: 2365,
+  triggerNameStrings: 2368,
   /** Nested `Teleport` objects carrying exactly the six spec fields. */
-  teleportObjectsWithSixKeys: 2365,
-  /** Nested objects in the serializer's dominant key order (2353). */
-  teleportObjectsInSerializerOrder: 2353,
-  /** Nested objects in the spec table's key order (12). */
-  teleportObjectsInSpecOrder: 12,
+  teleportObjectsWithSixKeys: 2368,
+  /** Nested objects in the serializer's dominant key order (2355 now; 2353 before the merge). */
+  teleportObjectsInSerializerOrder: 2355,
+  /** Nested objects in the spec table's key order (13 now; 12 before). */
+  teleportObjectsInSpecOrder: 13,
   /** `m_destinationLoc` values that are four comma-separated numeric components. */
-  destinationLocValues: 2365,
+  destinationLocValues: 2368,
+  /**
+   * `m_destinationLoc` values the format pattern **accepts**. 2,368 − 3 = 2,365, and the 3 are
+   * the owner's prose annotations (see {@link destinationLocProseValues}) — this is the number
+   * that replaced D74's "2,365 of 2,365 accepted, zero corpus violations".
+   */
+  destinationLocValuesAcceptedByFormatPattern: 2365,
+  /** `m_destinationLoc` values the format pattern rejects: the 3 prose values, and only them. */
+  destinationLocValuesRejectedByFormatPattern: 3,
+  /**
+   * The three real values that fail the format — the measurement that made the rule a warning
+   * (D80a). Kept as data, with their addresses, so the claim is checkable without re-sweeping.
+   */
+  destinationLocProseValues: [
+    { file: 'WizardZoneDatas_1-A.json', index: 12, value: 'Start' },
+    {
+      file: 'WizardZoneDatas_323-A.json',
+      index: 5,
+      value: 'Target location (Street5 Tower1 Entrance)',
+    },
+    {
+      file: 'WizardZoneDatas_323-A.json',
+      index: 6,
+      value: 'Target (Street5 FireTheatre Entrance)',
+    },
+  ],
   /** `m_destinationLoc` values carrying scientific notation (one component each). */
-  destinationLocScientificValues: 133,
-  /** `m_destinationLoc` values a plain-float regex rejects — the same 133. */
-  destinationLocValuesRejectedByPlainFloatRegex: 133,
+  destinationLocScientificValues: 135,
+  /** `m_destinationLoc` values a plain-float regex rejects: 136 (133 + the 3 prose values). */
+  destinationLocValuesRejectedByPlainFloatRegex: 136,
   /** `m_teleportType` values that are `TELEPORT_STATIC`. */
-  teleportTypeStaticValues: 2365,
+  teleportTypeStaticValues: 2368,
   /** Distinct `m_teleportType` values in the corpus. */
   distinctTeleportTypes: 1,
   /** `ZoneName` values across the corpus (1207 files). */
@@ -238,10 +274,10 @@ export const ZONE_TRANSFER_CORPUS = {
    * exist today.)
    */
   statusRows: 1205,
-  /** Distinct `m_destinationZone` references. */
-  distinctDestinationZones: 1069,
+  /** Distinct `m_destinationZone` references (1,072 now; 1,069 before the merge). */
+  distinctDestinationZones: 1072,
   /** References resolving in the `zones` table — all of them. */
-  destinationZonesResolvingInZonesTable: 1069,
+  destinationZonesResolvingInZonesTable: 1072,
   /** References with no `ZoneTransfer` file of their own — still valid zones. */
   destinationZonesWithoutOwnFile: 36,
   /** `zones` rows — the dropdown's source. */
@@ -254,9 +290,9 @@ export const ZONE_TRANSFER_CORPUS = {
   zoneDisplayNamesAgreeingWithHumanizer: 1172,
   /** `zones` rows where the two differ (all digit/letter boundaries). */
   zoneDisplayNamesDifferingFromHumanizer: 69,
-  /** Of the 1069 referenced zones, rows where the synced label agrees. */
-  referencedZoneDisplayNamesAgreeing: 1010,
-  /** Of the 1069 referenced zones, rows where the two differ. */
+  /** Of the 1,072 referenced zones, rows where the synced label agrees (was 1,010 of 1,069). */
+  referencedZoneDisplayNamesAgreeing: 1013,
+  /** Of the 1072 referenced zones, rows where the two differ. */
   referencedZoneDisplayNamesDiffering: 59,
 } as const;
 
@@ -275,11 +311,11 @@ export const ZONE_TRANSFER_KNOWN_TOP_LEVEL_KEYS = ['ZoneName', 'Teleports', 'Eve
 /** The top-level keys an edit may write — the schema's own two. */
 export const ZONE_TRANSFER_MODELLED_TOP_LEVEL_KEYS = ['ZoneName', 'Teleports'] as const;
 
-/** One `Teleports` entry's two keys, in the file's dominant order (2365 / 2365 carry both). */
+/** One `Teleports` entry's two keys, in the file's dominant order (2368 / 2368 carry both). */
 export const ZONE_TRANSFER_ENTRY_KEYS = ['TriggerName', 'Teleport'] as const;
 
 /**
- * The nested object's six keys in the **corpus's dominant order** (2353 of 2365) — the order a
+ * The nested object's six keys in the **corpus's dominant order** (2355 of 2368) — the order a
  * newly added entry is built in, so a new row looks like the files around it. The spec table's
  * own order (L281-309, and the 12 files that match it) is recorded in the corpus constant above;
  * nothing here rewrites an existing object's order (D5/D57).
@@ -309,7 +345,7 @@ export type TeleportNumberKey = (typeof TELEPORT_NUMBER_KEYS)[number];
 /**
  * The **whole** measured vocabulary of `m_teleportType`: one member. The spec words the field
  * "enum, e.g. `TELEPORT_STATIC`" (L281-309), and the corpus has exactly this one value in
- * 2365 of 2365 entries — so the control offers this member and **invents no others**.
+ * 2368 of 2368 entries — so the control offers this member and **invents no others**.
  */
 export const TELEPORT_TYPE_KNOWN_MEMBERS = ['TELEPORT_STATIC'] as const;
 
@@ -337,7 +373,7 @@ export const DESTINATION_LOC_COMPONENT_PATTERN =
  * {@link DESTINATION_LOC_COMPONENT_PATTERN}, comma-separated, **anchored** — no surrounding
  * whitespace and no trailing separator.
  *
- * The scientific-notation arm is required by the measured corpus: 133 of 2365 real values carry
+ * The scientific-notation arm is required by the measured corpus: 135 of 2368 real values carry
  * one and a plain-float pattern rejects every one of them.
  */
 export const DESTINATION_LOC_PATTERN = new RegExp(
@@ -346,7 +382,7 @@ export const DESTINATION_LOC_PATTERN = new RegExp(
 
 /**
  * The pattern a *plain float* check would be — kept so the sweep can prove the two arms of the
- * `m_destinationLoc` decision on the live corpus: this one rejects **133** real values and
+ * `m_destinationLoc` decision on the live corpus: this one rejects **136** real values and
  * {@link DESTINATION_LOC_PATTERN} rejects **0**.
  *
  * It is **not** used by the editor; it exists as the falsification arm (D66's discipline: a test
@@ -361,7 +397,7 @@ export const PLAIN_FLOAT_DESTINATION_LOC_PATTERN = /^-?\d+(?:\.\d+)?(?:,-?\d+(?:
  * so none is invented here.
  */
 export const DESTINATION_LOC_HINT =
-  'Four comma-separated numbers. Scientific notation is valid and appears in 133 of the corpus’s 2,365 real values (e.g. -1.671345E-05).';
+  'Four comma-separated numbers. Scientific notation is valid and appears in 135 of the corpus’s 2,368 real values (e.g. -1.671345E-05).';
 
 /** The disclosure's summary text — one home, so the form and the tier-1 spec cannot drift. */
 export const RAW_FIELDS_LABEL = 'Raw fields';
@@ -402,7 +438,7 @@ export const ZONE_TRANSFER_FIELDS: readonly SimpleFieldSpec[] = [
     kind: 'zone-teleport-list',
     required: true,
     corpusPresence: 1207,
-    help: 'Each entry is a TriggerName plus a nested Teleport object. The nested object’s six keys are preserved whole; 2,365 entries across the corpus carry no drift inside.',
+    help: 'Each entry is a TriggerName plus a nested Teleport object. The nested object’s six keys are preserved whole; 2,368 entries across the corpus carry no drift inside.',
   },
 ];
 
@@ -447,7 +483,7 @@ export function isDestinationLoc(value: unknown): value is string {
  * `[]` for a key that is absent, `null` or not an array — the "no list here" shapes a form
  * renders as its empty state, which is also what an **empty array** renders (the corpus really
  * has two). An element that is not a plain object is skipped for the same reason the p4-05
- * reader documents: 2365 of 2365 entries are objects, and no row can be built from anything else.
+ * reader documents: 2368 of 2368 entries are objects, and no row can be built from anything else.
  *
  * The nested `Teleport` comes back as the document's **own object reference** — the "preserved
  * whole" half of the AC. A row edit addresses one nested field path, so the other five keys, the
@@ -571,7 +607,7 @@ export function teleportFieldPath(index: number, key: TeleportKey | string): Doc
 
 /**
  * A new entry in the corpus's dominant key orders: `{TriggerName, Teleport}` and the nested
- * object's serializer order (2353 of 2365).
+ * object's serializer order (2355 of 2368).
  *
  * The six nested values are the schema's neutral ones — `0,0,0,0` for the location, the caller's
  * zone (or `''` when the document has no `ZoneName` yet), `0` for the three numbers and the one
@@ -663,7 +699,7 @@ export function teleportDestinationZoneEdit(index: number, raw: unknown): DocEdi
  * for an emptied box.
  *
  * An emptied box writes `0` rather than deleting the key: all six nested keys are present in
- * 2365 of 2365 entries and the schema marks them required, so a deletion would write a shape the
+ * 2368 of 2368 entries and the schema marks them required, so a deletion would write a shape the
  * schema forbids (the D71(c) rule). A value that is not a finite number (`1e`, `-` while typing)
  * produces **no** edit rather than a `NaN`.
  */
@@ -687,7 +723,7 @@ export function teleportNumberEdit(
  * value, re-chosen) written **verbatim** as a string.
  *
  * A blank or non-string value produces no edit — the nested object's six keys are present in
- * 2365 of 2365 entries, so an edit always writes a present string, and absence is preserved by
+ * 2368 of 2368 entries, so an edit always writes a present string, and absence is preserved by
  * writing nothing.
  */
 export function teleportTypeEdit(index: number, raw: unknown): DocEdit | null {
@@ -724,8 +760,12 @@ export function zoneTransferCreateName(zoneName: string): string {
 
 /* -------------------------------------------------------------------- the engine */
 
-/** The one severity this family emits — see the header's validation decision. */
-export type ZoneTransferValidationSeverity = 'error';
+/**
+ * The severities this family emits. It was `'error'` alone until D80a; the one rule is a warning
+ * now. Both members stay (rather than narrowing to `'warning'`) because `validateZoneTransfer`
+ * partitions the findings on exactly this field, so a future blocking rule needs no type change.
+ */
+export type ZoneTransferValidationSeverity = 'error' | 'warning';
 
 /** The family's single finding kind. */
 export type ZoneTransferFindingKind = 'destination-loc-not-four-numbers';
@@ -747,30 +787,32 @@ export interface ZoneTransferFinding {
 export interface ZoneTransferValidationResult {
   /** Every finding, in document order. */
   findings: ZoneTransferFinding[];
-  /** The same findings as `findings` — this family's every finding is an error. */
-  blocking: ZoneTransferFinding[];
   /**
-   * **Always empty**: this family emits no warning-severity finding at all. Kept as a named field
-   * so a caller reads the same result shape as every other engine, and typed as an array so a
-   * future warning has one obvious place to land. The tests pin it empty.
+   * **Always empty at this baseline**: the family's one rule is a warning now (D80a, amending
+   * D74 — 3 of the 2,368 real corpus values are prose, so a blocking rule would refuse to save
+   * three real files). Kept as a named field so a caller reads the same result shape as every
+   * other engine, and typed as an array so a future blocking rule has one obvious place to land.
    */
+  blocking: ZoneTransferFinding[];
+  /** The same findings as `findings` — this family's every finding is a warning. */
   warnings: ZoneTransferFinding[];
   /**
-   * `true` exactly when the document has a blocking finding — here, when some `m_destinationLoc`
-   * is present and fails the format. The page's Save gate is `fieldHasError(messages)`, which is
-   * this boolean through the shared plumbing (L542-546).
+   * `true` exactly when the document has a **blocking** finding — a real computation over
+   * `blocking`, so a future error-severity rule flips it. With the format rule a warning it is
+   * `false` for every document, and the page's Save gate (`fieldHasError(messages)`) is
+   * therefore never closed by this family.
    */
   blocked: boolean;
   /**
    * **Always `false`**: this engine consults no reference table at all (there is no zone-path
-   * rule — 1069 of 1069 references resolve). Named so a caller reads one result shape.
+   * rule — 1,072 of 1,072 references resolve). Named so a caller reads one result shape.
    */
   referenceUsed: false;
 }
 
 /**
- * The document's `m_destinationLoc` findings — the AC1 format check, one **error** per row whose
- * value is present and fails {@link isDestinationLoc}.
+ * The document's `m_destinationLoc` findings — the AC1 format check, one **warning** per row
+ * whose value is present and fails {@link isDestinationLoc}.
  *
  * An absent or `null` value produces no finding (an untouched absent control writes nothing; a
  * rule that complained about a key the document never had would be noise). An **empty string** is
@@ -778,7 +820,7 @@ export interface ZoneTransferValidationResult {
  *
  * Nothing else in the document is inspected: an unrecognised `m_teleportType` and a
  * `m_destinationZone` no synced zone carries both produce **no** finding, which the unit tests
- * pin so the blocking set cannot grow by accident.
+ * pin so the warning set cannot grow by accident.
  */
 export function zoneTransferFindings(document: Record<string, unknown>): ZoneTransferFinding[] {
   const findings: ZoneTransferFinding[] = [];
@@ -795,7 +837,7 @@ export function zoneTransferFindings(document: Record<string, unknown>): ZoneTra
     }
     findings.push({
       kind: 'destination-loc-not-four-numbers',
-      severity: 'error',
+      severity: 'warning',
       path: teleportFieldPath(index, 'm_destinationLoc'),
       value,
       index,
@@ -806,9 +848,8 @@ export function zoneTransferFindings(document: Record<string, unknown>): ZoneTra
 }
 
 /**
- * The family's validation pass: one **blocking** error per malformed `m_destinationLoc`, and
- * nothing else (see the header for the decision and its reason — the rule has zero corpus
- * violations, so it can only catch a value a user malforms in the editor).
+ * The family's validation pass: one **warning** per malformed `m_destinationLoc`, and nothing
+ * else (see the header for the decision, its amendment and the measurement behind it).
  *
  * It validates and never normalises (D57): it reads, it never writes, and the offending value is
  * kept verbatim in the finding.
@@ -817,11 +858,12 @@ export function validateZoneTransfer(
   document: Record<string, unknown>,
 ): ZoneTransferValidationResult {
   const findings = zoneTransferFindings(document);
+  const blocking = findings.filter((finding) => finding.severity === 'error');
   return {
     findings,
-    blocking: findings,
-    warnings: [],
-    blocked: findings.length > 0,
+    blocking,
+    warnings: findings.filter((finding) => finding.severity === 'warning'),
+    blocked: blocking.length > 0,
     referenceUsed: false,
   };
 }

@@ -28,9 +28,11 @@ import {
  * synthetic or recorded fixtures are committed, real files never are).
  *
  * The assertion is `grep output ⊆ constants`, never equality: the table is allowed to carry
- * more than the corpus does. It does, in exactly one place — `ReqIsSchool` is the spec's 4th
- * requirement type and occurs 0 times in this corpus — and it must still be in the table,
- * because the editor has to write the correct spelling when a user adds one.
+ * more than the corpus does. **At the owner's `f9a1055` baseline it carries exactly what the
+ * corpus measures** — 29 strings, no spec-only entry — because `ReqIsSchool`, the one spec-listed
+ * type the 322-file corpus did not contain, now occurs **7 times** (one per
+ * `WC-COMMONS-MAIN-002-*` quest) and moved into the corpus table (D79/D80). The recording was
+ * re-measured with it; the earlier 322-file recording is quoted in the fixture's own comment.
  */
 
 interface RecordedCorpus {
@@ -53,6 +55,10 @@ const RECORDED = JSON.parse(
  * The real corpus, overridable for a different checkout. The default is the repository's own
  * default SpiralDB path (`server/src/db.ts`'s `DEFAULT_SPIRALDB_PATH`), so this test needs no
  * configuration on the owner's machine.
+ *
+ * The file count comes from the **recording** (`RECORDED.corpusFiles`) rather than a fresh
+ * `readdir`: that is the p3-01 style (the recording is the measurement of record, and the live
+ * grep above it asserts the strings). It is 328 at the owner's `f9a1055` baseline.
  */
 const CORPUS_DIR =
   process.env.SPIRALDB_QUEST_CORPUS ?? path.join(DEFAULT_SPIRALDB_PATH, 'QuestTemplates');
@@ -103,24 +109,41 @@ function formatCounts(counts: Map<string, number>): string {
 }
 
 describe('the recorded corpus measurement (committed fixture)', () => {
-  it('records exactly the 26 measured $type strings, all present in the constant table', () => {
+  it('records exactly the 29 measured $type strings, all present in the constant table', () => {
     const measured = Object.keys(RECORDED.typeStringCounts);
-    expect(measured).toHaveLength(26);
-    expect(RECORDED.distinctTypeStrings).toBe(26);
-    expect(RECORDED.corpusFiles).toBe(322);
+    expect(measured).toHaveLength(29);
+    expect(RECORDED.distinctTypeStrings).toBe(29);
+    expect(RECORDED.corpusFiles).toBe(328);
+    expect(RECORDED.totalTypeOccurrences).toBe(8746);
     expect(measured.every((value) => isKnownTypeString(value))).toBe(true);
 
-    // The corpus table's values are exactly the 26 recorded strings — nothing extra is
+    // The corpus table's values are exactly the 29 recorded strings — nothing extra is
     // presented as corpus-measured, nothing measured is missing.
     expect(Object.values(CORPUS_TYPE_STRINGS).sort()).toEqual([...measured].sort());
   });
 
-  it('keeps the spec-only ReqIsSchool out of the corpus table but in the known set', () => {
-    const reqIsSchool = SPEC_ONLY_TYPE_STRINGS.ReqIsSchool;
-    expect(Object.values(CORPUS_TYPE_STRINGS)).not.toContain(reqIsSchool);
+  it('has no spec-only type at this baseline: ReqIsSchool is corpus-measured now', () => {
+    // The 322-file corpus did not carry `ReqIsSchool` (it lived in SPEC_ONLY_TYPE_STRINGS,
+    // 0 occurrences). The owner's 328-file baseline carries it 7 times, so it is a corpus
+    // string and the spec-only table is empty — both halves stated, so the claim is checkable.
+    const reqIsSchool = 'Imcodec.ObjectProperty.TypeCache.ReqIsSchool, Imcodec.ObjectProperty';
+    expect(Object.keys(SPEC_ONLY_TYPE_STRINGS)).toEqual([]);
+    expect(Object.values(CORPUS_TYPE_STRINGS)).toContain(reqIsSchool);
     expect(KNOWN_TYPE_STRINGS).toContain(reqIsSchool);
-    expect(RECORDED.typeStringCounts[reqIsSchool]).toBeUndefined();
-    expect(Object.keys(TYPE_STRINGS)).toHaveLength(27);
+    expect(RECORDED.typeStringCounts[reqIsSchool]).toBe(7);
+    expect(Object.keys(TYPE_STRINGS)).toHaveLength(29);
+    // The three baseline additions, each with its measured count.
+    expect(RECORDED.typeStringCounts[reqIsSchool]).toBe(7);
+    expect(
+      RECORDED.typeStringCounts[
+        'Imcodec.ObjectProperty.TypeCache.ResActorDialog, Imcodec.ObjectProperty'
+      ],
+    ).toBe(5);
+    expect(
+      RECORDED.typeStringCounts[
+        'Imcodec.ObjectProperty.TypeCache.ActorDialog, Imcodec.ObjectProperty'
+      ],
+    ).toBe(5);
     // The audit assertion holds for the recording: measured ⊆ known.
     expect(Object.keys(RECORDED.typeStringCounts).filter((v) => !isKnownTypeString(v))).toEqual([]);
   });
@@ -164,7 +187,7 @@ describe.skipIf(!CORPUS_PRESENT)('the live corpus (owner run, real SpiralDB chec
       `[p3-01 ac1] grep -rho '"$type": *"[^"]*"' ${CORPUS_DIR}\n` +
         `[p3-01 ac1] measured: ${measured.length} distinct $type strings, ` +
         `${[...counts.values()].reduce((a, b) => a + b, 0)} occurrences over ` +
-        `${RECORDED.corpusFiles} quest files\n${formatCounts(counts)}`,
+        `${RECORDED.corpusFiles} quest files (the recorded baseline)\n${formatCounts(counts)}`,
     );
 
     const unknown = measured.filter((value) => !isKnownTypeString(value));

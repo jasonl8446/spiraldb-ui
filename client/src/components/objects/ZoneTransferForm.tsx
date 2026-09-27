@@ -55,7 +55,7 @@ import { Input } from '../ui/input';
  * |---|---|
  * | "`ZoneName` key with a humanized zone dropdown" | `FriendlyNameDropdown` over **`zones`** on the document's `ZoneName`; the label is the names type's own (`display_name`, falling back to the existing `humanizeZone`) — this form adds **no** humanizer |
  * | "`Teleports` repeater with nested `Teleport` fields" | one `<article>` per row, keyed by the row's **document index**, holding the trigger name and the six nested fields |
- * | "`m_destinationLoc` regex-validated 4-float string" | a text box writing the typed string verbatim, with {@link DESTINATION_LOC_HINT} under it and the shared engine's **blocking** inline message when the value fails the pattern (Save is disabled while it is present, L542-546; no corpus value fails it, so only an edit can) |
+ * | "`m_destinationLoc` regex-validated 4-float string" | a text box writing the typed string verbatim, with {@link DESTINATION_LOC_HINT} under it and the shared engine's **warning** inline message when the value fails the pattern (it never disables Save — three real corpus teleports carry prose there, D80a; the message still states the format) |
  * | "`m_destinationZone` dropdown" | a second `FriendlyNameDropdown` over `zones` at the nested path |
  * | "`m_exitTeleporter`/`m_teleporterTag`/`m_transitionID` numbers" | three number boxes writing JSON numbers (an emptied box writes `0`, a key the schema requires) |
  * | "`m_teleportType` enum" | a `<select>` offering the **one measured member** plus — verbatim, marked unrecognised — any stored value the model does not know, so an unknown value is never rewritten |
@@ -162,7 +162,9 @@ export default function ZoneTransferForm({
         <CardContent className="flex flex-col gap-3">
           {blockingHeadline === null ? null : (
             // L547's form-level banner: this is an error class, so it is red and it says what it
-            // does — the Save button below is disabled while it is present.
+            // does — the Save button below is disabled while it is present. **Unreachable for
+            // this family since D80a**: the one rule is a warning, so `blockingCount` is always 0
+            // and the banner never renders. Kept as the shared error-banner shape.
             <p role="alert" data-blocking-count={blockingCount} className="text-xs text-red-400">
               {blockingHeadline}
             </p>

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { ActorDialogSchema } from './dialog.js';
 import { RequirementListFieldSchema } from './requirements.js';
 import { passthroughObject } from './schemaKit.js';
 import { TYPE_STRINGS } from './typeConstants.js';
@@ -7,11 +8,18 @@ import { TYPE_STRINGS } from './typeConstants.js';
 /**
  * Result types — [spec-domain-reference.md] L354-412, task 3.1.
  *
- * All 14 types measured in the corpus (461 result nodes), each with the field set the spec
+ * The spec's 14 types plus **`ResActorDialog`**, which the owner's `f9a1055` baseline carries
+ * 5 times (3 quests) and the spec's list does not mention, each with the field set the spec
  * documents. Every field is optional (the document may omit it, and the CLI output drops
  * every null-valued key before it reaches this tool — decision D48) and unknown keys pass
  * through (D5). `m_zoneName` is the one result field the corpus stores as an explicit
  * `null` (7×), so it is `.nullish()`.
+ *
+ * `ResActorDialog` is `{$type, m_dialog}` in all 5 measured nodes, its `m_dialog` always the
+ * typed dialog block `shared/quest/dialog.ts`'s {@link ActorDialogSchema} models. Modelling the
+ * nested node (rather than leaving `m_dialog` opaque) is what makes the enriched node
+ * **round-trip byte-exactly**: the schema validates the nested `ActorDialog` without touching
+ * one key of it, and nothing in the editor writes inside it (D57: validate, never normalise).
  *
  * The list wrapper `m_startResults` / `m_endResults` (and every `m_tallyResults`) carries
  * **no `$type`** — measured 2,206/2,206 occurrences hold exactly one key, `m_results`
@@ -124,7 +132,22 @@ export const ResWaitSchema = passthroughObject({
   m_secondsToWait: z.number().nullish(),
 });
 
-/** The 14-member result union, discriminated on the assembly-qualified `$type`. */
+/**
+ * `ResActorDialog` — the corpus-only 15th result class (5 occurrences, 3 quests at
+ * `f9a1055`; [spec-domain-reference.md] L354-412 does not list it).
+ *
+ * Measured shape, 5 of 5 nodes: `{$type, m_dialog}`. `m_zoneName`-style null-stripping does
+ * not apply — the key is present in every measured node — but it stays `.nullish()` like every
+ * other optional field (`NullValueHandling.Ignore` can drop it, and `null` is a legal value).
+ * The nested `m_dialog` is validated as an {@link ActorDialogSchema}, never rebuilt: this
+ * schema exists so the document parses, not so a save can normalise it (D57).
+ */
+export const ResActorDialogSchema = passthroughObject({
+  $type: z.literal(TYPE_STRINGS.ResActorDialog),
+  m_dialog: ActorDialogSchema.nullish(),
+});
+
+/** The 15-member result union, discriminated on the assembly-qualified `$type`. */
 export const ResultTemplateSchema = z.discriminatedUnion('$type', [
   ResDropTableSchema,
   ResModifyEntrySchema,
@@ -140,6 +163,7 @@ export const ResultTemplateSchema = z.discriminatedUnion('$type', [
   ResPlaySoundSchema,
   ResTeleportSchema,
   ResWaitSchema,
+  ResActorDialogSchema,
 ]);
 
 /** One result (`m_results[]` element). */

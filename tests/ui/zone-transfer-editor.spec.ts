@@ -20,8 +20,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  * | "`Teleports` repeater with nested `Teleport` fields" | one `<article>` per entry, holding the trigger name and all six nested fields | repeater #1 |
  * | "…works" (add) | the Add box appends a **new nested entry object** in the corpus's key order | repeater #2 |
  * | "…works" (remove) | removal is **index**-addressed, so a repeated trigger name survives | repeater #3 |
- * | "`m_destinationLoc` regex-validated 4-float string" | `1,2,3` shows an inline **error** and disables Save; `1,-2.5,-1.671345E-05,0.0` is accepted and unblocks it | location #1/#2/#3 |
- * | "…" (blocking) | a malformed value shows the inline **error** and disables Save; the same document with a scientific-notation value does neither | location #3 |
+ * | "`m_destinationLoc` regex-validated 4-float string" | `1,2,3` shows an inline **warning** and Save still saves it verbatim (D80a); `1,-2.5,-1.671345E-05,0.0` is accepted and shows nothing | location #1/#2/#3 |
+ * | "…" (warn, never block) | a malformed value warns and **cannot** disable Save — the corpus carries three real prose values — while a genuinely malformed one is still flagged | location #3 |
  * | "`m_teleportType` enum" | the one measured member is offered, and a stored value the model does not know is kept verbatim | type #1/#2 |
  * | AC2 "`Events` … visible in a read-only raw-fields disclosure" | the disclosure names the field, quotes the measurement and prints the value | drift #1 |
  * | AC2 "survives save … byte-identically" | the POST body still carries `Events: []` and the file's key order | drift #2 |
@@ -32,10 +32,12 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  * - **`Events` is `[]` in all 1,207 real files** (`shared/simpleObjects/zoneTransfer.ts`), so the
  *   disclosure's content is an empty array and the spec asserts exactly that rather than a richer
  *   shape that does not exist anywhere.
- * - **A malformed `m_destinationLoc` does not occur in the corpus either** (2,365 of 2,365 pass
- *   the pattern), so the **blocking** arm is reachable only by typing — which is what test
- *   location #1 does. The model's unit sweep proves the accept side against all 2,365 real values.
- * - **An unrecognised `m_teleportType` does not occur** (`TELEPORT_STATIC` in 2,365 of 2,365), so
+ * - **The corpus no longer passes the pattern everywhere** (2,365 of 2,368 at the owner's
+ *   `f9a1055` baseline; the three rejects are prose the owner wrote, `"Start"` and two
+ *   `"Target …"` annotations). That measurement is exactly why the rule is a **warning**: the
+ *   arm below types a malformed value to prove it is flagged, and proves it does **not** disable
+ *   Save (D80a). The model's unit sweep pins both sides against all 2,368 real values.
+ * - **An unrecognised `m_teleportType` does not occur** (`TELEPORT_STATIC` in 2,368 of 2,368), so
  *   type #2 serves a fixture document with one; the point is that the editor must not rewrite a
  *   value it does not know, and that can only be proven with such a value.
  *
@@ -81,7 +83,7 @@ const ZONE_ROWS = [
 /**
  * The loaded document, in the real corpus's own shape and key order (`ZoneName, Events,
  * Teleports` — 1,206 of the 1,207 files). Row 1 carries the **scientific-notation** location form
- * the corpus really uses 133 times; row 2 repeats row 1's trigger name on purpose, so the removal
+ * the corpus really uses 135 times; row 2 repeats row 1's trigger name on purpose, so the removal
  * arm can prove it is index-addressed rather than value-addressed.
  */
 const DOCUMENT: Record<string, unknown> = {
@@ -342,7 +344,7 @@ test.describe('AC1 — the Teleports repeater and the nested Teleport fields', (
       'TeleportToShoppingDistrict',
       'TeleportToShoppingDistrict',
     ]);
-    // Row 1's location is the scientific-notation form — a real corpus value (133 of 2,365).
+    // Row 1's location is the scientific-notation form — a real corpus value (135 of 2,368).
     expect(await inputValues(locationBoxes(page))).toEqual([
       '2824.861,-6404.079,-1.671345E-05,3.13484',
       '-95.55735,-849.2842,-30.46902,-0.03700731',
@@ -459,27 +461,26 @@ test.describe('AC1 — the m_destinationLoc format check', () => {
     );
   }
 
-  test('rejects a malformed 4-component string with an inline error', async ({ page }) => {
+  test('flags a malformed 4-component string with an inline warning, and never blocks Save', async ({
+    page,
+  }) => {
     await mockObjectApi(page);
     await openEditor(page);
 
-    await expect(main(page).locator('li[data-severity="error"]')).toHaveCount(0);
+    await expect(main(page).locator('li[data-severity="warning"]')).toHaveCount(0);
 
     await locationBoxes(page).nth(0).fill('1,2,3');
 
-    // One error, at the nested field's own path, and the format is stated in the sentence.
+    // One warning, at the nested field's own path, and the format is stated in the sentence.
     await expect(locationMessage(page, 1)).toHaveCount(1);
-    await expect(locationMessage(page, 1)).toHaveAttribute('data-severity', 'error');
+    await expect(locationMessage(page, 1)).toHaveAttribute('data-severity', 'warning');
     await expect(locationMessage(page, 1)).toContainText('is not four comma-separated numbers');
-    await expect(locationMessage(page, 1)).toContainText('Save is disabled until it is fixed');
+    await expect(locationMessage(page, 1)).toContainText('Save stays enabled');
     await expect(locationMessage(page, 1)).toContainText('-1.671345E-05');
-    // No warning-severity message exists anywhere: this family emits errors only.
-    await expect(main(page).locator('li[data-severity="warning"]')).toHaveCount(0);
-
-    // The form-level banner counts the same finding and says what it does (L547).
-    await expect(main(page).locator('[data-blocking-count="1"]')).toContainText(
-      'Save is disabled until it is fixed',
-    );
+    // No error-severity message exists anywhere: this family emits warnings only (D80a).
+    await expect(main(page).locator('li[data-severity="error"]')).toHaveCount(0);
+    // …and no form-level banner: the blocking count is 0, so the paragraph does not render.
+    await expect(main(page).locator('[data-blocking-count]')).toHaveCount(0);
 
     // The bad value is written **verbatim** — validate, never normalise (D57).
     const live = await liveDocument(page);
@@ -498,20 +499,23 @@ test.describe('AC1 — the m_destinationLoc format check', () => {
 
     await locationBoxes(page).nth(0).fill('1,2,3');
     await expect(locationMessage(page, 1)).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+    // The warning does not disable Save — the document is dirty, so the button is usable.
+    await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
 
-    // The arm the corpus needs: 133 of the 2,365 real values carry one, e.g. -1.671345E-05.
+    // The arm the corpus needs: 135 of the 2,368 real values carry one, e.g. -1.671345E-05.
     await locationBoxes(page).nth(0).fill('1,-2.5,-1.671345E-05,0.0');
     await expect(locationMessage(page, 1)).toHaveCount(0);
     await expect(main(page).locator('[data-blocking-count]')).toHaveCount(0);
-    // The document is dirty (the edit happened) and the error is gone, so Save is usable again.
+    // The document is dirty (the edit happened) and the warning is gone.
     await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
 
     const live = await liveDocument(page);
     expect(savedTeleport(live, 0).m_destinationLoc).toBe('1,-2.5,-1.671345E-05,0.0');
   });
 
-  test('a malformed value disables Save, and fixing it makes the save land', async ({ page }) => {
+  test('a malformed value still saves verbatim — the warning never blocks (D80a)', async ({
+    page,
+  }) => {
     const recorded = await mockObjectApi(page);
     await openEditor(page);
 
@@ -522,22 +526,27 @@ test.describe('AC1 — the m_destinationLoc format check', () => {
     await expect(save).not.toHaveAttribute('aria-disabled', 'true');
 
     await locationBoxes(page).nth(0).fill('1,2,3');
-    await expect(main(page).locator('li[data-severity="error"]')).toHaveCount(1);
-    // …and Save is now blocked by the error, with the layout's own reason on the button.
-    await expect(save).toBeDisabled();
-    await expect(save).toHaveAttribute('title', /validation error blocks saving/);
+    await expect(main(page).locator('li[data-severity="warning"]')).toHaveCount(1);
+    // …and Save is **not** blocked: the warning is visible and the button is enabled and titled
+    // by the dirty rule alone (no `blockReason`, no `aria-disabled`).
+    await expect(save).toBeEnabled();
+    await expect(save).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(save).not.toHaveAttribute('title', /validation error blocks saving/);
 
-    // Fixing the value (with the corpus's own scientific-notation form) unblocks the save.
-    await locationBoxes(page).nth(0).fill('1,2,3,4');
-    await expect(main(page).locator('li[data-severity="error"]')).toHaveCount(0);
+    // The value the owner would type — prose, exactly like the three real corpus entries — also
+    // saves: this is the falsification that made the rule a warning rather than an error.
+    await locationBoxes(page).nth(0).fill('Target location (Street5 Tower1 Entrance)');
+    await expect(main(page).locator('li[data-severity="warning"]')).toHaveCount(1);
     await expect(save).toBeEnabled();
 
     await save.click();
     await expect(page.getByText(/Saved WizardCity\/WC_Hub/)).toBeVisible({ timeout: 15_000 });
 
-    // The fixed value reached the server verbatim — the client never rewrote or dropped it.
+    // The value reached the server verbatim — the client never rewrote or dropped it.
     const saved = lastSaved(recorded);
-    expect(savedTeleport(saved, 0).m_destinationLoc).toBe('1,2,3,4');
+    expect(savedTeleport(saved, 0).m_destinationLoc).toBe(
+      'Target location (Street5 Tower1 Entrance)',
+    );
     expect(Object.keys(savedTeleport(saved, 0))).toEqual([
       'm_exitTeleporter',
       'm_teleporterTag',
@@ -570,7 +579,7 @@ test.describe('AC1 — the m_teleportType control', () => {
     page,
   }) => {
     const recorded = await mockObjectApi(page);
-    // No corpus file carries this value (all 2,365 are TELEPORT_STATIC) — that is the point:
+    // No corpus file carries this value (all 2,368 are TELEPORT_STATIC) — that is the point:
     // the editor must not rewrite what it does not know.
     const served = JSON.parse(JSON.stringify(DOCUMENT)) as Record<string, unknown>;
     const rows = served.Teleports as Array<Record<string, unknown>>;

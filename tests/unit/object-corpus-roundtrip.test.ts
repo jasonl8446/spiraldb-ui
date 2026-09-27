@@ -193,7 +193,10 @@ const ZONE_TRANSFER_TOP_LEVEL_MINORITY = ['ZoneName', 'Teleports', 'Events'];
 const ZONE_TRANSFER_TOP_LEVEL_MAJORITY_FILES = 1206;
 const ZONE_TRANSFER_TOP_LEVEL_MINORITY_FILE = 'WizardZoneDatas_1-A.json';
 
-/** … and the nested `Teleport` object's (`2353` serializer order / `12` spec-table order, D74c). */
+/**
+ * … and the nested `Teleport` object's (`2355` serializer order / `13` spec-table order at the
+ * owner's `f9a1055` baseline; `2353` / `12` before the merge, D74c/D79).
+ */
 const ZONE_TRANSFER_TELEPORT_SERIALIZER_ORDER = [
   'm_exitTeleporter',
   'm_teleporterTag',
@@ -210,8 +213,8 @@ const ZONE_TRANSFER_TELEPORT_SPEC_ORDER = [
   'm_teleportType',
   'm_transitionID',
 ];
-const ZONE_TRANSFER_TELEPORT_SERIALIZER_ORDER_ENTRIES = 2353;
-const ZONE_TRANSFER_TELEPORT_SPEC_ORDER_ENTRIES = 12;
+const ZONE_TRANSFER_TELEPORT_SERIALIZER_ORDER_ENTRIES = 2355;
+const ZONE_TRANSFER_TELEPORT_SPEC_ORDER_ENTRIES = 13;
 
 /** The duplicate `ZoneName` pairs in `ZoneTransfer/` (D48f: both are real, the first file wins). */
 const ZONE_TRANSFER_DUPLICATE_KEYS = [
