@@ -13,9 +13,9 @@ import SearchPalette from './SearchPalette';
 import Sidebar from './Sidebar';
 
 /**
- * The application shell (docs/spec-ui-design.md L45-109): a fixed 260px sidebar,
- * a 56px sticky header and a `p-6` content column, with every route rendering
- * through `<Outlet />`.
+ * The application shell (docs/spec-ui-design.md L45-109): a fixed sidebar — **200px on tablet
+ * (768–1279px), 260px on desktop (≥1280px)**, per L516-522 — a 56px sticky header and a `p-6`
+ * content column, with every route rendering through `<Outlet />`.
  *
  * The one-time "Imported N existing entries from SpiralDB" toast (decision D37) is
  * also owned here: the server reports the current process's first-startup import,
@@ -73,7 +73,10 @@ export default function AppLayout(): JSX.Element {
   return (
     <div className="min-h-screen bg-zinc-950">
       <Sidebar mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
-      <div className="md:pl-[260px]">
+      {/* The rail's own width has to be mirrored here as padding: 200px on tablet, 260px on
+          desktop (spec L516-522; story p5-06 added the tablet tier — `md:pl-[260px]` alone put
+          the content column 60px too far right at every width from 768 to 1279). */}
+      <div className="md:pl-[200px] xl:pl-[260px]">
         {/* Above the header: the spec's "persistent banner at top" (L535), rendered only while
             the health probe says the API is unreachable. */}
         <OfflineBanner offline={offline} />

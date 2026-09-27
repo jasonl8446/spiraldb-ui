@@ -17,7 +17,8 @@ import { expect, test, type Locator, type Page, type Route } from '@playwright/t
  * (docs/spec-ui-design.md L234/L270/L340). So this spec asserts the mobile surface at **375**
  * (a real phone) and at **767** (the widest viewport the app calls mobile, and therefore the
  * strongest reading of "≤768"), and asserts the **converse** at **768** (where the desktop table
- * and the 400px side panel mount). At exactly 768px desktop wins; that one-pixel gap between the
+ * and the tablet 300px side panel mount — 300, not 400: story p5-06 added the spec's tablet tier,
+ * `docs/spec-ui-design.md` L518). At exactly 768px desktop wins; that one-pixel gap between the
  * criterion's wording and the implementation is pinned here rather than papered over.
  *
  * ## Every visual claim is a DOM/geometry assertion (the lead cannot read a PNG)
@@ -639,7 +640,7 @@ test.describe('AC#13: every keyed family’s detail form is usable and its JSON 
     });
   }
 
-  test('at 768 the panel is the 400px side pane again, not an overlay (the boundary, pinned)', async ({
+  test('at 768 the panel is the spec’s 300px tablet side pane, not an overlay (the boundary, pinned)', async ({
     page,
   }) => {
     const family = KEYED[1] as FamilyFixture; // NpcInventory
@@ -651,8 +652,12 @@ test.describe('AC#13: every keyed family’s detail form is usable and its JSON 
     const aside = page.locator(`aside[aria-label="${family.label} JSON"]`);
     await expect(aside).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    // The spec's 400px desktop pane (docs/spec-ui-design.md L326), polled for the slide-in.
-    await expect.poll(async () => Math.round((await aside.boundingBox())?.width ?? 0)).toBe(400);
+    // The spec's **tablet** 300px pane (`docs/spec-ui-design.md` L518), polled for the slide-in.
+    // Story p5-06 corrected this arm: it previously pinned **400** here, which was the
+    // implementation's single desktop number at every width above `md` — a tier-1 spec pinning a
+    // defect as expected (D40). The desktop 400px pane is asserted at ≥1280px in
+    // `tests/ui/responsive.spec.ts`, which owns the three-tier rule.
+    await expect.poll(async () => Math.round((await aside.boundingBox())?.width ?? 0)).toBe(300);
   });
 });
 

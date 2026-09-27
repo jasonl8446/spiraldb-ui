@@ -169,7 +169,18 @@ export default function ObjectListPage({
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      {/*
+        `flex-wrap` is story p5-06's tablet fix. From `md` this row becomes
+        `flex-row justify-between`, forcing the status-tab strip and the search + create row
+        side by side — and `md` is exactly where the 260px sidebar also appears, so the content
+        column is at its narrowest the moment the row becomes a row. Measured at a 768px
+        viewport: the search + create row sits at `x=415 w=423` inside a 460px column
+        (`415 + 423 = 838 of 768`), i.e. the page scrolled 70px sideways on every object list
+        route (up to 157px on the longest create-button label). Wrapping lets the search row
+        drop to its own line at tablet widths; from `lg` the column is wide enough that both
+        children share the row again, so the desktop layout is unchanged.
+      */}
+      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between">
         <div
           role="tablist"
           aria-label={objectFilterLabel(nounPlural)}

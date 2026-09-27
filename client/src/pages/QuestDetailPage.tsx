@@ -471,7 +471,17 @@ function QuestHeader({
       </h2>
       <StatusBadge status={status} />
 
-      <div className="ml-auto flex items-center gap-2">
+      {/*
+        `flex-wrap` is the same fix story p4-10 applied to `ObjectDetailLayout`'s action group,
+        mirrored here because the **quest** detail page was outside that story's scope. The
+        actions together are ~500px wide, so at a 375px viewport the group's right edge sat at
+        **524 of 375** (+149px — the page scrolled sideways) and at 768px at **784 of 768**
+        (+16px, where the sidebar leaves only a 460px column). Wrapping lets the group shrink to
+        its widest single button and lay the rest on following lines; the outer header already
+        wraps (`flex flex-wrap items-center gap-3`), so at mobile the group drops to its own line.
+        On desktop nothing wraps and the row is unchanged.
+      */}
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         {STATUS_TRANSITIONS.map((transition) => {
           const current = isCurrentStatus(status, transition.status);
           const unavailable = current || transitionPending;

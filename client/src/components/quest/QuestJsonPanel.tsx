@@ -8,7 +8,6 @@ import {
   JSON_COPY_LABEL,
   JSON_PANEL_GLYPH,
   JSON_PANEL_TITLE,
-  JSON_PANEL_WIDTH_PX,
   JSON_WRAP_LABEL,
   JSON_WRAP_OFF_TOOLTIP,
   JSON_WRAP_ON_TOOLTIP,
@@ -31,8 +30,8 @@ import 'react-json-view-lite/dist/index.css';
  * viewer. It is the **fetch-free** view of the quest object the detail page
  * already has, exactly like `QuestPreview`, so it takes the object as a prop.
  *
- * - {@link QuestJsonPanel} is the 400px desktop `<aside>` (spec L326), sliding in
- *   from the right;
+ * - {@link QuestJsonPanel} is the side `<aside>` — **300px on tablet (768–1279px), 400px on
+ *   desktop (≥1280px)** (spec L518-520, story p5-06) — sliding in from the right;
  * - {@link QuestJsonOverlay} is the same content as a **full-screen dialog** below
  *   `md` (spec L340) instead of a squeezed side panel.
  *
@@ -164,15 +163,23 @@ export interface QuestJsonPanelProps {
   title?: string;
 }
 
-/** The desktop side panel: exactly {@link JSON_PANEL_WIDTH_PX} wide, slides in. */
+/**
+ * The desktop side panel: **300px on tablet (768–1279px), 400px on desktop (≥1280px)** —
+ * `docs/spec-ui-design.md` L518-520.
+ *
+ * Story p5-06 replaced the single inline `width: JSON_PANEL_WIDTH_PX` (400 at every width above
+ * `md`) with these two classes, because the width is a breakpoint rule and Tailwind's `xl` is
+ * exactly the spec's 1280px desktop line. The two numbers' home of record is
+ * `lib/quests.ts`'s `JSON_PANEL_TABLET_WIDTH_PX` / `JSON_PANEL_WIDTH_PX`, and
+ * `tests/ui/responsive.spec.ts` asserts the rendered box against both at both tiers.
+ */
 export function QuestJsonPanel({ quest, className, title }: QuestJsonPanelProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
   return (
     <aside
       aria-label={title ?? JSON_PANEL_TITLE}
-      style={{ width: JSON_PANEL_WIDTH_PX }}
       className={cn(
-        'flex shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right',
+        'flex w-[300px] shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right xl:w-[400px]',
         className,
       )}
     >
