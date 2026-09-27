@@ -59,42 +59,39 @@ const MOCK_QUEST_ROW = {
  * a spec that imported `client/src/lib/routes.ts` could not catch a wrong nav
  * table, only a UI that disagreed with it.
  *
- * `phase` is the "Arrives in Phase N" text a stub route renders (Dashboard 5, the
- * eight data types 4, `/quests` 2 — `client/src/lib/routes.ts`). `/settings`
- * (p1-08), `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01),
- * `/drop-tables` (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03),
- * `/npc-drop-tables` + `/treasure-card-inventories` + `/zone-transfers` (p4-04…p4-06)
- * and `/global-registry` (p4-07, the editor itself) are real pages, so the loop below
- * asserts their own content instead of the stub text.
+ * Every one of the 12 writes a real page now, and the loop below asserts each page's own
+ * content: `/` (p5-01, the dashboard — the last stub to fall), `/settings` (p1-08),
+ * `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01), `/drop-tables`
+ * (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03), `/npc-drop-tables` +
+ * `/treasure-card-inventories` + `/zone-transfers` (p4-04…p4-06) and `/global-registry`
+ * (p4-07, the editor itself).
+ *
+ * The rows used to carry the `phase` the stub would announce. They no longer do: no route
+ * renders "Arrives in Phase N" any more, so the branch that read it became unreachable (and
+ * TypeScript narrows it to `never`), the per-page assertions below are exhaustive by path,
+ * and `phase` lives only in `APP_ROUTES` — where `tests/unit/ui-shell.test.ts` pins it.
  */
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', title: 'Dashboard', phase: '5' },
-  { label: 'Extract Quests', path: '/quests/extract', title: 'Extract Quests', phase: '2' },
-  { label: 'Browse Quests', path: '/quests', title: 'Browse Quests', phase: '2' },
-  { label: 'Drop Tables', path: '/drop-tables', title: 'Drop Tables', phase: '4' },
-  { label: 'NPC Inventories', path: '/npc-inventories', title: 'NPC Inventories', phase: '4' },
+  { label: 'Dashboard', path: '/', title: 'Dashboard' },
+  { label: 'Extract Quests', path: '/quests/extract', title: 'Extract Quests' },
+  { label: 'Browse Quests', path: '/quests', title: 'Browse Quests' },
+  { label: 'Drop Tables', path: '/drop-tables', title: 'Drop Tables' },
+  { label: 'NPC Inventories', path: '/npc-inventories', title: 'NPC Inventories' },
   {
     label: 'NPC Spell Inventories',
     path: '/npc-spell-inventories',
     title: 'NPC Spell Inventories',
-    phase: '4',
   },
-  {
-    label: 'Creature Spellbooks',
-    path: '/creature-spellbooks',
-    title: 'Creature Spellbooks',
-    phase: '4',
-  },
-  { label: 'NPC Drop Tables', path: '/npc-drop-tables', title: 'NPC Drop Tables', phase: '4' },
+  { label: 'Creature Spellbooks', path: '/creature-spellbooks', title: 'Creature Spellbooks' },
+  { label: 'NPC Drop Tables', path: '/npc-drop-tables', title: 'NPC Drop Tables' },
   {
     label: 'Treasure Card Inventory',
     path: '/treasure-card-inventories',
     title: 'Treasure Card Inventory',
-    phase: '4',
   },
-  { label: 'Zone Transfers', path: '/zone-transfers', title: 'Zone Transfers', phase: '4' },
-  { label: 'Global Registry', path: '/global-registry', title: 'Global Registry', phase: '4' },
-  { label: 'Sync Friendly Names', path: '/settings', title: 'Settings', phase: '1' },
+  { label: 'Zone Transfers', path: '/zone-transfers', title: 'Zone Transfers' },
+  { label: 'Global Registry', path: '/global-registry', title: 'Global Registry' },
+  { label: 'Sync Friendly Names', path: '/settings', title: 'Settings' },
 ] as const;
 
 /**
@@ -442,6 +439,74 @@ async function mockShellApi(page: Page): Promise<void> {
       },
     }),
   );
+
+  // Story p5-01 replaced `/`'s stub with the real dashboard (plan task 5.1), and both of
+  // its reads are mocked here — the D81 rule this file already follows for every other
+  // family. The dashboard is the one page that aggregates the **tool's own database**, so
+  // an unmocked assertion would read 2,271 imported rows locally and nothing on CI.
+  //
+  // The fixture is the spec's own worked example (docs/spec-api.md L148-163): its
+  // percentages are the ones the spec prints (`157/322 (48.8%)`, `70/180 (38.9%)`,
+  // `45/95 (47.4%)`, overall `272/597 → 45.6`), which is what makes the branch's literals
+  // independent of this file's own arithmetic. Seven type buckets are present because the
+  // API always carries all eight (zeros included, D37) — the eighth is spelled out as
+  // zeros so the assertion covers the "no rows yet" shape too.
+  // The page's own contract is `tests/ui/dashboard.spec.ts`.
+  await page.route('**/api/dashboard', (route) =>
+    route.fulfill({
+      json: {
+        types: {
+          quest: { total: 322, extracted: 45, reviewed: 120, verified: 157 },
+          drop_table: { total: 180, extracted: 30, reviewed: 80, verified: 70 },
+          npc_inventory: { total: 95, extracted: 10, reviewed: 40, verified: 45 },
+          npc_spell_inventory: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+          creature_spellbook: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+          npc_drop_table: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+          treasure_card_inventory: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+          zone_transfer: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+        },
+        overall: {
+          total: 597,
+          extracted: 85,
+          reviewed: 240,
+          verified: 272,
+          percent_verified: 45.6,
+        },
+      },
+    }),
+  );
+  // One resolved row and one the join could not resolve, so the branch sees the feed's
+  // real anatomy (dot, monospace key, action text, relative time, italic notes) *and* the
+  // unresolved notice the server reports.
+  await page.route('**/api/activity**', (route) =>
+    route.fulfill({
+      json: {
+        activity: [
+          {
+            id: 3,
+            object_type: 'quest',
+            object_key: 'DS-ACAD-C01-001',
+            old_status: 'extracted',
+            new_status: 'reviewed',
+            notes: 'Gate-1 acceptance re-run',
+            changed_by: 'Mock Reviewer',
+            changed_at: '2026-09-26T06:26:25.798Z',
+          },
+          {
+            id: 1,
+            object_type: null,
+            object_key: null,
+            old_status: 'extracted',
+            new_status: 'reviewed',
+            notes: 'gate-1 attempt before identity',
+            changed_by: '',
+            changed_at: '2026-09-23T06:23:17.332Z',
+          },
+        ],
+        unresolved: 1,
+      },
+    }),
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -461,10 +526,33 @@ test.describe('sidebar navigation', () => {
       await expect.poll(() => new URL(page.url()).pathname).toBe(item.path);
       await expect(page.getByRole('heading', { name: item.title, exact: true })).toBeVisible();
 
-      // No dead stubs: every route renders real content — the Settings page and
-      // the extraction page here, and for the rest the card that names the route
-      // and the phase that builds it.
-      if (item.path === '/settings') {
+      // No dead stubs: every route renders real content. Each branch below asserts the
+      // page's own literals, copied on purpose, with every endpoint the assertion depends
+      // on mocked (D81) — so the branch passes on CI, where the tool's database is empty,
+      // exactly as it does against a developer's corpus.
+      if (item.path === '/') {
+        // Story p5-01 replaced this route's stub with the real dashboard (plan task 5.1) —
+        // the same phase transition p4-01…p4-07 recorded, so `phase` in the row above still
+        // means the phase that *owns* the page. This is the last stub to fall: after it, no
+        // route renders "Arrives in Phase N". Both of the dashboard's reads are mocked (see
+        // `mockShellApi`), and the literals come from the spec's worked example
+        // (docs/spec-api.md L148-163, spec-ui-design L135-179): the Total card's number, the
+        // quest bar's fraction + one-decimal percentage, the feed's action text and its
+        // unresolved notice. The page's own contract is `tests/ui/dashboard.spec.ts`.
+        const main = page.getByRole('main');
+        await expect(main.locator('[data-stat="total"]')).toHaveText('597');
+        await expect(main.locator('[data-stat="verified"]')).toHaveText('272');
+        await expect(main.locator('[data-stat-percent="verified"]')).toHaveText('45.6%');
+        await expect(main.locator('[data-type-summary="quest"]')).toHaveText('157/322 (48.8%)');
+        await expect(
+          main.getByRole('heading', { name: 'Verification Progress by Type', exact: true }),
+        ).toBeVisible();
+        await expect(
+          main.getByRole('heading', { name: 'Recent Activity', exact: true }),
+        ).toBeVisible();
+        await expect(main.getByText('DS-ACAD-C01-001 marked reviewed')).toBeVisible();
+        await expect(main.getByText('1 status change in this feed')).toBeVisible();
+      } else if (item.path === '/settings') {
         await expect(page.getByRole('main').getByText('Friendly Name Sync')).toBeVisible();
       } else if (item.path === '/quests/extract') {
         // Story p2-07 replaced this route's stub with the real page. The literal
@@ -586,10 +674,12 @@ test.describe('sidebar navigation', () => {
           'GlobalRegistryModels_1-A.json',
         );
       } else {
-        await expect(
-          page.getByRole('main').getByText(`Arrives in Phase ${item.phase}`),
-        ).toBeVisible();
-        await expect(page.getByRole('main').getByText(item.path, { exact: true })).toBeVisible();
+        // Unreachable, and that is the assertion's point: every sidebar route has a branch
+        // above (`item` is narrowed to `never` in this position — a missing branch is a
+        // compile error, not a runtime surprise). Story p5-01 removed the last stub page, so
+        // the guard below now asserts the *absence* of stub text: a future sidebar entry added
+        // without its own branch fails here loudly instead of passing on the heading alone.
+        await expect(page.getByRole('main').getByText(/Arrives in Phase \d/)).toHaveCount(0);
       }
 
       // Exactly one item is highlighted, and it is the one that was clicked — the

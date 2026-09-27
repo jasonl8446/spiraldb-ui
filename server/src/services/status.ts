@@ -85,6 +85,11 @@ export function isStatusRequestType(value: string): value is StatusRequestType {
   return (STATUS_REQUEST_TYPES as readonly string[]).includes(value);
 }
 
+/** `true` for a value one of the eight `entry_status.object_type` columns can hold. */
+export function isStatusObjectType(value: unknown): value is StatusObjectType {
+  return typeof value === 'string' && (STATUS_OBJECT_TYPES as readonly string[]).includes(value);
+}
+
 export function isStatusValue(value: unknown): value is StatusValue {
   return typeof value === 'string' && (STATUS_VALUES as readonly string[]).includes(value);
 }
@@ -418,4 +423,151 @@ export function readDashboard(db: Db): DashboardResult {
   overall.percent_verified = percentVerified(overall.verified, overall.total);
 
   return { types, overall };
+}
+
+/* ------------------------------------------------------------------ activity */
+
+/** `?limit=` default of `GET /api/activity` — the feed length the spec draws (L162-177). */
+export const ACTIVITY_DEFAULT_LIMIT = 10;
+
+/**
+ * `?limit=` ceiling. The dashboard feed needs ten rows; the ceiling exists so a
+ * hand-typed `?limit=1000000` cannot turn one page load into a full-table response
+ * (`status_history` grows with every transition). A value above it is a **400**,
+ * not a silent clamp: a caller that asked for 5,000 rows deserves to know it got
+ * 100 (the same rule `parseListNamesQuery` follows for `?limit=`).
+ */
+export const ACTIVITY_MAX_LIMIT = 100;
+
+/**
+ * One `activity[]` element — a `status_history` row joined to the entry it
+ * belongs to (D27, docs/plan-overview.md L117).
+ *
+ * `id` is the `status_history` primary key and is carried on purpose: it is the
+ * row's only identity that cannot repeat (`changed_at` can — two transitions in
+ * the same millisecond, and SQLite's `CURRENT_TIMESTAMP` is second-resolution), so
+ * the client uses it as the React key.
+ *
+ * `object_type` / `object_key` are `null` for a history row whose
+ * `entry_status` parent is missing — a join that found nothing. That row is still
+ * returned (the criterion is "the N most recent `status_history` rows", not "the
+ * N most recent resolvable ones"); it is counted in `unresolved` and the UI must
+ * say so rather than silently drop it or render a dead link.
+ */
+export interface ActivityRow {
+  id: number;
+  object_type: StatusObjectType | null;
+  object_key: string | null;
+  old_status: string | null;
+  new_status: string;
+  notes: string | null;
+  changed_by: string | null;
+  changed_at: string | null;
+}
+
+export interface ActivityResult {
+  /** Newest first; at most the requested limit. */
+  activity: ActivityRow[];
+  /**
+   * How many **returned** rows have no usable `(object_type, object_key)` pair: the
+   * parent row is gone (the left join answered `NULL`) or its type is outside the
+   * eight D4 types (so no frontend route exists for it either way).
+   */
+  unresolved: number;
+}
+
+export interface ListActivityOptions {
+  /** Row cap; validated by the caller ({@link parseActivityLimit}), default 10. */
+  limit?: number;
+}
+
+/**
+ * `true` when a row names an object the client can link to: a tracked D4 type and
+ * a non-empty key.
+ *
+ * The one place that decides it, so the response's `unresolved` count and the UI's
+ * "no link" rendering cannot disagree about the same row.
+ */
+export function isResolvedActivity(row: ActivityRow): boolean {
+  return (
+    isStatusObjectType(row.object_type) &&
+    typeof row.object_key === 'string' &&
+    row.object_key !== ''
+  );
+}
+
+/**
+ * The newest N `status_history` rows joined to their entry — `GET /api/activity`
+ * (D27), the dashboard feed's read.
+ *
+ * **The join is LEFT, not INNER, on purpose.** An inner join would *silently* drop
+ * a history row whose parent is missing, so the feed would claim to show "the 10
+ * most recent status changes" while showing nine and saying nothing. The
+ * `entry_status_id` foreign key is enforced on this app's own connection
+ * (`db.ts` sets `PRAGMA foreign_keys = ON`), so an orphan can only come from a
+ * writer that ignored it — exactly the case where hiding evidence is worst. Every
+ * row comes back; the unlinkable ones are counted in `unresolved`.
+ *
+ * **Ordering is `changed_at DESC, id DESC`.** The plan's sentence for this endpoint
+ * is "order by `changed_at desc`"; `changed_at` is the row's own timestamp (the
+ * app writes ISO-8601 for every transition) and `id` is the deterministic tiebreak,
+ * because `changed_at` is allowed to repeat within a second (D37's note on
+ * `latest_notes`). The order is therefore total: two runs over one database cannot
+ * disagree about what "the 10 most recent" means.
+ */
+export function listActivity(db: Db, options: ListActivityOptions = {}): ActivityResult {
+  const limit = options.limit ?? ACTIVITY_DEFAULT_LIMIT;
+
+  const rows = db
+    .prepare<[number], ActivityRow>(
+      `SELECT sh.id, es.object_type, es.object_key,
+              sh.old_status, sh.new_status, sh.notes, sh.changed_by, sh.changed_at
+       FROM status_history sh
+       LEFT JOIN entry_status es ON es.id = sh.entry_status_id
+       ORDER BY sh.changed_at DESC, sh.id DESC
+       LIMIT ?`,
+    )
+    .all(limit);
+
+  return { activity: rows, unresolved: rows.filter((row) => !isResolvedActivity(row)).length };
+}
+
+export type ParseActivityLimitResult = { ok: true; limit: number } | { ok: false; error: string };
+
+/**
+ * Validates `?limit=` of `GET /api/activity`.
+ *
+ * Rules, in the order they are checked (an absent value means the default):
+ *
+ * - absent → `10` (the feed length docs/spec-ui-design.md L162-177 draws);
+ * - a repeated parameter (`?limit=1&limit=2`) arrives as an array → 400;
+ * - anything that is not a plain digit string (`"abc"`, `"1.5"`, `"-1"`, `""`,
+ *   `"1e3"`) → 400 — note `""` is rejected rather than treated as absent, the same
+ *   rule `?status=` follows (D37);
+ * - `0` → 400 (a limit of zero asks for no feed at all);
+ * - above {@link ACTIVITY_MAX_LIMIT} → 400 with the ceiling in the message.
+ *
+ * Pure, so the whole ladder is asserted in node without an HTTP request.
+ */
+export function parseActivityLimit(raw: unknown): ParseActivityLimitResult {
+  if (raw === undefined) {
+    return { ok: true, limit: ACTIVITY_DEFAULT_LIMIT };
+  }
+  if (typeof raw !== 'string') {
+    return { ok: false, error: 'Query parameter "limit" must be a single positive integer' };
+  }
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw)) || Number(raw) < 1) {
+    return {
+      ok: false,
+      error: `Invalid limit "${raw}": limit must be a positive integer (1-${ACTIVITY_MAX_LIMIT})`,
+    };
+  }
+  const limit = Number(raw);
+  if (limit > ACTIVITY_MAX_LIMIT) {
+    return {
+      ok: false,
+      error: `Invalid limit "${raw}": limit must be at most ${ACTIVITY_MAX_LIMIT}`,
+    };
+  }
+  return { ok: true, limit };
 }

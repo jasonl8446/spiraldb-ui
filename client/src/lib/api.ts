@@ -293,6 +293,112 @@ export async function getStatusHistory(
   return body.history;
 }
 
+/* ----------------------------------------------------------------- dashboard */
+
+/**
+ * Per-type verification counts — one `types[<object_type>]` bucket
+ * (docs/spec-api.md L144-164, decision D37).
+ *
+ * The three buckets always add up to `total` on the wire, and every one of the
+ * eight tracked types is present **with zeros included**, which is what lets the
+ * dashboard render a stable table on a fresh database.
+ */
+export interface VerificationBucket {
+  total: number;
+  extracted: number;
+  reviewed: number;
+  verified: number;
+}
+
+/** The dashboard's `overall` bucket: the four counts plus the server's own percentage. */
+export interface DashboardOverall extends VerificationBucket {
+  /** `verified / total * 100` to one decimal, `0` when `total` is 0 (D37). */
+  percent_verified: number;
+}
+
+/**
+ * `GET /api/dashboard` response.
+ *
+ * `types` is keyed by the D4 **singular** `object_type` and holds exactly the eight
+ * tracked types — GlobalRegistry is absent by Q1 (it has no `object_type`, no route
+ * and no lifecycle), so it can never be a card or a bar.
+ */
+export interface DashboardResult {
+  types: Record<StatusObjectType, VerificationBucket>;
+  overall: DashboardOverall;
+}
+
+/** TanStack Query key for the dashboard aggregate read. */
+export const DASHBOARD_QUERY_KEY = ['dashboard'] as const;
+
+/**
+ * `GET /api/dashboard` — the aggregate the four stat cards and the per-type bars
+ * read. One request feeds both, so the cards and the bars cannot disagree.
+ */
+export function getDashboard(): Promise<DashboardResult> {
+  return apiFetch<DashboardResult>('/api/dashboard');
+}
+
+/* ------------------------------------------------------------------ activity */
+
+/**
+ * The feed length `GET /api/activity` defaults to — the spec's "last 10 status
+ * changes" (docs/spec-ui-design.md L162-177). The server's own default lives in
+ * `server/src/services/status.ts`; this constant is the client's request value, so
+ * the two are one decision written once per half (the api.ts convention).
+ */
+export const ACTIVITY_DEFAULT_LIMIT = 10;
+
+/**
+ * One `activity[]` row of `GET /api/activity` (decision D27) — a `status_history`
+ * row joined to its entry.
+ *
+ * `id` is the `status_history` primary key: `changed_at` can repeat, so it is the
+ * only safe React key.
+ *
+ * **`object_type` is `string | null`, not {@link StatusObjectType} | null**, and
+ * deliberately so: `null` means the join found no parent, and a value outside the
+ * eight tracked types is also possible (nothing prevents a hand-written row).
+ * Both cases are unlinkable and the feed must render them without a link rather
+ * than assume the union (`lib/dashboard.ts` owns that mapping).
+ */
+export interface ActivityEntry {
+  id: number;
+  object_type: string | null;
+  object_key: string | null;
+  old_status: StatusValue | null;
+  /** The status the entry moved to; `null`-free because the column is NOT NULL. */
+  new_status: StatusValue;
+  notes: string | null;
+  changed_by: string | null;
+  changed_at: string | null;
+}
+
+/** `GET /api/activity` response envelope (the `{ history }` shape of D37). */
+export interface ActivityFeed {
+  activity: ActivityEntry[];
+  /** Rows in this feed the join could not tie to a live, tracked entry. */
+  unresolved: number;
+}
+
+/** TanStack Query key prefix for every activity read — invalidation targets this. */
+export const ACTIVITY_QUERY_KEY = ['activity'] as const;
+
+/** TanStack Query key for one feed length. */
+export function activityQueryKey(limit = ACTIVITY_DEFAULT_LIMIT): readonly [string, number] {
+  return ['activity', limit] as const;
+}
+
+/**
+ * `GET /api/activity?limit=` — the newest status changes, newest first.
+ *
+ * The envelope is kept whole (unlike `getStatusHistory`): `unresolved` is part of
+ * the answer the feed must show, not metadata a caller can drop.
+ */
+export function getActivity(limit = ACTIVITY_DEFAULT_LIMIT): Promise<ActivityFeed> {
+  return apiFetch<ActivityFeed>(`/api/activity?limit=${String(limit)}`);
+}
+
 /* --------------------------------------------------------------------- names */
 
 /** Query-key prefix for every names query; one entry per type. */

@@ -11,6 +11,7 @@ import NpcInventoryForm from './components/objects/NpcInventoryForm';
 import NpcSpellInventoryForm from './components/objects/NpcSpellInventoryForm';
 import ZoneTransferForm from './components/objects/ZoneTransferForm';
 import DropTableDetailPage from './pages/DropTableDetailPage';
+import DashboardPage from './pages/DashboardPage';
 import ObjectDetailPage from './pages/ObjectDetailPage';
 import ObjectListPage from './components/objects/ObjectListPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -39,11 +40,11 @@ import {
  *
  * Routing is generated from the `APP_ROUTES` table, so the spec-api L325-350
  * route list has exactly one home and cannot drift from the sidebar: every route
- * exists, the built pages (`/settings` from p1-08, `/quests/extract` from p2-07,
- * `/quests` and `/quests/:questName` from p2-08, `/npc-inventories` and its detail
- * route from p4-01, `/drop-tables` and `/drop-tables/:name` from p4-02) render for
- * real, and every other route renders the "Arrives in Phase N" stub with the phase
- * recorded in the table (decision D39 item 7).
+ * exists, the built pages (`/` — the dashboard, from story p5-01 — `/settings` from
+ * p1-08, `/quests/extract` from p2-07, `/quests` and `/quests/:questName` from p2-08,
+ * `/npc-inventories` and its detail route from p4-01, `/drop-tables` and
+ * `/drop-tables/:name` from p4-02) render for real, and every other route renders the
+ * "Arrives in Phase N" stub with the phase recorded in the table (decision D39 item 7).
  *
  * Task 4.1 wired **one** of the eight object families end to end (NpcInventory) so
  * the generic scaffolding is provably used; story p4-02 added the second
@@ -80,8 +81,9 @@ const queryClient = new QueryClient({
  *
  * Built pages are listed explicitly by path — the `phase` in `APP_ROUTES` is the
  * phase that *owns* the page, not a switch, so a built page is wired here once
- * (`/settings` in p1-08, `/quests/extract` in p2-07, the browse list and its
- * detail page in p2-08) and everything else keeps the "Arrives in Phase N" stub.
+ * (`/` — the dashboard — in p5-01, `/settings` in p1-08, `/quests/extract` in p2-07,
+ * the browse list and its detail page in p2-08) and everything else keeps the
+ * "Arrives in Phase N" stub.
  *
  * `/quests/extract` is listed before `/quests/:questName` in `APP_ROUTES` and the
  * router ranks the static path higher regardless, so the detail route can never
@@ -97,6 +99,11 @@ const DROP_TABLE = objectTypeConfig('droptable');
 
 function elementFor(route: AppRoute): JSX.Element {
   switch (route.path) {
+    case '/':
+      // Story p5-01 replaced the `/` stub with the real dashboard (plan task 5.1): the
+      // four stat cards, the per-type progress and the activity feed, from
+      // `GET /api/dashboard` + `GET /api/activity`.
+      return <DashboardPage />;
     case '/settings':
       return <SettingsPage />;
     case '/quests/extract':
