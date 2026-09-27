@@ -9,6 +9,7 @@ import CreatureSpellbookForm from './components/objects/CreatureSpellbookForm';
 import NpcDropTableForm from './components/objects/NpcDropTableForm';
 import NpcInventoryForm from './components/objects/NpcInventoryForm';
 import NpcSpellInventoryForm from './components/objects/NpcSpellInventoryForm';
+import ZoneTransferForm from './components/objects/ZoneTransferForm';
 import DropTableDetailPage from './pages/DropTableDetailPage';
 import ObjectDetailPage from './pages/ObjectDetailPage';
 import ObjectListPage from './components/objects/ObjectListPage';
@@ -21,6 +22,7 @@ import StubPage from './pages/StubPage';
 import TreasureCardInventoryDetailPage from './pages/TreasureCardInventoryDetailPage';
 import { UserNameGateProvider } from './hooks/useUserNameGate';
 import { APP_ROUTES, type AppRoute } from './lib/routes';
+import { validateZoneTransferDocument } from './lib/zone-transfer-validation';
 import {
   TOASTER_CLASS_NAMES,
   TOASTER_CLOSE_BUTTON,
@@ -47,11 +49,13 @@ import {
  * (DropTable, whose form mounts the shared requirement tree inline and whose route
  * is driven by its own page so the duplicate-name rule can inject the corpus); story
  * p4-03 added the third and fourth (NpcSpellInventory and CreatureSpellbook, both
- * plain `ObjectDetailPage` + form pairs); story p4-06 added the fifth (NpcDropTable,
+ * plain `ObjectDetailPage` + form pairs); story p4-04 added the fifth (NpcDropTable,
  * whose list page is the family with a genuinely absent directory); story p4-05 added
  * the sixth (TreasureCardInventory, whose detail route is its own page so the
- * warn-not-block rule can inject the synced `spells` names). The remaining two keep
- * their Phase-4 stub until their own tasks (4.8-4.9) supply a form. Both
+ * warn-not-block rule can inject the synced `spells` names); story p4-06 added the
+ * seventh (ZoneTransfer, whose one rule consults no synced table and so renders inline
+ * through the generic page). The last one (GlobalRegistry) keeps its Phase-4 stub until
+ * task 4.9 supplies the merged-dictionary editor. Both
  * route paths and the config rows come from `shared/objectTypes.ts`, so a page and
  * the API path the server mounts cannot disagree.
  */
@@ -83,6 +87,7 @@ const NPC_SPELL_INVENTORY = objectTypeConfig('npcspellinventory');
 const CREATURE_SPELLBOOK = objectTypeConfig('creaturespellbook');
 const NPC_DROP_TABLE = objectTypeConfig('npcdroptable');
 const TREASURE_CARD_INVENTORY = objectTypeConfig('treasurecardinventory');
+const ZONE_TRANSFER = objectTypeConfig('zonetransfer');
 const DROP_TABLE = objectTypeConfig('droptable');
 
 function elementFor(route: AppRoute): JSX.Element {
@@ -183,6 +188,24 @@ function elementFor(route: AppRoute): JSX.Element {
       // because the warn-not-block name rule needs the synced `spells` names at validation time
       // and a hook cannot live in a render prop (the DropTable detail page's own reason).
       return <TreasureCardInventoryDetailPage />;
+    case '/zone-transfers':
+      // Story p4-06: the seventh family's list branch (D73(g) — the real branch, not the stub).
+      return <ObjectListPage config={ZONE_TRANSFER} nounPlural="zone transfers" keyHeader="Zone" />;
+    case '/zone-transfers/:name':
+      // Story p4-06: the eighth and last Phase-4 form. It needs no page of its own — the one
+      // validation rule (`m_destinationLoc`'s format) consults no synced table, so the shared
+      // engine runs from a module-level function and the form is rendered inline, like p4-03's.
+      return (
+        <ObjectDetailPage
+          config={ZONE_TRANSFER}
+          nounPlural="zone transfers"
+          backLabel="Back to Zone Transfers"
+          validate={validateZoneTransferDocument}
+          renderForm={({ document, mode, state, messages }) => (
+            <ZoneTransferForm document={document} mode={mode} state={state} messages={messages} />
+          )}
+        />
+      );
     default:
       return <StubPage route={route} />;
   }

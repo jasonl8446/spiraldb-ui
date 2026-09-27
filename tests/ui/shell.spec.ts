@@ -259,6 +259,66 @@ async function mockShellApi(page: Page): Promise<void> {
       },
     }),
   );
+
+  // Story p4-06 replaced `/zone-transfers`' stub with the real generic object list (plan task
+  // 4.8) and this branch mocks the family's own list + status endpoints (D73(g)): the rows are
+  // the real corpus's shape — a `ZoneName` key with a slash. The real status route answers the
+  // **1,205** `entry_status` rows the first-startup corpus import created (all `extracted`; the
+  // brief said 0 rows for this family and that is measurably wrong — see the model's
+  // `ZONE_TRANSFER_CORPUS.statusRows`), so the summary mirrors `total: 1205` and the two listed
+  // keys carry their real status. Same on a developer's machine and on CI, where no clone exists.
+  // The editor's own contract is `tests/ui/zone-transfer-editor.spec.ts`.
+  await page.route('**/api/zone-transfers', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'WizardCity/WC_Hub',
+            title: 'WizardCity/WC_Hub',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+          {
+            key: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            title: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 2, extracted: 2, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/status/zone_transfers', (route) =>
+    route.fulfill({
+      json: {
+        entries: [
+          {
+            object_type: 'zone_transfer',
+            object_key: 'WizardCity/WC_Hub',
+            status: 'extracted',
+            extracted_at: '2026-09-24T15:22:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+          {
+            object_type: 'zone_transfer',
+            object_key: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            status: 'extracted',
+            extracted_at: '2026-09-24T15:22:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+        ],
+        summary: { total: 1205, extracted: 1205, reviewed: 0, verified: 0 },
+      },
+    }),
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -364,6 +424,29 @@ test.describe('sidebar navigation', () => {
         ).toBeVisible();
         await expect(
           page.getByRole('main').getByRole('link', { name: '38214', exact: true }),
+        ).toBeVisible();
+      } else if (item.path === '/zone-transfers') {
+        // Story p4-06 replaced this route's stub with the real generic object list (plan task
+        // 4.8) — the same phase transition p4-02/p4-03/p4-04/p4-05 recorded, so `phase` in the
+        // row above still means the phase that *owns* the page. Like the p4-05 branch it mocks
+        // its own endpoints (D73(g)), so it asserts the populated shape rather than whatever the
+        // D17 clone holds: the family's search field, its key column and both real-shaped keys —
+        // one of them carrying the `/` the filename convention writes as `_`.
+        // `tests/ui/zone-transfer-editor.spec.ts` owns the editor's contract.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search zone transfers...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'Zone' }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('link', { name: 'WizardCity/WC_Hub', exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('link', {
+            name: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            exact: true,
+          }),
         ).toBeVisible();
       } else {
         await expect(

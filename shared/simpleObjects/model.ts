@@ -3,7 +3,7 @@ import type { DocEdit, DocPath } from '../document.js';
 
 /**
  * The shared vocabulary of the "one key + one list" families — plan tasks 4.3/4.4/4.5 (story
- * p4-03) and 4.6 (story p4-06, NpcDropTable).
+ * p4-03) and 4.6 (story p4-04, NpcDropTable).
  *
  * Two things live here rather than in a per-type module, because every family that uses them
  * needs them and a second copy would be the divergence §4's risk table names:
@@ -61,7 +61,7 @@ import type { DocEdit, DocPath } from '../document.js';
  */
 
 /** The names tables these families search. A subset of `lib/display.ts`'s `NamesType`. */
-export type SimpleNamesType = 'npcs' | 'items' | 'spells' | 'drop_tables';
+export type SimpleNamesType = 'npcs' | 'items' | 'spells' | 'drop_tables' | 'zones';
 
 /**
  * The value kind of one of these lists: a JSON **number** (`Inventory`, `Spells`,
@@ -93,6 +93,19 @@ export type SimpleFieldKind =
    * and builders live in `./treasureCardInventory.js`.
    */
   | 'treasure-card-list'
+  /**
+   * The **nested-object** repeater of `WizardZoneData` (`Teleports[{TriggerName, Teleport}]`,
+   * story p4-06) — the first list in Phase 4 whose element carries an object *inside* it, so its
+   * readers and builders live in `./zoneTransfer.js`. The nested `Teleport` is preserved whole:
+   * an edit addresses one field path and never rebuilds the object.
+   */
+  | 'zone-teleport-list'
+  /**
+   * A **single** zone value, through `FriendlyNameDropdown` over `zones` (`ZoneName` and
+   * `Teleport.m_destinationZone`). Deliberately not the multi-select, which is for lists —
+   * D71(i)'s one-chips-implementation rule read in the other direction.
+   */
+  | 'zone-select'
   /** The reorderable spell list (`SpellTemplateIds`). */
   | 'spell-order-list'
   /** A plain text control (`DeckName`). */
