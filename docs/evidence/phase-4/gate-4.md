@@ -54,3 +54,25 @@ official set. CI is unaffected: it runs on a runner where 5173 is free.
 6. **The official `test:ui` cannot run locally while the owner's other project holds 5173** (D78(b)); the authorized alt-port config is the substantive run, and CI is unaffected.
 7. **A family whose server side makes no claim**: ZoneTransfer's format rule is client-only (p4-06), stated rather than equalised with DropTable's.
 8. **GlobalRegistry is editor-only** (Q1): absent from `StatusObjectType`, from the routes and from the dashboard totals — asserted, including against a stray row.
+## 4. The PR, CI and the merge (addendum — written after the merge)
+
+- PR: **[#6](https://github.com/jasonl8446/spiraldb-ui/pull/6)** — `phase-4-object-editors` → `main`, 24 commits.
+- **The first `ci` run FAILED after a real 4m56s** — and **not** because of the corpus. `gh run view --log-failed` gave
+  `shell.spec.ts:364` "every route is reachable…": `getByRole('main').getByRole('columnheader', { name: 'Drop table' })`
+  was never found. The spec's own header says specs must not depend on the developer's corpus, and `mockShellApi`
+  mocks quests/treasure-cards/zone-transfers — but **not** the four earlier object families, whose branches assert a
+  real table header. Locally the 317-file corpus supplies rows; **CI has no corpus**, so `/drop-tables` renders its
+  empty state and the header cannot exist. The loop stops at the first failure, which is why only that branch surfaced.
+  Fixed in `7d27d2a` by mirroring the later families' pattern (fixtures for `/api/drop-tables`,
+  `/api/npc-inventories`, `/api/npc-spell-inventories`, `/api/creature-spellbooks`, `/api/npc-drop-tables`), and
+  **proven in both environments**: 9 passed with the corpus and **9 passed with `SPIRALDB_PATH` pointed at nothing**
+  (the CI condition). No status mock was needed — the objects payload already carries each row's status, which is what
+  the dots and the tab counts read. Recorded as **D81**.
+- Required check `ci` on the fix head: **`pass` in 4m50s** ([run 36339213111](https://github.com/jasonl8446/spiraldb-ui/actions/runs/36339213111/job/108675856686)).
+- Merge: **`9b5e685270b3018e8ac914d77f1359a50527820a`** (merge style, matching PRs #3–#5), via the GitHub MCP only after
+  `ci` was green — merging earlier is rejected 405 by branch protection.
+- Branch `phase-4-object-editors` **deleted on the remote and locally**; the merge is logged in `.omd/prd/progress.txt`.
+- **Why the gate exists, in one line**: two consecutive boundary gates have now each caught a **CI-only** defect that
+  every local run would have missed (gate-3's collection-time crash; gate-4's corpus-reading shell spec).
+- This addendum was written after the merge, so it travels as the **first commit of the Phase-5 branch** — `main` is a
+  protected branch that declines direct pushes (attempted at gate-3 and rejected).
