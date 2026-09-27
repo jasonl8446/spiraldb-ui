@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import Database from 'better-sqlite3';
 import json5 from 'json5';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll } from 'vitest';
 
 import { applyEdits, serializeDoc, type JsonDocument } from '@shared/document';
 import { DEFAULT_SPIRALDB_PATH } from '@server/db';
@@ -595,12 +595,21 @@ describe('p3-09 — the banner summary vocabulary', () => {
 describe.runIf(CORPUS !== null && REFERENCES !== null)(
   'p3-09 — the engine over the real corpus (owner run)',
   () => {
-    const corpus = CORPUS as CorpusQuest[];
-    const references = REFERENCES as QuestValidationReferences;
-    const results = corpus.map((quest) => ({
-      ...quest,
-      result: validateQuest(quest.doc, { references }),
-    }));
+    // Declared, not initialised, at collection time: `describe.runIf` still EVALUATES this
+    // callback on a machine without the sibling checkout — which is what CI is — so any eager
+    // work here threw `Cannot read properties of null (reading 'map')` and failed the suite
+    // instead of skipping it (found by gate-3's CI run, fixed here).
+    let corpus: CorpusQuest[];
+    let references: QuestValidationReferences;
+    let results: Array<CorpusQuest & { result: QuestValidationResult }>;
+    beforeAll(() => {
+      corpus = CORPUS as CorpusQuest[];
+      references = REFERENCES as QuestValidationReferences;
+      results = corpus.map((quest) => ({
+        ...quest,
+        result: validateQuest(quest.doc, { references }),
+      }));
+    });
 
     it('validates every corpus file without mutating one', () => {
       expect(corpus.length).toBe(322);
