@@ -12,12 +12,19 @@
  * reserved for values both halves genuinely share.
  */
 
+import { reportRequestFailure, reportRequestSuccess } from './connection';
 import type { NameRow, NameRowMap, NamesType } from './display';
 import type { SyncCounts } from './toast';
 
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
 interface ApiErrorBody {
   error?: string;
+  /**
+   * The per-field map a **400** may carry beside its message (decisions D64/D65) — `Name`,
+   * `RollChance`, … → the blocking sentence(s). It is the multi-error payload that
+   * `components/shared/ValidationSummary.tsx` renders at the top of a form.
+   */
+  fields?: Record<string, string[]>;
 }
 
 /**
@@ -27,15 +34,41 @@ interface ApiErrorBody {
 export class ApiError extends Error {
   readonly status: number;
 
-  constructor(status: number, message: string) {
+  /** The 400 field map when the server sent one, `undefined` otherwise (D64). */
+  readonly fields?: Record<string, string[]>;
+
+  constructor(status: number, message: string, fields?: Record<string, string[]>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    if (fields !== undefined) {
+      this.fields = fields;
+    }
   }
 }
 
 /** REQUEST helper: the `Accept` header every call sends. */
 const JSON_HEADERS = { Accept: 'application/json' } as const;
+
+/**
+ * `true` when retrying a failed request could plausibly give a different answer: a transport
+ * failure (the `fetch` rejected, so there is no status at all) or a **5xx**.
+ *
+ * A 4xx is final — it is the request working correctly (a validation error, or the 404 the
+ * detail pages render as their "not found" state), so the retry action of the API-error toast
+ * (`lib/notify.ts`) is not offered for one (story p5-04, AC3).
+ *
+ * It lives here, beside {@link ApiError}, rather than in the hook that uses it: this module has no
+ * React entry point, so the predicate is unit-testable in plain node.
+ */
+export function isRetryableApiError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return error.status >= 500;
+  }
+  // A non-`ApiError` from `apiFetch` is either a rejected fetch (no HTTP answer) or an
+  // unparsable success body — both are worth another try, and neither is a validation verdict.
+  return true;
+}
 
 /**
  * `true` for a body the browser encodes itself — `FormData` (multipart boundary),
@@ -58,30 +91,53 @@ function isSelfTypedBody(body: BodyInit | null | undefined): boolean {
   return typeof Blob !== 'undefined' && body instanceof Blob;
 }
 
+/** The parsed pieces of a failed response: the message, and the field map if there is one. */
+interface ErrorBody {
+  message: string;
+  fields?: Record<string, string[]>;
+}
+
+/** `true` for the D64 field map: a plain object whose values are string arrays. */
+function isFieldMap(value: unknown): value is Record<string, string[]> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value).every(
+    (messages) => Array.isArray(messages) && messages.every((one) => typeof one === 'string'),
+  );
+}
+
 /** Reads the plain-text body of a failed response before throwing. */
-async function readError(response: Response): Promise<string> {
+async function readError(response: Response): Promise<ErrorBody> {
   let text: string;
   try {
     text = await response.text();
   } catch {
-    return `Request failed with status ${response.status}`;
+    return { message: `Request failed with status ${response.status}` };
   }
 
   if (text.trim() !== '') {
     try {
       const body = JSON.parse(text) as ApiErrorBody;
       if (typeof body?.error === 'string' && body.error !== '') {
-        return body.error;
+        // The field map rides along only when it has the documented shape; anything else
+        // stays out of `ApiError` rather than being rendered as if it were validation.
+        return isFieldMap(body.fields)
+          ? { message: body.error, fields: body.fields }
+          : { message: body.error };
       }
     } catch {
       // Not JSON — fall through to the status text.
     }
-    return text;
+    return { message: text };
   }
 
-  return response.statusText !== ''
-    ? response.statusText
-    : `Request failed with status ${response.status}`;
+  return {
+    message:
+      response.statusText !== ''
+        ? response.statusText
+        : `Request failed with status ${response.status}`,
+  };
 }
 
 /**
@@ -92,6 +148,12 @@ async function readError(response: Response): Promise<string> {
  * `Blob` — see {@link isSelfTypedBody}). An empty success body (e.g. 204) resolves
  * to `undefined`, and any other unparsable success body throws rather than
  * resolving to garbage.
+ *
+ * Every outcome is also reported to the connection store (`lib/connection.ts`), which is how
+ * the offline banner learns that a request failed without any page knowing the banner exists.
+ * The report is deliberately asymmetric: a **4xx is a success** as far as the transport is
+ * concerned (the server answered: a validation error is not an outage), while only a rejected
+ * `fetch` or a **5xx** marks the connection suspect.
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -102,11 +164,26 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(path, { ...init, headers });
+  let response: Response;
+  try {
+    response = await fetch(path, { ...init, headers });
+  } catch (error) {
+    // No HTTP answer at all: the connection itself is what failed.
+    reportRequestFailure();
+    throw error;
+  }
 
   if (!response.ok) {
-    throw new ApiError(response.status, await readError(response));
+    if (response.status >= 500) {
+      reportRequestFailure();
+    } else {
+      reportRequestSuccess();
+    }
+    const { message, fields } = await readError(response);
+    throw new ApiError(response.status, message, fields);
   }
+
+  reportRequestSuccess();
 
   const text = await response.text();
   if (text.trim() === '') {

@@ -6,7 +6,9 @@ import { getImportReport, IMPORT_REPORT_QUERY_KEY } from '../../lib/api';
 import { notifySuccess } from '../../lib/notify';
 import { isSearchShortcut } from '../../lib/search';
 import { importSummaryMessage } from '../../lib/toast';
+import { useConnection } from '../../hooks/useConnection';
 import Header from './Header';
+import OfflineBanner from './OfflineBanner';
 import SearchPalette from './SearchPalette';
 import Sidebar from './Sidebar';
 
@@ -25,12 +27,21 @@ import Sidebar from './Sidebar';
  * because two places need them (the header's trigger and the palette itself); the shortcut
  * rule is `lib/search.ts`'s pure `isSearchShortcut`, and `preventDefault` is what stops the
  * browser's own Ctrl+K (search-in-page) from fighting the palette.
+ *
+ * Story p5-04's **offline banner** is the third thing that belongs to the shell rather than to
+ * a page: the failures it reacts to happen in every page (they are reported by `lib/api.ts`),
+ * while the banner sits at the top of every page, so `useConnection()` is called once here.
+ * Nothing below it knows the feature exists.
  */
 let importToastShown = false;
 
 export default function AppLayout(): JSX.Element {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // The one call site of the offline detector (story p5-04): a request failure reported by
+  // `lib/api.ts` from anywhere in the app becomes the banner at the top of the shell, and a
+  // recovery invalidates every query so the stale page refreshes itself.
+  const { offline } = useConnection();
   const importReport = useQuery({
     queryKey: IMPORT_REPORT_QUERY_KEY,
     queryFn: getImportReport,
@@ -63,6 +74,9 @@ export default function AppLayout(): JSX.Element {
     <div className="min-h-screen bg-zinc-950">
       <Sidebar mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
       <div className="md:pl-[260px]">
+        {/* Above the header: the spec's "persistent banner at top" (L535), rendered only while
+            the health probe says the API is unreachable. */}
+        <OfflineBanner offline={offline} />
         <Header onOpenNav={() => setMobileOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
         <main className="p-6">
           <Outlet />

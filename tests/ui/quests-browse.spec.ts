@@ -432,7 +432,11 @@ test.describe('loading and failure', () => {
 
     await page.goto('/quests');
     await expect(page.getByText('Could not load the quest list.')).toBeVisible();
-    await expect(page.getByText('SpiralDB path is not configured.')).toBeVisible();
+    // Scoped to `main` because story p5-04's API-error toast deliberately carries the same server
+    // sentence, so an unscoped `getByText` now resolves to two elements. The assertion is
+    // unchanged — the *page's own* inline state must show the server's message — and the toast's
+    // copy and its retry action are asserted in `p5-04-error-surfaces.spec.ts`.
+    await expect(page.locator('main').getByText('SpiralDB path is not configured.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Try again' }).click();
     await expect(rows(page)).toHaveCount(50);

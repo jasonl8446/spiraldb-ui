@@ -1,36 +1,36 @@
-# p5-03 gate — lead-run on 73bf5ba + the story tree
-# started 2026-09-27T16:36:19-04:00
+# p5-03 gate — lead-run on 9b6c7cb + the story tree
+# started 2026-09-27T17:42:57-04:00
 === 1. npm test
 $ npm test
-   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  330ms
-   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  500ms
-   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  816ms
-   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  545ms
-   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  446ms
-   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  407ms
+   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  310ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  540ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  889ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  596ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  481ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  476ms
 
- Test Files  61 passed (61)
-      Tests  1416 passed (1416)
-   Start at  16:36:19
-   Duration  8.81s (transform 6.59s, setup 0ms, collect 26.96s, tests 66.82s, environment 23ms, prepare 7.93s)
+ Test Files  64 passed (64)
+      Tests  1444 passed (1444)
+   Start at  17:42:57
+   Duration  9.11s (transform 7.50s, setup 0ms, collect 26.22s, tests 70.42s, environment 18ms, prepare 8.17s)
 
 --- rc=0
 
 === 2. npm run test:ui
 $ npm run test:ui
-  ✓  308 [chromium] › tests/ui/simple-object-editors.spec.ts:629:3 › AC3 — CreatureSpellbook › renders an empty list as its empty state and saves [] after the last one goes (908ms)
-  ✓  309 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (746ms)
-  ✓  310 [chromium] › tests/ui/zone-transfer-editor.spec.ts:578:3 › AC1 — the m_teleportType control › preserves a stored value the model does not know, verbatim, through a save (627ms)
-  ✓  311 [chromium] › tests/ui/simple-object-editors.spec.ts:654:3 › AC3 — CreatureSpellbook › saves exactly two document keys, with the reordered array (614ms)
-  ✓  313 [chromium] › tests/ui/zone-transfer-editor.spec.ts:619:3 › AC2 — the Events drift guard and the raw-fields disclosure › shows Events read-only in the disclosure, with the measurement in its own words (552ms)
-  ✓  312 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (1.1s)
-  ✓  314 [chromium] › tests/ui/zone-transfer-editor.spec.ts:645:3 › AC2 — the Events drift guard and the raw-fields disclosure › carries Events through the save byte-identically, with the file’s key order (453ms)
-  ✓  316 [chromium] › tests/ui/zone-transfer-editor.spec.ts:681:3 › AC2 — the Events drift guard and the raw-fields disclosure › a document with nothing unmodelled shows no disclosure at all (554ms)
-  ✓  315 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.1s)
-  ✓  317 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (988ms)
+    > 858 |     await page.getByRole('button', { name: 'Save Selected', exact: true }).click();
+          |                                                                            ^
+      859 |
+      860 |     await expect(page.locator('li[data-sonner-toast][data-type="warning"]')).toContainText(
+      861 |       'QuestMetadatas/ holds 2 files',
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/extraction.spec.ts:858:76
 
-  317 passed (59.1s)
---- rc=0
+    Error Context: test-results/extraction-results-phase-a-4ae2f-surfaced-as-a-warning-toast-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/ui/extraction.spec.ts:844:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast 
+  320 passed (1.9m)
+--- rc=1
 
 === 3. npm run lint
 $ npm run lint
@@ -63,15 +63,15 @@ $ npm run build
 computing gzip size...
 dist/index.html                                  0.51 kB │ gzip:   0.33 kB
 dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
-dist/assets/index-nExvvXaW.css                  35.07 kB │ gzip:   7.35 kB
-dist/assets/QuestGoalLogicEditor-DlIq8ZZm.js   293.44 kB │ gzip:  97.70 kB
-dist/assets/index-CX2mQNyl.js                  762.27 kB │ gzip: 225.31 kB
+dist/assets/index-CaimEaiL.css                  35.35 kB │ gzip:   7.39 kB
+dist/assets/QuestGoalLogicEditor-CUE-n7np.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-Bd5OgYsU.js                  767.11 kB │ gzip: 226.87 kB
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 2.61s
+✓ built in 3.27s
 --- rc=0
 
-# finished 2026-09-27T16:37:49-04:00
+# finished 2026-09-27T17:45:24-04:00

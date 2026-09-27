@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { connectionState, resetConnectionForTests } from '../../client/src/lib/connection';
 import {
   ApiError,
   apiFetch,
@@ -69,6 +70,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetConnectionForTests();
 });
 
 describe('apiFetch', () => {
@@ -145,6 +147,70 @@ describe('apiFetch', () => {
     fetchMock.mockRejectedValue(new Error('fetch failed'));
 
     await expect(apiFetch('/api/settings')).rejects.toThrow('fetch failed');
+  });
+});
+
+describe('the 400 field map and the connection report (story p5-04)', () => {
+  it('keeps the field map a 400 carries (D64/D65) so the validation summary can render it', async () => {
+    mockJson(
+      {
+        error: '2 validation errors block saving',
+        fields: { Name: ['A drop table named "X" already exists.'], RollChance: ['must be 0-100'] },
+      },
+      { status: 400 },
+    );
+
+    const error = (await apiFetch('/api/drop-tables', { method: 'POST', body: '{}' }).catch(
+      (caught: unknown) => caught,
+    )) as ApiError;
+
+    expect(error.status).toBe(400);
+    expect(error.fields).toEqual({
+      Name: ['A drop table named "X" already exists.'],
+      RollChance: ['must be 0-100'],
+    });
+  });
+
+  it('leaves fields undefined when the 400 carries none, or a malformed one', async () => {
+    mockJson({ error: 'Missing object' }, { status: 400 });
+    const plain = (await apiFetch('/api/quests', { method: 'POST', body: '{}' }).catch(
+      (caught: unknown) => caught,
+    )) as ApiError;
+    expect(plain.fields).toBeUndefined();
+
+    // A `fields` value that is not a field map is not rendered as if it were validation.
+    mockJson({ error: 'Missing object', fields: { Name: 'not an array' } }, { status: 400 });
+    const malformed = (await apiFetch('/api/quests', { method: 'POST', body: '{}' }).catch(
+      (caught: unknown) => caught,
+    )) as ApiError;
+    expect(malformed.fields).toBeUndefined();
+  });
+
+  it('reports a 5xx as a failed request, but a 4xx as the transport working', async () => {
+    mockJson({ error: 'boom' }, { status: 500 });
+    await apiFetch('/api/dashboard').catch(() => undefined);
+    expect(connectionState()).toBe('suspect');
+
+    resetConnectionForTests();
+    mockJson({ error: 'bad limit' }, { status: 400 });
+    await apiFetch('/api/search').catch(() => undefined);
+    // A validation error is not an outage, and must never raise the offline banner.
+    expect(connectionState()).toBe('online');
+
+    resetConnectionForTests();
+    mockJson({ error: 'Unknown quest "x"' }, { status: 404 });
+    await apiFetch('/api/quests/x').catch(() => undefined);
+    expect(connectionState()).toBe('online');
+  });
+
+  it('reports a rejected fetch as a failed request and a 2xx as a good one', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    await apiFetch('/api/dashboard').catch(() => undefined);
+    expect(connectionState()).toBe('suspect');
+
+    mockJson({ types: {}, overall: {} });
+    await apiFetch('/api/dashboard');
+    expect(connectionState()).toBe('online');
   });
 });
 

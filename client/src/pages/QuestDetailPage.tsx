@@ -10,6 +10,7 @@ import QuestPreview from '../components/quest/QuestPreview';
 import QuestRequirementsEditor from '../components/quest/QuestRequirementsEditor';
 import QuestResultsEditor from '../components/quest/QuestResultsEditor';
 import QuestSaveButton from '../components/quest/QuestSaveButton';
+import ValidationSummary from '../components/shared/ValidationSummary';
 import QuestValidationBanner, {
   VALIDATION_BANNER_ID,
 } from '../components/quest/QuestValidationBanner';
@@ -23,6 +24,8 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useApiErrorToast } from '../hooks/useApiErrorToast';
+import { useServerValidation } from '../hooks/useServerValidation';
 import { useQuestDocument } from '../hooks/useQuestDocument';
 import { useQuestValidation } from '../hooks/useQuestValidation';
 import { useStatusTransition } from '../hooks/useStatusTransition';
@@ -133,6 +136,9 @@ export default function QuestDetailPage(): JSX.Element {
     queryFn: () => getQuest(questName),
     retry: false,
   });
+  // The API-error toast with a retry action (AC3, spec L533). The 404 that renders the
+  // "not found" state is declined by the hook, so it never produces a toast.
+  useApiErrorToast(quest, QUEST_LOAD_ERROR);
   const list = useQuery({
     queryKey: QUESTS_QUERY_KEY,
     queryFn: listQuests,
@@ -143,8 +149,16 @@ export default function QuestDetailPage(): JSX.Element {
     return (
       <div className="flex flex-col gap-4">
         <BackBar />
-        <div aria-busy="true" className="flex flex-col gap-2">
+        {/*
+          The skeleton matches the loaded page's two bands (story p5-04's layout audit):
+          `QuestHeader` — back link, quest name, status badge, the action group — and then
+          `QuestPreview`, whose own body is exactly `h-[70vh]` (`QuestPreview quest className=
+          "h-[70vh]"` below). The previous single 70vh block stood in for the panel only, so the
+          page jumped down by a header row when the data arrived.
+        */}
+        <div aria-busy="true" className="flex flex-col gap-4">
           <span className="sr-only">{QUEST_LOADING}</span>
+          <Skeleton className="h-10 w-full" />
           <Skeleton className="h-[70vh] w-full" />
         </div>
       </div>
@@ -224,6 +238,10 @@ function LoadedQuest({
   // One validation pass over the one document state (story p3-09): the same findings feed the
   // form-level banner, every inline message, and the Save affordance's disabled state.
   const validation = useQuestValidation(document.doc);
+  // The server's own findings for the last failed save (AC3's validation summary). The client
+  // engine above cannot produce them — the pipeline's field map is what a rejected document
+  // returns (D65).
+  const serverValidation = useServerValidation();
   // The unsaved-changes guard (story p3-10): in-app navigation + window close, only while dirty.
   const guard = useUnsavedChangesGuard(document.dirty);
   const queryClient = useQueryClient();
@@ -259,6 +277,7 @@ function LoadedQuest({
       return saveQuest({ quest: questToSave });
     },
     onSuccess: async (result, sent) => {
+      serverValidation.clear();
       notifySuccess(savedMessage(result.quest_name));
       for (const warning of result.warnings) {
         notifyWarning(warning);
@@ -276,6 +295,8 @@ function LoadedQuest({
       if (error instanceof UserNameCancelledError) {
         return;
       }
+      // The save pipeline's 400 carries a field map (D65); keep it for the validation summary.
+      serverValidation.capture(error);
       notifyError(serverMessage(error, SAVE_FAILED_FALLBACK));
     },
   });
@@ -324,6 +345,10 @@ function LoadedQuest({
       />
 
       <QuestValidationBanner banner={validation.banner} />
+
+      {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
+          map (D64/D65) — findings the client's engine cannot produce. */}
+      <ValidationSummary messages={serverValidation.messages} />
 
       <div className="flex min-h-0 gap-4">
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">

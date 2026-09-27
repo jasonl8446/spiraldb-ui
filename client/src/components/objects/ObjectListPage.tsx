@@ -35,6 +35,7 @@ import {
   type ObjectListRow,
 } from '../../lib/objects';
 import { cn } from '../../lib/utils';
+import { useApiErrorToast } from '../../hooks/useApiErrorToast';
 import NewObjectControl from './NewObjectControl';
 import ObjectCardList from './ObjectCardList';
 import ObjectTable, { type ObjectListColumn } from './ObjectTable';
@@ -161,6 +162,10 @@ export default function ObjectListPage({
   const loading = objectLoadingLabel(nounPlural);
   const loadError = objectLoadError(nounPlural);
 
+  // The API-error toast with a retry action (AC3, spec L533): the inline error card below stays
+  // the page's state, and the toast's Retry re-runs this list's own read.
+  useApiErrorToast(query, loadError);
+
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -218,6 +223,13 @@ export default function ObjectListPage({
       {query.isPending ? (
         <div aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">{loading}</span>
+          {/*
+            The loaded results are a table on desktop (`ObjectTable`: a header row plus one
+            40px row per entry) and a card per entry on mobile (`ObjectCardList`) — so the
+            skeleton shows the same header band at the same breakpoint, and the rows below.
+            Story p5-04's layout audit: the row height already matched; the header band did not.
+          */}
+          {isMobile ? null : <Skeleton className="h-9 w-full" />}
           {Array.from({ length: SKELETON_ROWS }, (_, index) => (
             <Skeleton key={index} className="h-10 w-full" />
           ))}

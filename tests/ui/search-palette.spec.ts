@@ -205,6 +205,13 @@ async function mockSearchApi(page: Page): Promise<Recorded> {
     if (path === '/api/status/_import') {
       return json({ ran: false, imported: 0, imported_at: null });
     }
+    // Story p5-04's offline detector probes the liveness route whenever a request fails — and
+    // this function's own failure arm deliberately fails one (`/api/search` → 500). Mocked as the
+    // API being up, so the probe settles the connection and that arm stays about the search error
+    // itself; unmocked, the probe would land in `recorded.unmocked` and break the D81 guard.
+    if (path === '/api/health') {
+      return json({ status: 'ok' });
+    }
 
     // ---- the search endpoint: the one this story adds.
     if (path === '/api/search') {

@@ -12,6 +12,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useApiErrorToast } from '../hooks/useApiErrorToast';
 import { useStatusFilter } from '../hooks/useStatusFilter';
 import { useStatusTransition } from '../hooks/useStatusTransition';
 import { listQuests, QUESTS_QUERY_KEY, type QuestListRow } from '../lib/api';
@@ -89,6 +90,9 @@ export default function QuestsPage(): JSX.Element {
     staleTime: Infinity,
   });
 
+  // The API-error toast with a retry action (AC3, spec L533), retrying this list's own read.
+  useApiErrorToast(quests, QUESTS_LOAD_ERROR);
+
   const rows = quests.data?.quests ?? NO_ROWS;
   const tabs = questFilterTabs(quests.data?.summary ?? NO_SUMMARY);
   const derived = useMemo(
@@ -154,6 +158,10 @@ export default function QuestsPage(): JSX.Element {
       {quests.isPending ? (
         <div aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">{QUESTS_LOADING}</span>
+          {/* The loaded results are `QuestBrowseTable` (a header row plus 40px rows) on desktop
+              and `QuestCardList` on mobile — the same header band, at the same breakpoint
+              (story p5-04's skeleton layout audit). */}
+          {isMobile ? null : <Skeleton className="h-9 w-full" />}
           {Array.from({ length: SKELETON_ROWS }, (_, index) => (
             <Skeleton key={index} className="h-10 w-full" />
           ))}

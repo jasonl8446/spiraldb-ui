@@ -5,6 +5,7 @@ import StatCards from '../components/dashboard/StatCards';
 import TypeProgressSection from '../components/dashboard/TypeProgressSection';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
+import { useApiErrorToast } from '../hooks/useApiErrorToast';
 import { DASHBOARD_QUERY_KEY, getDashboard } from '../lib/api';
 import {
   dashboardCards,
@@ -37,6 +38,9 @@ import {
  */
 export default function DashboardPage(): JSX.Element {
   const dashboard = useQuery({ queryKey: DASHBOARD_QUERY_KEY, queryFn: getDashboard });
+  // The API-error toast with its retry action (AC3, spec L533): the inline `role="alert"` below
+  // stays the page's own state, and this adds the shared toast whose Retry re-runs this query.
+  useApiErrorToast(dashboard, 'Could not load the dashboard.');
 
   if (dashboard.isPending) {
     return (
@@ -47,7 +51,11 @@ export default function DashboardPage(): JSX.Element {
             <Skeleton key={index} className="h-32 w-full" />
           ))}
         </div>
+        {/* The loaded page is three stacked sections (StatCards · TypeProgressSection ·
+            ActivityFeed), so the skeleton has three bands too — story p5-04's layout audit: the
+            first two already matched, the feed's own band was missing until its query resolved. */}
         <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-56 w-full" />
       </div>
     );
   }

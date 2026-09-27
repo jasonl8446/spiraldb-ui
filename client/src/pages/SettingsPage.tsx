@@ -17,6 +17,7 @@ import { notifyError, notifySuccess } from '../lib/notify';
 import { formatHistoryCounts, formatLocalTimestamp, syncOutcome } from '../lib/sync-view';
 import { settingsSaveErrorMessage, SETTINGS_SAVED_MESSAGE } from '../lib/toast';
 import { useSync } from '../hooks/useSync';
+import { useApiErrorToast } from '../hooks/useApiErrorToast';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -92,6 +93,12 @@ export default function SettingsPage(): JSX.Element {
     queryFn: getSyncHistory,
     staleTime: Infinity,
   });
+
+  // The API-error toast with a retry action (AC3, spec L533) for the two reads this page owns;
+  // each retry re-runs its own query. The save mutation keeps `notifyError` — a PUT is not
+  // replayed blindly by a retry button, the user re-clicks Save.
+  useApiErrorToast(settings, 'Could not load settings');
+  useApiErrorToast(history, 'Could not load sync history');
 
   const save = useMutation<Settings, Error, Partial<Settings>>({
     mutationFn: (patch) => putSettings(patch),

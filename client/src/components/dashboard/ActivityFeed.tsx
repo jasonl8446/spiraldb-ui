@@ -26,6 +26,7 @@ import {
 import { relativeTime } from '../../lib/display';
 import { hasHistoryNotes, historyActionText } from '../../lib/status-transition';
 import { cn } from '../../lib/utils';
+import { useApiErrorToast } from '../../hooks/useApiErrorToast';
 
 /**
  * "Recent Activity" — the dashboard's timeline feed (docs/spec-ui-design.md
@@ -64,6 +65,10 @@ export default function ActivityFeed(): JSX.Element {
     queryKey: activityQueryKey(ACTIVITY_DEFAULT_LIMIT),
     queryFn: () => getActivity(ACTIVITY_DEFAULT_LIMIT),
   });
+
+  // The API-error toast with its retry action (AC3, spec L533) — the same wiring the dashboard
+  // page uses, with the retry bound to this feed's own read.
+  useApiErrorToast(activity, 'Could not load the recent activity.');
 
   const state = activityFeedState(activity);
   const entries = activity.data?.activity ?? [];

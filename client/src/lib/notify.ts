@@ -33,6 +33,27 @@ export function notifyError(message: string): void {
   });
 }
 
+/** The retry action's label (spec L533: "retry option in toast"). */
+export const RETRY_ACTION_LABEL = 'Retry';
+
+/**
+ * The error toast **with a retry action** (spec-ui-design L533: "API error: Toast notification +
+ * retry option in toast"; story p5-04).
+ *
+ * Same toast path and same 10 s error duration as {@link notifyError} — this is that function
+ * plus sonner's `action`, not a second notification system. `onRetry` must re-run **the request
+ * that failed**: `hooks/useApiErrorToast.ts` passes the failed query's own `refetch`, so the
+ * retry repeats that query's key and function rather than replaying a captured response or
+ * re-issuing a stale body.
+ */
+export function notifyErrorWithRetry(message: string, onRetry: () => void): void {
+  toast.error(message, {
+    duration: TOAST_DURATIONS.error,
+    closeButton: true,
+    action: { label: RETRY_ACTION_LABEL, onClick: onRetry },
+  });
+}
+
 export function notifyWarning(message: string): void {
   toast.warning(message, { duration: TOAST_WARNING_DURATION_MS });
 }
