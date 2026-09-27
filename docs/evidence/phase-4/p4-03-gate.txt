@@ -1,0 +1,77 @@
+# p4-03 gate — lead-run on 56afbb2 + the story tree
+# started 2026-09-27T06:01:31-04:00
+=== 1. npm test
+$ npm test
+ ✓ tests/unit/objects-api.test.ts (34 tests) 6418ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  377ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  690ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  541ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  430ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  430ms
+
+ Test Files  47 passed (47)
+      Tests  1158 passed (1158)
+   Start at  06:01:31
+   Duration  7.48s (transform 5.42s, setup 0ms, collect 21.87s, tests 48.77s, environment 16ms, prepare 5.96s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+  ✓  199 [chromium] › tests/ui/simple-object-editors.spec.ts:654:3 › AC3 — CreatureSpellbook › saves exactly two document keys, with the reordered array (464ms)
+  ✓  193 [chromium] › tests/ui/extraction.spec.ts:945:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.3s)
+  ✓  200 [chromium] › tests/ui/extraction.spec.ts:976:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (534ms)
+  ✓  201 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (419ms)
+  ✓  202 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (863ms)
+  ✓  203 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (735ms)
+  ✓  204 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (570ms)
+  ✓  205 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (919ms)
+  ✓  206 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.1s)
+  ✓  207 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.1s)
+
+  207 passed (45.8s)
+--- rc=0
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-DFWrq5A6.css                  34.11 kB │ gzip:   7.22 kB
+dist/assets/QuestGoalLogicEditor-xNe_nHfA.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-wafsZylm.js                  710.18 kB │ gzip: 212.25 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.90s
+--- rc=0
+
+# finished 2026-09-27T06:02:47-04:00
