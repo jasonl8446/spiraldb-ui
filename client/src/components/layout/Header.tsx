@@ -60,7 +60,15 @@ export default function Header({ onOpenNav, onOpenSearch }: HeaderProps): JSX.El
         <Menu className="h-5 w-5" aria-hidden="true" />
       </Button>
 
-      <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-zinc-50">{title}</h2>
+      {/*
+        The page title is the document's **one** `h1` (p5-05, from the lead's AC#9 axe run:
+        `page-has-heading-one` fired as a moderate finding on Dashboard, Quest list and
+        DropTable detail because every page's heading lived in a section `h2` and nothing was
+        an `h1`). Promoting this one element fixes every route at once and cannot fight the
+        sections' `h2`s — it *is* the level above them. The quest detail page's two headings
+        were demoted to `h2` in the same change, so that route keeps exactly one `h1` too.
+      */}
+      <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-zinc-50">{title}</h1>
 
       <span role="status" aria-live="polite" className="sr-only">
         {isPending

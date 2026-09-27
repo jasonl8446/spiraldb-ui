@@ -5,14 +5,11 @@ Stack: the app on an isolated port we own (Vite 5291, Express 3001) over a COPY 
 Surfaces: the four AC#9 names.
 Verdict: none.
 
-=== Dashboard (/) — critical/serious: 0, other: 1, consoleErrors: 0
-  [moderate] page-has-heading-one (1 nodes)
+=== Dashboard (/) — critical/serious: 0, other: 0, consoleErrors: 0
 
-=== Quest list (/quests) — critical/serious: 0, other: 1, consoleErrors: 0
-  [moderate] page-has-heading-one (1 nodes)
-  (edit mode engaged: button=clicked, hook=0)
+=== Quest list (/quests) — critical/serious: 0, other: 0, consoleErrors: 0
+  (edit mode as loaded: hook=1)
 
-=== Quest detail (edit mode) (/quests/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 2
+=== Quest detail (edit mode) (/quests/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 0
 
-=== DropTable detail (/drop-tables/DS-ACAD-C01-001) — critical/serious: 0, other: 1, consoleErrors: 1
-  [moderate] page-has-heading-one (1 nodes)
+=== DropTable detail (/drop-tables/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 0

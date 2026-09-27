@@ -83,6 +83,18 @@ async function samplePaletteOpen(
   }, budgetMs);
 }
 
+/** The palette panel's computed animation, which needs no timing window to observe. */
+async function panelAnimation(page: Page): Promise<{ name: string; duration: string }> {
+  return page.evaluate(() => {
+    const panel = document.querySelector('[role="dialog"]');
+    if (panel === null) {
+      throw new Error('the palette panel is not in the document');
+    }
+    const style = getComputedStyle(panel);
+    return { name: style.animationName, duration: style.animationDuration };
+  });
+}
+
 /**
  * Clicks **Fit to view** from inside the page and samples the React Flow viewport transform
  * every frame — the only way to catch a 200 ms d3 transition reliably.
@@ -260,19 +272,27 @@ test.describe('reduced motion — computed styles, with the counterfactual', () 
 /* --------------------------------------------------- 2. the panel, per frame */
 
 test.describe('reduced motion — the panel animation, sampled per frame', () => {
-  test('the palette panel is already settled while the un-reduced panel is still animating', async ({
+  test('the palette panel is already settled while the un-reduced panel is animating', async ({
     page,
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests');
 
-    // Counterfactual first: without the preference, Radix's `animate-in` plays, so the
-    // sampled frames show the animation name and an opacity that is still ramping.
+    // **Counterfactual**, stated with computed styles rather than with a race: without the
+    // preference Radix's `animate-in` is attached, so the panel computes `animation-name:
+    // enter` with a real duration. (The first version of this arm also asserted an opacity
+    // that was still ramping; that is a *sampling* claim — under a loaded full run the open
+    // animation finished before the first frame could be sampled and the arm went red for a
+    // timing reason, not a behavioural one. The per-frame evidence is kept, and kept
+    // strict, on the reduced side, where "already settled" is the claim.)
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await openPalette(page);
+    const playing = await panelAnimation(page);
+    expect(playing.name).toBe('enter');
+    expect(parseFloat(playing.duration)).toBeGreaterThan(0);
     const animated = await samplePaletteOpen(page, PANEL_TRANSITION_BUDGET_MS);
     expect(animated.names.length).toBeGreaterThan(3);
-    expect(distinct(animated.opacities).length).toBeGreaterThan(1);
+    expect(distinct(animated.names)).toEqual(['enter']);
     await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-panel-mid-noreduce.png` });
     await page.keyboard.press('Escape');
 
@@ -283,6 +303,9 @@ test.describe('reduced motion — the panel animation, sampled per frame', () =>
     const settled = await samplePaletteOpen(page, PANEL_TRANSITION_BUDGET_MS);
     await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-panel-after-reduce.png` });
 
+    const stopped = await panelAnimation(page);
+    expect(stopped.name).toBe('none');
+    expect(parseFloat(stopped.duration)).toBe(0);
     expect(settled.names.length).toBeGreaterThan(3);
     expect(distinct(settled.names)).toEqual(['none']);
     // Settled at the first sampled frame and never moves again: one distinct opacity, 1.

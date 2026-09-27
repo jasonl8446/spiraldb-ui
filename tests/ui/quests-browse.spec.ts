@@ -35,7 +35,10 @@ import { mockQuestsApi, mockQuestRows, questListBody } from './quests-mocks';
 
 /** The spec's column table, char for char (L254-262). */
 const COLUMNS = [
-  { header: 'Status', width: 40 },
+  // 104, not the spec table's 40 (p5-05): the Status cell is the shared `StatusBadge`
+  // (colour **and** the status word) instead of a colour-only dot, ruled by the lead on
+  // WCAG 1.4.1 grounds (D86). Every other width is the spec's.
+  { header: 'Status', width: 104 },
   { header: 'Level', width: 60 },
   { header: 'Goals', width: 60 },
   { header: 'Mainline', width: 40 },
@@ -155,9 +158,12 @@ test.describe('filter tabs', () => {
     await expect(filterTab(page, 'Extracted')).toHaveAttribute('aria-selected', 'true');
     await expect(filterTab(page, 'All')).toHaveAttribute('aria-selected', 'false');
 
-    // Every row on the Extracted tab really is extracted (the dot's title says so).
-    await expect(firstRow(page).getByTitle('Extracted')).toHaveCount(1);
-    await expect(firstRow(page).getByTitle('Reviewed')).toHaveCount(0);
+    // Every row on the Extracted tab really is extracted. p5-05: the cell is a
+    // `StatusBadge` now, so the row carries the status as an `aria-label` **and** as visible
+    // text rather than as the old dot's `title`.
+    await expect(firstRow(page).getByLabel('Status: Extracted')).toHaveCount(1);
+    await expect(firstRow(page).getByLabel('Status: Reviewed')).toHaveCount(0);
+    await expect(firstRow(page).locator('td').first()).toContainText('Extracted');
   });
 });
 
@@ -307,7 +313,7 @@ test.describe('navigation', () => {
     await firstRow(page).locator('td').nth(5).click();
     await expect(page).toHaveURL(/\/quests\/DS-ACAD1-C01-001$/);
     await expect(
-      page.getByRole('main').getByRole('heading', { level: 1, name: 'DS-ACAD1-C01-001' }),
+      page.getByRole('main').getByRole('heading', { level: 2, name: 'DS-ACAD1-C01-001' }),
     ).toBeVisible();
 
     // The monospace name is a real link, so the row is reachable by keyboard too.

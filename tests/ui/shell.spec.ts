@@ -99,6 +99,26 @@ const NAV_ITEMS = [
  * `afterEach` below can fail the test: the Phase-1 shell criterion is "no console
  * errors on the shell pages", and silently ignoring a category would hide exactly
  * the kind of breakage this suite exists to catch.
+ *
+ * **How to read a failure here (p5-05's attribution of the console output the lead's
+ * AC#9 axe run counted).** Two things on the editor pages are `console.error`-shaped and
+ * are *not* defects; know them before blaming a new one on the shell:
+ *
+ * 1. `Failed to load resource: the server responded with a status of 404` — Chromium logs
+ *    every non-2xx HTTP response this way, and three of them are **designed fallbacks**:
+ *    `GET /api/names/strings/:key` miss (the raw-key title fallback, D59's documented 404),
+ *    `GET /api/names/items/:id` miss (the single-id lookup for an id the synced list cannot
+ *    resolve — 8 of the corpus's ids, D69), and `GET /api/status/:type/:key/history` for an
+ *    entry with no tracking row yet. Measured on this suite's own pages: the shell routes it
+ *    walks mock those endpoints, so **none of them appears here** — a 404 failing this guard
+ *    on a shell route is a real new one, not a known fallback.
+ * 2. `React Router Future Flag Warning: React Router will begin wrapping state updates in
+ *    React.startTransition in v7 …` — a **warning**, so it does not trip this `type ===
+ *    'error'` collector, but it is the only other thing these pages log.
+ *
+ * No allowlist is applied on purpose: the collector's own self-check (below) proves it can
+ * fail, and adding a filter for responses this spec never makes would turn a strict guard
+ * into a guessing game. Measure with `page.on('response', …)` before adding one.
  */
 const test = base.extend<{ consoleErrors: string[] }>({
   consoleErrors: async ({ page }, use) => {
@@ -757,7 +777,7 @@ test.describe('sidebar navigation', () => {
     // …and story p2-08's real detail page renders for that URL (its own contract is
     // in `tests/ui/quests-detail.spec.ts`); the heading above is the shell's.
     await expect(
-      page.getByRole('main').getByRole('heading', { level: 1, name: 'DS-ACAD-C01-001' }),
+      page.getByRole('main').getByRole('heading', { level: 2, name: 'DS-ACAD-C01-001' }),
     ).toBeVisible();
 
     await expect(activeNavLinks(sidebar)).toHaveCount(1);

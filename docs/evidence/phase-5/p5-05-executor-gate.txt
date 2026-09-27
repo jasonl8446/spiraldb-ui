@@ -1,0 +1,140 @@
+=== p5-05 executor gate (settled tree) ===
+Sun Sep 27 06:38:42 PM EDT 2026
+
+--- npm test ---
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  530ms
+   ✓ verification status (ac4, D37) > applies a create-only note on the first save and drops it on an update (gap B)  393ms
+ ✓ tests/unit/objects-api.test.ts (38 tests) 7208ms
+   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  354ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  460ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  873ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  513ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  443ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  437ms
+
+ Test Files  67 passed (67)
+      Tests  1460 passed (1460)
+   Start at  18:38:42
+   Duration  8.07s (transform 5.51s, setup 0ms, collect 22.30s, tests 60.87s, environment 19ms, prepare 7.31s)
+
+npm test rc=0
+
+--- npm run lint ---
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+lint rc=0
+
+--- npm run typecheck:tests ---
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+rc=0
+
+--- npx tsc -p server/tsconfig.json --noEmit ---
+rc=0
+
+--- npx tsc -p client/tsconfig.json --noEmit ---
+rc=0
+
+--- npm run build ---
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-vpp8IYjv.css                  35.58 kB │ gzip:   7.43 kB
+dist/assets/QuestGoalLogicEditor-BQMX0kb9.js   293.69 kB │ gzip:  97.73 kB
+dist/assets/index-K6s_QDVE.js                  770.28 kB │ gzip: 227.04 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.99s
+build rc=0
+
+--- phase-4 PNG count before test:ui: 22, md5 snapshot at /tmp/p505/phase4-md5-before.txt ---
+
+--- npm run test:ui (no --config; the official command) ---
+Sun Sep 27 06:39:54 PM EDT 2026
+          |                                                          ^
+      160 |     await expect(firstRow(page).getByTitle('Reviewed')).toHaveCount(0);
+      161 |   });
+      162 | });
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/quests-browse.spec.ts:159:58
+
+    Error Context: test-results/quests-browse-filter-tabs--db8e9-dges-and-the-active-styling-chromium/error-context.md
+
+  7) [chromium] › tests/ui/quests-goals-editor.spec.ts:511:3 › reordering › a pointer drag with the mouse moves a goal too 
+
+    Error: expect(received).toStrictEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+        "2_WizardQuestGoals_00000067",
+    -   "1_WizardQuestGoals_00000058",
+        "3_WizardQuestGoals_00000070",
+    +   "1_WizardQuestGoals_00000058",
+      ]
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      541 |     await expect
+      542 |       .poll(() => cardOrder(page))
+    > 543 |       .toStrictEqual([
+          |        ^
+      544 |         '2_WizardQuestGoals_00000067',
+      545 |         '1_WizardQuestGoals_00000058',
+      546 |         '3_WizardQuestGoals_00000070',
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/quests-goals-editor.spec.ts:543:8
+
+    Error Context: test-results/quests-goals-editor-reorde-37c03--the-mouse-moves-a-goal-too-chromium/error-context.md
+
+  7 failed
+    [chromium] › tests/ui/a11y-reduced-motion.spec.ts:263:3 › reduced motion — the panel animation, sampled per frame › the palette panel is already settled while the un-reduced panel is still animating 
+    [chromium] › tests/ui/extraction.spec.ts:497:3 › upload phase › states the supported format verbatim and browses through a hidden .json input 
+    [chromium] › tests/ui/extraction.spec.ts:825:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) 
+    [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 
+    [chromium] › tests/ui/quests-browse.spec.ts:90:3 › columns › renders the seven spec columns at their exact widths 
+    [chromium] › tests/ui/quests-browse.spec.ts:134:3 › filter tabs › the four tabs carry the summary count badges and the active styling 
+    [chromium] › tests/ui/quests-goals-editor.spec.ts:511:3 › reordering › a pointer drag with the mouse moves a goal too 
+  328 passed (2.3m)
+test:ui rc=0
+Sun Sep 27 06:42:11 PM EDT 2026
+
+=== FINAL: npm run test:ui (no --config) ===
+Sun Sep 27 06:48:59 PM EDT 2026
+  335 passed (58.0s)
+test:ui rc=0
+Sun Sep 27 06:49:58 PM EDT 2026
+
+phase-4 PNG side effect: 22 of 22 committed PNGs rewritten by the full run;
+restored with 'git checkout -- docs/evidence/phase-4/' and verified two ways:
+  git status --porcelain docs/evidence/phase-4/   -> 0 lines
+  md5sum -c <pre-run snapshot>                    -> 22/22 OK
+  every PNG's md5 == 'git show HEAD:<path>' md5   -> 22/22 equal
+
+=== re-verification after the post-gate assertion updates (settled tree) ===
+Sun Sep 27 06:51:43 PM EDT 2026
+--- npm test ---
+      Tests  1460 passed (1460)
+   Start at  18:51:44
+   Duration  8.05s (transform 6.25s, setup 0ms, collect 22.73s, tests 59.34s, environment 19ms, prepare 8.17s)
+
+npm test rc=0
+--- npm run lint ---
+lint rc=0
+--- npm run typecheck:tests ---
+rc=0
+--- npx tsc -p server/tsconfig.json --noEmit ---
+rc=0
+--- npx tsc -p client/tsconfig.json --noEmit ---
+rc=0
+--- npm run build ---
+build rc=0

@@ -103,7 +103,7 @@ describe('relativeTime', () => {
 });
 
 describe('the column spec', () => {
-  it('is the spec table — seven columns, widths, sortability (L254-262), with p5-05\'s measured exception', () => {
+  it("is the spec table — seven columns, widths, sortability (L254-262), with p5-05's measured exception", () => {
     // Everything but `status` is the spec table verbatim. `status` is **104px, not the spec's
     // 40px**: story p5-05 replaced the colour-only dot with the shared `StatusBadge` (colour
     // *and* the status word) because `docs/spec-ui-design.md` L545 requires "colour AND

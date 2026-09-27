@@ -513,12 +513,15 @@ test.describe('upload phase', () => {
     await expect(column).toHaveClass(/mx-auto/);
     await expect(column).toHaveClass(/max-w-\[640px\]/);
 
-    // The 48px zinc-500 icon (spec L204). Scoped to `main`: the sidebar's DATA
-    // group and Drop Tables item use the same lucide `package` glyph.
+    // The 48px icon (spec L204). Scoped to `main`: the sidebar's DATA group and Drop Tables
+    // item use the same lucide `package` glyph. p5-05 moved it from `zinc-500` to
+    // `zinc-400`: the contrast sweep replaced the two sub-AA text colours app-wide
+    // (`zinc-500` measured 4.12:1 on `zinc-950`), and a decorative `aria-hidden` glyph was
+    // not worth an exception the sweep would have to carry.
     const icon = page.getByRole('main').locator('svg.lucide-package');
     await expect(icon).toHaveClass(/h-12/);
     await expect(icon).toHaveClass(/w-12/);
-    await expect(icon).toHaveClass(/text-zinc-500/);
+    await expect(icon).toHaveClass(/text-zinc-400/);
 
     // Click-to-browse really opens the picker for the hidden input.
     const chooser = page.waitForEvent('filechooser');
@@ -1228,7 +1231,9 @@ test.describe('save → browse, the P2 AC#13 chain', () => {
     await expect(grown.locator('td').nth(1)).toHaveText('WC-UNICORN-MAIN-004');
     await expect(grown.locator('td').nth(2)).toHaveText('0');
     await expect(grown.locator('td').nth(3)).toHaveText('7');
-    await expect(grown.getByTitle('Extracted')).toHaveCount(1);
+    // p5-05: the table's Status cell is the shared `StatusBadge` — the status is an
+    // `aria-label` **and** visible text now, not the old dot's `title`.
+    await expect(grown.getByLabel('Status: Extracted')).toHaveCount(1);
   });
 
   test('a multi-quest extraction grows the browse list by its own N (mocked N = 2)', async ({

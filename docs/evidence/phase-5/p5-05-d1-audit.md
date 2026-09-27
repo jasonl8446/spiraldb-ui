@@ -151,3 +151,30 @@ stack — **do not use :5173** (D78(b)); boot an isolated copy on a port we own.
    report as `color-contrast` (serious).
 4. Tablists (`ObjectListPage.tsx:173-199`, `QuestPreview.tsx:80-106`) are Tab-reachable but
    have no Arrow/Home/End roving focus — the APG behaviour for `role="tablist"`.
+---
+
+## Post-audit corrections (annotated rather than rewritten — D83(b)'s rule)
+
+The audit above is the *finding*; three of its statements were corrected by later measurement
+in this same story. Annotated here so no reader acts on the stale version.
+
+1. **§2's scanner was unsound, and its counts were wrong.** The ad-hoc scanner used for §2 cut
+   each opening tag at `src.indexOf('>')`, which lands inside `onClick={() => …}`'s arrow: the
+   attrs were truncated (losing `size="icon"`) and the leaked tag text counted as an accessible
+   name. Corrected numbers from the committed, brace-aware sweep
+   (`tests/unit/a11y-icon-labels.test.ts`, measured): **113** interactive elements, **14**
+   icon-only, **0** unnamed. **The conclusion does not change** — no icon-only control is
+   missing a name today — but it is now backed by a checker that was *falsified* (a deliberate
+   unnamed `<Button size="icon">` was caught, `ObjectTable.tsx:219`) instead of one that passed
+   a broken file.
+2. **§4's resolution was overruled by the lead (recorded as D86).** The desktop table Status
+   cell *does* get text: `StatusBadge` (colour **and** the status word) with the column widened
+   40 → 104px in `lib/quests.ts` and `ObjectTable.tsx`. Reasoning on the record: WCAG 1.4.1 is
+   a real requirement, axe has **no** rule for it, and the same row already rendered a text
+   badge in the mobile card list. The spec's L249-260 40px "Color dot only" pin is the
+   deliberate deviation.
+3. **§7 item 4 is done, not deferred.** The two `role="tablist"`s now implement the APG
+   keyboard model through `client/src/lib/tablist.ts` (Arrow/Home/End, automatic activation),
+   wired in `ObjectListPage` and `QuestPreview`.
+4. **§7 items 1–3 are done and proven** in `p5-05-d2-code.md` / `p5-05-d3-proof.md`; §5's
+   coverage table is what the new reduced-motion block in `index.css` names rule-by-rule.

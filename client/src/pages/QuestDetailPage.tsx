@@ -173,9 +173,10 @@ export default function QuestDetailPage(): JSX.Element {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <AlertTriangle className="h-10 w-10 text-amber-500" aria-hidden="true" />
-            <h1 className="text-lg font-semibold text-zinc-100">
+            {/* `h2`, not `h1`: the shell header owns this document's single `h1` (p5-05). */}
+            <h2 className="text-lg font-semibold text-zinc-100">
               {notFound ? QUEST_NOT_FOUND_TITLE : QUEST_LOAD_ERROR}
-            </h1>
+            </h2>
             <p className="text-sm text-zinc-400">
               {serverMessage(
                 quest.error,
@@ -458,12 +459,16 @@ function QuestHeader({
     <div className="flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-3">
       <BackLink />
 
-      <h1
+      {/*
+        `h2`, not `h1`: the shell header owns this document's single `h1` (p5-05), and the
+        quest name sits *below* the page title, not above it.
+      */}
+      <h2
         className="min-w-0 truncate text-xl font-mono font-semibold text-zinc-50"
         title={displayName}
       >
         {displayName}
-      </h1>
+      </h2>
       <StatusBadge status={status} />
 
       <div className="ml-auto flex items-center gap-2">

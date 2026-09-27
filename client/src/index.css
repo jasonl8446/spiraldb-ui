@@ -80,15 +80,33 @@
    * an edge gets a 3px `blue-500` stroke (5.41:1 against `zinc-950`, well over the 3:1
    * non-text floor) — stated as the SVG-appropriate replacement, never claimed to be the
    * spec's exact ring. Both selectors outrank xyflow's `(0,3,0)` rules with `(0,4,0)`.
+   *
+   * `!important` on the edge is load-bearing and measured: `toFlowEdges` puts the edge's
+   * own colour on the path as an **inline** `style` (`stroke`, `strokeWidth`), and an
+   * inline declaration beats any normal stylesheet rule. Without it, a keyboard-focused
+   * edge kept its own colour (a complete-node edge stayed `emerald-500`) — which is a
+   * colour-only change and exactly the failure the rule exists to prevent.
    */
   .react-flow .react-flow__node.selectable:focus-visible {
     @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950;
   }
+}
 
-  .react-flow .react-flow__edge.selectable:focus-visible .react-flow__edge-path {
-    stroke: #3b82f6; /* blue-500 */
-    stroke-width: 3;
-  }
+/**
+ * The focused React Flow **edge** (the node's ring is with the other base-layer rules above).
+ *
+ * It lives here, unlayered, for two measured reasons: a `<path>` cannot carry the spec's
+ * `box-shadow` ring, and `toFlowEdges` writes the edge's own colour as an **inline** `style`
+ * on the path — only an `!important` declaration beats an inline one, and an unlayered
+ * `!important` is the highest-priority author declaration there is. (Inside `@layer base`
+ * this rule was silently dropped by the Tailwind build: the built CSS contained the node
+ * rule and not this one, and the browser kept the inline `emerald-500` on a focused edge.)
+ * The stroke is `blue-500`: 5.41:1 against `zinc-950`, over the 3:1 non-text floor, and a
+ * 2px → 3px width change, so the indicator is not hue-only.
+ */
+.react-flow .react-flow__edge:focus-visible .react-flow__edge-path {
+  stroke: #3b82f6 !important; /* blue-500 */
+  stroke-width: 3 !important;
 }
 
 /**
