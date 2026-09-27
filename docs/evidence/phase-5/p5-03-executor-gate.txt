@@ -1,0 +1,124 @@
+# p5-03 six-check gate (final) — executor-run
+# tree: HEAD 73bf5ba + the p5-03 worktree (URL persistence + the App.tsx v7_startTransition fix)
+# started 2026-09-27T16:24:30-04:00
+# command 7 is the OFFICIAL npm run test:ui (no --config), per D84's port fix.
+
+=== 1. npm test
+$ npm test
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  460ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  404ms
+
+ Test Files  61 passed (61)
+      Tests  1416 passed (1416)
+   Start at  16:24:30
+   Duration  7.75s (transform 5.49s, setup 0ms, collect 21.83s, tests 57.54s, environment 16ms, prepare 6.80s)
+
+--- rc=0
+
+=== 2. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 3. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 4. npx tsc -p server/tsconfig.json --noEmit
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5. npx tsc -p client/tsconfig.json --noEmit
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-nExvvXaW.css                  35.07 kB │ gzip:   7.35 kB
+dist/assets/QuestGoalLogicEditor-DlIq8ZZm.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-CX2mQNyl.js                  762.27 kB │ gzip: 225.31 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.00s
+--- rc=0
+
+=== 7. npm run test:ui (the OFFICIAL command, no --config: D84's port fix)
+$ npm run test:ui
+  ✓  263 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:366:3 › AC1 — the Price 0 hint › shows the m_baseCost hint on a 0 row and on that row only (1.1s)
+  ✓  266 [chromium] › tests/ui/shell.spec.ts:887:1 › the dev stack answers a real API request through the Vite proxy (629ms)
+  ✓  259 [chromium] › tests/ui/quests-dialog-editor.spec.ts:791:3 › the reference and string-key fields › an unlisted zone path stays displayed and selected, and an empty one issues no lookup (1.9s)
+  ✓  267 [chromium] › tests/ui/status-integration.spec.ts:557:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Creature Spellbooks (/creaturespellbook) (781ms)
+  ✓  264 [chromium] › tests/ui/quests-results-editor.spec.ts:747:3 › ResLearnSpell’s requirement slot › mounts the shared tree over the corpus’s untyped wrapper and edits inside it (1.7s)
+  ✓  270 [chromium] › tests/ui/shell.spec.ts:899:3 › harness self-check › the console-error guard itself is live (610ms)
+  ✓  268 [chromium] › tests/ui/quests-status.spec.ts:349:3 › the identity gate fires first (D38/D43) › dismissing the identity dialog aborts the transition entirely (922ms)
+  ✓  262 [chromium] › tests/ui/simple-object-editors.spec.ts:508:3 › AC2 — NpcSpellInventory › accepts Level 0 and writes it verbatim (2.2s)
+  ✓  272 [chromium] › tests/ui/status-integration.spec.ts:557:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › NPC Drop Tables (/npcdroptable) (682ms)
+  ✓  265 [chromium] › tests/ui/zone-transfer-editor.spec.ts:377:3 › AC1 — the Teleports repeater and the nested Teleport fields › appends a nested entry object in the corpus order and refuses a blank add (2.2s)
+  ✓  271 [chromium] › tests/ui/quests-dialog-editor.spec.ts:835:3 › the reference and string-key fields › a string-table key shows its resolved text, and an empty key issues no lookup (1.3s)
+  ✓  274 [chromium] › tests/ui/quests-status.spec.ts:365:3 › the history timeline › renders the entries newest first with the spec`s anatomy (760ms)
+  ✓  276 [chromium] › tests/ui/status-integration.spec.ts:557:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Treasure Card Inventories (/treasurecardinventory) (698ms)
+  ✓  269 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:387:3 › AC1 — the Price 0 hint › appears when a price is set to 0 and disappears when it is not (2.0s)
+  ✓  279 [chromium] › tests/ui/quests-status.spec.ts:394:3 › the history timeline › an entry with no history says so explicitly (816ms)
+  ✓  280 [chromium] › tests/ui/status-integration.spec.ts:557:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Zone Transfers (/zonetransfer) (625ms)
+  ✓  273 [chromium] › tests/ui/quests-results-editor.spec.ts:811:3 › friendly-name dropdowns › show the resolved name, store the raw id, and delete the key when cleared (1.9s)
+  ✓  281 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:421:3 › AC1 — a name no synced spell carries warns, and does not block › warns on the offending row and only there (712ms)
+  ✓  278 [chromium] › tests/ui/quests-dialog-editor.spec.ts:861:3 › the reference and string-key fields › the numeric m_cameraHidePlayers select keeps an unlisted value selected (1.2s)
+  ✓  283 [chromium] › tests/ui/status-integration.spec.ts:575:3 › AC1: every tracked detail page has the badge, the mark actions and the history panel › global_registry: no badge, no mark actions, no history panel, no status request (650ms)
+  ✓  275 [chromium] › tests/ui/simple-object-editors.spec.ts:526:3 › AC2 — NpcSpellInventory › appends a corpus-shaped entry when a spell is picked, and removes by row (2.2s)
+  ✓  277 [chromium] › tests/ui/zone-transfer-editor.spec.ts:417:3 › AC1 — the Teleports repeater and the nested Teleport fields › removes exactly the clicked row, so a repeated trigger name survives (1.9s)
+  ✓  284 [chromium] › tests/ui/quests-results-editor.spec.ts:841:3 › friendly-name dropdowns › shows a zone’s display name and a miss stays displayed and selected (807ms)
+  ✓  285 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:448:3 › AC1 — a name no synced spell carries warns, and does not block › the Save button stays enabled with the warning present, and the save succeeds (873ms)
+  ✓  282 [chromium] › tests/ui/quests-status.spec.ts:407:3 › the history timeline › the history panel shows the transition it just made (1.2s)
+  ✓  287 [chromium] › tests/ui/simple-object-editors.spec.ts:558:3 › AC2 — NpcSpellInventory › saves exactly two document keys and three entry keys (813ms)
+  ✓  286 [chromium] › tests/ui/quests-dialog-editor.spec.ts:884:3 › the reference and string-key fields › the string lists round-trip one encoded element per line (1.3s)
+  ✓  290 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:479:3 › AC1 — a name no synced spell carries warns, and does not block › a matching name shows no warning at all, and the save still lands (738ms)
+  ✓  289 [chromium] › tests/ui/quests-results-editor.spec.ts:874:3 › friendly-name dropdowns › issues no lookup for an empty or null reference (the D59(c) hazard) (1.1s)
+  ✓  255 [chromium] › tests/ui/extraction.spec.ts:945:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (7.0s)
+  ✓  291 [chromium] › tests/ui/simple-object-editors.spec.ts:581:3 › AC3 — CreatureSpellbook › renders DeckName as the key and leaves the one miss raw (670ms)
+  ✓  293 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:505:3 › AC1 — a name no synced spell carries warns, and does not block › says so when the synced spells table is not available, instead of showing a clean pass (691ms)
+  ✓  288 [chromium] › tests/ui/zone-transfer-editor.spec.ts:464:3 › AC1 — the m_destinationLoc format check › flags a malformed 4-component string with an inline warning, and never blocks Save (1.8s)
+  ✓  292 [chromium] › tests/ui/quests-dialog-editor.spec.ts:919:3 › the m_requirements slot › mounts the shared tree and is labelled fixture-only (1.3s)
+  ✓  295 [chromium] › tests/ui/extraction.spec.ts:976:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (843ms)
+  ✓  294 [chromium] › tests/ui/quests-results-editor.spec.ts:919:3 › ResDrawHand’s split template id › resolves through whichever table knows the value, and never rewrites an unknown one (1.2s)
+  ✓  297 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:562:3 › AC1 — the save payload › carries exactly two top-level keys and each row’s two keys (741ms)
+  ✓  299 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (599ms)
+  ✓  296 [chromium] › tests/ui/simple-object-editors.spec.ts:594:3 › AC3 — CreatureSpellbook › reorders the list, changing the array order (1.8s)
+  ✓  300 [chromium] › tests/ui/quests-results-editor.spec.ts:991:3 › delete and the five mounted homes › delete removes exactly one card (962ms)
+  ✓  298 [chromium] › tests/ui/zone-transfer-editor.spec.ts:494:3 › AC1 — the m_destinationLoc format check › accepts a scientific-notation value — no message, and Save stays usable (1.7s)
+  ✓  301 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (907ms)
+  ✓  304 [chromium] › tests/ui/zone-transfer-editor.spec.ts:516:3 › AC1 — the m_destinationLoc format check › a malformed value still saves verbatim — the warning never blocks (D80a) (739ms)
+  ✓  302 [chromium] › tests/ui/simple-object-editors.spec.ts:614:3 › AC3 — CreatureSpellbook › removes a row and re-adds the miss by its raw id (1.2s)
+  ✓  303 [chromium] › tests/ui/quests-results-editor.spec.ts:1008:3 › delete and the five mounted homes › mounts start, end and both per-goal wrappers, and the tally slot only where a counter exists (1.0s)
+  ✓  305 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (772ms)
+  ✓  306 [chromium] › tests/ui/zone-transfer-editor.spec.ts:564:3 › AC1 — the m_teleportType control › offers the one measured member (560ms)
+  ✓  309 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (816ms)
+  ✓  307 [chromium] › tests/ui/simple-object-editors.spec.ts:629:3 › AC3 — CreatureSpellbook › renders an empty list as its empty state and saves [] after the last one goes (1.0s)
+  ✓  310 [chromium] › tests/ui/zone-transfer-editor.spec.ts:578:3 › AC1 — the m_teleportType control › preserves a stored value the model does not know, verbatim, through a save (659ms)
+  ✓  308 [chromium] › tests/ui/quests-results-editor.spec.ts:1042:3 › delete and the five mounted homes › adds into an absent wrapper as the corpus’s untagged shape (1.1s)
+  ✓  313 [chromium] › tests/ui/zone-transfer-editor.spec.ts:619:3 › AC2 — the Events drift guard and the raw-fields disclosure › shows Events read-only in the disclosure, with the measurement in its own words (564ms)
+  ✓  312 [chromium] › tests/ui/simple-object-editors.spec.ts:654:3 › AC3 — CreatureSpellbook › saves exactly two document keys, with the reordered array (654ms)
+  ✓  311 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (1.1s)
+  ✓  314 [chromium] › tests/ui/zone-transfer-editor.spec.ts:645:3 › AC2 — the Events drift guard and the raw-fields disclosure › carries Events through the save byte-identically, with the file’s key order (543ms)
+  ✓  316 [chromium] › tests/ui/zone-transfer-editor.spec.ts:681:3 › AC2 — the Events drift guard and the raw-fields disclosure › a document with nothing unmodelled shows no disclosure at all (528ms)
+  ✓  315 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.2s)
+  ✓  317 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.0s)
+
+  317 passed (1.0m)
+--- rc=0
+
+=== done

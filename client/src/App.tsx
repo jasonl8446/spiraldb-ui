@@ -235,8 +235,25 @@ export default function App(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <UserNameGateProvider>
-        {/* Future flags silence react-router v6's v7 deprecation warnings. */}
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        {/*
+          `v7_relativeSplatPath` is set to silence its v6 deprecation warning;
+          `v7_startTransition` is deliberately **not** set (story p5-03), and that is a
+          behaviour choice rather than an oversight. Setting it makes this plain
+          `<BrowserRouter>` commit **every** location change inside `React.startTransition`
+          (`react-router-dom/dist/index.js`: `v7_startTransition && startTransitionImpl ?
+          startTransitionImpl(() => setStateImpl(newState)) : setStateImpl(newState)`), so a
+          `?filter=` write by `useStatusFilter` lands one render behind the click: the URL
+          changes at once while the row set still shows the old filter. That transient
+          URL/DOM disagreement is what broke `tests/ui/quests-status.spec.ts:95` — measured:
+          it passes 13/13 with the flag unset and fails one arm with it set, on the identical
+          hook. (`navigate`'s `flushSync` option cannot help; it is consumed by the data
+          router's `setState`, a path `<BrowserRouter>` never takes.) Leaving it unset keeps a
+          URL-driven control consistent with its URL within the same event, at the cost of one
+          `warnOnce` deprecation notice per page load — the trade is recorded in
+          `docs/evidence/phase-5/p5-03-d3-proof.md`. Flip it back if a heavier route
+          transition ever needs the concurrent path; nothing else in the app depends on it.
+        */}
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
           <Routes>
             <Route element={<AppLayout />}>
               {APP_ROUTES.map((route) => (
