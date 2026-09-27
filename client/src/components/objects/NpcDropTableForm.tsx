@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import ObjectIdMultiSelect from './ObjectIdMultiSelect';
 
 /**
- * The NpcDropTable editor — plan task 4.6 / story p4-06 AC1, docs/spec-domain-reference.md
+ * The NpcDropTable editor — plan task 4.6 / story p4-04 AC1, docs/spec-domain-reference.md
  * L166-181.
  *
  * The document is `{TemplateID, DropTableNames}` and nothing else, and the **family has no
