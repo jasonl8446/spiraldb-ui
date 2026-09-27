@@ -1,9 +1,8 @@
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 
-import type { DocPath } from '@shared/document';
-
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -33,8 +32,12 @@ export interface NpcInventoryFormProps {
   document: Record<string, unknown>;
   /** `view` renders the same fields read-only; `edit` renders the controls. */
   mode: 'view' | 'edit';
-  /** Applies one edit through the shared primitives. */
-  onSet: (path: DocPath, value: unknown) => void;
+  /**
+   * The live document state — the D58 mutation contract (`edit`/`editAll`) rather than a
+   * bespoke setter, so a form that mounts a shared editor (`RequirementTreeEditor`) needs no
+   * adapter. Story p4-02 replaced p4-01's `onSet` with this.
+   */
+  state: QuestDocumentState;
   disabled?: boolean;
 }
 
@@ -50,7 +53,7 @@ function inventoryOf(document: Record<string, unknown>): number[] {
 export default function NpcInventoryForm({
   document,
   mode,
-  onSet,
+  state,
   disabled = false,
 }: NpcInventoryFormProps): JSX.Element {
   const editing = mode === 'edit' && !disabled;
@@ -64,16 +67,17 @@ export default function NpcInventoryForm({
       return;
     }
     if (!inventory.includes(parsed)) {
-      onSet(['Inventory'], [...inventory, parsed]);
+      state.edit({ op: 'set', path: ['Inventory'], value: [...inventory, parsed] });
     }
     setPendingItem('');
   }
 
   function removeItem(item: number): void {
-    onSet(
-      ['Inventory'],
-      inventory.filter((value) => value !== item),
-    );
+    state.edit({
+      op: 'set',
+      path: ['Inventory'],
+      value: inventory.filter((value) => value !== item),
+    });
   }
 
   return (
@@ -90,7 +94,11 @@ export default function NpcInventoryForm({
               value={typeof templateId === 'number' ? templateId : null}
               onChange={(rawId) => {
                 const parsed = Number(rawId);
-                onSet(['TemplateID'], Number.isInteger(parsed) ? parsed : rawId);
+                state.edit({
+                  op: 'set',
+                  path: ['TemplateID'],
+                  value: Number.isInteger(parsed) ? parsed : rawId,
+                });
               }}
               aria-label="NPC TemplateID"
               placeholder="Select an NPC…"

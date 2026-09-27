@@ -11,6 +11,7 @@ import {
   ObjectRequestError,
   readObject,
   saveObjectEntry,
+  type ObjectSaveValidator,
 } from '../services/objects.js';
 
 /**
@@ -57,9 +58,15 @@ export interface ObjectRouterOptions {
   db: Db;
   /** One row of `shared/objectTypes.ts`. */
   config: ObjectTypeConfig;
+  /**
+   * The family's own blocking validation of a save, if it has one (task 4.2's DropTable
+   * rules). Injected rather than hard-coded so the generic router stays generic and the
+   * rule keeps its single home in `shared/`; `routes/index.ts` supplies the drop-table one.
+   */
+  validate?: ObjectSaveValidator;
 }
 
-export function createObjectRouter({ db, config }: ObjectRouterOptions): Router {
+export function createObjectRouter({ db, config, validate }: ObjectRouterOptions): Router {
   const router = Router();
 
   /** `settings.spiraldb_path`, or a 400 when it is unset. */
@@ -79,7 +86,12 @@ export function createObjectRouter({ db, config }: ObjectRouterOptions): Router 
   /** The documented status mapping; 500 logs the thrown value like the middleware. */
   function fail(res: Response, error: unknown): void {
     if (error instanceof ObjectRequestError) {
-      res.status(400).json({ error: error.message } satisfies ApiError);
+      // The per-field map rides along when the family's validation produced one (the
+      // body-shape checks carry none), exactly the quests 400's shape.
+      res.status(400).json({
+        error: error.message,
+        ...(error.fields === undefined ? {} : { fields: error.fields }),
+      } satisfies ApiError & { fields?: Record<string, string[]> });
       return;
     }
     if (error instanceof DirtyRepoError) {
@@ -147,7 +159,16 @@ export function createObjectRouter({ db, config }: ObjectRouterOptions): Router 
     }
     try {
       const { index, pipeline } = objectRuntimeFor(db, root);
-      res.json(await saveObjectEntry({ db, config, index, pipeline, body: req.body }));
+      res.json(
+        await saveObjectEntry({
+          db,
+          config,
+          index,
+          pipeline,
+          body: req.body,
+          ...(validate === undefined ? {} : { validate }),
+        }),
+      );
     } catch (error) {
       fail(res, error);
     }

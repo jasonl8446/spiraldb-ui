@@ -2,10 +2,17 @@ import { AlertTriangle } from 'lucide-react';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 import type { DocPath } from '@shared/document';
-import { formatDocPath } from '@shared/document';
 
-import { hasError, messageIndex, type ValidationMessage } from '../../lib/quest-validation';
+import {
+  fieldHasError,
+  indexFieldMessages,
+  pathKey,
+  type FieldValidationMessage,
+} from '../../lib/validation-message';
 import { cn } from '../../lib/utils';
+
+// Re-exported so a host can name the message type from the component it mounts it with.
+export type { FieldValidationMessage };
 
 /**
  * `FieldValidation` — the generic inline-message plumbing every editor mounts
@@ -14,12 +21,18 @@ import { cn } from '../../lib/utils';
  * disabled while validation errors exist.").
  *
  * It lives in `components/shared/` and is **host-agnostic on purpose**, exactly like the
- * requirement-tree, result-list and dialog-list editors (D62(f)): it imports a structural
+ * requirement-tree, result-list and dialog-list editors (D62(f)): it depends on a structural
  * message shape and no quest hook, no document state and no fetch. A host mounts
  * {@link FieldValidationProvider} once with the messages its own validation produced; a shared
  * editor just asks for the messages at the path it already renders. Without a provider the
- * lookups return nothing, so a Phase-4 DropTable host that mounts the same editor and has no
- * validation gets the previous behaviour and no crash.
+ * lookups return nothing.
+ *
+ * {@link FieldValidationMessage} is that structural shape. It is declared **here** rather
+ * than imported from `lib/quest-validation.ts` for the reason the header states: a Phase-4
+ * host's findings have a different `kind` vocabulary (`lib/drop-table-validation.ts`), and a
+ * component that only reads `severity`/`path`/`field`/`text` must not require the quest
+ * union. The quest message type stays assignable to this one (its `kind` is a narrower
+ * string), so the quest editors are unchanged.
  *
  * The pieces:
  *
@@ -38,12 +51,12 @@ import { cn } from '../../lib/utils';
 
 export interface FieldValidationValue {
   /** The messages at exactly one path, in engine order. */
-  at: (path: DocPath) => readonly ValidationMessage[];
+  at: (path: DocPath) => readonly FieldValidationMessage[];
   /** The messages at `path` or any descendant — a node's own plus its fields'. */
-  under: (path: DocPath) => readonly ValidationMessage[];
+  under: (path: DocPath) => readonly FieldValidationMessage[];
 }
 
-const EMPTY: readonly ValidationMessage[] = [];
+const EMPTY: readonly FieldValidationMessage[] = [];
 
 const FieldValidationContext = createContext<FieldValidationValue>({
   at: () => EMPTY,
@@ -52,7 +65,7 @@ const FieldValidationContext = createContext<FieldValidationValue>({
 
 /** The rendered path of a message or query, using the one shared formatter. */
 function keyOf(path: DocPath): string {
-  return formatDocPath(path);
+  return pathKey(path);
 }
 
 /** `true` when `candidate` is `prefix` or sits below it (`m_goals[0].m_goalName` under `m_goals[0]`). */
@@ -67,16 +80,16 @@ export function FieldValidationProvider({
   children,
 }: {
   /** The messages of one validation pass (empty for a document with no findings). */
-  messages: readonly ValidationMessage[];
+  messages: readonly FieldValidationMessage[];
   children: ReactNode;
 }): JSX.Element {
   const value = useMemo<FieldValidationValue>(() => {
-    const index = messageIndex(messages);
+    const index = indexFieldMessages(messages);
     return {
       at: (path) => index.get(keyOf(path)) ?? EMPTY,
       under: (path) => {
         const prefix = keyOf(path);
-        const collected: ValidationMessage[] = [];
+        const collected: FieldValidationMessage[] = [];
         for (const [key, list] of index) {
           if (isAtOrUnder(key, prefix)) {
             collected.push(...list);
@@ -98,12 +111,12 @@ export function useFieldValidation(): FieldValidationValue {
 }
 
 /** The messages at exactly {@link path}. */
-export function useFieldMessages(path: DocPath): readonly ValidationMessage[] {
+export function useFieldMessages(path: DocPath): readonly FieldValidationMessage[] {
   return useContext(FieldValidationContext).at(path);
 }
 
 /** The messages at {@link path} or any of its descendants. */
-export function useFieldMessagesUnder(path: DocPath): readonly ValidationMessage[] {
+export function useFieldMessagesUnder(path: DocPath): readonly FieldValidationMessage[] {
   return useContext(FieldValidationContext).under(path);
 }
 
@@ -112,11 +125,11 @@ export function useFieldMessagesUnder(path: DocPath): readonly ValidationMessage
  * blocking, amber for warnings only, nothing when there are none. Exported as a function rather
  * than a hook so a control can compute its `className` in the same expression it already uses.
  */
-export function fieldBorder(messages: readonly ValidationMessage[]): string | null {
+export function fieldBorder(messages: readonly FieldValidationMessage[]): string | null {
   if (messages.length === 0) {
     return null;
   }
-  return hasError(messages) ? 'border-red-500' : 'border-amber-500';
+  return fieldHasError(messages) ? 'border-red-500' : 'border-amber-500';
 }
 
 /**
@@ -129,7 +142,7 @@ export function FieldMessages({
   id,
   className,
 }: {
-  messages: readonly ValidationMessage[];
+  messages: readonly FieldValidationMessage[];
   /** The `id` the control's `aria-describedby` names. */
   id?: string;
   className?: string;
@@ -171,8 +184,8 @@ export function FieldMessages({
  * A control's `aria-invalid`, or `undefined` when clean — `undefined` rather than `false` so a
  * clean control carries no attribute at all (the pre-p3-09 DOM).
  */
-export function fieldAriaInvalid(messages: readonly ValidationMessage[]): boolean | undefined {
-  return hasError(messages) ? true : undefined;
+export function fieldAriaInvalid(messages: readonly FieldValidationMessage[]): boolean | undefined {
+  return fieldHasError(messages) ? true : undefined;
 }
 
 /**
@@ -180,7 +193,7 @@ export function fieldAriaInvalid(messages: readonly ValidationMessage[]): boolea
  * when clean (the help text's own id stays the caller's business).
  */
 export function fieldDescribedBy(
-  messages: readonly ValidationMessage[],
+  messages: readonly FieldValidationMessage[],
   messageId: string,
   helpId?: string,
 ): string | undefined {

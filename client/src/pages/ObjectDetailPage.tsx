@@ -3,13 +3,14 @@ import { AlertTriangle } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import { setAtPath, type DocPath } from '@shared/document';
 import type { ObjectTypeConfig } from '@shared/objectTypes';
 
 import ObjectDetailLayout from '../components/objects/ObjectDetailLayout';
+import { FieldValidationProvider } from '../components/shared/FieldValidation';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { useQuestDocument, type QuestDocumentState } from '../hooks/useQuestDocument';
 import { getStatus, statusQueryKey, type StatusList, type StatusValue } from '../lib/api';
 import { serverMessage } from '../lib/extract';
 import { notifyError, notifySuccess, notifyWarning } from '../lib/notify';
@@ -23,12 +24,7 @@ import {
   statusRouteTypeFor,
 } from '../lib/objects';
 import { isNotFoundError, questStatus } from '../lib/quests';
-import {
-  isQuestDocumentDirty,
-  loadQuestDocument,
-  markQuestDocumentSaved,
-  type QuestDocumentModel,
-} from '../lib/quest-edit';
+import { fieldHasError, type FieldValidationMessage } from '../lib/validation-message';
 
 /**
  * The generic object detail page — task 4.1.
@@ -40,19 +36,40 @@ import {
  * where the family has one), and the save goes through `POST /api/<type>` with the
  * layout's live document.
  *
- * Three decisions worth knowing:
+ * Four decisions worth knowing:
  *
- * - **The document model is the Phase-3 one** (`lib/quest-edit.ts`: a loaded baseline,
- *   edits applied through `shared/document.ts`'s primitives, a **byte** dirty
- *   comparison — D58/D66). Nothing here re-implements "dirty"; a new model would be
- *   the second document model D58 forbids.
+ * - **The document model is the Phase-3 one** (`hooks/useQuestDocument.ts` over
+ *   `lib/quest-edit.ts`: a loaded baseline, edits applied through `shared/document.ts`'s
+ *   primitives, a **byte** dirty comparison — D58/D66). Nothing here re-implements "dirty";
+ *   a new model would be the second document model D58 forbids. Story p4-02 replaced the
+ *   p4-01 hand-rolled pair with the hook so the **shared editors' own mutation contract**
+ *   (`has`/`value`/`edit`/`editAll`) reaches a form: `RequirementTreeEditor` needs it, and
+ *   the DropTable form mounts that component inline.
  * - **The status defaults to `extracted`** when the family has no `entry_status` row
  *   (D49's rule, measured: `ZoneTransfer/` and `GlobalRegistry/` have none), so a
  *   detail page never renders a blank badge for an entry the list shows as extracted.
  * - **`displayKeyFor` canonicalises the route key** for the four `TemplateID`
  *   families through the one helper, so `/npc-inventories/01025` reads the same entry
  *   the list's `1025` links to.
+ * - **`validate` is optional and additive**: a family with blocking rules (DropTable today)
+ *   supplies one, and the page then publishes the messages through the shared
+ *   `FieldValidationProvider` and disables Save while any of them is blocking. A family
+ *   without one gets an empty message list and the p4-01 behaviour, unchanged.
  */
+export interface ObjectFormProps {
+  /** The live document (already narrowed to an object by the layout's model). */
+  document: Record<string, unknown>;
+  /** `view` renders the same fields read-only; `edit` renders the controls. */
+  mode: 'view' | 'edit';
+  /**
+   * The live document state in the D58 shape the shared editors take
+   * (`has`/`value`/`edit`/`editAll`) — what `RequirementTreeEditor` mounts on.
+   */
+  state: QuestDocumentState;
+  /** The validation messages of the live document (`[]` when the family has no validator). */
+  messages: readonly FieldValidationMessage[];
+}
+
 export interface ObjectDetailPageProps {
   config: ObjectTypeConfig;
   /** Plural noun used in copy (`NPC inventories`). */
@@ -60,11 +77,13 @@ export interface ObjectDetailPageProps {
   /** The Back link's text (`Back to NPC Inventories`). */
   backLabel: string;
   /** The type's form, rendered by `ObjectDetailLayout`. */
-  renderForm: (props: {
-    document: Record<string, unknown>;
-    mode: 'view' | 'edit';
-    onSet: (path: DocPath, value: unknown) => void;
-  }) => ReactNode;
+  renderForm: (props: ObjectFormProps) => ReactNode;
+  /**
+   * The family's blocking validation of the live document, run on every render of the
+   * document (the shared engine, with the corpus injected by the page's own wrapper).
+   * Omitted means the type has no rules and nothing is blocked.
+   */
+  validate?: (document: Record<string, unknown>) => readonly FieldValidationMessage[];
 }
 
 /** The status joined to this entry, or `null` for a family with no lifecycle. */
@@ -85,6 +104,7 @@ export default function ObjectDetailPage({
   nounPlural,
   backLabel,
   renderForm,
+  validate,
 }: ObjectDetailPageProps): JSX.Element {
   const params = useParams<{ id?: string; name?: string }>();
   const key = displayKeyFor(config, params.id ?? params.name ?? '');
@@ -177,6 +197,7 @@ export default function ObjectDetailPage({
       backTo={backTo}
       backLabel={backLabel}
       renderForm={renderForm}
+      {...(validate === undefined ? {} : { validate })}
     />
   );
 }
@@ -213,10 +234,14 @@ function NotFound({
 }
 
 /**
- * The loaded split: the document model, the mode toggle and the save mutation. It is
+ * The loaded split: the document state, the mode toggle and the save mutation. It is
  * mounted only once the fetch has data, so the model's baseline is always a real
- * document (`loadQuestDocument` throws on anything else, which is the contract that
- * keeps "no document yet" from becoming "an empty document").
+ * document (`loadDoc` throws on anything else, which is the contract that keeps "no
+ * document yet" from becoming "an empty document").
+ *
+ * Story p4-02 replaced the local model with `useQuestDocument`, so the form receives the
+ * D58 mutation contract itself (`has`/`value`/`edit`/`editAll`) rather than a `setAtPath`
+ * shim — that is what lets a form mount `RequirementTreeEditor` inline with no adapter.
  */
 function LoadedEntry({
   config,
@@ -226,6 +251,7 @@ function LoadedEntry({
   backTo,
   backLabel,
   renderForm,
+  validate,
 }: {
   config: ObjectTypeConfig;
   objectKey: string;
@@ -234,18 +260,28 @@ function LoadedEntry({
   backTo: string;
   backLabel: string;
   renderForm: ObjectDetailPageProps['renderForm'];
+  validate?: ObjectDetailPageProps['validate'];
 }): JSX.Element {
   const client = useQueryClient();
-  const [model, setModel] = useState<QuestDocumentModel>(() => loadQuestDocument(source));
+  const state = useQuestDocument(source);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
-  const dirty = isQuestDocumentDirty(model);
-  const document = model.doc as Record<string, unknown>;
+  const { dirty } = state;
+  const document = state.doc as Record<string, unknown>;
+
+  // The family's blocking rules, re-run whenever the document changes. `FieldValidation`'s
+  // provider needs the findings for an unmounted valid path, so the whole message list is
+  // memoized per document; `blocked` is the Save gate's own boolean.
+  const messages = useMemo(
+    () => (validate === undefined ? EMPTY_MESSAGES : validate(document)),
+    [validate, document],
+  );
+  const blocked = useMemo(() => fieldHasError(messages), [messages]);
 
   const save = useMutation({
     mutationFn: () => saveObject(config, { object: document }),
     onSuccess: (result) => {
-      setModel((current) => markQuestDocumentSaved(current));
+      state.markSaved();
       setMode('view');
       notifySuccess(`Saved ${result.key} (${result.outcome}) — ${result.commit_message}`);
       void client.invalidateQueries({ queryKey: objectListQueryKey(config) });
@@ -263,17 +299,6 @@ function LoadedEntry({
     },
   });
 
-  const onSet = useMemo(
-    () =>
-      (path: DocPath, value: unknown): void => {
-        setModel((current) => ({
-          baseline: current.baseline,
-          doc: setAtPath(current.doc, path, value),
-        }));
-      },
-    [],
-  );
-
   return (
     <ObjectDetailLayout
       config={config}
@@ -286,9 +311,25 @@ function LoadedEntry({
       onSave={() => save.mutate()}
       saving={save.isPending}
       dirty={dirty}
+      saveBlocked={blocked}
+      blockReason={blockReason(messages)}
       document={document}
     >
-      {renderForm({ document, mode, onSet })}
+      <FieldValidationProvider messages={messages}>
+        {renderForm({ document, mode, state, messages })}
+      </FieldValidationProvider>
     </ObjectDetailLayout>
   );
+}
+
+/** The one shared empty list — a stable reference so the memos above do not churn. */
+const EMPTY_MESSAGES: readonly FieldValidationMessage[] = [];
+
+/** The Save button's title while a blocking finding exists, or `undefined` when clean. */
+function blockReason(messages: readonly FieldValidationMessage[]): string | undefined {
+  const count = messages.filter((message) => message.severity === 'error').length;
+  if (count === 0) {
+    return undefined;
+  }
+  return `${count} validation ${count === 1 ? 'error blocks' : 'errors block'} saving — fix them first.`;
 }

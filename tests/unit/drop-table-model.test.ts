@@ -308,7 +308,7 @@ describe('the field inventory is the spec table (L77-91) with its defaults', () 
       GrantsPotionSlot: false,
     });
     expect(Array.isArray(defaults.Items)).toBe(true);
-    expect((defaults.Items as unknown[]).length).toBe(0);
+    expect((defaults.Items as readonly unknown[]).length).toBe(0);
   });
 
   it('marks exactly the five measured-absent keys presence-sensitive', () => {

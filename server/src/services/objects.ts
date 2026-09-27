@@ -360,15 +360,23 @@ export function objectRuntimeFor(db: Db, root: string): ObjectRuntime {
 /* ------------------------------------------------------------------------- saving */
 
 /**
- * A malformed `POST` body — the route maps it to **400**. Covers the things a caller
- * can fix by resending: a missing `object`, a non-string `notes`/`key`, and a key the
- * family's key type cannot express. Pipeline problems are *not* this error and still
- * map to 500.
+ * A malformed or invalid `POST` body — the route maps it to **400**. Covers the things a
+ * caller can fix by resending: a missing `object`, a non-string `notes`/`key`, a key the
+ * family's key type cannot express, and — since task 4.2 — the failure of a family's own
+ * blocking validation. Pipeline problems are *not* this error and still map to 500.
+ *
+ * {@link fields} is the per-field error map the 400 body carries, exactly the shape
+ * `QuestRequestError` uses (D65): path → messages, keyed by the shared `formatDocPath`, so a
+ * client can render each message under the control that owns it. Hand-written body checks
+ * leave it `undefined`, which is the pre-4.2 `{error}`-only body.
  */
 export class ObjectRequestError extends Error {
-  constructor(message: string) {
+  readonly fields?: Record<string, string[]>;
+
+  constructor(message: string, fields?: Record<string, string[]>) {
     super(message);
     this.name = 'ObjectRequestError';
+    this.fields = fields;
   }
 }
 
@@ -400,7 +408,34 @@ export interface SaveObjectEntryOptions {
   pipeline: SavePipeline;
   /** The raw request body: `{ object, notes?, key? }`. */
   body: unknown;
+  /**
+   * The family's own blocking validation, or `undefined` for the families that have none.
+   * Called once per save, after the body's shape is checked and the family's index is
+   * refreshed, so it sees the corpus as it is on disk right now (task 4.2's DropTable rules).
+   */
+  validate?: ObjectSaveValidator;
 }
+
+/** What a family's save validator receives. Everything it needs is already built. */
+export interface ObjectSaveValidationContext {
+  db: Db;
+  /** The family's row of `shared/objectTypes.ts`. */
+  config: ObjectTypeConfig;
+  /** The SpiralDB root the save will write into. */
+  root: string;
+  /** The family's content-keyed index, refreshed for this save (`index.keys(config.fileType)`). */
+  index: SpiraldbIndex;
+  /** The raw request body, exactly as received. */
+  body: unknown;
+}
+
+/**
+ * A family's blocking validation of a save body. It either returns (the save proceeds) or
+ * throws {@link ObjectRequestError} with a field map (the route answers 400). Deliberately a
+ * plain function of an already-built context: the rule itself lives in `shared/`, so this is
+ * only the wiring that injects the corpus and the reference tables.
+ */
+export type ObjectSaveValidator = (context: ObjectSaveValidationContext) => void;
 
 /**
  * The canonical route/status key for a `ULong.toKey` value, or a 400.
@@ -495,6 +530,30 @@ export async function saveObjectEntry(
     );
   }
 
+  // D12/D19: refresh this family so create-vs-update and the resolved path reflect
+  // disk right now, and so the family's own validation sees the corpus as it is.
+  index.rebuildType(config.fileType);
+
+  // Task 4.2: the family's own blocking rules, run before the generic key resolution.
+  //
+  // The order is deliberate. `Name` is a drop table's key, so an empty `Name` fails the
+  // generic "no usable key" check *and* the engine's `drop-table-name-missing` rule; running
+  // the engine first means the caller gets the **field-mapped** diagnosis (`fields.Name`)
+  // rather than the pre-4.2 key sentence, which is the shape D65 fixes for every blocking
+  // rule. A family with a validator therefore never reaches the key check with a document its
+  // own rules reject.
+  //
+  // The engine is the shared one (`shared/dropTable/validation.ts`) with this save's corpus
+  // injected — `body.key` is the entry being edited (the route key the user opened), so its
+  // own name is forgiven and an unmodified save never 400s against itself.
+  options.validate?.({
+    db: options.db,
+    config,
+    root: index.root,
+    index,
+    body: options.body,
+  });
+
   let key: string | undefined;
   if (config.keyField === null) {
     // The unkeyed family: the pipeline names the object after the family
@@ -528,10 +587,6 @@ export async function saveObjectEntry(
   }
 
   const data = withJsonKey(config, body.object, key ?? config.fileType);
-
-  // D12/D19: refresh this family so create-vs-update and the resolved path reflect
-  // disk right now.
-  index.rebuildType(config.fileType);
 
   const result = await pipeline.saveObject({
     fileType: config.fileType,

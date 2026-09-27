@@ -10,6 +10,7 @@ import { createQuestsRouter } from './quests.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
+import { validateDropTableSave } from '../services/dropTables.js';
 
 /**
  * `/api` router registry.
@@ -132,15 +133,24 @@ apiRouter.use('/quests', (req, res, next) => {
  * `data/spiraldb-ui.db` (D32) and a family nobody visits costs nothing. The paths
  * and the configs come from `shared/objectTypes.ts`, the single table the client
  * reads too, so a mount path cannot drift from the page that calls it.
+ *
+ * **DropTable carries one extra**: task 4.2's four blocking rules
+ * (`server/src/services/dropTables.ts`, the injection half of the shared engine), so a
+ * direct POST of an invalid drop table is a **400 with a field map** rather than a write.
  */
 const objectRouters = new Map<string, Router>();
 
 for (const config of OBJECT_TYPES) {
   const mountPath = mountPathFor(config);
+  const validate = config.fileType === 'droptable' ? validateDropTableSave : undefined;
   apiRouter.use(mountPath, (req, res, next) => {
     let router = objectRouters.get(config.fileType);
     if (router === undefined) {
-      router = createObjectRouter({ db: getDb(), config });
+      router = createObjectRouter({
+        db: getDb(),
+        config,
+        ...(validate === undefined ? {} : { validate }),
+      });
       objectRouters.set(config.fileType, router);
     }
     router(req, res, next);

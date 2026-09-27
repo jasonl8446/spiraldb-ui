@@ -43,8 +43,7 @@ import {
 } from '../../lib/quest-results';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
-import type { ValidationMessage } from '../../lib/quest-validation';
-import { FieldMessages, useFieldMessages } from './FieldValidation';
+import { FieldMessages, useFieldMessages, type FieldValidationMessage } from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
 
@@ -782,7 +781,7 @@ function Labelled({
   help?: string;
   helpId?: string;
   /** Story p3-09: this field's findings, rendered below the control. */
-  messages?: readonly ValidationMessage[];
+  messages?: readonly FieldValidationMessage[];
   messagesId?: string;
   children: JSX.Element;
 }): JSX.Element {

@@ -51,6 +51,14 @@ export interface ObjectDetailLayoutProps {
   saving?: boolean;
   /** True when the live document differs from the loaded one (byte comparison, D66). */
   dirty?: boolean;
+  /**
+   * True when the family's blocking validation rejects the live document (task 4.2's four
+   * DropTable rules): Save is disabled and {@link blockReason} is its title, so the reason is
+   * never only a colour.
+   */
+  saveBlocked?: boolean;
+  /** The sentence the Save button carries while `saveBlocked` (the form's banner says the same). */
+  blockReason?: string;
   /** The document the JSON panel draws — the live one, so an edit shows up immediately. */
   document: unknown;
   /** The form. */
@@ -69,6 +77,8 @@ export default function ObjectDetailLayout({
   onSave,
   saving = false,
   dirty = false,
+  saveBlocked = false,
+  blockReason,
   document,
   children,
   className,
@@ -125,8 +135,9 @@ export default function ObjectDetailLayout({
                 type="button"
                 size="sm"
                 onClick={onSave}
-                disabled={saving || !dirty}
-                title={dirty ? undefined : 'No changes to save'}
+                disabled={saving || !dirty || saveBlocked}
+                aria-disabled={saveBlocked || undefined}
+                title={saveBlocked ? blockReason : dirty ? undefined : 'No changes to save'}
               >
                 <Save className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                 {saving ? 'Saving…' : 'Save'}

@@ -61,8 +61,9 @@ const MOCK_QUEST_ROW = {
  *
  * `phase` is the "Arrives in Phase N" text a stub route renders (Dashboard 5, the
  * eight data types 4, `/quests` 2 — `client/src/lib/routes.ts`). `/settings`
- * (p1-08), `/quests/extract` (p2-07) and `/quests` (p2-08) are real pages, so the
- * loop below asserts their own content instead of the stub text.
+ * (p1-08), `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01)
+ * and `/drop-tables` (p4-02) are real pages, so the loop below asserts their own
+ * content instead of the stub text.
  */
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', title: 'Dashboard', phase: '5' },
@@ -253,6 +254,16 @@ test.describe('sidebar navigation', () => {
         await expect(
           page.getByRole('main').getByRole('columnheader', { name: 'Quest Name' }),
         ).toBeVisible();
+      } else if (item.path === '/drop-tables') {
+        // Story p4-02 replaced this route's stub with the real generic object list for
+        // the DropTable family. The literals are copied on purpose;
+        // `tests/ui/drop-table-editor.spec.ts` owns the detail editor's contract.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search drop tables...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'Drop table' }),
+        ).toBeVisible();
       } else if (item.path === '/npc-inventories') {
         // Story p4-01 replaced this route's stub with the real generic object list
         // (the one family the scaffolding is wired end to end for). The literals are
@@ -368,7 +379,8 @@ test.describe('sidebar navigation', () => {
     const sidebar = sidebarOf(page);
     await expect(sidebar).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Drop Tables', exact: true })).toBeVisible();
-    await expect(page.getByRole('main').getByText('Arrives in Phase 4')).toBeVisible();
+    // Story p4-02 replaced this route's stub with the real list page.
+    await expect(page.getByRole('main').getByPlaceholder('Search drop tables...')).toBeVisible();
     await expect(activeNavLinks(sidebar)).toHaveCount(1);
     await expect(navLink(sidebar, 'Drop Tables')).toHaveClass(/bg-blue-600\/10/);
 

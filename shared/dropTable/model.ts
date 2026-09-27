@@ -356,6 +356,20 @@ export const DROP_TABLE_ITEM_FIELDS: readonly DropTableItemFieldSpec[] = [
   },
 ];
 
+/**
+ * A brand-new item row, in the corpus's own key order (`ItemId, ItemName, Notes,
+ * Requirements`) with each field at its spec default. Built **from** the inventory above, so
+ * "add a row" can never invent a second key list; used only by the Add button, never by a
+ * load (D57: an existing row is never rebuilt from this).
+ */
+export function newDropItemRow(): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  for (const field of DROP_TABLE_ITEM_FIELDS) {
+    row[field.key] = field.defaultValue;
+  }
+  return row;
+}
+
 const FIELDS_BY_KEY = new Map<string, DropTableFieldSpec>(
   DROP_TABLE_FIELDS.map((field) => [field.key, field]),
 );
