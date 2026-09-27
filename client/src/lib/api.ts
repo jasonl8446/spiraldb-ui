@@ -399,6 +399,91 @@ export function getActivity(limit = ACTIVITY_DEFAULT_LIMIT): Promise<ActivityFee
   return apiFetch<ActivityFeed>(`/api/activity?limit=${String(limit)}`);
 }
 
+/* -------------------------------------------------------------------- search */
+
+/**
+ * The `?limit=` the ⌘K palette sends to `GET /api/search` — the length the acceptance
+ * criterion names (plan task 5.2 / P5 AC#4). The server's own default lives in
+ * `server/src/services/search.ts`; the two are one decision written once per half, the
+ * api.ts convention `ACTIVITY_DEFAULT_LIMIT` already follows.
+ *
+ * It is a **per-group** cap: at most `limit` results in each `groups[]` element, so one
+ * substring that matches both a quest key and a DropTable key returns both groups rather
+ * than letting the first consume the whole budget. Recorded on the endpoint's own D1 sheet.
+ */
+export const SEARCH_DEFAULT_LIMIT = 20;
+
+/**
+ * One `results[]` row of `GET /api/search` (decision D27).
+ *
+ * **`object_type` and `object_key` are `string | null`, not the D4 union** — the same
+ * deliberate looseness {@link ActivityEntry} documents: they are non-null exactly when the
+ * row has a detail route, and the wire could in principle carry a type outside the tracked
+ * eight. The palette resolves them through the existing D4 mapping and renders `null` as
+ * "no link" rather than assuming the union.
+ */
+export interface SearchResultRow {
+  object_type: string | null;
+  object_key: string | null;
+  /** Primary text: the object key, or the friendly name of a routeless row. */
+  label: string;
+  /** The friendly name known for the row (a quest's title), or `null`. */
+  name: string | null;
+  /** The friendly table row's own id as text; `null` for an object row. */
+  source_id: string | null;
+  /** `null` for a routeless row — which is exactly when the dot is absent. */
+  status: StatusValue | null;
+  matched_on: 'key' | 'name';
+}
+
+/** One `groups[]` element: a type, the heading to render, and its rows. */
+export interface SearchGroup {
+  /** The group key — a D4 singular type, or `item` / `spell` / `npc`. */
+  type: string;
+  /** The heading the server decided, so the client needs no second label table. */
+  label: string;
+  results: SearchResultRow[];
+}
+
+/** `GET /api/search` response envelope (the endpoint's own D1 record). */
+export interface SearchResponse {
+  /** The trimmed query actually searched; `''` for the blank (just-opened) state. */
+  query: string;
+  /** The per-group cap that was applied. */
+  limit: number;
+  /** Rows in this response — the sum of every group's `results.length`. */
+  total: number;
+  /** `true` when at least one group matched more rows than the cap allowed. */
+  truncated: boolean;
+  /** Rows with no detail route (the items/spells/npcs name hits). */
+  unresolved: number;
+  groups: SearchGroup[];
+}
+
+/** TanStack Query key prefix for every search read. */
+export const SEARCH_QUERY_KEY = ['search'] as const;
+
+/** TanStack Query key for one query text. */
+export function searchQueryKey(
+  q: string,
+  limit = SEARCH_DEFAULT_LIMIT,
+): readonly [string, string, number] {
+  return ['search', q, limit] as const;
+}
+
+/**
+ * The request path for one search. The query is percent-encoded, so a key containing `&`
+ * or `?` cannot change the request's shape.
+ */
+export function searchPath(q: string, limit = SEARCH_DEFAULT_LIMIT): string {
+  return `/api/search?q=${encodeURIComponent(q)}&limit=${String(limit)}`;
+}
+
+/** `GET /api/search?q=&limit=` — the palette's read. */
+export function searchObjects(q: string, limit = SEARCH_DEFAULT_LIMIT): Promise<SearchResponse> {
+  return apiFetch<SearchResponse>(searchPath(q, limit));
+}
+
 /* --------------------------------------------------------------------- names */
 
 /** Query-key prefix for every names query; one entry per type. */

@@ -8,6 +8,7 @@ import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
 import { createObjectRouter } from './objects.js';
 import { createQuestsRouter } from './quests.js';
+import { createSearchRouter } from './search.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
@@ -107,6 +108,21 @@ let activityRouter: Router | undefined;
 apiRouter.use('/activity', (req, res, next) => {
   activityRouter ??= createActivityRouter({ db: getDb() });
   activityRouter(req, res, next);
+});
+
+/**
+ * Cross-type search (task 5.2, story p5-02) — `GET /api/search?q=&limit=20`, the ⌘K
+ * palette's read (decision D27).
+ *
+ * Lazily mounted like the six routers above, and for the same reason: the first request
+ * is the first moment the process needs `data/spiraldb-ui.db` (D32). A blank `?q=` is
+ * answered without touching that connection at all.
+ */
+let searchRouter: Router | undefined;
+
+apiRouter.use('/search', (req, res, next) => {
+  searchRouter ??= createSearchRouter({ db: getDb() });
+  searchRouter(req, res, next);
 });
 
 /**

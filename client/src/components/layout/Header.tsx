@@ -1,17 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Menu, RefreshCw } from 'lucide-react';
+import { Check, Loader2, Menu, RefreshCw, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 import { getSettings, SETTINGS_QUERY_KEY } from '../../lib/api';
 import { pageTitleForPath } from '../../lib/routes';
+import { SEARCH_SHORTCUT_HINT, SEARCH_TRIGGER_LABEL } from '../../lib/search';
 import { useSync } from '../../hooks/useSync';
 import { Button } from '../ui/button';
 
 /**
  * Sticky header (docs/spec-ui-design.md L99-109): 56px tall, `zinc-900` on a
  * `zinc-800` bottom border, showing the current route's page title on the left
- * and the Sync button + user avatar on the right.
+ * and the Search trigger + Sync button + user avatar on the right.
  *
+ * - the **Search button** is story p5-02's ⌘K palette trigger (plan task 5.2). Its
+ *   accessible name is `Search all objects`; the visible "Search" word and the `⌘K`
+ *   hint are `aria-hidden`, so the name cannot drift into "Search ⌘K" and the visible
+ *   label still satisfies WCAG 2.5.3 (the name contains the visible text). The button
+ *   lives in the header because the header is on every route, which is what "reachable
+ *   from every route" means here — the palette itself is mounted by `AppLayout`;
  * - the Sync button is the shared `useSync()` controller: spinner while the
  *   blocking `POST /api/sync` runs, checkmark for a moment on success, and a live
  *   region so the state is announced and not only shown as an icon (spec L545);
@@ -23,9 +30,11 @@ import { Button } from '../ui/button';
 export interface HeaderProps {
   /** Opens the mobile navigation overlay. */
   onOpenNav: () => void;
+  /** Opens the global search palette (story p5-02). */
+  onOpenSearch: () => void;
 }
 
-export default function Header({ onOpenNav }: HeaderProps): JSX.Element {
+export default function Header({ onOpenNav, onOpenSearch }: HeaderProps): JSX.Element {
   const { pathname } = useLocation();
   const title = pageTitleForPath(pathname);
   const { sync, isPending, justSucceeded } = useSync();
@@ -60,6 +69,26 @@ export default function Header({ onOpenNav }: HeaderProps): JSX.Element {
             ? 'Friendly name sync complete'
             : ''}
       </span>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onOpenSearch}
+        aria-label={SEARCH_TRIGGER_LABEL}
+        className="text-zinc-400"
+      >
+        <Search className="h-4 w-4" aria-hidden="true" />
+        <span aria-hidden="true" className="hidden sm:inline">
+          Search
+        </span>
+        <kbd
+          aria-hidden="true"
+          className="hidden rounded border border-zinc-700 px-1 font-sans text-[10px] leading-4 text-zinc-500 lg:inline"
+        >
+          {SEARCH_SHORTCUT_HINT}
+        </kbd>
+      </Button>
 
       <Button
         type="button"
