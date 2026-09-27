@@ -1,0 +1,42 @@
+# p3-11 — lead's independent verification of the AC#13 chain suite (test-only story)
+#
+# A spec is only worth committing if it can FAIL, so this verification is a falsification:
+# I broke the behaviour each chain depends on and confirmed the chain caught it.
+
+## 1. The four chains pass on the committed tree
+```
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers npx playwright test tests/ui/quest-editor.spec.ts --reporter=line
+  4 passed (5.8s)   # chains 1-4, one test each
+```
+
+## 2. FALSIFICATION — the AC's named surface really is under test
+The AC names the JSON side panel as the read-back for three chains. I made the panel render the
+STALE baseline instead of the live document (a one-line probe in QuestDetailPage:
+ -> ) and re-ran the suite:
+```
+FALSIFICATION APPLIED: the panel now renders the stale baseline
+  4 failed
+    chain 1 — a goal field edit reaches the JSON panel
+    chain 2 — deleting a referenced start goal blocks the save
+    chain 3 — adding a requirement leaf serializes into the panel
+    chain 4 — a GoalLogicEntry from the toolbar reaches the panel
+```
+ALL FOUR chains fail, so none of them is a tautology and each genuinely reads the live document
+through the panel. The probe was reverted with `git checkout --` and the file's md5 matches HEAD
+(93fb4c6e16dff8461dd9c197e9653cea both sides) before the final green run.
+
+## 3. A flake the LEAD's gate run exposed, and its honest fix
+The first lead gate run failed ONE UI test — the committed p2-07 assertion 'the { } toggle opens
+exactly 400px of syntax-highlighted JSON' (`expect(box?.width).toBe(400)`) — while the executor's
+own full-suite run had passed it. It passed twice in isolation. Diagnosis: the panel SLIDES IN, so
+an immediate `boundingBox()` can land mid-transition; the assertion races the CSS transition, and
+the Wrap container p3-10 added made the transition window wide enough to lose the race under load.
+The assertion itself is right (spec L326 really does say 400px), so it was NOT relaxed: it is now
+polled — `await expect.poll(async () => (await panel.boundingBox())?.width).toBe(400)` (the repo's
+established timing pattern, p3-04/p3-06).
+```
+$ npx playwright test tests/ui/quests-detail.spec.ts -g "exactly 400px"   # x3
+  1 passed (3.1s) / 1 passed (3.0s) / 1 passed (2.9s)
+$ npm run test:ui
+  170 passed (38.9s)      # the full suite under load, flake gone
+```
