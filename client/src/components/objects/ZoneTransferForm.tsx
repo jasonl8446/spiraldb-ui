@@ -191,7 +191,10 @@ export default function ZoneTransferForm({
           )}
 
           {editing ? (
-            <div className="flex items-end gap-2">
+            // `flex-wrap` is story p4-10's mobile fix: the `w-56` trigger box is 224px, so at
+            // 375px the box, the Add button and the trailing hint do not fit on one line —
+            // without wrapping the controls' right edge measured 431 of 375.
+            <div className="flex flex-wrap items-end gap-2">
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-zinc-400" htmlFor="zone-transfer-new-trigger">
                   Add a teleport
@@ -357,7 +360,10 @@ function TeleportRow({
           aria-label={`Teleport ${number} destination location`}
           aria-invalid={fieldAriaInvalid(locMessages)}
           aria-describedby={locMessages.length === 0 ? locHintId : `${locHintId} ${locMessagesId}`}
-          className={`w-96 font-mono ${fieldBorder(locMessages) ?? ''}`.trim()}
+          // `w-full md:w-96` is story p4-10's mobile fix: the fixed 384px box (spec-appropriate
+          // on desktop, where the row is roomy) is wider than the 327px content column a 375px
+          // viewport leaves, so it sat 442px right of the origin and was clipped.
+          className={`w-full font-mono md:w-96 ${fieldBorder(locMessages) ?? ''}`.trim()}
           onChange={(event) => state.edit(teleportDestinationLocEdit(index, event.target.value))}
         />
         <span id={locHintId} className="text-xs text-zinc-500">

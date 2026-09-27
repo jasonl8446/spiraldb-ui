@@ -136,7 +136,15 @@ export default function ObjectDetailLayout({
 
         {status === null ? null : <StatusBadge status={status} />}
 
-        <div className="ml-auto flex items-center gap-2">
+        {/*
+          `flex-wrap` is story p4-10's mobile fix: at 375px the five actions
+          (`Mark Reviewed` / `Mark Verified` / `{ }` / `Edit` / `Save`) are ~460px wide
+          together, so without wrapping the group's right edge sat 86px past the viewport and
+          the page scrolled sideways (measured: `right=461` of 375). Wrapping lets the group
+          shrink to its widest single button and lay the rest on following lines; on desktop
+          nothing wraps, so the row is unchanged.
+        */}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {/*
             The mark actions and their notes dialog, from the one shared unit (story p4-08).
             Mounted only for a tracked family, which is what keeps `global_registry` free of

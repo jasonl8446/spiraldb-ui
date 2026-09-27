@@ -175,7 +175,11 @@ export default function TreasureCardInventoryForm({
           )}
 
           {editing ? (
-            <div className="flex items-end gap-2">
+            // `flex-wrap` is story p4-10's mobile fix (the same one `ZoneTransferForm`'s add row
+            // takes): the `w-56` name box is 224px, so at 375px the box, the Add button and the
+            // price hint do not fit on one line — without wrapping the controls' right edge
+            // measured 414 of 375 and the page scrolled sideways.
+            <div className="flex flex-wrap items-end gap-2">
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-zinc-400" htmlFor="treasure-card-new-name">
                   Add a card
