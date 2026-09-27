@@ -209,9 +209,9 @@ test.describe('json side panel', () => {
     await expect(panel).toBeVisible();
     await expect(jsonToggle(page)).toHaveAttribute('aria-pressed', 'true');
 
-    // Spec L326: 400px wide.
-    const box = await panel.boundingBox();
-    expect(box?.width).toBe(400);
+    // Spec L326: 400px wide. Polled, because the panel slides in: an immediate
+    // boundingBox() can land mid-transition and report a different width (p3-11).
+    await expect.poll(async () => (await panel.boundingBox())?.width).toBe(400);
 
     // Syntax-highlighted JSON: the tree carries the field names and values...
     const tree = panel.getByRole('tree');
