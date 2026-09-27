@@ -429,6 +429,81 @@ describe('latest_notes', () => {
 });
 
 describe('unknown type (404)', () => {
+  /**
+   * **AC3 of story p4-07, pinned rather than assumed.** `global_registry` is the type the
+   * GlobalRegistry family would use **if** it were tracked — and it deliberately is not (Q1:
+   * editor-only, no lifecycle). This suite asserts the absence in both directions:
+   *
+   * - every status route refuses the type with the ordinary unknown-type 404, whose message
+   *   lists the valid ones and does **not** mention `global_registry`;
+   * - the dashboard does not carry the type, and a stray `entry_status` row that *did* appear
+   *   under that name (the schema has no CHECK, so a future migration could produce one) is
+   *   excluded from `types` and from `overall` — the read filters to the eight tracked types;
+   * - the constants that make it so are pinned: `STATUS_OBJECT_TYPES` and the D4 route map.
+   *
+   * **The note the AC asks for**: adding `global_registry` to `STATUS_OBJECT_TYPES` (or an entry
+   * to `STATUS_TYPE_BY_ROUTE`) would give it a table, a route and dashboard totals — i.e. it
+   * would break this criterion, and these assertions would fail loudly instead of the change
+   * landing quietly.
+   */
+  it('refuses every global_registry status route (AC3: editor-only, no tracking)', async () => {
+    const { app } = setup(seedCorpus);
+
+    for (const [method, path] of [
+      ['get', '/api/status/global_registry'],
+      ['patch', '/api/status/global_registry/globalregistry'],
+      ['get', '/api/status/global_registry/globalregistry/history'],
+    ] as const) {
+      const res =
+        method === 'get'
+          ? await request(app).get(path)
+          : await request(app).patch(path).send({ status: 'verified' });
+      expect(res.status, `${method} ${path}`).toBe(404);
+      expect(res.body.error, `${method} ${path}`).toMatch(/^Unknown status type "global_registry"/);
+    }
+
+    // …and the constants that make every route above 404 hold the absence.
+    expect(STATUS_OBJECT_TYPES).not.toContain('global_registry');
+    expect(Object.values(STATUS_TYPE_BY_ROUTE)).not.toContain('global_registry');
+    expect([...STATUS_TYPES]).not.toContain('global_registry');
+    expect(VALID_TYPES_MESSAGE).not.toContain('global_registry');
+  });
+
+  it('excludes a stray global_registry row from the dashboard totals (AC3)', async () => {
+    const { app } = setup((db) => {
+      seedCounts(db, 'quest', { extracted: 1, reviewed: 0, verified: 0 });
+      // The leak the criterion would be broken by, written straight into the table: the schema
+      // has no CHECK on object_type, so this is insertable and the read must ignore it.
+      db.prepare(
+        `INSERT INTO entry_status (object_type, object_key, status, extracted_at)
+         VALUES (?, ?, ?, ?)`,
+      ).run('global_registry', 'globalregistry', 'verified', '2026-09-27T00:00:00.000Z');
+    });
+
+    const res = await request(app).get('/api/dashboard');
+
+    expect(res.status).toBe(200);
+    expect(Object.keys(res.body.types)).not.toContain('global_registry');
+    expect(res.body.types).toEqual(
+      Object.fromEntries(
+        STATUS_OBJECT_TYPES.map((objectType) => [
+          objectType,
+          objectType === 'quest'
+            ? { total: 1, extracted: 1, reviewed: 0, verified: 0 }
+            : { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+        ]),
+      ),
+    );
+    // The stray `verified` row is not in the overall tally either (total 1, verified 0).
+    expect(res.body.overall).toEqual({
+      total: 1,
+      extracted: 1,
+      reviewed: 0,
+      verified: 0,
+      percent_verified: 0,
+    });
+  });
+
   it.each([
     ['get', '/api/status/widgets'],
     ['patch', '/api/status/widgets/KEY'],

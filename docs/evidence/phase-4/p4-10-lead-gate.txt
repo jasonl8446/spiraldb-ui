@@ -1,0 +1,42 @@
+# p4-10 lead gate — 5379d46 + the story tree; started 2026-09-27T11:40:36-04:00
+=== 1. npm test (13 owner-corpus arms expected RED — environment, see D78)
+$ npm test
+ ❯ tests/unit/quest-results.test.ts (31 tests | 1 failed) 1752ms
+ ❯ tests/unit/quest-validation.test.ts (27 tests | 6 failed) 220ms
+ ❯ tests/unit/quest-dialog.test.ts (28 tests | 1 failed) 2537ms
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  7 failed | 50 passed (57)
+      Tests  13 failed | 1296 passed (1309)
+--- rc=1
+
+=== 2. npm run test:ui on the ALTPORT config (5173 is held by the owner's other project)
+$ npx playwright test --config tests/ui/p4-10-altport.config.ts
+  ✓  176 [chromium] › tests/ui/quests-edit-mode.spec.ts:382:3 › the save pipeline (AC4) › a failed save reports the server message and keeps the guard armed (1.1s)
+  ✓  177 [chromium] › tests/ui/extraction.spec.ts:825:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (1.0s)
+  ✓  236 [chromium] › tests/ui/quests-status.spec.ts:257:3 › failure paths › a failed PATCH rolls the badge back and shows the error in the dialog (986ms)
+  ✓  285 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (457ms)
+  ✓  286 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (890ms)
+  299 passed (45.5s)
+--- rc=0
+
+=== 3. npm run lint
+$ npm run lint
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+--- rc=0
+
+# finished 2026-09-27T11:41:49-04:00

@@ -7,21 +7,37 @@ import { TYPE_STRINGS } from './typeConstants.js';
 /**
  * Dialog types — [spec-domain-reference.md] L444-523, task 3.1.
  *
- * `ActorDialogList` (`{$type, m_dialogs}`, 767 occurrences) wraps dialog *blocks* tagged
- * `Prep` / `Completion` / `""` (measured 418 / 316 / 5 — the tag is a free string, never an
- * enum), each block holding `NPCDialogEntry` nodes, madlib templates and dialog events.
+ * `ActorDialogList` (`{$type, m_dialogs}`, 797 occurrences on the owner's `f9a1055` baseline,
+ * was 767) wraps untagged dialog *blocks* tagged `Prep` / `Completion` / `Hyperlink` / `""`
+ * (measured 322 / 442 / 5 / 5 — the tag is a free string, never an enum), each block holding
+ * `NPCDialogEntry` nodes, madlib templates and dialog events.
  *
- * `NPCDialogEntry` is the widest type in the corpus: **66 distinct fields** across 1,706
- * nodes, 14 of which carry an explicit `null` somewhere (`m_nameSTKey` 105×,
- * `m_nameOverride` 6×, and 12 more fields 2× each). Every field here is therefore
- * `.nullish()` — absent *and* explicit `null` are both "no value" per
+ * `ActorDialog` is the **typed** form of that block, absent from the 322-file corpus and
+ * measured **5 times** at this baseline: always `ResActorDialog.m_dialog`, carrying `$type`
+ * plus the same six value keys the untagged blocks carry. Both spellings are modelled (they
+ * are the same shape with and without the annotation), so a save preserves whichever the
+ * document used — {@link ActorDialogBlockSchema} for `m_dialogs[]`, {@link ActorDialogSchema}
+ * for the tagged node.
+ *
+ * `NPCDialogEntry` is the widest type in the corpus: **66 distinct fields** across 1,884 nodes
+ * (was 1,706), 14+ of which carry an explicit `null` somewhere (`m_requirements` is `null` on
+ * all 1,882 nodes that carry the key, `m_nameSTKey` 92×, and a dozen more 2× each). Every field
+ * here is therefore `.nullish()` — absent *and* explicit `null` are both "no value" per
  * `NullValueHandling.Ignore`, and neither is rewritten (D5: an absent key is never
  * injected, an explicit `null` is never deleted).
  *
+ * `$type` is **optional on an entry** at this baseline: 2 of the 1,884 corpus entries carry no
+ * `$type` at all (`questtemplates_WC-TRITON-MAIN-004.json`'s quest-level
+ * `m_dialogList.m_dialogs[0].m_dialogEntries[4]` and `-007.json`'s `[5]`, each the 58-key
+ * `sparse58NoType` shape the p3-08 dialog model records). Every one of the 1,882 that *do*
+ * carry one carries the `NPCDialogEntry` literal, so the literal is kept and only its presence
+ * is relaxed — a **wrong** `$type` still fails loudly, and the editor's `$type` reader already
+ * returns `null` for a typeless entry instead of inventing one (D64).
+ *
  * The madlib chain (`m_dialogs[].m_madlibs[]` → `m_madlibBlock` → `m_madlibs[]`) bottoms out
- * in `MadlibArgT_ByteString`: the **commonest** `$type` in the corpus (3,685 occurrences) and
- * one that no spec or plan list mentions. It is also the most deeply nested type in the
- * document, which is why it is modelled explicitly — a save cannot quietly lose it.
+ * in `MadlibArgT_ByteString`: the **commonest** `$type` in the corpus (4,175 occurrences, was
+ * 3,685) and one that no spec or plan list mentions. It is also the most deeply nested type in
+ * the document, which is why it is modelled explicitly — a save cannot quietly lose it.
  */
 
 /** `m_madlibs[].m_madlibBlock.m_madlibs[]` ([spec-domain-reference.md] L509). */
@@ -49,7 +65,9 @@ export const MadlibSchema = passthroughObject({
  * optional, and any field the corpus has that is not listed here passes through untouched.
  */
 export const NPCDialogEntrySchema = passthroughObject({
-  $type: z.literal(TYPE_STRINGS.NPCDialogEntry),
+  // Optional: 2 of the 1,884 corpus entries carry no `$type` (see the module header). A
+  // present-but-wrong `$type` still fails, and nothing here ever invents one.
+  $type: z.literal(TYPE_STRINGS.NPCDialogEntry).nullish(),
 
   // Basic
   m_personaName: z.string().nullish(),
@@ -152,6 +170,22 @@ export const ActorDialogBlockSchema = passthroughObject({
 
 /** A dialog block. */
 export type ActorDialogBlock = z.infer<typeof ActorDialogBlockSchema>;
+
+/**
+ * The **typed** dialog block — `ResActorDialog.m_dialog` on the owner's `f9a1055` baseline
+ * (5 occurrences, 3 quests).
+ *
+ * Same six value keys as {@link ActorDialogBlockSchema} plus the `$type` annotation, in the
+ * corpus's own order: `$type, m_dialogTag, m_dialogEntries, m_madlibs, m_dialogEvents,
+ * m_noAggroWhileDialogIsUp, m_noAggroNoDelay`. `extend` keeps the passthrough policy, so the
+ * unknown keys of either spelling still survive (D5).
+ */
+export const ActorDialogSchema = ActorDialogBlockSchema.extend({
+  $type: z.literal(TYPE_STRINGS.ActorDialog),
+});
+
+/** A typed dialog block (`ResActorDialog.m_dialog`). */
+export type ActorDialog = z.infer<typeof ActorDialogSchema>;
 
 /** `ActorDialogList` — `{$type, m_dialogs}` ([spec-domain-reference.md] L263). */
 export const ActorDialogListSchema = passthroughObject({

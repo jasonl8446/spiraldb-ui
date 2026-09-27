@@ -10,53 +10,65 @@
  *
  * ## Measured corpus facts this model is built on
  *
- * Re-measured by this story against the real checkout
- * (`/home/jason/Documents/git-projects/spiraldb/QuestTemplates`, **322** files, 2026-09-26):
+ * Re-measured against the real checkout
+ * (`/home/jason/Documents/git-projects/spiraldb/QuestTemplates`) at the owner's `f9a1055`
+ * baseline — **328** files, D79. The 322-file/2026-09-26 numbers are the parentheses where the
+ * merge moved them; every count below was taken again from the 328-file corpus.
  *
  * - **The real shape is THREE levels**, not a flat entry list: `m_dialogList` is an
- *   `ActorDialogList` object (`{$type, m_dialogs}`, that order in **767/767**) whose
+ *   `ActorDialogList` object (`{$type, m_dialogs}`, that order in **797/797**, was 767) whose
  *   `m_dialogs` is an array of **tag groups**, each with a uniform **6-key order**
  *   (`m_dialogTag, m_dialogEntries, m_madlibs, m_dialogEvents, m_noAggroWhileDialogIsUp,
- *   m_noAggroNoDelay`, 739/739). 767 lists = **322 quest-level** (present in 322/322 files)
- *   + **445 goal-level** (327 goals carry an explicit `null`). 739 groups, **1706 entries**.
- * - **`m_dialogTag` is a free string**: `"Completion"` 418, `"Prep"` 316, **`""` 5**. The
- *   empty tag is real content and is never "fixed", padded or re-labelled.
- * - **43 lists have an empty `m_dialogs` array** (7 quest-level, 36 goal-level) and must
- *   render an empty state, never be padded. `m_dialogEntries` is never empty (0 of 739
- *   groups), which is why a **new** tag group starts with one entry
+ *   m_noAggroNoDelay`, 774/774, was 739). 797 lists = **328 quest-level** (present in 328/328
+ *   files) + **469 goal-level** (327 goals carry an explicit `null`). 774 groups, **1884
+ *   entries** (was 1706). Five of those groups carry a `$type` — they are the **typed
+ *   `ActorDialog`** blocks nested in `ResActorDialog.m_dialog` (D79's corpus-only result
+ *   class), not members of any list; the other 769 are the untagged form this editor mounts.
+ * - **`m_dialogTag` is a free string**: `"Completion"` 442, `"Prep"` 322, **`""` 5** and
+ *   **`"Hyperlink"` 5** (all five on the typed `ActorDialog` blocks). The empty tag is real
+ *   content and is never "fixed", padded or re-labelled.
+ * - **43 lists have an empty `m_dialogs` array** (7 quest-level, 36 goal-level — unchanged by
+ *   the merge) and must render an empty state, never be padded. `m_dialogEntries` is never
+ *   empty (0 of 774 groups), which is why a **new** tag group starts with one entry
  *   ({@link newDialogGroup}) — p3-06's same rule for a new requirement group — while an
  *   existing empty array is only ever rendered, never padded.
- * - **`m_dialogEvents` is `null` in 739/739** and `m_madlibs` is an array of
- *   `{m_madlibBlock, m_index}` in 705 groups / `null` in 34; `m_noAggroWhileDialogIsUp` and
- *   `m_noAggroNoDelay` are `false` in 739/739. The madlib chain bottoms out in
- *   `MadlibArgT_ByteString` children (`shared/quest/dialog.ts`).
- * - **Three entry key orders in the real checkout, and the sparse ones must not be padded**
- *   (this story's primary risk; the p3-04 sparse-goal and p3-06 untyped-wrapper lesson):
- *   (a) **1698 × 66 keys** — the full order, `$type` first (printed by
- *   {@link DIALOG_ENTRY_FIELD_SPECS}); (b) **6 × 45 keys**, stopping at `m_soundEffectFile`
- *   and therefore lacking the whole audio tail plus `m_idleAnimation`/timing/UI block
- *   (21 keys; all six in `WC-UNICORN-SIDE-001`); (c) **2 × 60 keys**, lacking the first six
- *   Basic identity keys `m_personaName, m_nameOverride, m_nameSTKey, m_guiDisplay,
- *   m_maxTimeSeconds, m_invisible` (`WC-TRITON-MAIN-002`, `WC-TRITON-MAIN-009`). Measured
- *   correction to the story brief: the second sparse order omits **6** leading keys, not 13 —
- *   66 − 6 = 60, and `m_requirements … m_actorTemplateID` are present on those two entries.
- *   The **D17 clone** adds a fourth shape, in the two files this tool itself wrote
+ * - **`m_dialogEvents` is `null` in 774/774** (the D17 clone's own rewritten files omit it, 10
+ *   of its 739 groups) and `m_madlibs` is an array of `{m_madlibBlock, m_index}` in 742 groups
+ *   / `null` in 32; `m_noAggroWhileDialogIsUp` and `m_noAggroNoDelay` are `false` in 774/774.
+ *   The madlib chain bottoms out in `MadlibArgT_ByteString` children
+ *   (`shared/quest/dialog.ts`).
+ * - **Five entry key orders in the real checkout now, and the sparse ones must not be padded**
+ *   (this story's primary risk; the p3-04 sparse-goal and p3-06 untyped-wrapper lesson): the
+ *   shapes are data — {@link DIALOG_ENTRY_KEY_SHAPES}, one home for every key list, count and
+ *   provenance address. Measured counts: **1868 × 66 keys** (full, `$type` first), **7 × 65
+ *   keys** with the null-valued `m_dialogEvent` omitted (new — the `WC-COMMONS-MAIN-002-*`
+ *   `m_dialogEntries[11]` entries, the brief's flagship among them), **6 × 45 keys** (stopping
+ *   at `m_soundEffectFile`, all six in `WC-UNICORN-SIDE-001`), **2 × 58 keys** with `$type`,
+ *   the six persona-prefix keys and `m_requirements` all absent (new —
+ *   `WC-TRITON-MAIN-004[4]`, `WC-TRITON-MAIN-007[5]`) and **1 × 60 keys** (the six leading
+ *   identity keys absent, `WC-TRITON-MAIN-002`). The 322-file corpus had three orders
+ *   (1698 / 6 / 2), so **two are new and one lost a member** to the `58`-key shape. Measured
+ *   correction carried forward from the brief: the sparse order omits **6** leading keys, not
+ *   13 — 66 − 6 = 60, and `m_requirements … m_actorTemplateID` are present on those entries.
+ *   The **D17 clone** adds a sixth shape, in the two files this tool itself wrote
  *   (`WC-CYCLOPS-MAIN-002`, `WC-UNICORN-MAIN-004`): **35 × 65 keys** with `m_requirements`
  *   omitted (the `NullValueHandling.Ignore` shape D57a names), whose 10 tag groups likewise
  *   omit the null-valued `m_dialogEvents` (5 keys instead of 6). The build is expected to
- *   preserve all four entry shapes and both group shapes, and the unit sweep does — over both
+ *   preserve all six entry shapes and both group shapes, and the unit sweep does — over both
  *   corpora, byte-identically.
  * - **Field inventory = the corpus's own 66 keys** (65 value keys) **plus one synthetic
  *   field** — {@link DIALOG_ENTRY_FIELD_SPECS} is 66 fields, and the domain reference's
  *   grouping is checked against it: the corpus's 65 value keys are exactly the spec's 59 non-`$type`
  *   keys (the spec's `m_cameraOffsetX/Y/Z` and `m_pitch/yaw/roll` shorthand expands to six
  *   corpus keys) plus six camera-split keys the spec lists in shorthand. **The spec's
- *   `m_defaultDialogAnimation` never occurs on any corpus entry** (0 of 1706) and is modelled
- *   anyway, labelled synthetic ({@link DialogFieldSpec.synthetic}).
+ *   `m_defaultDialogAnimation` never occurs on any corpus entry** (0 of 1884) and is modelled
+ *   anyway, labelled synthetic ({@link DialogFieldSpec.synthetic}). **No field is new at this
+ *   baseline** — the merge changed which keys nodes *omit*, never which keys exist.
  * - **Corpus-empty fields implemented but labelled synthetic**: entry `m_requirements` is
- *   `null` in **1706/1706** (the plan's "→ the 3.6 tree" is fixture-only here, yet the shared
- *   tree is still mounted because an entry could carry one), `m_action` is `""` in
- *   **1706/1706**, and group `m_dialogEvents` is null in all 739. Two flags keep those two
+ *   `null` on **all 1882 entries that carry the key** (1882/1884 carry it — the two
+ *   `sparse58NoType` entries do not; the plan's "→ the 3.6 tree" is fixture-only here, yet the
+ *   shared tree is still mounted because an entry could carry one), `m_action` is `""` in
+ *   **1884/1884**, and group `m_dialogEvents` is null in all 774. Two flags keep those two
  *   meanings apart ({@link DialogFieldSpec.synthetic} labels a field, `corpusAbsent` marks the
  *   one key **no** corpus entry carries, so only it is withheld from a new entry).
  * - **Zero unmodelled corpus keys.** All 66 distinct entry keys are modelled, so the
@@ -64,27 +76,31 @@
  *   heard of — unlike p3-06's `ReqHasEntry`. The corpus's own oddities that AC2's clause rests
  *   on are the sparse shapes, the explicit `null`s and the empty tag, and those are proven by
  *   the byte-identical re-set sweep rather than by the disclosure.
- * - **Value domains and reference decisions** (every one miss-safe per D60(c)/D59(d), table
- *   lookups re-measured through the synced `data/spiraldb-ui.db`):
+ * - **Value domains and reference decisions** (every one miss-safe per D60(c)/D59(d); these
+ *   were measured through the synced `data/spiraldb-ui.db` against the **322-file** corpus and
+ *   are **not** re-measured at `f9a1055`: the database is the tool's own 322-row state and was
+ *   deliberately not re-synced for this baseline — D79's "say so rather than doing it". The
+ *   corpus-side counts below stay descriptive; the `/N` denominators are the old ones):
  *   `m_actorTemplateID` → npcs **115/115** distinct non-zero values resolve (**330 entries
  *   carry `0`**, which stays a value and is never turned into an empty lookup);
  *   `m_walkAwayNpcTemplateID` → npcs **30/30** non-zero, `0` is "none" (1675 entries);
  *   `m_dialog` → the `string_table.key` table (216,991 rows) **1099/1105** distinct keys
  *   resolve, 6 miss; `m_cameraZoneName` → `zones.zone_path` **73/87** (the 14 misses are
  *   interior variants); `m_nameSTKey` offers the two measured keys
- *   (`NPCFormats_First_Last` 1298, `NPCFormats_First_Only` 292 — both resolve in
- *   `string_table`) while `null` (105) and `""` (9) are preserved; `m_personaName` has 149
+ *   (`NPCFormats_First_Last`, `NPCFormats_First_Only` — both resolve in `string_table`) while
+ *   `null` (92) and `""` are preserved; `m_personaName` has 149
  *   distinct values that resolve in **no** names table ⇒ free text; `m_maxTimeSeconds`
- *   is `-1` (unlimited) in 1599 and `0` in 105 ⇒ a number field with the hint;
- *   `m_cameraHidePlayers`'s measured domain is **0 (667), 1 (104), 2 (934), 3 (1)** while the
- *   spec says only "0=no, 2=yes" ⇒ a **numeric** select over the four measured values
- *   ({@link DialogFieldKind} `number-select`) so an unlisted value stays displayed, selected
- *   and numeric.
+ *   is `-1` (unlimited) in the measured majority and `0` in 105 ⇒ a number field with the
+ *   hint; `m_cameraHidePlayers`'s measured 322-file domain is **0 (667), 1 (104), 2 (934),
+ *   3 (1)** while the spec says only "0=no, 2=yes" ⇒ a **numeric** select over the measured
+ *   values ({@link DialogFieldKind} `number-select`) so an unlisted value stays displayed,
+ *   selected and numeric.
  * - **Twelve fields are `null` in exactly 2 entries each** (`m_cameraShakeType`,
  *   `m_cameraFadeType`, `m_idleAnimation`, `m_dialogEvent`, `m_standInPlayerTag`,
  *   `m_secondaryCameraName`, `m_soundEffectFile`, `m_musicFile`, `m_cameraZoneName`,
  *   `m_npcStandInList`, `m_dialogAnimationList`, `m_dialogTurningList`) plus `m_nameOverride`
- *   in 6 and `m_nameSTKey` in 105 ⇒ `null` must survive an unrelated edit.
+ *   in 6 and `m_nameSTKey` in 92 ⇒ `null` must survive an unrelated edit. (Unchanged by the
+ *   merge: the same 12 fields, the same counts.)
  * - **The three "array" fields are arrays of ENCODED STRINGS**, not objects:
  *   `m_npcStandInList` = `["MB_MayorPimsbury instance", …]` (19 elements over 12 entries),
  *   `m_dialogAnimationList` = `["0|126322|Gen_Dial_01|5", …]` (527 elements),
@@ -110,7 +126,7 @@
  *    the missing keys — exactly the preservation AC2′s sibling clause requires.
  * 2. **`m_dialogTag` is the one text control whose empty state is written as `""` rather
  *    than deleted.** The five measured `""` tags are real content, and deleting the key would
- *    break the group's uniform 6-key order that 739/739 groups share. Every other text/number
+ *    break the group's uniform 6-key order that 774/774 groups share. Every other text/number
  *    control follows D59(c): emptied ⇒ one `delete` when the key exists, **no edit** when it
  *    does not (so clearing an already-absent field can never create one, and `''` is never
  *    written into a numeric/boolean slot).
@@ -143,13 +159,13 @@ export const DIALOG_ENTRIES_KEY = 'm_dialogEntries';
 /** A group's madlib templates (untouched by this editor, surfaced read-only). */
 export const GROUP_MADLIBS_KEY = 'm_madlibs';
 
-/** A group's dialog events (null in 739/739; surfaced read-only). */
+/** A group's dialog events (null in 774/774; surfaced read-only). */
 export const GROUP_DIALOG_EVENTS_KEY = 'm_dialogEvents';
 
-/** A group's first aggro flag (`false` in 739/739). */
+/** A group's first aggro flag (`false` in 774/774). */
 export const NO_AGGRO_WHILE_DIALOG_IS_UP_KEY = 'm_noAggroWhileDialogIsUp';
 
-/** A group's second aggro flag (`false` in 739/739). */
+/** A group's second aggro flag (`false` in 774/774). */
 export const NO_AGGRO_NO_DELAY_KEY = 'm_noAggroNoDelay';
 
 /** An entry's requirement slot — where the shared tree is mounted. */
@@ -226,10 +242,10 @@ export const RAW_FIELDS_LABEL = 'Raw fields';
 /** The absent/null list's sentence (Add is still offered). */
 export const NO_DIALOG_LIST_TEXT = 'This dialog list is absent or null.';
 
-/** The empty `m_dialogs` array's sentence (43 of the 767 measured lists). */
+/** The empty `m_dialogs` array's sentence (43 of the 797 measured lists, was 767). */
 export const NO_DIALOG_TAGS_TEXT = 'This dialog list has no dialog tags.';
 
-/** The empty `m_dialogEntries` array's sentence (never measured — 0 of 739 groups). */
+/** The empty `m_dialogEntries` array's sentence (never measured — 0 of 774 groups, was 739). */
 export const NO_DIALOG_ENTRIES_TEXT = 'No dialog entries in this tag.';
 
 /** A group whose value is not an object: kept visible instead of dropped. */
@@ -246,11 +262,11 @@ export const ABSENT_TAG_LABEL = '(no tag key)';
 
 /** The synthetic spec-listed field's own note. */
 export const SYNTHETIC_FIELD_NOTE =
-  'Spec-listed (docs/spec-domain-reference.md L517) but present on 0 of the 1706 corpus entries — shown read-only, never written.';
+  'Spec-listed (docs/spec-domain-reference.md L517) but present on 0 of the 1884 corpus entries — shown read-only, never written.';
 
 /** The fixture-only note on an entry's requirement slot. */
 export const REQUIREMENTS_FIXTURE_NOTE =
-  'm_requirements is null on all 1706 corpus entries — the tree is fixture-only here; the first Add writes the shared tree’s own wrapper.';
+  'm_requirements is null on all 1882 corpus entries that carry the key (of 1884) — the tree is fixture-only here; the first Add writes the shared tree’s own wrapper.';
 
 /** The string-list control's own encoding note, verbatim from the corpus. */
 export const STRING_LIST_NOTE =
@@ -258,7 +274,7 @@ export const STRING_LIST_NOTE =
 
 /** The tag control's own note (why its empty state is a value, not a deletion). */
 export const TAG_NOTE =
-  'A free string: "Prep" 316, "Completion" 418 and "" 5 in the corpus — an empty tag is written as "" and the key is kept.';
+  'A free string: "Prep" 322, "Completion" 442, "" 5 and "Hyperlink" 5 in the corpus — an empty tag is written as "" and the key is kept.';
 
 /** The unset option label every dialog select leads with (a null/absent value). */
 export const DIALOG_SELECT_UNSET_LABEL = '—';
@@ -313,8 +329,9 @@ export interface DialogFieldSpec {
   options?: readonly (string | number)[];
   /**
    * `true` when the field is corpus-empty or corpus-absent and the UI must say so: the
-   * spec-listed `m_defaultDialogAnimation` (0 of 1706 entries) and the requirement slot
-   * (`null` in 1706/1706). The flag labels the field; it does not change how it is preserved.
+   * spec-listed `m_defaultDialogAnimation` (0 of 1884 entries) and the requirement slot
+   * (`null` on all 1882 entries that carry the key). The flag labels the field; it does not
+   * change how it is preserved.
    */
   synthetic?: boolean;
   /**
@@ -407,7 +424,7 @@ export const DIALOG_ENTRY_FIELD_SPECS: readonly DialogFieldSpec[] = [
     key: 'm_nameSTKey',
     kind: 'string-key',
     group: BASIC,
-    help: 'String-table key for the name format (NPCFormats_First_Last 1298, NPCFormats_First_Only 292, null 105, "" 9)',
+    help: 'String-table key for the name format (NPCFormats_First_Last 1449, NPCFormats_First_Only 325, null 92, "" 15)',
     options: NAME_ST_KEYS,
     defaultValue: 'NPCFormats_First_Last',
   },
@@ -422,7 +439,7 @@ export const DIALOG_ENTRY_FIELD_SPECS: readonly DialogFieldSpec[] = [
     key: 'm_maxTimeSeconds',
     kind: 'number',
     group: BASIC,
-    help: 'Max dialog display time — -1 = unlimited (measured: -1 in 1599 entries, 0 in 105)',
+    help: 'Max dialog display time — -1 = unlimited (measured: -1 in 1789 entries, 0 in 92)',
     defaultValue: -1,
   },
   {
@@ -436,7 +453,7 @@ export const DIALOG_ENTRY_FIELD_SPECS: readonly DialogFieldSpec[] = [
     key: 'm_requirements',
     kind: 'requirements',
     group: BASIC,
-    help: 'Conditions to show this entry (null on all 1706 corpus entries — fixture-only here)',
+    help: 'Conditions to show this entry (null on all 1882 corpus entries that carry the key — fixture-only here)',
     synthetic: true,
     defaultValue: null,
   },
@@ -465,7 +482,7 @@ export const DIALOG_ENTRY_FIELD_SPECS: readonly DialogFieldSpec[] = [
     key: 'm_action',
     kind: 'text',
     group: BASIC,
-    help: 'Action trigger ("" on all 1706 corpus entries)',
+    help: 'Action trigger ("" on all 1884 corpus entries)',
     defaultValue: '',
   },
   {
@@ -875,6 +892,150 @@ export const KNOWN_ENTRY_KEYS: readonly string[] = [
   ...DIALOG_ENTRY_FIELD_SPECS.map((field) => field.key),
 ];
 
+/* -------------------------------------------------- the measured entry shapes */
+
+/**
+ * A new entry's own key order — `$type` first, then every field the corpus carries, skipping
+ * the synthetic ones. Derived from the same spec list {@link newDialogEntry} builds from, so
+ * "the canonical order" and "the order a new node is written in" cannot drift apart (the unit
+ * test asserts the two are equal).
+ */
+export const DIALOG_ENTRY_KEY_ORDER: readonly string[] = [
+  ENTRY_TYPE_KEY,
+  ...DIALOG_ENTRY_FIELD_SPECS.filter((field) => field.corpusAbsent !== true).map(
+    (field) => field.key,
+  ),
+];
+
+/**
+ * One measured entry key shape: the ordered key list, its measured occurrence count and where
+ * the count came from. **The key lists are measurements, not derivations** — the four key sets
+ * below are the corpus's own, transcribed rather than computed, because a shape that is
+ * *derived* from the full order is a shape that silently follows the full order when the corpus
+ * changes.
+ */
+export interface DialogEntryKeyShape {
+  /** Stable name, used in the sweep's counters and in a failure message. */
+  name: string;
+  /** The keys, in the document's own order. */
+  keys: readonly string[];
+  /** Occurrences measured at the owner's `f9a1055` baseline (`QuestTemplates/`, 328 files). */
+  measuredCount: number;
+  /** One provenance example: the file and absolute address the count was taken from. */
+  example: string;
+  /** What the shape is, in one sentence. */
+  note: string;
+}
+
+/** The 6 persona-prefix keys the sparse shapes omit. */
+const PERSONA_PREFIX_KEYS = [
+  'm_personaName',
+  'm_nameOverride',
+  'm_nameSTKey',
+  'm_guiDisplay',
+  'm_maxTimeSeconds',
+  'm_invisible',
+];
+
+/** The 21-key tail the 45-key shape omits (everything after `m_soundEffectFile`). */
+const TRUNCATED_TAIL_KEYS = [
+  'm_musicFile',
+  'm_nonStackableMusic',
+  'm_nonRepeatableMusic',
+  'm_playMusicAtSFXVolume',
+  'm_soundEffectDelay',
+  'm_musicDelay',
+  'm_musicFadeTime',
+  'm_dontReleaseCameraAtExit',
+  'm_disableBackButton',
+  'm_enableExitButton',
+  'm_cameraFadeType',
+  'm_cameraFadeTime',
+  'm_idleAnimation',
+  'm_spamTime',
+  'm_playSoundIfSpamming',
+  'm_playMusicIfSpamming',
+  'm_stopMusicFadeTime',
+  'm_restartMusicFadeTime',
+  'm_meetsRequirements',
+  'm_secondaryCameraInitalDelay',
+  'm_displayButtonsOnTimedDialog',
+];
+
+/** `order` minus `drop`, preserving `order`. */
+function withoutKeys(order: readonly string[], drop: readonly string[]): readonly string[] {
+  return order.filter((key) => !drop.includes(key));
+}
+
+/**
+ * The entry key shapes the p3-08 sweep recognises, measured at the owner's `f9a1055` baseline
+ * (1,884 corpus entries) plus the one shape this tool itself writes (the D17 clone).
+ *
+ * | name | keys | measured |
+ * |---|---|---|
+ * | `full66` | `$type` + all 65 value keys | 1,868 corpus (was 1,698) |
+ * | `noDialogEvent65` | `full66` minus `m_dialogEvent` | 7 corpus — `WC-COMMONS-MAIN-002-*`' `m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[11]` |
+ * | `sparse60` | `full66` minus the 6 persona-prefix keys | 1 corpus (`WC-TRITON-MAIN-002`), was 2 |
+ * | `truncated45` | `full66` minus the 21-key audio/animation tail (persona prefix kept) | 6 corpus (unchanged) |
+ * | `sparse58NoType` | `sparse60` minus `$type` and `m_requirements` | 2 corpus — `WC-TRITON-MAIN-004[4]`, `WC-TRITON-MAIN-007[5]`, both added at the merge |
+ * | `nullOmitted65` | `full66` minus `m_requirements` | 2 files of the D17 clone (`WC-CYCLOPS-MAIN-002`, `WC-UNICORN-MAIN-004`) — this tool's own `NullValueHandling.Ignore` write, D57(a) |
+ *
+ * `noDialogEvent65` and `sparse58NoType` are the two shapes the owner's merge introduced (the
+ * 322-file baseline had `full66` / `sparse60` / `truncated45` only, 1,706 entries). Both are
+ * *subsets* of the keys the field inventory already models — no field is new — which is why the
+ * editor needed no new control: what changed is which keys a node omits, and the module's write
+ * rule (edit one key, never rebuild) already preserves that.
+ */
+export const DIALOG_ENTRY_KEY_SHAPES: readonly DialogEntryKeyShape[] = [
+  {
+    name: 'full66',
+    keys: DIALOG_ENTRY_KEY_ORDER,
+    measuredCount: 1868,
+    example: 'questtemplates_DS-ACAD-C01-001.json m_dialogList.m_dialogs[0].m_dialogEntries[0]',
+    note: 'the canonical 66-key order a new entry is written in',
+  },
+  {
+    name: 'noDialogEvent65',
+    keys: withoutKeys(DIALOG_ENTRY_KEY_ORDER, ['m_dialogEvent']),
+    measuredCount: 7,
+    example:
+      'questtemplates_WC-COMMONS-MAIN-002-BALANCE.json m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[11]',
+    note: 'a null-valued m_dialogEvent omitted (the flag the brief names)',
+  },
+  {
+    name: 'sparse60',
+    keys: withoutKeys(DIALOG_ENTRY_KEY_ORDER, PERSONA_PREFIX_KEYS),
+    measuredCount: 1,
+    example: 'questtemplates_WC-TRITON-MAIN-002.json m_dialogList.m_dialogs[0].m_dialogEntries[4]',
+    note: 'the persona prefix omitted (was 2 entries on the 322-file corpus)',
+  },
+  {
+    name: 'truncated45',
+    keys: withoutKeys(DIALOG_ENTRY_KEY_ORDER, TRUNCATED_TAIL_KEYS),
+    measuredCount: 6,
+    example: 'questtemplates_WC-UNICORN-SIDE-001.json m_dialogList.m_dialogs[0].m_dialogEntries[0]',
+    note: 'the whole audio/animation tail omitted, stopping at m_soundEffectFile (the persona prefix is kept)',
+  },
+  {
+    name: 'sparse58NoType',
+    keys: withoutKeys(DIALOG_ENTRY_KEY_ORDER, [
+      ...PERSONA_PREFIX_KEYS,
+      ENTRY_TYPE_KEY,
+      REQUIREMENTS_KEY,
+    ]),
+    measuredCount: 2,
+    example: 'questtemplates_WC-TRITON-MAIN-007.json m_dialogList.m_dialogs[0].m_dialogEntries[5]',
+    note: 'the sparse shape with no $type at all and no m_requirements (new at f9a1055)',
+  },
+  {
+    name: 'nullOmitted65',
+    keys: withoutKeys(DIALOG_ENTRY_KEY_ORDER, [REQUIREMENTS_KEY]),
+    measuredCount: 35,
+    example: 'data/test-spiraldb questtemplates_WC-UNICORN-MAIN-004.json (the D17 clone)',
+    note: 'this tool’s own null-stripped write (D57a), 35 entries in 2 clone files; never produced by a corpus checkout',
+  },
+];
+
 /* ------------------------------------------------------------ new nodes */
 
 /** The `$type` literal a new entry carries — from the 3.1 constant table, never re-typed. */
@@ -912,10 +1073,10 @@ function newDialogFieldValue(field: DialogFieldSpec): unknown {
 /**
  * A brand-new tag group in the corpus's own 6-key order: the tag the caller passes, **one
  * default entry**, and the measured null/false values of the four remaining keys. **No
- * `$type`** — no corpus group carries one (0 of 739).
+ * `$type`** — no corpus group carries one (0 of 774).
  *
  * The group starts with one entry rather than an empty `m_dialogEntries` because **0 of the
- * 739 corpus tag groups has an empty entry array** (every group carries at least one), so an
+ * 774 corpus tag groups has an empty entry array** (every group carries at least one), so an
  * empty default would invent a shape the corpus has never had. That is p3-06's recorded rule
  * for the same situation (`addGroupEdits` starts a new group with a child because the corpus
  * never carries an empty `m_requirements`) and D57's fidelity emphasis points the same way: a
@@ -1052,7 +1213,7 @@ export interface DialogGroupView {
   readable: boolean;
   /** The tag as the document holds it (`null` for absent/non-string). */
   tag: string | null;
-  /** `true` when the `m_dialogTag` key exists (739/739 corpus groups). */
+  /** `true` when the `m_dialogTag` key exists (774/774 corpus groups). */
   tagPresent: boolean;
   /** The displayed tag word ({@link dialogTagLabel}). */
   tagLabel: string;
@@ -1295,7 +1456,7 @@ export function parseStringListText(raw: string): string[] {
  * Adding a tag group to the list at {@link listPath}, in the list's `$type`-preserving shape.
  *
  * Three shapes, mirroring `addResultEdits`: the `m_dialogs` array exists → one `insert` (the
- * corpus's own case, 767/767); the wrapper exists without an array → one `set` of `m_dialogs`;
+ * corpus's own case, 797/797, was 767); the wrapper exists without an array → one `set` of `m_dialogs`;
  * the wrapper is absent **or `null`** (327 corpus goals) → one `set` of the whole list, and
  * because the parent of `m_dialogList` is the goal object that `set` is legal — it writes the
  * corpus's own `{$type, m_dialogs}` shape and never invents a `$type`.
@@ -1377,7 +1538,7 @@ export function deleteEntryEdits(
 /**
  * The tag edit. This is the **one text control that writes an empty string instead of
  * deleting the key** (see the module header): the tag is a required key of the uniform 6-key
- * group order (739/739), the corpus carries 5 explicit `""` tags, and deleting the key would
+ * group order (774/774), the corpus carries 5 explicit `""` tags, and deleting the key would
  * both drop it from that order and destroy real content. The value is written verbatim — never
  * trimmed, never matched against a list.
  */

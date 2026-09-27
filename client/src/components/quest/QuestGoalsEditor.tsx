@@ -67,8 +67,8 @@ import {
   fieldAriaInvalid,
   useFieldMessages,
   useFieldMessagesUnder,
+  type FieldValidationMessage,
 } from '../shared/FieldValidation';
-import type { ValidationMessage } from '../../lib/quest-validation';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
@@ -547,7 +547,7 @@ function GoalFieldMessages({
   id,
   help,
 }: {
-  messages: readonly ValidationMessage[];
+  messages: readonly FieldValidationMessage[];
   id: string;
   help: string;
 }): JSX.Element {
@@ -584,7 +584,7 @@ function NpcNameField({
   state: QuestDocumentState;
   value: unknown;
   present: boolean;
-  messages: readonly ValidationMessage[];
+  messages: readonly FieldValidationMessage[];
   messagesId: string;
 }): JSX.Element {
   const id = useId();

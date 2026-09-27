@@ -15,6 +15,15 @@
  */
 
 import { ApiError, type QuestListRow, type StatusValue } from './api';
+import {
+  compareNullable,
+  filterByStatus,
+  objectEmptyStateMessage,
+  objectFilterTabs,
+  paginateRows,
+  paginationLabel as genericPaginationLabel,
+  searchRows,
+} from './object-list';
 
 /* -------------------------------------------------------------- the columns */
 
@@ -92,18 +101,14 @@ export interface QuestFilterTab {
  * response, not the status table's own totals).
  */
 export function questFilterTabs(summary: QuestSummary): QuestFilterTab[] {
-  return [
-    { filter: 'All', count: summary.total },
-    { filter: 'Extracted', count: summary.extracted },
-    { filter: 'Reviewed', count: summary.reviewed },
-    { filter: 'Verified', count: summary.verified },
-  ];
+  // The rule itself lives in `lib/object-list.ts`, which the eight Phase-4 list
+  // pages use too (task 4.1) — one implementation, two surfaces.
+  return objectFilterTabs(summary);
 }
 
 /** The rows one filter tab selects. */
 export function filterQuests(rows: readonly QuestListRow[], filter: QuestFilter): QuestListRow[] {
-  const status = QUEST_FILTER_STATUS[filter];
-  return status === null ? [...rows] : rows.filter((row) => questStatus(row) === status);
+  return filterByStatus(rows, filter, questStatus);
 }
 
 /* ------------------------------------------------------------------ search */
@@ -122,15 +127,7 @@ export const QUESTS_SEARCH_LABEL = 'Search quests';
  * key — so searching for a title the user read on the detail page finds the row.
  */
 export function searchQuests(rows: readonly QuestListRow[], query: string): QuestListRow[] {
-  const needle = query.trim().toLowerCase();
-  if (needle === '') {
-    return [...rows];
-  }
-  return rows.filter((row) =>
-    [row.quest_name, row.title, row.title_key ?? ''].some((field) =>
-      field.toLowerCase().includes(needle),
-    ),
-  );
+  return searchRows(rows, query, (row) => [row.quest_name, row.title, row.title_key]);
 }
 
 /* ----------------------------------------------------------------- sorting */
@@ -156,26 +153,6 @@ export interface QuestSort {
 
 /** A fresh page starts sorted by quest name ascending. */
 export const DEFAULT_QUEST_SORT: QuestSort = { key: 'quest_name', direction: 'asc' };
-
-/** `null` sorts last in both directions (an absent level or mtime is not "small"). */
-function compareNullable(a: number | string | null, b: number | string | null): number {
-  if (a === null && b === null) {
-    return 0;
-  }
-  if (a === null) {
-    return 1;
-  }
-  if (b === null) {
-    return -1;
-  }
-  return typeof a === 'number' && typeof b === 'number'
-    ? a - b
-    : String(a) < String(b)
-      ? -1
-      : String(a) > String(b)
-        ? 1
-        : 0;
-}
 
 /** One row's value for a sort key. */
 function sortValue(row: QuestListRow, key: QuestSortKey): string | number | null {
@@ -259,21 +236,9 @@ export function paginateQuests(
   page: number,
   pageSize: number = QUESTS_PAGE_SIZE,
 ): QuestPage {
-  const total = rows.length;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const clamped = Math.min(Math.max(Math.trunc(page) || 1, 1), pageCount);
-  const start = (clamped - 1) * pageSize;
-  const items = rows.slice(start, start + pageSize);
-  return {
-    items,
-    page: clamped,
-    pageCount,
-    first: items.length === 0 ? 0 : start + 1,
-    last: start + items.length,
-    total,
-    hasPrevious: clamped > 1,
-    hasNext: clamped < pageCount,
-  };
+  // The slice-and-clamp rule is `lib/object-list.ts`'s `paginateRows` (shared with
+  // the Phase-4 lists); `QuestPage` stays the exported shape this page's tests pin.
+  return paginateRows(rows, page, pageSize);
 }
 
 /**
@@ -284,7 +249,7 @@ export function paginateQuests(
  * not have.
  */
 export function paginationLabel(page: Pick<QuestPage, 'first' | 'last' | 'total'>): string {
-  return `Showing ${page.first}-${page.last} of ${page.total}`;
+  return genericPaginationLabel(page);
 }
 
 /* ------------------------------------------------------------- empty states */
@@ -298,7 +263,7 @@ export function paginationLabel(page: Pick<QuestPage, 'first' | 'last' | 'total'
  * spec-silent point in the sentence and it is recorded in the story evidence.
  */
 export function emptyStateMessage(filter: QuestFilter): string {
-  return filter === 'All' ? 'No quests found.' : `No ${filter} quests found.`;
+  return objectEmptyStateMessage(filter, 'quests');
 }
 
 /** The suggestion the spec pairs with every empty state (L268: "change filter or extract more"). */

@@ -1,0 +1,32 @@
+# gate-4 UI D1 — the gate's own §B command, in the gate's own environment (excerpt)
+# full log: 528 KB, 5,111 lines; this file keeps the diagnostic parts + the exact command to regenerate
+$ cd /home/jason/Documents/git-projects/spiraldb-ui
+$ env -u PLAYWRIGHT_BROWSERS_PATH npx playwright test --config tests/ui/p4-10-altport.config.ts
+
+=== the launch error (identical for all 299) ===
+    Error: browserType.launch: Executable doesn't exist at /home/jason/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+
+=== counts ===
+failed arms: 299
+5111:  299 failed
+passed lines: 0
+
+=== the gate script's own filter over this log (gate4.sh's run()) ===
+$ grep -E "Tests |Test Files |passed \(|failed|PASS|corpus:|quests:|verified:|field " "$log" | tail -8
+    [chromium] › tests/ui/quests-info-editor.spec.ts:81:3 › the two-column form › renders every field of spec L296-298 with its kind 
+    [chromium] › tests/ui/quests-info-editor.spec.ts:311:3 › edits and the JSON panel › clearing a string field deletes it, and clearing an absent one is a no-op 
+    [chromium] › tests/ui/quests-results-editor.spec.ts:455:3 › AC1 — every one of the 14 types › is addable with its exact field set, its key order and its character-for-character $type 
+    [chromium] › tests/ui/quests-results-editor.spec.ts:526:3 › an existing corpus node › keeps its own key order, its empty reference and its unknown keys when a field is edited 
+    [chromium] › tests/ui/quests-results-editor.spec.ts:675:3 › the m_router sub-object › keeps a corpus router’s own order when one sub-field is edited 
+    [chromium] › tests/ui/quests-status.spec.ts:184:3 › the transition flow › a blank notes field omits the key from the PATCH body entirely 
+    [chromium] › tests/ui/quests-status.spec.ts:257:3 › failure paths › a failed PATCH rolls the badge back and shows the error in the dialog 
+    [chromium] › tests/ui/quests-validation.spec.ts:238:3 › AC1 — a dangling m_startGoals reference blocks the save › the same fault typed into a goal name surfaces inline on that field 
+
+=== byte-identical to gate-4-acceptance.txt §B? ===
+$ diff <(that) <(the file's §B lines)  →  no output (identical)

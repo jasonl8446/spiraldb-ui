@@ -4,7 +4,12 @@ import { STATUS_META } from '../StatusBadge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
-import { getStatusHistory, statusHistoryQueryKey, type StatusHistoryEntry } from '../../lib/api';
+import {
+  getStatusHistory,
+  statusHistoryQueryKey,
+  type StatusHistoryEntry,
+  type StatusRouteType,
+} from '../../lib/api';
 import { relativeTime } from '../../lib/display';
 import {
   EMPTY_HISTORY_HINT,
@@ -18,8 +23,14 @@ import {
 import { cn } from '../../lib/utils';
 
 /**
- * The status-history timeline on the quest detail page (plan §2.8, story p2-09;
- * spec-ui-design.md L160-180).
+ * The status-history timeline (plan §2.8, story p2-09; spec-ui-design.md L160-180).
+ *
+ * **Story p4-08 made it the shared panel for all eight detail surfaces.** The quest page
+ * passes `type="quests"`; the seven tracked object families get it from
+ * `ObjectDetailLayout`, which passes the family's own plural route and its singular noun. The
+ * route and the key are props rather than the literals this file had, the file itself did
+ * **not** move (it is still `components/quest/`'s — see the lead note in
+ * `ObjectStatusActions.tsx`), and every state, sentence and DOM detail below is unchanged.
  *
  * One `GET /api/status/quests/:key/history` (oldest → newest, D37) rendered
  * **newest first**, following the spec's entry anatomy exactly: a coloured dot in
@@ -45,17 +56,30 @@ import { cn } from '../../lib/utils';
  * section of the page, not a seventh tab.
  */
 export interface StatusHistoryPanelProps {
-  questName: string;
+  /**
+   * The D4 plural status route the history is read under (story p4-08: the seven object
+   * families share this panel, so the route is a prop rather than the literal `'quests'`).
+   */
+  type: StatusRouteType;
+  /** The entry's canonical key — the quest name for quests. */
+  objectKey: string;
+  /**
+   * Singular family noun for the untracked message (`'quest'`, `'drop table'`, …). Defaults to
+   * the quest wording, so the Phase-2 surface is unchanged.
+   */
+  noun?: string;
   className?: string;
 }
 
 export default function StatusHistoryPanel({
-  questName,
+  type,
+  objectKey,
+  noun = 'quest',
   className,
 }: StatusHistoryPanelProps): JSX.Element {
   const history = useQuery({
-    queryKey: statusHistoryQueryKey('quests', questName),
-    queryFn: () => getStatusHistory('quests', questName),
+    queryKey: statusHistoryQueryKey(type, objectKey),
+    queryFn: () => getStatusHistory(type, objectKey),
     retry: false,
   });
 
@@ -81,11 +105,11 @@ export default function StatusHistoryPanel({
             <Skeleton className="h-10 w-2/3" />
           </div>
         ) : state === 'untracked' ? (
-          <p className="text-sm text-zinc-400">{historyErrorMessage(history.error)}</p>
+          <p className="text-sm text-zinc-400">{historyErrorMessage(history.error, noun)}</p>
         ) : state === 'error' ? (
           <div className="flex flex-col items-start gap-2">
             <p role="alert" className="text-sm text-red-400">
-              {historyErrorMessage(history.error)}
+              {historyErrorMessage(history.error, noun)}
             </p>
             <Button
               variant="outline"
@@ -103,7 +127,7 @@ export default function StatusHistoryPanel({
             <p className="text-sm text-zinc-500">{EMPTY_HISTORY_HINT}</p>
           </div>
         ) : (
-          <Timeline questName={questName} entries={newestFirst(history.data ?? [])} />
+          <Timeline objectKey={objectKey} entries={newestFirst(history.data ?? [])} />
         )}
       </CardContent>
     </Card>
@@ -112,10 +136,10 @@ export default function StatusHistoryPanel({
 
 /** The timeline itself: one `<li>` per entry, newest first. */
 function Timeline({
-  questName,
+  objectKey,
   entries,
 }: {
-  questName: string;
+  objectKey: string;
   entries: readonly StatusHistoryEntry[];
 }): JSX.Element {
   return (
@@ -139,7 +163,7 @@ function Timeline({
                 timeline's words are assertable as one string.
               */}
               <p className="text-sm text-zinc-200">
-                <span className="font-mono text-zinc-100">{questName}</span>{' '}
+                <span className="font-mono text-zinc-100">{objectKey}</span>{' '}
                 <span>{historyActionText(entry)}</span>
               </p>
               <span className="shrink-0 text-xs text-zinc-500">

@@ -1,0 +1,63 @@
+[WebServer] (node:2550062) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:2550074) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [server] 
+
+[WebServer] (node:2550081) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [client] 
+
+[WebServer] (node:2550082) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [server] 
+
+[WebServer] (node:2550103) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [server] 
+
+[WebServer] (node:2550115) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [client] 
+
+[WebServer] (node:2550110) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+
+[WebServer] [server] [spiraldb-ui] API listening on http://localhost:3001
+
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 216 ms
+[WebServer] [client] 
+
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+
+
+Running 3 tests using 3 workers
+
+(node:2550159) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:2550160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/3] [chromium] › tests/ui/status-integration.spec.ts:433:3 › AC1: Mark Reviewed with notes on a DropTable moves the entry, its history and its list › the dialog, the PATCH body, the history note, the row dot and the tab counts
+[2/3] [chromium] › tests/ui/status-integration.spec.ts:433:3 › AC1: Mark Reviewed with notes on a DropTable moves the entry, its history and its list › the dialog, the PATCH body, the history note, the row dot and the tab counts
+(node:2550161) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[3/3] [chromium] › tests/ui/status-integration.spec.ts:433:3 › AC1: Mark Reviewed with notes on a DropTable moves the entry, its history and its list › the dialog, the PATCH body, the history note, the row dot and the tab counts
+  3 passed (3.6s)

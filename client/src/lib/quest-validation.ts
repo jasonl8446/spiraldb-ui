@@ -64,8 +64,19 @@ export function messageIndex(messages: readonly ValidationMessage[]): Validation
   return index;
 }
 
+/**
+ * The minimum a message must carry for the border helpers below: they read severity and
+ * nothing else, so any host's message type fits (`components/shared/FieldValidation.tsx`'s
+ * `FieldValidationMessage`, a quest `ValidationMessage`, a DropTable message). Deliberately
+ * structural rather than the quest type: a Phase-4 host must be able to colour its own
+ * controls with the same two classes without importing the quest vocabulary.
+ */
+export interface SeverityCarrier {
+  severity: 'error' | 'warning';
+}
+
 /** `true` when any message in the list is blocking. */
-export function hasError(messages: readonly ValidationMessage[]): boolean {
+export function hasError(messages: readonly SeverityCarrier[]): boolean {
   return messages.some((message) => message.severity === 'error');
 }
 
@@ -74,7 +85,7 @@ export function hasError(messages: readonly ValidationMessage[]): boolean {
  * field gets the amber border: the value is worth a look but the save is not blocked, and the
  * two states must not look identical.
  */
-export function validationBorderClass(messages: readonly ValidationMessage[]): string | null {
+export function validationBorderClass(messages: readonly SeverityCarrier[]): string | null {
   if (messages.length === 0) {
     return null;
   }
@@ -82,7 +93,7 @@ export function validationBorderClass(messages: readonly ValidationMessage[]): s
 }
 
 /** A control's classes with the validation border applied when the field has messages. */
-export function withValidationBorder(base: string, messages: readonly ValidationMessage[]): string {
+export function withValidationBorder(base: string, messages: readonly SeverityCarrier[]): string {
   const border = validationBorderClass(messages);
   return border === null ? base : `${base} ${border}`;
 }

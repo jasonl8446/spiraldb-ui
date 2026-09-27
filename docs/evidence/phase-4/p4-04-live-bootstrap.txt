@@ -1,0 +1,149 @@
+# NOTE (lead): this file was written by the p4-04 executor, which labelled its evidence with the PLAN TASK number (4.6) instead of the STORY id (p4-04). Renamed p4-06-* -> p4-04-*, content otherwise untouched; the transcript's own internal labels still say p4-06.
+# p4-06 live clone bootstrap (AC1: the first save creates NpcDropTable/ in the test clone)
+# started 2026-09-27T06:22:59-04:00  HEAD 3e6cd12  port 3218 (fresh — the contract)
+
+=== 0. the clone before anything: absent directory, clean tree
+clone HEAD: 18dc924
+$ bash -c ls -d '/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcDropTable' 2>&1 || echo 'NpcDropTable/: absent'
+ls: cannot access '/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcDropTable': No such file or directory
+NpcDropTable/: absent
+[rc=0]
+dirty lines: 0
+
+=== 1. rig seed: a COPY of the database, settings cleared and re-seeded BEFORE boot
+(the developer's data/spiraldb-ui.db is never opened for writing; a POST-capable rig needs
+ the identity as well as the clone path — D70(h)(1): with no user_name every save answers 500)
+$ cp data/spiraldb-ui.db /tmp/p4-06/live-rig/p4-06.db
+[rc=0]
+seeded settings: [{"key":"spiraldb_path","value":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb"},{"key":"user_name","value":"p4-06 Live Prover"},{"key":"git_branch","value":""},{"key":"aurorium_path","value":""},{"key":"imcodec_path","value":""}]
+entry_status npc_drop_table before: 0
+
+=== 2. boot on the fresh port, and assert the server's identity BEFORE trusting a probe
+rig pids: 2083287 2083287 2083299
+--- /tmp/p4-06/live-rig/server.log ---
+[spiraldb-ui] database ready at /tmp/p4-06/live-rig/p4-06.db
+[spiraldb-ui] API listening on http://localhost:3218
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+--- the process that owns the socket (my rig, not a stale one) ---
+LISTEN 0      511                *:3218             *:*    users:(("MainThread",pid=2083310,fd=24))
+--- GET /api/settings (must name the clone and the rig's own user) ---
+$ bash -c curl -s http://localhost:3218/api/settings | python3 -m json.tool
+{
+    "aurorium_path": "",
+    "git_branch": "",
+    "imcodec_path": "",
+    "spiraldb_path": "/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb",
+    "user_name": "p4-06 Live Prover"
+}
+[rc=0]
+--- stale rigs on 3001/5173/3217/3219/3220: 0 (0 means no other server can answer) ---
+
+=== 3. the directory is absent, and the list says so
+$ bash -c curl -s http://localhost:3218/api/npc-drop-tables | python3 -m json.tool
+{
+    "objects": [],
+    "summary": {
+        "total": 0,
+        "extracted": 0,
+        "reviewed": 0,
+        "verified": 0
+    },
+    "skipped": [],
+    "missing_directory": true,
+    "duplicate_keys": []
+}
+[rc=0]
+
+=== 4. the first save, through the API
+$ bash -c curl -s -o /tmp/p4-06/live-rig/post.json -w 'http_status=%{http_code}\n' -X POST http://localhost:3218/api/npc-drop-tables -H 'Content-Type: application/json' -d '{"object":{"TemplateID":87112,"DropTableNames":["WC-UNICORN-MAIN-007","WC-UNICORN-BONUS-001"]}}'
+http_status=200
+[rc=0]
+$ bash -c python3 -m json.tool < /tmp/p4-06/live-rig/post.json
+{
+    "key": "87112",
+    "file_type": "npcdroptable",
+    "object_type": "npc_drop_table",
+    "outcome": "created",
+    "action": "create",
+    "commit": "57957009481109b0b2be442a4747bc7d716ed285",
+    "branch": "content/2026-09-27",
+    "commit_message": "spiraldb: create npc_drop_table 87112",
+    "file": "NpcDropTable/npcdroptable_87112.json",
+    "status": {
+        "object_type": "npc_drop_table",
+        "object_key": "87112",
+        "status": "extracted",
+        "extracted_at": "2026-09-27T10:23:06.144Z",
+        "reviewed_at": null,
+        "verified_at": null,
+        "latest_notes": "Created via UI"
+    },
+    "status_created": true,
+    "warnings": []
+}
+[rc=0]
+
+=== 5. the clone now holds the directory and the file
+$ ls -la /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcDropTable/
+total 12
+drwxr-xr-x  2 jason users 4096 Sep 27 06:23 .
+drwxr-xr-x 13 jason users 4096 Sep 27 06:23 ..
+-rw-r--r--  1 jason users  107 Sep 27 06:23 npcdroptable_87112.json
+[rc=0]
+$ cat /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcDropTable/npcdroptable_87112.json
+{
+  "TemplateID": 87112,
+  "DropTableNames": [
+    "WC-UNICORN-MAIN-007",
+    "WC-UNICORN-BONUS-001"
+  ]
+}
+[rc=0]
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb log -1 --format=%H%n%s%n%an <%ae> --stat
+57957009481109b0b2be442a4747bc7d716ed285
+spiraldb: create npc_drop_table 87112
+p4-06 Live Prover <p4-06-Live-Prover@spiraldb-ui.local>
+
+ NpcDropTable/npcdroptable_87112.json | 7 +++++++
+ 1 file changed, 7 insertions(+)
+[rc=0]
+clone dirty lines after the pipeline's own commit: 0
+
+=== 6. the entry_status row and its history note (in the rig's copied DB)
+entry_status: [{"id":2272,"object_type":"npc_drop_table","object_key":"87112","status":"extracted","extracted_at":"2026-09-27T10:23:06.144Z"}]
+history:      [{"old_status":null,"new_status":"extracted","notes":"Created via UI","changed_by":"p4-06 Live Prover"}]
+
+=== 7. the list reads the new entry, and the missing-directory flag is gone
+$ bash -c curl -s http://localhost:3218/api/npc-drop-tables | python3 -m json.tool
+{
+    "objects": [
+        {
+            "key": "87112",
+            "title": "87112",
+            "modified_at": "2026-09-27T10:23:06.236Z",
+            "status": "extracted"
+        }
+    ],
+    "summary": {
+        "total": 1,
+        "extracted": 1,
+        "reviewed": 0,
+        "verified": 0
+    },
+    "skipped": [],
+    "missing_directory": false,
+    "duplicate_keys": []
+}
+[rc=0]
+
+=== 8. the real fork was never the target
+fork HEAD: c55ccab  dirty lines: 0  NpcDropTable/: absent
+# finished 2026-09-27T06:23:06-04:00
+
+=== restore (always: trap on EXIT) ===
+$ git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb reset --hard 18dc924
+HEAD is now at 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+[rc=0]
+clone HEAD: 18dc924  dirty lines: 0  NpcDropTable/: absent
+listeners on 3001/5173/3218 after teardown: 0
+tsx server processes alive: 0

@@ -339,7 +339,7 @@ function LoadedQuest({
         <QuestJsonOverlay open={jsonOpen} onOpenChange={setJsonOpen} quest={document.doc} />
       ) : null}
 
-      <StatusHistoryPanel questName={questName} />
+      <StatusHistoryPanel type="quests" objectKey={questName} noun="quest" />
       <StatusNotesDialog {...transition.dialog} />
       <UnsavedChangesDialog
         open={guard.blocked}

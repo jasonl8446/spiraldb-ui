@@ -729,16 +729,83 @@ describe('the unkeyed GlobalRegistry family', () => {
     expect(updated.outcome).toBe('updated');
     expect(updated.action).toBe('update');
     expect(updated.relativePath).toBe('GlobalRegistry/globalregistry.json');
-    // The merged dictionary keeps the entry the incoming object no longer mentions.
+    // **Phase transition (story p4-07 / D22)**: the unkeyed family's document *is* the whole
+    // dictionary, so a second save writes the posted object verbatim instead of merging it into
+    // the file on disk. The D45(1) merge would resurrect a row the user removed — this
+    // dictionary's "absent" is an absent **key**, not a null — and `OtherFlag` disappearing here
+    // is exactly that rule exercised on the pipeline. The real editor always posts the whole
+    // merged view, so nothing is lost by it; the previous expectation (`OtherFlag` kept) was the
+    // p4-01 behaviour, before task 4.9 owned the family.
     expect(readSpiraldbJson(path.join(h.repo.dir, 'GlobalRegistry/globalregistry.json'))).toEqual({
       SomeFlag: 3.5,
-      OtherFlag: 2.5,
     });
     expect(commitSubjects(h.repo)[0]).toBe('spiraldb: update global_registry globalregistry');
     expect(fs.readdirSync(path.join(h.repo.dir, 'GlobalRegistry'))).toEqual([
       'globalregistry.json',
     ]);
     expect(h.repo.git(['status', '--porcelain']).trim()).toBe('');
+  });
+});
+
+/**
+ * `removePaths` — the mechanism story p4-07 (task 4.9, D22) added to the pipeline for
+ * consolidate-and-replace. Tested **here**, on the pipeline, so the mechanism is pinned
+ * separately from the `GlobalRegistry/` policy that computes the list (that policy is
+ * `tests/unit/objects-api.test.ts`'s).
+ *
+ * The failure modes the AC names live here: the deletion and the write are **one commit**, and a
+ * deletion is never committed without the file that replaces it.
+ */
+describe('removePaths: one commit replaces files', () => {
+  it('writes the new file and deletes the replaced one in a single commit', async () => {
+    const h = harness();
+    const directory = path.join(h.repo.dir, 'GlobalRegistry');
+    writeRepoFile(h.repo, 'GlobalRegistry/GlobalRegistryModels_1-A.json', '{"Old": 1}\n');
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'the legacy registry file']);
+    const commitsBefore = commitCount(h.repo);
+
+    const result = await h.pipeline.saveObject({
+      fileType: 'globalregistry',
+      data: { GlobalRegistryValues: { Old: 1, New: 2 } },
+      removePaths: [path.join(directory, 'GlobalRegistryModels_1-A.json')],
+    });
+
+    // One commit — not two — and it is an `update`, because the entry existed in the file the
+    // same commit deletes.
+    expect(commitCount(h.repo)).toBe(commitsBefore + 1);
+    expect(result.action).toBe('update');
+    expect(result.commitMessage).toBe('spiraldb: update global_registry globalregistry');
+    expect(repoFileExists(h.repo, 'GlobalRegistry/globalregistry.json')).toBe(true);
+    expect(repoFileExists(h.repo, 'GlobalRegistry/GlobalRegistryModels_1-A.json')).toBe(false);
+
+    const stat = h.repo.git(['show', '--stat', '--format=', 'HEAD']);
+    expect(stat).toContain('GlobalRegistry/globalregistry.json');
+    expect(stat).toContain('GlobalRegistry/GlobalRegistryModels_1-A.json');
+    expect(fs.readdirSync(directory)).toEqual(['globalregistry.json']);
+    expect(h.repo.git(['status', '--porcelain']).trim()).toBe('');
+  });
+
+  it('refuses to delete the file it is writing, or anything outside the SpiralDB root', async () => {
+    const h = harness();
+
+    await expect(
+      h.pipeline.saveObject({
+        fileType: 'globalregistry',
+        data: { GlobalRegistryValues: {} },
+        removePaths: [path.join(h.repo.dir, 'GlobalRegistry/globalregistry.json')],
+      }),
+    ).rejects.toThrow(/never deletes the file it writes/);
+
+    await expect(
+      h.pipeline.saveObject({
+        fileType: 'globalregistry',
+        data: { GlobalRegistryValues: {} },
+        removePaths: ['/tmp/definitely-not-in-this-repo.json'],
+      }),
+    ).rejects.toThrow(/outside the SpiralDB root/);
+    // Nothing was written by either refusal.
+    expect(repoFileExists(h.repo, 'GlobalRegistry/globalregistry.json')).toBe(false);
   });
 });
 

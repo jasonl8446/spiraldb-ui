@@ -61,8 +61,11 @@ const MOCK_QUEST_ROW = {
  *
  * `phase` is the "Arrives in Phase N" text a stub route renders (Dashboard 5, the
  * eight data types 4, `/quests` 2 — `client/src/lib/routes.ts`). `/settings`
- * (p1-08), `/quests/extract` (p2-07) and `/quests` (p2-08) are real pages, so the
- * loop below asserts their own content instead of the stub text.
+ * (p1-08), `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01),
+ * `/drop-tables` (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03),
+ * `/npc-drop-tables` + `/treasure-card-inventories` + `/zone-transfers` (p4-04…p4-06)
+ * and `/global-registry` (p4-07, the editor itself) are real pages, so the loop below
+ * asserts their own content instead of the stub text.
  */
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', title: 'Dashboard', phase: '5' },
@@ -214,6 +217,231 @@ async function mockShellApi(page: Page): Promise<void> {
       json: { m_questName: 'DS-ACAD-C01-001', m_questLevel: 1, m_mainline: true },
     }),
   );
+
+  // Story p4-05 replaced `/treasure-card-inventories`' stub with the real generic object list
+  // (plan task 4.7), and this branch mocks the family's own endpoints — unlike the earlier
+  // object families, whose branches read whatever the D17 clone happens to hold. The fixtures
+  // are the real corpus's one entry (TemplateID 38214, the legacy file) plus its status row, so
+  // the assertion below is the same on a developer's machine and on CI, where no clone exists.
+  // The page's own contract is `tests/ui/treasure-card-inventory-editor.spec.ts`.
+  await page.route('**/api/drop-tables', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'DS-ACAD-C01-001',
+            title: 'DS-ACAD-C01-001',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/npc-inventories', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: '87112',
+            title: '87112',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/npc-spell-inventories', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: '99002',
+            title: '99002',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/creature-spellbooks', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'Mdeck-L-BR-DS-SylviaDrake-A-50',
+            title: 'Mdeck-L-BR-DS-SylviaDrake-A-50',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  // The four object families below (plus the absent-directory one) are mocked for the same reason
+  // the treasure-card and zone families are: the shell spec must not depend on the developer's
+  // corpus. `/api/drop-tables` asserted a real table header while reading the REAL endpoint, which
+  // passes on a machine with the 317-file corpus and fails on CI (no corpus -> empty state -> no
+  // header). Found by gate-4's CI run.
+  await page.route('**/api/npc-drop-tables', (route) =>
+    route.fulfill({
+      json: {
+        objects: [],
+        summary: { total: 0, extracted: 0, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: true,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/treasure-card-inventories', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: '38214',
+            title: '38214',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/status/treasure_card_inventories', (route) =>
+    route.fulfill({
+      json: {
+        entries: [
+          {
+            object_type: 'treasure_card_inventory',
+            object_key: '38214',
+            status: 'extracted',
+            extracted_at: '2026-09-24T15:22:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+        ],
+        summary: { total: 1, extracted: 1, reviewed: 0, verified: 0 },
+      },
+    }),
+  );
+
+  // Story p4-06 replaced `/zone-transfers`' stub with the real generic object list (plan task
+  // 4.8) and this branch mocks the family's own list + status endpoints (D73(g)): the rows are
+  // the real corpus's shape — a `ZoneName` key with a slash. The real status route answers the
+  // **1,205** `entry_status` rows the first-startup corpus import created (all `extracted`; the
+  // brief said 0 rows for this family and that is measurably wrong — see the model's
+  // `ZONE_TRANSFER_CORPUS.statusRows`), so the summary mirrors `total: 1205` and the two listed
+  // keys carry their real status. Same on a developer's machine and on CI, where no clone exists.
+  // The editor's own contract is `tests/ui/zone-transfer-editor.spec.ts`.
+  await page.route('**/api/zone-transfers', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'WizardCity/WC_Hub',
+            title: 'WizardCity/WC_Hub',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+          {
+            key: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            title: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: 'extracted',
+          },
+        ],
+        summary: { total: 2, extracted: 2, reviewed: 0, verified: 0 },
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/status/zone_transfers', (route) =>
+    route.fulfill({
+      json: {
+        entries: [
+          {
+            object_type: 'zone_transfer',
+            object_key: 'WizardCity/WC_Hub',
+            status: 'extracted',
+            extracted_at: '2026-09-24T15:22:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+          {
+            object_type: 'zone_transfer',
+            object_key: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            status: 'extracted',
+            extracted_at: '2026-09-24T15:22:00.000Z',
+            reviewed_at: null,
+            verified_at: null,
+            latest_notes: null,
+          },
+        ],
+        summary: { total: 1205, extracted: 1205, reviewed: 0, verified: 0 },
+      },
+    }),
+  );
+
+  // Story p4-07 replaced `/global-registry`' stub with the real **editor** (plan task 4.9) —
+  // docs/spec-api.md L474 gives this family one route and it is the editor, because the directory
+  // is one merged dictionary rather than a collection. So there is no list page to assert here:
+  // the branch below asserts the editor's own chrome. Both endpoints are mocked (the family's
+  // list — one row per FILE, keyed by the file stem — and the merged detail), so the assertion is
+  // the same on a developer's machine and on CI, where no clone exists. The merged document is
+  // the real corpus's shape: the wrapper plus its 23 mixed-case integer values, of which two are
+  // shown. The editor's own contract is `tests/ui/global-registry-editor.spec.ts`.
+  await page.route('**/api/global-registry', (route) =>
+    route.fulfill({
+      json: {
+        objects: [
+          {
+            key: 'GlobalRegistryModels_1-A',
+            title: 'GlobalRegistryModels_1-A',
+            modified_at: '2026-09-24T15:22:00.000Z',
+            status: null,
+          },
+        ],
+        summary: null,
+        skipped: [],
+        missing_directory: false,
+        duplicate_keys: [],
+      },
+    }),
+  );
+  await page.route('**/api/global-registry/*', (route) =>
+    route.fulfill({
+      json: {
+        GlobalRegistryValues: { Localization: 1, Christmas: 0, Halloween: 0 },
+      },
+    }),
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -253,6 +481,110 @@ test.describe('sidebar navigation', () => {
         await expect(
           page.getByRole('main').getByRole('columnheader', { name: 'Quest Name' }),
         ).toBeVisible();
+      } else if (item.path === '/drop-tables') {
+        // Story p4-02 replaced this route's stub with the real generic object list for
+        // the DropTable family. The literals are copied on purpose;
+        // `tests/ui/drop-table-editor.spec.ts` owns the detail editor's contract.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search drop tables...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'Drop table' }),
+        ).toBeVisible();
+      } else if (item.path === '/npc-inventories') {
+        // Story p4-01 replaced this route's stub with the real generic object list
+        // (the one family the scaffolding is wired end to end for). The literals are
+        // copied on purpose; `tests/ui/object-list.spec.ts` owns the page's full
+        // contract (tabs, counts, search, pagination, cards, missing-directory empty
+        // state).
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search NPC inventories...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'NPC' }),
+        ).toBeVisible();
+      } else if (item.path === '/npc-spell-inventories' || item.path === '/creature-spellbooks') {
+        // Story p4-03 replaced these two routes' stubs with the real generic object
+        // lists (plan tasks 4.4/4.5). Same shape as the branch above: the list page is
+        // one component, so the literals are per-family props, and
+        // `tests/ui/simple-object-editors.spec.ts` owns the detail editors' contracts.
+        const expected =
+          item.path === '/npc-spell-inventories'
+            ? { placeholder: 'Search NPC spell inventories...', column: 'NPC' }
+            : { placeholder: 'Search creature spellbooks...', column: 'Deck name' };
+        await expect(page.getByRole('main').getByPlaceholder(expected.placeholder)).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: expected.column }),
+        ).toBeVisible();
+      } else if (item.path === '/npc-drop-tables') {
+        // Story p4-06 replaced this route's stub with the real generic object list for the
+        // family whose directory genuinely does not exist (plan task 4.6) — the same phase
+        // transition p4-02/p4-03 recorded, and `phase` in the row above still means the phase
+        // that owns the page. The search field renders whatever the row set is, so it is the
+        // branch's stable literal; with no `NpcDropTable/` in the clone there are no rows, so
+        // the page renders its empty state instead of a table and says why (AC1's clause, here
+        // against the real stack rather than a mock). `tests/ui/npc-drop-table-editor.spec.ts`
+        // owns the editor's contract.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search NPC drop tables...'),
+        ).toBeVisible();
+        await expect(page.getByRole('main').getByText('No NPC drop tables found.')).toBeVisible();
+        await expect(
+          page.getByRole('main').getByText(/The NpcDropTable\/ directory does not exist/),
+        ).toBeVisible();
+      } else if (item.path === '/treasure-card-inventories') {
+        // Story p4-05 replaced this route's stub with the real generic object list (plan task
+        // 4.7) — the phase transition p4-02/p4-03/p4-06 recorded, so `phase` in the row above
+        // still means the phase that *owns* the page. Unlike those branches this one is fully
+        // mocked (see `mockShellApi`), so it asserts the populated shape rather than whatever
+        // the D17 clone holds: the family's own search field, its key column, and the one real
+        // entry's key. `tests/ui/treasure-card-inventory-editor.spec.ts` owns the editor.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search treasure card inventories...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'NPC' }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('link', { name: '38214', exact: true }),
+        ).toBeVisible();
+      } else if (item.path === '/zone-transfers') {
+        // Story p4-06 replaced this route's stub with the real generic object list (plan task
+        // 4.8) — the same phase transition p4-02/p4-03/p4-04/p4-05 recorded, so `phase` in the
+        // row above still means the phase that *owns* the page. Like the p4-05 branch it mocks
+        // its own endpoints (D73(g)), so it asserts the populated shape rather than whatever the
+        // D17 clone holds: the family's search field, its key column and both real-shaped keys —
+        // one of them carrying the `/` the filename convention writes as `_`.
+        // `tests/ui/zone-transfer-editor.spec.ts` owns the editor's contract.
+        await expect(
+          page.getByRole('main').getByPlaceholder('Search zone transfers...'),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'Zone' }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('link', { name: 'WizardCity/WC_Hub', exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('link', {
+            name: 'Karamelle/Interiors/KM_Z10_GobblertonFactory',
+            exact: true,
+          }),
+        ).toBeVisible();
+      } else if (item.path === '/global-registry') {
+        // Story p4-07 replaced this route's stub with the real **editor** (plan task 4.9) — the
+        // same phase transition p4-01…p4-06 recorded, so `phase` in the row above still means the
+        // phase that *owns* the page. It is the one family whose route is the editor rather than
+        // a list (docs/spec-api.md L474), so this branch asserts the editor's own literals: the
+        // merged table and the pre-save disclosure naming the file the save replaces. Like the
+        // p4-05/p4-06 branches it mocks its own endpoints (D73(g)).
+        // `tests/ui/global-registry-editor.spec.ts` owns the editor's contract.
+        await expect(
+          page.getByRole('main').getByRole('list', { name: 'Registry values' }),
+        ).toBeVisible();
+        await expect(page.getByRole('main').locator('[data-consolidation="1"]')).toContainText(
+          'GlobalRegistryModels_1-A.json',
+        );
       } else {
         await expect(
           page.getByRole('main').getByText(`Arrives in Phase ${item.phase}`),
@@ -356,7 +688,8 @@ test.describe('sidebar navigation', () => {
     const sidebar = sidebarOf(page);
     await expect(sidebar).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Drop Tables', exact: true })).toBeVisible();
-    await expect(page.getByRole('main').getByText('Arrives in Phase 4')).toBeVisible();
+    // Story p4-02 replaced this route's stub with the real list page.
+    await expect(page.getByRole('main').getByPlaceholder('Search drop tables...')).toBeVisible();
     await expect(activeNavLinks(sidebar)).toHaveCount(1);
     await expect(navLink(sidebar, 'Drop Tables')).toHaveClass(/bg-blue-600\/10/);
 

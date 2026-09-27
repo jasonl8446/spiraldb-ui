@@ -15,6 +15,12 @@
  * never from the bare quest object (which carries no status, D49(a)). The
  * optimistic update therefore rewrites **that** cache entry — the same source the
  * badge reads — so the badge flips without waiting for a refetch.
+ *
+ * **Story p4-08 generalised the second half of that.** The seven generic object families
+ * read their row's status from `GET /api/<type>` instead, so "which list a transition's
+ * optimistic write and invalidation target" is now a parameter
+ * ({@link StatusListScope}, `lib/object-status.ts` for the generic writer) rather than a
+ * hard-wired key. The quest path and its constants are unchanged.
  */
 
 import type { QueryClient } from '@tanstack/react-query';
@@ -123,20 +129,29 @@ export function transitionSuccessMessage(questName: string, target: TransitionTa
 export const TRANSITION_FAILED_MESSAGE = 'Could not update the status.';
 
 /**
- * The D51(f) 404 — the entry has no `entry_status` row.
+ * The D51(f) 404 — the entry has no `entry_status` row, worded for one family's
+ * **singular noun** ('quest', 'drop table', …). Story p4-08 generalised the two
+ * constants below into functions because the same condition now reaches all seven
+ * tracked object families; the constants stay for the quest surface and for the
+ * committed specs that assert those exact words.
  *
- * `PATCH` only transitions entries that were imported or saved, so a quest the
- * browse list shows (D49(b) defaults untracked rows to `extracted`) can still 404
- * here. A generic "request failed" would be a dead end, so the message says what to
- * do about it: the transition becomes available the moment the save tracks the
- * entry.
+ * `PATCH` only transitions entries that were imported or saved, so an entry the browse
+ * list shows (D49(b) defaults untracked rows to `extracted`) can still 404 here. A
+ * generic "request failed" would be a dead end, so the message says what to do about
+ * it: the transition becomes available the moment the save tracks the entry.
  */
-export const UNTRACKED_ENTRY_MESSAGE =
-  'This quest is not tracked yet — save or import it first, then mark its status.';
+export function untrackedEntryMessage(noun: string): string {
+  return `This ${noun} is not tracked yet — save or import it first, then mark its status.`;
+}
 
 /** The same condition, worded for the history panel. */
-export const UNTRACKED_HISTORY_MESSAGE =
-  'This quest is not tracked yet. Its history appears once it has been saved or imported.';
+export function untrackedHistoryMessage(noun: string): string {
+  return `This ${noun} is not tracked yet. Its history appears once it has been saved or imported.`;
+}
+
+/** The quest wording of {@link untrackedEntryMessage} (the Phase-2 constants, unchanged). */
+export const UNTRACKED_ENTRY_MESSAGE = untrackedEntryMessage('quest');
+export const UNTRACKED_HISTORY_MESSAGE = untrackedHistoryMessage('quest');
 
 /** The history panel's explicit empty state (an imported entry has no history — D37). */
 export const EMPTY_HISTORY_MESSAGE = 'No status changes recorded yet.';
@@ -153,16 +168,16 @@ export function isUntrackedError(error: unknown): boolean {
  * untracked line for a 404, and the server's own `{ error }` text (or the fallback)
  * for everything else.
  */
-export function transitionErrorMessage(error: unknown): string {
+export function transitionErrorMessage(error: unknown, noun = 'quest'): string {
   return isUntrackedError(error)
-    ? UNTRACKED_ENTRY_MESSAGE
+    ? untrackedEntryMessage(noun)
     : serverMessage(error, TRANSITION_FAILED_MESSAGE);
 }
 
-/** The history panel's message for a failed read. */
-export function historyErrorMessage(error: unknown): string {
+/** The history panel's message for a failed read (`noun` as in {@link transitionErrorMessage}). */
+export function historyErrorMessage(error: unknown, noun = 'quest'): string {
   return isUntrackedError(error)
-    ? UNTRACKED_HISTORY_MESSAGE
+    ? untrackedHistoryMessage(noun)
     : serverMessage(error, 'Could not load the status history.');
 }
 
@@ -259,3 +274,58 @@ export function applyOptimisticQuestStatus(
   });
   return true;
 }
+
+/* --------------------------------------------------- which list a row feeds */
+
+/**
+ * Rewrites one row's status in a cached list payload.
+ *
+ * The two shapes the app has (the quest list, the generic object list) differ in their row
+ * field and in how their summary is derived, so the shape is not guessed from the cached
+ * data: each family's writer is its own function and this is the one interface the hook
+ * needs (`hooks/useStatusTransition.ts`).
+ *
+ * @returns `false` when the list was not cached, so the caller knows whether it has
+ * anything to roll back — the same contract `applyOptimisticQuestStatus` has stated since
+ * p2-09.
+ */
+export type OptimisticStatusWriter = (
+  client: QueryClient,
+  key: string,
+  status: StatusValue,
+) => boolean;
+
+/**
+ * The list surface one status route's rows feed — the second half of a transition's cache
+ * contract (story p4-08, AC1).
+ *
+ * A transition has to move **two** cached things and this names both, so the hook can serve
+ * the quest surface and the generic object surfaces from one code path instead of a second
+ * copy per family (D71(i)):
+ *
+ * - {@link listQueryKey} — the list whose rows carry the dot and whose `summary` carries the
+ *   filter-tab counts. It is what the settle invalidation refetches, which is the sentence
+ *   AC1 tests: after a transition the row's dot and the tab counts reflect the new status on
+ *   the next read.
+ * - {@link applyOptimistic} — the one optimistic rewrite of that cached payload, so the dot
+ *   and the counts are already right while the refetch is in flight.
+ * - {@link noun} — the singular family noun the two untracked messages use.
+ */
+export interface StatusListScope {
+  readonly listQueryKey: readonly unknown[];
+  readonly applyOptimistic: OptimisticStatusWriter;
+  readonly noun?: string;
+}
+
+/**
+ * The quest surface's scope: `GET /api/quests` is the one status source its badge and its
+ * browse table read (D51(e)), and {@link applyOptimisticQuestStatus} is its writer.
+ *
+ * This is the hook's default, so both Phase-2 call sites (`QuestsPage`,
+ * `QuestDetailPage`) keep the call they had.
+ */
+export const QUEST_STATUS_SCOPE: StatusListScope = {
+  listQueryKey: QUESTS_QUERY_KEY,
+  applyOptimistic: applyOptimisticQuestStatus,
+  noun: 'quest',
+};

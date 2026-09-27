@@ -34,6 +34,14 @@ import {
   type KnownTypeName,
 } from '@shared/quest';
 
+import {
+  collectNullPaths,
+  describeValue,
+  firstDiff,
+  isPlainObject,
+  orderedKeyPaths,
+} from '../helpers/roundtrip-fidelity';
+
 /**
  * Task 3.2 / story p3-02 — the round-trip fidelity harness that gates Phase 3 (D5 + D57).
  *
@@ -52,10 +60,12 @@ import {
  * committed fixtures carry the always-on half. That is the `manifest.test.ts` /
  * `quest-type-constants.test.ts` pattern: **real files are never committed, a recording is.**
  *
- * Measured shapes (2026-09-26, this harness): the real `QuestTemplates/` is 322/322 files with all
- * 36 modelled top-level keys, every optional value an explicit `null`; the D17 clone is 320 files
- * of that shape plus **2** of this tool's own writes where `NullValueHandling.Ignore` omitted every
- * null-valued key (18 keys) — `questtemplates_WC-CYCLOPS-MAIN-002.json`,
+ * Measured shapes (re-measured at the owner's `f9a1055` baseline, D79): the real
+ * `QuestTemplates/` is **328/328** files with all 36 modelled top-level keys and an explicit
+ * `null` in every one, and only **21** of the 328 still need JSON5 (the merge reformatted the
+ * corpus — 306 of 322 did); the D17 clone is **not** re-cloned (D80c) and still holds 322 files:
+ * 320 of that shape plus **2** of this tool's own writes where `NullValueHandling.Ignore` omitted
+ * every null-valued key (18 keys) — `questtemplates_WC-CYCLOPS-MAIN-002.json`,
  * `questtemplates_WC-UNICORN-MAIN-004.json`. Both shapes are legal input and both must survive
  * unchanged (D57a), which is why the fixture sweep pins one of each.
  */
@@ -64,9 +74,12 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const FIXTURES = path.join(ROOT, 'server', 'test', 'fixtures');
 
 /**
- * The corpus measurement p3-01 recorded (`quest_corpus_type_strings.json`, 26 distinct `$type`
- * strings over 7,956 occurrences in the real checkout). The type list `p3-02 ac2` must cover is
- * derived from it, so CI covers every type without needing the corpus on disk.
+ * The corpus measurement p3-01 recorded (`quest_corpus_type_strings.json`, re-recorded at the
+ * owner's `f9a1055` baseline: **29** distinct `$type` strings over 8,746 occurrences in the real
+ * checkout, was 26 / 7,956 — D79). The type list `p3-02 ac2` must cover is derived from it, so CI
+ * covers every type without needing the corpus on disk, which is why the three additions
+ * (`ResActorDialog`, `ActorDialog`, the moved `ReqIsSchool`) each have a mutation plan and a
+ * sample node.
  */
 interface RecordedCorpus {
   corpusPath: string;
@@ -102,102 +115,10 @@ if (CORPORA.length === 0) {
 
 /* ------------------------------------------------------------------ helpers (test-local) */
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/** A short description of a value, for the harness's own messages. */
-function describeValue(value: unknown): string {
-  if (value === null) {
-    return 'null';
-  }
-  if (Array.isArray(value)) {
-    return `an array of length ${value.length}`;
-  }
-  if (isPlainObject(value)) {
-    return 'an object';
-  }
-  return `${typeof value} (${JSON.stringify(value)})`;
-}
-
-/**
- * The first difference between two documents, as a path and a reason — or `undefined` when they are
- * identical **including key order**.
- *
- * Deliberately not `isDeepStrictEqual` alone: property order is not part of deep equality, so a
- * serializer that reorders keys would pass a value-only comparison while rewriting every line of a
- * file. This walk compares key sets *and their order* at every level, then array lengths and
- * elements, and only then the scalars — so a failure can always name one concrete path.
- */
-function firstDiff(left: unknown, right: unknown, at = '<root>'): string | undefined {
-  if (isPlainObject(left) && isPlainObject(right)) {
-    const leftKeys = Object.keys(left);
-    const rightKeys = Object.keys(right);
-    const missingRight = leftKeys.filter((key) => !rightKeys.includes(key));
-    const missingLeft = rightKeys.filter((key) => !leftKeys.includes(key));
-    if (missingRight.length > 0 || missingLeft.length > 0) {
-      return `${at}: key sets differ (missing on the left: [${missingLeft.join(', ')}], missing on the right: [${missingRight.join(', ')}])`;
-    }
-    if (leftKeys.join('\u0000') !== rightKeys.join('\u0000')) {
-      return `${at}: key order differs (left: [${leftKeys.join(', ')}] vs right: [${rightKeys.join(', ')}])`;
-    }
-    for (const key of leftKeys) {
-      const nested = firstDiff(left[key], right[key], `${at}.${key}`);
-      if (nested !== undefined) {
-        return nested;
-      }
-    }
-    return undefined;
-  }
-  if (Array.isArray(left) && Array.isArray(right)) {
-    if (left.length !== right.length) {
-      return `${at}: array length differs (${left.length} vs ${right.length})`;
-    }
-    for (let index = 0; index < left.length; index += 1) {
-      const nested = firstDiff(left[index], right[index], `${at}[${index}]`);
-      if (nested !== undefined) {
-        return nested;
-      }
-    }
-    return undefined;
-  }
-  return isDeepStrictEqual(left, right)
-    ? undefined
-    : `${at}: ${describeValue(left)} !== ${describeValue(right)}`;
-}
-
-/** Every key path of a value, in document order (`<key>`, `<key>.m_goals[0]`, …). */
-function orderedKeyPaths(value: unknown, at = ''): string[] {
-  const paths: string[] = [];
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => paths.push(...orderedKeyPaths(item, `${at}[${index}]`)));
-  } else if (isPlainObject(value)) {
-    for (const [key, item] of Object.entries(value)) {
-      const here = at === '' ? key : `${at}.${key}`;
-      paths.push(here);
-      paths.push(...orderedKeyPaths(item, here));
-    }
-  }
-  return paths;
-}
-
-/** Every path in a document whose value is an explicit `null`. */
-function collectNullPaths(value: unknown, at: DocPath = [], paths: DocPath[] = []): DocPath[] {
-  if (value === null) {
-    if (at.length > 0) {
-      paths.push(at);
-    }
-    return paths;
-  }
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectNullPaths(item, [...at, index], paths));
-  } else if (isPlainObject(value)) {
-    for (const [key, item] of Object.entries(value)) {
-      collectNullPaths(item, [...at, key], paths);
-    }
-  }
-  return paths;
-}
+// The D5 fidelity walk — `isPlainObject`, `describeValue`, `firstDiff`, `orderedKeyPaths` and
+// `collectNullPaths` — lives in `tests/helpers/roundtrip-fidelity.ts` (story p4-09 gave it a
+// second consumer, the six-family AC4 sweep, so it has one home). Its behaviour is unchanged;
+// this suite passing is the extraction's proof.
 
 /** Every `$type` string occurring anywhere in a document. */
 function collectTypeStrings(value: unknown, found = new Set<string>()): Set<string> {
@@ -323,7 +244,7 @@ const SWEPT_FIXTURES: readonly { file: string; shape: string }[] = [
   {
     file: 'quest_DS-ACAD-C01-003.json',
     shape:
-      'real corpus quest, JSON5 (306 of the 322 corpus files need JSON5), 36 keys with explicit nulls',
+      'real corpus quest, JSON5 (21 of the 328 corpus files need JSON5 — the merge reformatted the corpus; 306 of 322 needed it before, D79), 36 keys with explicit nulls',
   },
   {
     file: 'quest_trailing_comma_synthetic.json',
@@ -531,12 +452,28 @@ const SET_CASES: Record<string, { field: string; value: unknown }> = {
   ResPlaySound: { field: 'm_soundName', value: 'P3-02-SOUND' },
   ResTeleport: { field: 'm_destinationLoc', value: 'P3-02-LOC' },
   ResWait: { field: 'm_secondsToWait', value: 4242 },
-  // requirements (all 4 modelled, 3 leaves + the recursive wrapper)
+  // results — the corpus-only class (D79): its one field is the nested dialog block, and the
+  // edit replaces the whole block, which is what a form that owned that slot would do.
+  ResActorDialog: {
+    field: 'm_dialog',
+    value: {
+      $type: TYPE_STRINGS.ActorDialog,
+      m_dialogTag: 'P3-02-TAG',
+      m_dialogEntries: [],
+      m_madlibs: null,
+      m_dialogEvents: null,
+      m_noAggroWhileDialogIsUp: false,
+      m_noAggroNoDelay: false,
+    },
+  },
+  // requirements (all 4 modelled, 4 leaves + the recursive wrapper)
   ReqHasQuest: { field: 'm_questName', value: 'P3-02-REQ-QUEST' },
   ReqHasEntry: { field: 'm_entryName', value: 'P3-02-REQ-ENTRY' },
   ReqSchoolOfFocus: { field: 'm_magicSchool', value: 'Ice' },
+  ReqIsSchool: { field: 'm_magicSchoolName', value: 'Ice' },
   RequirementList: { field: 'm_operator', value: 'ROP_OR' },
-  // dialog
+  // dialog — the typed block (D79) and the untagged entry/madlib pair
+  ActorDialog: { field: 'm_dialogTag', value: 'P3-02-ACTORDIALOG' },
   NPCDialogEntry: { field: 'm_dialog', value: 'P3-02-DIALOG' },
   MadlibArgT_ByteString: { field: 'm_madlibToken', value: 'P3-02-TOKEN' },
 };
@@ -774,6 +711,20 @@ function buildSampleQuest(): Record<string, unknown> {
         sampleResult('ResPlaySound', 'm_soundName', 'SAMPLE_SOUND'),
         sampleResult('ResTeleport', 'm_destinationLoc', 'SAMPLE_LOC'),
         sampleResult('ResWait', 'm_secondsToWait', 3),
+        // The corpus-only class, with its nested typed dialog block: one node carries both of
+        // the two `$type`s the owner's baseline added (D79).
+        {
+          $type: TYPE_STRINGS.ResActorDialog,
+          m_dialog: {
+            $type: TYPE_STRINGS.ActorDialog,
+            m_dialogTag: 'Hyperlink',
+            m_dialogEntries: [{ $type: TYPE_STRINGS.NPCDialogEntry, m_dialog: 'SAMPLE_HYPERLINK' }],
+            m_madlibs: null,
+            m_dialogEvents: null,
+            m_noAggroWhileDialogIsUp: false,
+            m_noAggroNoDelay: false,
+          },
+        },
       ],
     },
     m_requirements: {
@@ -789,6 +740,8 @@ function buildSampleQuest(): Record<string, unknown> {
           m_isQuestRegistry: false,
         }),
         sampleRequirement('ReqSchoolOfFocus', { m_magicSchool: 'Fire' }),
+        // Corpus-measured since the owner's f9a1055 baseline (7 occurrences, D79).
+        sampleRequirement('ReqIsSchool', { m_magicSchoolName: 'Fire' }),
       ],
     },
     m_dialogList: {

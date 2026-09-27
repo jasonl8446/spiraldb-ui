@@ -6,11 +6,11 @@
  *
  * | module | contents |
  * |---|---|
- * | `./typeConstants.js` | the corpus-driven `$type` constant table (26 measured + 1 spec-only), goal/result/requirement sub-tables, `m_goalType` / magic-school / operator enums |
+ * | `./typeConstants.js` | the corpus-driven `$type` constant table (29 measured at the owner's `f9a1055` baseline, 0 spec-only), goal/result/requirement sub-tables, `m_goalType` / magic-school / operator enums |
  * | `./schemaKit.js` | `passthroughObject` (D5 unknown-key policy) and the null-tolerant field helpers |
  * | `./requirements.js` | the 4 requirement leaves + the recursive `RequirementList` wrapper |
- * | `./results.js` | the 14-member result union, `ResultList`, `SoundRouter`, `TallyCounter` |
- * | `./dialog.js` | `ActorDialogList`, `NPCDialogEntry`, the madlib chain |
+ * | `./results.js` | the 15-member result union (the spec's 14 + the corpus-only `ResActorDialog`), `ResultList`, `SoundRouter`, `TallyCounter` |
+ * | `./dialog.js` | `ActorDialogList`, the untagged dialog block, the typed `ActorDialog`, `NPCDialogEntry`, the madlib chain |
  * | `./goals.js` | the 5-goal discriminated union on `$type` + the 24 shared base fields |
  * | `./questTemplate.js` | `QuestTemplate` (36 top-level fields) + `GoalLogicEntry` |
  * | `./request.js` | the `POST /api/quests` body schema + issue formatting |

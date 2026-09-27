@@ -36,10 +36,13 @@ import { deleteGoalEdit } from '../../client/src/lib/quest-goals';
  * 1. **The real corpus sweep** (owner run; skipped with a printed reason when the checkout or
  *    the synced database is absent, which is CI's state — D40). It asserts the *measured*
  *    numbers, so a rule that fires on real data, or an engine that misses it, fails here:
- *    322 files, **0** findings of the six zero-instance rules, **5** quests with unreachable
- *    goals (**35** goal findings), **94** zone warnings, and **0** reference warnings — the
- *    last one only under the dual-source handling of `ResDrawHand.m_templateID` (D63(c)),
- *    which is asserted directly too.
+ *    re-measured at the owner's `f9a1055` baseline (D79/D80): **328** files (was 322), **0**
+ *    findings of the six zero-instance rules, **3** quests with unreachable goals (**25** goal
+ *    findings; was 5 quests / 35 findings), **94** zone warnings, and **0** reference warnings —
+ *    the last one only under the dual-source handling of `ResDrawHand.m_templateID` (D63(c)),
+ *    which is asserted directly too. The reference count needed the tool's own database to be
+ *    **re-synced** to the owner's 328 quests (D80b): before that the sweep reported six
+ *    `m_questName` misses that were the DB's staleness (322 rows), not the corpus's.
  * 2. **Fixture cases** for every rule, which is the only way six of the nine kinds are ever
  *    exercised (their corpus count is zero). The fixtures are labelled where they are the
  *    only proof, and the AC's own flow — delete a referenced start goal → a blocking finding
@@ -50,11 +53,12 @@ import { deleteGoalEdit } from '../../client/src/lib/quest-goals';
  * after validation and requires the bytes to be identical (a rule that mutates the document
  * is the first failure mode the story's brief names).
  *
- * Measured 2026-09-26 against `/home/jason/Documents/git-projects/spiraldb` (322 files) and
- * `data/spiraldb-ui.db` (`zones` 1,241 / `npcs` 23,033 / `spells` 18,173 / `drop_tables` 317 /
- * `quests` 322 rows). The path follows p3-02's convention: `SPIRALDB_QUEST_CORPUS` overrides
- * the checkout, and the D17 clone is **not** a fallback here because it holds 323 files (this
- * tool's own writes included), so its counts are not the measured ones.
+ * Measured at the owner's `f9a1055` baseline against `/home/jason/Documents/git-projects/spiraldb`
+ * (328 files) and `data/spiraldb-ui.db` (`zones` 1,241 / `npcs` 23,033 / `spells` 18,173 /
+ * `drop_tables` 317 / `quests` **328** rows after this task's deliberate D80b re-sync; it was 322
+ * before). The path follows p3-02's convention: `SPIRALDB_QUEST_CORPUS` overrides the checkout,
+ * and the D17 clone is **not** a fallback here because it holds 323 files (this tool's own writes
+ * included) and was **not** re-cloned (D80c), so its counts are not the measured ones.
  */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -612,7 +616,7 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
     });
 
     it('validates every corpus file without mutating one', () => {
-      expect(corpus.length).toBe(322);
+      expect(corpus.length).toBe(328);
       const before = corpus.map((quest) => serializeDoc(quest.doc));
       for (const quest of corpus) {
         validateQuest(quest.doc, { references });
@@ -643,7 +647,7 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
       expect(results.every((quest) => quest.result.blocking.length === 0)).toBe(true);
     });
 
-    it('finds exactly the 5 measured reachability failures, 35 unreachable goals in total', () => {
+    it('finds exactly the 3 measured reachability failures, 25 unreachable goals in total (D79)', () => {
       const perQuest = results
         .map((quest) => ({
           name: quest.name,
@@ -651,16 +655,18 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
         }))
         .filter((entry) => entry.goals > 0)
         .sort((a, b) => a.name.localeCompare(b.name));
+      // Re-measured at f9a1055: `WC-CYCLOPS-MAIN-002` (6) and `WC-TRITON-MAIN-008` (4) no
+      // longer strand a goal — the owner's own commits fixed both files — so the set is these
+      // three, and the total is 25 (the brief's "31" was this file's *other-warnings* count
+      // while the six stale-DB reference warnings were still present: 25 + 6).
       expect(perQuest).toEqual([
-        { name: 'WC-CYCLOPS-MAIN-002', goals: 6 },
-        { name: 'WC-TRITON-MAIN-008', goals: 4 },
         { name: 'WC-TUT-C03-001', goals: 19 },
         { name: 'WC-TUT-C05-001', goals: 5 },
         { name: 'WC-TUT-C08-001', goals: 1 },
       ]);
       expect(
         results.reduce((sum, quest) => sum + ofKind(quest.result, 'goal-unreachable').length, 0),
-      ).toBe(35);
+      ).toBe(25);
       // Every failing quest has an **empty** `m_startGoals`; nothing else in the corpus
       // strands a goal, so the literal reading and the "no start goals" case coincide.
       for (const quest of results.filter(
@@ -687,11 +693,13 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
       const other = results.flatMap((quest) =>
         quest.result.warnings.filter((finding) => finding.kind !== 'zone-not-known'),
       );
-      expect(other).toHaveLength(35); // the reachability warnings are the only others
+      // Re-measured: 25 unreachable goals are the only other warnings (was 35 unreachable; the
+      // 6 that made it 31 here in between were the stale-DB reference misses, see below).
+      expect(other).toHaveLength(25); // the reachability warnings are the only others
       expect(other.every((finding) => finding.kind === 'goal-unreachable')).toBe(true);
     });
 
-    it('emits zero reference warnings — the dual-namespace ResDrawHand values all resolve (D63(c))', () => {
+    it('emits zero reference warnings — the DB was re-synced, and the ResDrawHand values resolve (D63(c)/D80b)', () => {
       const referenceWarnings = results.flatMap((quest) =>
         ofKind(quest.result, 'reference-not-known'),
       );
@@ -754,7 +762,7 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
           `| 6 zero-instance rules = 0`,
       );
       expect(errors).toBe(0);
-      expect(warnings).toBe(129); // 94 zone + 35 unreachable
+      expect(warnings).toBe(119); // 94 zone + 25 unreachable (was 129 = 94 + 35)
     });
   },
 );

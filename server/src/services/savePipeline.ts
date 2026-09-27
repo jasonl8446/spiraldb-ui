@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 
 import type { ObjectFileType } from '../../../shared/naming.js';
 import { readSettings, writeSetting, type Db } from '../db.js';
@@ -63,6 +64,21 @@ export interface SaveObjectRequest {
   action?: SaveRequestedAction;
   /** Optional commit-message body. */
   notes?: string;
+  /**
+   * Absolute paths this save **replaces**: each is deleted in the working tree and staged as a
+   * deletion in the **same** commit as the write (D22's consolidate-and-replace). The caller
+   * computes them from the live directory (task 4.9's `GlobalRegistry/` consolidation), never
+   * from an assumption, and only for files the save actually accounts for.
+   *
+   * Two consequences are deliberate:
+   *
+   * - the commit's action becomes `update` even when the convention file did not exist, because
+   *   the entry existed under one of the replaced names — which is what makes the consolidation's
+   *   message `spiraldb: update global_registry globalregistry`;
+   * - the write happens **first** and the deletions are staged before the one commit, so a
+   *   deletion can never land without the file that replaces it.
+   */
+  removePaths?: string[];
   /** When set and different, a `status_history` transition row is appended. */
   status?: StatusValue;
   /**
@@ -314,8 +330,29 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     }
 
     const filePath = indexedPath ?? conventionPath;
+    // Two guards on a replacement, both fail-closed before anything is written: the file being
+    // written can never delete itself, and a path outside the SpiralDB root is never touched
+    // (a caller's bug must not become an `rm` in someone else's tree).
+    const removePaths = (request.removePaths ?? []).map((candidate) => path.resolve(candidate));
+    for (const candidate of removePaths) {
+      if (candidate === path.resolve(filePath)) {
+        throw new SpiraldbFileError(
+          `Cannot replace ${filePath} with itself: a save never deletes the file it writes.`,
+        );
+      }
+      if (!candidate.startsWith(`${path.resolve(root)}${path.sep}`)) {
+        throw new SpiraldbFileError(
+          `Cannot replace ${candidate}: it is outside the SpiralDB root ${root}.`,
+        );
+      }
+    }
+
+    // A save that replaces files under other names is an **update** of the same logical entry
+    // (D22): the GlobalRegistry consolidation writes a brand-new `globalregistry.json` yet
+    // commits `spiraldb: update global_registry globalregistry`, because the entry already
+    // existed in the legacy file being replaced.
     const action: SaveCommitAction =
-      outcome === 'updated' ? 'update' : (request.action ?? 'create');
+      outcome === 'updated' || removePaths.length > 0 ? 'update' : (request.action ?? 'create');
 
     // 1. D14 — fail closed before anything is written or checked out.
     await git.assertClean();
@@ -325,16 +362,26 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
 
     // 3. The payload. An update merges into the file on disk so omitted nulls
     //    survive (D45(1)); a create writes the object as given.
+    //
+    //    The **unkeyed** family is the one exception, and it is deliberate: its document *is*
+    //    the whole dictionary (the client posts the merged view it loaded), so the D45(1) merge
+    //    is not applied — a merge would resurrect a row the user removed, because this
+    //    dictionary's "absent" representation is an absent key, not a null (D22/D57).
     let payload: unknown;
-    if (outcome === 'updated') {
+    if (outcome === 'updated' && spec.keyField !== null) {
       const existing = readSpiraldbJson(filePath);
       payload = mergePreservingAbsent(existing, request.data);
     } else {
       payload = request.data;
     }
 
-    // 4. Write the file (clean JSON) and refresh the index for this family.
+    // 4. Write the file (clean JSON), delete the files this save replaces, and refresh the
+    //    index for this family. The write is first, so the commit below can never contain a
+    //    deletion without the file that replaces it (the D22 failure mode).
     writeSpiraldbJson(filePath, payload);
+    for (const candidate of removePaths) {
+      fs.rmSync(candidate, { force: true });
+    }
     index.rebuildType(spec.fileType);
 
     // 5. Companion metadata — quests only (docs/spec-data-model.md L191).
@@ -356,6 +403,7 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
       notes: request.notes,
       author: user,
       paths: [filePath, ...(metadata === null ? [] : [metadata.path])],
+      ...(removePaths.length === 0 ? {} : { removePaths }),
     });
 
     // 7. Verification status (skipped for families with no lifecycle).

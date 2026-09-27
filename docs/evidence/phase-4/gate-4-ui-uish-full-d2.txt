@@ -1,0 +1,28 @@
+# gate-4 UI D2 — the whole tier-1 suite on the alt-port config (three runs)
+
+## 1. before the claim edits — 299 passed
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers npx playwright test --config tests/ui/p4-10-altport.config.ts
+
+  299 passed (51.4s)
+rc=0
+
+## 2. after the claim edits — 298 passed / 1 failed (the recorded extraction toast flake)
+    [chromium] › tests/ui/extraction.spec.ts:774:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest 
+  298 passed (1.7m)
+rc=1
+
+--- the failure, attributed by name ---
+  1) [chromium] › tests/ui/extraction.spec.ts:774:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Save All to SpiralDB' })
+        - locator resolved to <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-blue-600 text-zinc-50 hover:bg-blue-500 h-9 px-4 py-2">Save All to SpiralDB</button>
+        - <li tabindex="0" data-index="0" data-type="info" data-front="true" data-styled="true" data-mounted="true" data-swiped="false" data-visible="true" data-sonner-toast="" data-promise="false" data-removed="false" data-swiping="false" data-expanded="false" data-swipe-out="false" data-x-position="right" data-dismissible="true" data-y-position="bottom" class="border-l-4 border-l-blue-500">…</li> from <section tabindex="-1" aria-live="polite" aria-atomic="false" aria-relevant="additions text" aria-label="Notifications alt+T">…</section> subtree intercepts pointer events
+
+## 3. after the claim edits, re-run — 299 passed
+
+  299 passed (57.9s)
+rc=0

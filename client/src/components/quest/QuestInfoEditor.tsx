@@ -6,8 +6,8 @@ import {
   fieldAriaInvalid,
   fieldDescribedBy,
   useFieldMessages,
+  type FieldValidationMessage,
 } from '../shared/FieldValidation';
-import type { ValidationMessage } from '../../lib/quest-validation';
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { getName, nameLookupQueryKey } from '../../lib/api';
 import { relativeTime } from '../../lib/display';
@@ -162,7 +162,7 @@ function FieldControl({
   id: string;
   helpId: string;
   messagesId: string;
-  messages: readonly ValidationMessage[];
+  messages: readonly FieldValidationMessage[];
   value: unknown;
   present: boolean;
   state: QuestDocumentState;

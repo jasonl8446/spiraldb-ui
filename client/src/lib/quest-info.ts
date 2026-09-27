@@ -34,7 +34,7 @@
  *    other direction (dropping it) would hide it.
  */
 
-import type { DocEdit } from '@shared/document';
+import type { DocEdit, DocPath } from '@shared/document';
 
 import { formatNameValue, type NameRowMap } from './display';
 
@@ -396,14 +396,32 @@ export function clientTagsEdit(path: string, present: boolean, text: string): Do
 /* ------------------------------------------------------------- scalar edits */
 
 /**
+ * Where a scalar builder writes: a top-level key (`'m_questTitle'`) or an absolute path
+ * (`['Items', 0, 'Notes']`).
+ *
+ * The three builders below are **host-agnostic** — they encode the one rule "emptying a
+ * control deletes a key that is there and writes nothing when it is not" (D57/D59(c)) and
+ * nothing about quests. They live in this module because the Info tab's inventory is what
+ * introduced them; story p4-02's DropTable form reuses them for its item rows, which is why
+ * the path parameter widened from a bare key to a `DocPath` rather than growing a second
+ * copy of the rule in `components/objects/DropTableForm.tsx`.
+ */
+export type ScalarEditPath = string | DocPath;
+
+/** A scalar builder's path as a `DocPath` — the one conversion. */
+function asPath(path: ScalarEditPath): DocPath {
+  return typeof path === 'string' ? [path] : path;
+}
+
+/**
  * The edit a text-like control produces (text input, or the activity select — both
  * carry a raw string). Emptying the control deletes the key when it exists.
  */
-export function textFieldEdit(path: string, present: boolean, raw: string): DocEdit | null {
+export function textFieldEdit(path: ScalarEditPath, present: boolean, raw: string): DocEdit | null {
   if (raw === '') {
-    return present ? { op: 'delete', path: [path] } : null;
+    return present ? { op: 'delete', path: asPath(path) } : null;
   }
-  return { op: 'set', path: [path], value: raw };
+  return { op: 'set', path: asPath(path), value: raw };
 }
 
 /**
@@ -413,15 +431,19 @@ export function textFieldEdit(path: string, present: boolean, raw: string): DocE
  * The parsed number is written exactly as parsed — no rounding, no truncation
  * (D57: validate, never normalise).
  */
-export function numberFieldEdit(path: string, present: boolean, raw: string): DocEdit | null {
+export function numberFieldEdit(
+  path: ScalarEditPath,
+  present: boolean,
+  raw: string,
+): DocEdit | null {
   if (raw.trim() === '') {
-    return present ? { op: 'delete', path: [path] } : null;
+    return present ? { op: 'delete', path: asPath(path) } : null;
   }
   const value = Number(raw);
   if (!Number.isFinite(value)) {
     return null;
   }
-  return { op: 'set', path: [path], value };
+  return { op: 'set', path: asPath(path), value };
 }
 
 /**
@@ -429,6 +451,6 @@ export function numberFieldEdit(path: string, present: boolean, raw: string): Do
  * only calls this when the user actually toggles it — an absent or `null` value
  * renders unchecked and stays untouched until then (never an injected default).
  */
-export function booleanFieldEdit(path: string, checked: boolean): DocEdit {
-  return { op: 'set', path: [path], value: checked };
+export function booleanFieldEdit(path: ScalarEditPath, checked: boolean): DocEdit {
+  return { op: 'set', path: asPath(path), value: checked };
 }

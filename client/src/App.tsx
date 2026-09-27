@@ -2,15 +2,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
+import { objectTypeConfig } from '@shared/objectTypes';
+
 import AppLayout from './components/layout/AppLayout';
+import CreatureSpellbookForm from './components/objects/CreatureSpellbookForm';
+import NpcDropTableForm from './components/objects/NpcDropTableForm';
+import NpcInventoryForm from './components/objects/NpcInventoryForm';
+import NpcSpellInventoryForm from './components/objects/NpcSpellInventoryForm';
+import ZoneTransferForm from './components/objects/ZoneTransferForm';
+import DropTableDetailPage from './pages/DropTableDetailPage';
+import ObjectDetailPage from './pages/ObjectDetailPage';
+import ObjectListPage from './components/objects/ObjectListPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ExtractionPage from './pages/ExtractionPage';
+import GlobalRegistryPage from './pages/GlobalRegistryPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
 import StubPage from './pages/StubPage';
+import TreasureCardInventoryDetailPage from './pages/TreasureCardInventoryDetailPage';
 import { UserNameGateProvider } from './hooks/useUserNameGate';
 import { APP_ROUTES, type AppRoute } from './lib/routes';
+import { validateZoneTransferDocument } from './lib/zone-transfer-validation';
 import {
   TOASTER_CLASS_NAMES,
   TOASTER_CLOSE_BUTTON,
@@ -27,9 +40,29 @@ import {
  * Routing is generated from the `APP_ROUTES` table, so the spec-api L325-350
  * route list has exactly one home and cannot drift from the sidebar: every route
  * exists, the built pages (`/settings` from p1-08, `/quests/extract` from p2-07,
- * `/quests` and `/quests/:questName` from p2-08) render for real, and every other
- * route renders the "Arrives in Phase N" stub with the phase recorded in the table
- * (decision D39 item 7).
+ * `/quests` and `/quests/:questName` from p2-08, `/npc-inventories` and its detail
+ * route from p4-01, `/drop-tables` and `/drop-tables/:name` from p4-02) render for
+ * real, and every other route renders the "Arrives in Phase N" stub with the phase
+ * recorded in the table (decision D39 item 7).
+ *
+ * Task 4.1 wired **one** of the eight object families end to end (NpcInventory) so
+ * the generic scaffolding is provably used; story p4-02 added the second
+ * (DropTable, whose form mounts the shared requirement tree inline and whose route
+ * is driven by its own page so the duplicate-name rule can inject the corpus); story
+ * p4-03 added the third and fourth (NpcSpellInventory and CreatureSpellbook, both
+ * plain `ObjectDetailPage` + form pairs); story p4-04 added the fifth (NpcDropTable,
+ * whose list page is the family with a genuinely absent directory); story p4-05 added
+ * the sixth (TreasureCardInventory, whose detail route is its own page so the
+ * warn-not-block rule can inject the synced `spells` names); story p4-06 added the
+ * seventh (ZoneTransfer, whose one rule consults no synced table and so renders inline
+ * through the generic page); story p4-07 added the **eighth and last** (GlobalRegistry,
+ * whose single route *is* the editor — docs/spec-api.md L474, no list and no detail
+ * route — because the family is one merged dictionary; it is also the only page that
+ * passes `editable`, since the registry has no `entry_status` row yet its document is
+ * exactly what the editor edits). All
+ * eight Phase-4 families are now built; both
+ * route paths and the config rows come from `shared/objectTypes.ts`, so a page and
+ * the API path the server mounts cannot disagree.
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +87,14 @@ const queryClient = new QueryClient({
  * router ranks the static path higher regardless, so the detail route can never
  * shadow the extraction page.
  */
+const NPC_INVENTORY = objectTypeConfig('npcinventory');
+const NPC_SPELL_INVENTORY = objectTypeConfig('npcspellinventory');
+const CREATURE_SPELLBOOK = objectTypeConfig('creaturespellbook');
+const NPC_DROP_TABLE = objectTypeConfig('npcdroptable');
+const TREASURE_CARD_INVENTORY = objectTypeConfig('treasurecardinventory');
+const ZONE_TRANSFER = objectTypeConfig('zonetransfer');
+const DROP_TABLE = objectTypeConfig('droptable');
+
 function elementFor(route: AppRoute): JSX.Element {
   switch (route.path) {
     case '/settings':
@@ -64,6 +105,120 @@ function elementFor(route: AppRoute): JSX.Element {
       return <QuestsPage />;
     case '/quests/:questName':
       return <QuestDetailPage />;
+    case '/drop-tables':
+      return <ObjectListPage config={DROP_TABLE} nounPlural="drop tables" keyHeader="Drop table" />;
+    case '/drop-tables/:name':
+      // Story p4-02: the form is `DropTableForm`, but the route is driven by its own page so
+      // the duplicate-name rule can inject the corpus (a hook cannot live in a render prop).
+      return <DropTableDetailPage />;
+    case '/npc-inventories':
+      return <ObjectListPage config={NPC_INVENTORY} nounPlural="NPC inventories" keyHeader="NPC" />;
+    case '/npc-inventories/:id':
+      return (
+        <ObjectDetailPage
+          config={NPC_INVENTORY}
+          nounPlural="NPC inventories"
+          backLabel="Back to NPC Inventories"
+          renderForm={({ document, mode, state }) => (
+            <NpcInventoryForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/npc-spell-inventories':
+      return (
+        <ObjectListPage
+          config={NPC_SPELL_INVENTORY}
+          nounPlural="NPC spell inventories"
+          keyHeader="NPC"
+        />
+      );
+    case '/npc-spell-inventories/:id':
+      return (
+        <ObjectDetailPage
+          config={NPC_SPELL_INVENTORY}
+          nounPlural="NPC spell inventories"
+          backLabel="Back to NPC Spell Inventories"
+          renderForm={({ document, mode, state }) => (
+            <NpcSpellInventoryForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/creature-spellbooks':
+      return (
+        <ObjectListPage
+          config={CREATURE_SPELLBOOK}
+          nounPlural="creature spellbooks"
+          keyHeader="Deck name"
+        />
+      );
+    case '/creature-spellbooks/:name':
+      return (
+        <ObjectDetailPage
+          config={CREATURE_SPELLBOOK}
+          nounPlural="creature spellbooks"
+          backLabel="Back to Creature Spellbooks"
+          renderForm={({ document, mode, state }) => (
+            <CreatureSpellbookForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/npc-drop-tables':
+      // Story p4-06: this family's directory does not exist in the fork, so `GET` answers an
+      // empty list with `missing_directory: true` and the page renders its own empty state plus
+      // the "the first save creates it" notice (`ObjectListPage`'s `CorpusNotices`).
+      return (
+        <ObjectListPage config={NPC_DROP_TABLE} nounPlural="NPC drop tables" keyHeader="NPC" />
+      );
+    case '/npc-drop-tables/:id':
+      return (
+        <ObjectDetailPage
+          config={NPC_DROP_TABLE}
+          nounPlural="NPC drop tables"
+          backLabel="Back to NPC Drop Tables"
+          renderForm={({ document, mode, state }) => (
+            <NpcDropTableForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/treasure-card-inventories':
+      return (
+        <ObjectListPage
+          config={TREASURE_CARD_INVENTORY}
+          nounPlural="treasure card inventories"
+          keyHeader="NPC"
+        />
+      );
+    case '/treasure-card-inventories/:id':
+      // Story p4-05: the detail route is its own page rather than a `renderForm` inline here,
+      // because the warn-not-block name rule needs the synced `spells` names at validation time
+      // and a hook cannot live in a render prop (the DropTable detail page's own reason).
+      return <TreasureCardInventoryDetailPage />;
+    case '/zone-transfers':
+      // Story p4-06: the seventh family's list branch (D73(g) — the real branch, not the stub).
+      return <ObjectListPage config={ZONE_TRANSFER} nounPlural="zone transfers" keyHeader="Zone" />;
+    case '/zone-transfers/:name':
+      // Story p4-06: the eighth and last Phase-4 form. It needs no page of its own — the one
+      // validation rule (`m_destinationLoc`'s format) consults no synced table, so the shared
+      // engine runs from a module-level function and the form is rendered inline, like p4-03's.
+      return (
+        <ObjectDetailPage
+          config={ZONE_TRANSFER}
+          nounPlural="zone transfers"
+          backLabel="Back to Zone Transfers"
+          validate={validateZoneTransferDocument}
+          renderForm={({ document, mode, state, messages }) => (
+            <ZoneTransferForm document={document} mode={mode} state={state} messages={messages} />
+          )}
+        />
+      );
+    case '/global-registry':
+      // Story p4-07: the eighth and last family. docs/spec-api.md L474 says exactly what this
+      // route is — "GlobalRegistry editor" — with **no list and no detail route**, because the
+      // family is one merged dictionary, not a collection: the page below is the editor itself,
+      // and `tests/unit/ui-shell.test.ts` pins the spec's route table (which lists no
+      // `/global-registry/:key`). Its disclosure needs the family's list query all the same, so
+      // the page owns that hook rather than a render prop.
+      return <GlobalRegistryPage />;
     default:
       return <StubPage route={route} />;
   }
