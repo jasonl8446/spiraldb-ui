@@ -1,0 +1,26 @@
+# P1 #17 — the Phase-2 PR's own check run (raw excerpts), the required 'ci' context
+# PR #4 head fe08811, run 36243650372, job 108408710988, ubuntu-24.04
+status=completed conclusion=success event=pull_request head=fe08811
+started=2026-09-26T12:57:55Z updated=2026-09-26T12:59:32Z   (the ci check reports 1m37s)
+## steps
+  success  Set up job
+  success  Run actions/checkout@v4
+  success  Detect Node project
+  success  Run actions/setup-node@v4
+  success  Install dependencies
+  success  Unit tests
+  success  Build
+  success  Lint and formatting
+  success  Typecheck tests
+  success  Install headless chromium
+  success  UI tests
+  success  Post Run actions/setup-node@v4
+  success  Post Run actions/checkout@v4
+  success  Complete job
+
+## the suite summaries the runner printed
+
+## test/build lines from the runner log
+  (the job log endpoint returned nothing for this run; the per-step conclusions above are the
+  available evidence - each step succeeded on ubuntu-24.04, and the same commands were run
+  locally with raw outputs in ../gate-p2-10-leadverify.txt)

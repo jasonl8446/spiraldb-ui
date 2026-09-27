@@ -13,12 +13,18 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  * What this file proves, clause by clause of `p2-08-ac2`:
  *
  * - the header: back link to `/quests`, the name in `text-xl font-mono
- *   font-semibold`, a `StatusBadge`, and the disabled Edit button carrying the
- *   exact "Editing arrives in Phase 3" tooltip;
- * - the six read-only tabs `[Info][Goals][Goal Logic][Requirements][Results]
- *   [Dialog]`, rendered by p2-07's `QuestPreview` rather than a copy of it;
+ *   font-semibold`, a `StatusBadge`, and the Edit control — a **disabled placeholder** when
+ *   p2-08 wrote this spec, the real view/edit toggle since story p3-10 (whose own spec,
+ *   `quests-edit-mode.spec.ts`, drives both modes and the Save pipeline);
+ * - the six tabs `[Info][Goals][Goal Logic][Requirements][Results][Dialog]`,
+ *   rendered by p2-07's `QuestPreview` rather than a copy of it: **three read-only, with
+ *   Info (story p3-03), Goals (story p3-04) and Goal Logic (story p3-05) the live editors**
+ *   (whose own specs, `quests-info-editor.spec.ts` / `quests-goals-editor.spec.ts` /
+ *   `quests-goal-logic.spec.ts`, assert the forms; this file pins that the other three
+ *   never grow a control);
  * - the JSON side panel: toggled by the header's `{ }` button, exactly 400px wide,
- *   syntax-highlighted (`react-json-view-lite`), with the spec's `[Copy]`;
+ *   syntax-highlighted (`react-json-view-lite`), with the spec's `[Copy]` **and `[Wrap]`**
+ *   (`[Wrap]` was a recorded deviation until story p3-10 shipped it);
  * - the same panel as a **full-screen overlay** below 768px, with no side panel
  *   beside it;
  * - loading, failure and the unknown-name 404, none of which strands the UI.
@@ -29,7 +35,11 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
 
 const SIX_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
 
-const EDIT_TOOLTIP = 'Editing arrives in Phase 3';
+/**
+ * The Edit toggle's tooltip in edit mode — the load state (`EDIT_MODE_ON_LOAD`). It replaced
+ * p2-08's 'Editing arrives in Phase 3', which story p3-10 retired from the detail page.
+ */
+const EDIT_TOOLTIP = 'Switch to view mode';
 
 /** The `<main>` region — the page, without the shell's sidebar/header. */
 function page_(page: Page): Locator {
@@ -68,7 +78,10 @@ test.describe('header', () => {
     await expect(main.getByLabel('Status: Extracted')).toBeVisible();
 
     const edit = main.getByRole('button', { name: 'Edit' });
-    await expect(edit).toBeDisabled();
+    // The real toggle since p3-10: enabled, pressed in edit mode (the load state), with the
+    // action in `title` rather than a changing label.
+    await expect(edit).toBeEnabled();
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
     await expect(edit).toHaveAttribute('title', EDIT_TOOLTIP);
 
     // The `{ }` toggle lives in the same header bar and starts unpressed.
@@ -92,7 +105,7 @@ test.describe('header', () => {
 });
 
 test.describe('tabs', () => {
-  test('renders the six read-only tabs through QuestPreview', async ({ page }) => {
+  test('renders the six tabs through QuestPreview, all six live editors', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
 
@@ -101,31 +114,85 @@ test.describe('tabs', () => {
       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
     }
 
-    // Info is the landing tab and shows the quest's own fields.
+    // Info is the landing tab and, since p3-03, the live editor; the other five became live
+    // editors in p3-04 (Goals), p3-05 (Goal Logic), p3-06 (Requirements), p3-07 (Results) and
+    // p3-08 (Dialog) — so no tab on the detail page is read-only any more. The extraction
+    // page's preview keeps the read-only bodies and `extraction.spec.ts` still asserts that.
     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
+    await expect(main.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
 
-    // Each tab renders its section read-only (no inputs anywhere in the pane).
+    // The Goals tab is the second live editor (story p3-04): its own spec drives the
+    // editing, so this only pins that the detail page really mounts it, that the card
+    // sketch's own elements are there, and that a collapsed card adds no stray input.
     await main.getByRole('tab', { name: 'Goals' }).click();
+    await expect(main.getByRole('region', { name: 'Quest goals editor' })).toBeVisible();
     // Scoped to the goal's own card: the name is also one of that goal's
     // `m_goalName` fields, so a bare text match would hit two real elements.
     const goal = main.getByRole('article').filter({ hasText: '1_WizardQuestGoals_GotoZone' });
     await expect(goal).toHaveCount(1);
-    await expect(goal).toContainText('WaypointGoalTemplate');
-    await expect(main.getByRole('tabpanel').locator('input')).toHaveCount(0);
+    await expect(goal).toContainText('Waypoint');
+    await expect(goal.getByRole('button', { name: 'Set as Start Goal' })).toBeVisible();
 
+    // The Goal Logic tab is the third live editor (story p3-05): its own spec drives the
+    // canvas, the toolbar and the node menu, so this only pins that the detail page really
+    // mounts it — and that the read-only field list it replaced is gone, which is what the
+    // old `m_goalsAND` text assertion here used to check.
     await main.getByRole('tab', { name: 'Goal Logic' }).click();
-    await expect(main.getByText('m_goalsAND', { exact: true })).toBeVisible();
+    await expect(main.getByRole('region', { name: 'Quest goal logic editor' })).toBeVisible();
+    await expect(main.getByRole('group', { name: 'Goal logic flowchart' })).toBeVisible();
+    await expect(main.getByRole('button', { name: 'Add GoalLogicEntry' })).toBeVisible();
+    // This fixture's entry is **sparse** by design (`m_goalsAND` and `m_completeQuest`
+    // only), and the summary is read straight out of it: nothing is padded in, and no
+    // missing `m_goalsToAdd` is invented as a target.
+    await expect(
+      main.getByRole('button', { name: 'Entry 1: AND 1_WizardQuestGoals_GotoZone' }),
+    ).toBeVisible();
+    await expect(main.getByText('m_goalsAND', { exact: true })).toHaveCount(0);
 
-    // `exact` on the field labels: each name also appears inside the read-only JSON
-    // block below it, as a key.
+    // The Requirements tab is the fourth live editor (story p3-06): its own spec
+    // (`quests-requirements-editor.spec.ts`) drives the tree, so this pins that the detail
+    // page really mounts it — and that each of the three quest-level slots is on screen
+    // under its own mono key (the JSON block it replaced is gone, which is what the old
+    // `m_requirements` text assertion here used to check).
     await main.getByRole('tab', { name: 'Requirements' }).click();
+    await expect(main.getByRole('region', { name: 'Quest requirements editor' })).toBeVisible();
+    // `exact`: five other regions on this tab carry a name containing "Requirements"
+    // (the prep/prune/goal slots), which is what the substring match would hit.
+    await expect(main.getByRole('region', { name: 'Requirements', exact: true })).toBeVisible();
     await expect(main.getByText('m_requirements', { exact: true })).toBeVisible();
+    await expect(main.getByText('m_prepRequirements', { exact: true })).toBeVisible();
+    await expect(main.getByText('m_pruneRequirements', { exact: true })).toBeVisible();
 
+    // The Results tab is the fifth live editor (story p3-07): its own spec
+    // (`quests-results-editor.spec.ts`) drives the 14-type forms, so this pins that the
+    // detail page really mounts it — and that the seeded end result's raw drop-table id is
+    // on screen. That id resolves in no names table this spec mocks, so the trigger shows
+    // the id itself, which is the documented miss path rather than an error.
     await main.getByRole('tab', { name: 'Results' }).click();
+    await expect(main.getByRole('region', { name: 'Quest results editor' })).toBeVisible();
+    await expect(main.getByRole('region', { name: 'End results', exact: true })).toBeVisible();
+    await expect(
+      main.getByRole('article', { name: 'ResDropTable m_endResults.m_results[0]' }),
+    ).toBeVisible();
     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();
 
     await main.getByRole('tab', { name: 'Dialog' }).click();
     await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
+
+    // The Dialog tab became the sixth live editor in p3-08, which is why the "Dialog is
+    // read-only" loop that stood here has been replaced rather than weakened: its own spec
+    // (`quests-dialog-editor.spec.ts`) drives the tag sections and the accordions, so this
+    // pins that the detail page really mounts it and that the shared list editor rendered.
+    // The extraction page's preview still renders the read-only `m_dialogList` JSON block.
+    await expect(main.getByRole('region', { name: 'Quest dialog editor' })).toBeVisible();
+    await expect(
+      main.getByRole('region', { name: 'Quest dialog list', exact: true }),
+    ).toBeVisible();
+    await expect(
+      main
+        .getByRole('region', { name: 'Quest dialog list', exact: true })
+        .getByRole('button', { name: 'Add Dialog Tag', exact: true }),
+    ).toBeVisible();
   });
 });
 
@@ -142,9 +209,9 @@ test.describe('json side panel', () => {
     await expect(panel).toBeVisible();
     await expect(jsonToggle(page)).toHaveAttribute('aria-pressed', 'true');
 
-    // Spec L326: 400px wide.
-    const box = await panel.boundingBox();
-    expect(box?.width).toBe(400);
+    // Spec L326: 400px wide. Polled, because the panel slides in: an immediate
+    // boundingBox() can land mid-transition and report a different width (p3-11).
+    await expect.poll(async () => (await panel.boundingBox())?.width).toBe(400);
 
     // Syntax-highlighted JSON: the tree carries the field names and values...
     const tree = panel.getByRole('tree');
@@ -153,10 +220,14 @@ test.describe('json side panel', () => {
     // ...and the library's own colour classes (not plain text).
     expect(await tree.innerHTML()).toMatch(/color:rgb|class="_/);
 
-    // The spec's `[Copy]` affordance works (the `[Wrap]` half is documented as not
-    // shipped in `lib/quests.ts`: this library wraps unconditionally).
+    // The spec's `[Copy]` affordance works, and `[Wrap]` is a real toggle since story p3-10
+    // (see `quests-edit-mode.spec.ts` for its wrapped/unwrapped rendering assertions).
     await panel.getByRole('button', { name: 'Copy' }).click();
     await expect(page.getByText('Quest JSON copied to the clipboard')).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Wrap' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
 
     await jsonToggle(page).click();
     await expect(sidePanel(page)).toHaveCount(0);

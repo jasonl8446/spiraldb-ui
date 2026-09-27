@@ -1,0 +1,86 @@
+# p3-10 tier-2 evidence — the browser-driven save and the AC1 isolation proof (lead-run, D23)
+
+Subagents have no playwright-mcp, and the executor's honest limit was that its AC1 test drives the
+UI's **edit builders** rather than a browser click. This pass closes that gap: the lead edited a
+real quest **through the rendered UI**, saved it, and diffed the **D17 clone**.
+
+## The rig, with D65(g) applied
+
+`cp data/spiraldb-ui.db /tmp/p310-tier2.db` then **`DELETE FROM settings`** (the copy keeps its
+settings rows and `seedSettings` only seeds an empty table, so `SPIRALDB_PATH` would otherwise be
+ignored and the POST could reach the owner's real fork). `GET /api/settings` was checked **before**
+any save and returned `spiraldb_path = /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb`
+and `git_branch = content/2026-09-26`. The clone was at `18dc924`, clean, and the target file was
+snapshotted to `/tmp/p310-before.json` first.
+
+## The browser drive (`DS-ACAD-C01-002` — 3 goals, a dialog list, 36 keys; the executor's own AC1 target)
+
+| Step | Measured |
+|---|---|
+| page load | `data-edit-mode="true"`, `data-dirty="false"`, Edit `aria-pressed="true"`, Save present with **`data-save-wired="true"`** (the D65(f) seam filled) |
+| goal field (Goals tab, expanded card's Shared base fields) | `m_goalNameID` `2559431` → `2559432` |
+| dialog field (Dialog tab, first tag, Entry 1, Basic accordion) | `m_maxTimeSeconds` `-1` → `45` (only the first of the 8 rendered `m_maxTimeSeconds` inputs changed) |
+| after the two edits | `data-dirty="true"` |
+| clicking Save | **the D38 identity gate opened** ("What should we call you?") because this rig had no user name; typing `p310-lead` and pressing **Save name** resumed the pending save |
+| toast | **`Quest DS-ACAD-C01-002 saved and committed`** — verbatim, AC4's exact string |
+| after the save | `data-dirty="false"` |
+
+Screenshot: `p3-10-edit-mode.png`.
+
+## The AC1 proof — raw git, on the clone
+
+```
+$ git -C data/test-spiraldb status --porcelain      # (empty: the save committed its work)
+$ git -C data/test-spiraldb log -1 --pretty='%h %s'
+94c6102 spiraldb: update quest DS-ACAD-C01-002
+$ git -C data/test-spiraldb show --stat --oneline HEAD
+ QuestMetadatas/questmetadata_DS-ACAD-C01-002.json  |   6 +-
+ QuestTemplates/questtemplates_DS-ACAD-C01-002.json | 355 ++++++++++-----------
+ 2 files changed, 175 insertions(+), 186 deletions(-)
+```
+
+and the lead's own structural comparison of the pre-save snapshot against the saved file:
+
+```
+CHANGED VALUE PATHS (2):
+   m_goals[0].m_goalNameID: 2559431 -> 2559432
+   m_dialogList.m_dialogs[0].m_dialogEntries[0].m_maxTimeSeconds: -1 -> 45
+KEY-ORDER DRIFT (0):
+```
+
+The two value-bearing lines of the raw diff are exactly those two edits; the remaining 172/183
+changed lines are **D49's first-rewrite formatting normalization** (the clone's copy of this file had
+not been rewritten before), which AC1 explicitly allows. **No other field changed and no key moved.**
+
+## AC4's other clauses, measured
+
+- the metadata file's only changes are `ModifiedAt` (`2026-06-01T22:28:47Z` → `2026-09-26T23:36:13Z`)
+  and `ModifiedBy` (`quest_builder` → **`p310-lead`**, the name typed into the identity gate — so the
+  attribution chain ran end to end);
+- commit subject exactly `spiraldb: update quest DS-ACAD-C01-002`, author `p310-lead`;
+- the verification status was **not** touched: `entry_status` for that quest is still `extracted`
+  (`verified_at`/`reviewed_at` null) and no status-history row was added by the save.
+
+## The clone was restored
+
+`git -C data/test-spiraldb reset --hard 18dc924` → `git status --porcelain` empty, HEAD `18dc924`,
+and the real fork is untouched.
+
+## One failure my own gate run produced, and what it means
+
+The FIRST lead gate run reported `npm test` **1033 passed / 1 failed** — the victim was the p3-08
+dialog corpus sweep (`tests/unit/quest-dialog.test.ts`, the test carrying `realFiles`), which scans
+**both checkouts**. The cause was mine: my tier-2 rig was rewriting `data/test-spiraldb` at that
+moment. Re-running that file alone (28 passed) and then the whole gate on a quiet clone gave
+**7 × rc=0**. Recorded because it exposes a real property of this suite: **the D17 clone is shared
+mutable state** — the isolation test resets it and several sweeps read it — so clone-writing and
+clone-reading tests must not overlap. Vitest runs files in parallel by default, so this is a
+**latent flake risk** for gate-3/CI (see D66(g)).
+
+## What this pass did **not** prove
+
+- Browser Back/Forward navigation is not intercepted (the executor's recorded limit: `useBlocker`
+  needs a data router and the app uses a plain `<BrowserRouter>`).
+- `beforeunload` was not triggered by a real window close.
+- The 375px overlay was not re-checked for this story.
+- No pixel inspection of the screenshot (no image input in this model).

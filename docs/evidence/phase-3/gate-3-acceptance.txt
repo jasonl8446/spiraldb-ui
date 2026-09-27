@@ -1,0 +1,119 @@
+# gate-3 acceptance re-run — 587e94a on phase-3-quest-editing
+# started 2026-09-26T20:19:53-04:00
+=== A. Phase 1+2+3 unit suites (includes the 322/322 corpus round-trip and the $type audit)
+$ npm test
+
+ ✓ tests/unit/quest-dialog.test.ts (28 tests) 4026ms
+   ✓ the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field  4002ms
+ ✓ tests/unit/save-pipeline.test.ts (21 tests) 4578ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  626ms
+   ✓ Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)  506ms
+   ✓ updating an existing quest (ac5, server half) > updates the file in place, commits action update and confines the diff (D45(1))  339ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  406ms
+
+ Test Files  42 passed (42)
+      Tests  1034 passed (1034)
+   Start at  20:19:53
+   Duration  5.47s (transform 4.81s, setup 0ms, collect 19.30s, tests 34.66s, environment 10ms, prepare 4.95s)
+
+--- rc=0
+
+=== B. Phase 1-3 tier-1 UI suites (the phase-3 criteria's browser half)
+$ npm run test:ui
+  ✓  160 [chromium] › tests/ui/quests-dialog-editor.spec.ts:917:3 › the m_requirements slot › mounts the shared tree and is labelled fixture-only (796ms)
+  ✓  151 [chromium] › tests/ui/extraction.spec.ts:880:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (6.2s)
+  ✓  161 [chromium] › tests/ui/extraction.spec.ts:924:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (376ms)
+  ✓  162 [chromium] › tests/ui/extraction.spec.ts:945:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.1s)
+  ✓  163 [chromium] › tests/ui/extraction.spec.ts:976:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (499ms)
+  ✓  164 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (391ms)
+  ✓  165 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (863ms)
+  ✓  166 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (693ms)
+  ✓  167 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (530ms)
+  ✓  168 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (926ms)
+  ✓  169 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.1s)
+  ✓  170 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.0s)
+
+  170 passed (43.4s)
+--- rc=0
+
+=== C. Corpus round-trip audit (the 322 sweep script)
+$ npm run audit:corpus
+  … 225/322 quests, 0 failing, 77s
+  … 275/322 quests, 0 failing, 93s
+  … 300/322 quests, 0 failing, 102s
+
+corpus:    /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+quests:    322 real corpus quest(s) attempted
+verified:  181/322 round-trip identically through the real reader (1810 field check(s), 0 mismatch(es), 0 known-defect row(s))
+not covered: 141 refused by the generator (a synthetic-harness coverage limit, measured in docs/evidence/phase-2/story-p2-03-diversity.txt — only a recorded live capture can cover these)
+   122  goal-level dialog on a compilation goal
+    11  quest has no goals
+     4  quest-level dialog tag not Prep/Completion
+     4  m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+
+PASS: 181/322 verified, 141 not covered by the synthetic harness, 0 failure(s) (107.6s).
+--- rc=0
+
+=== D. Capture-chain verification (Phase 2's CLI/import chain)
+$ npm run verify:captures
+  field                                 corpus                             read back
+  quest name                            WC-UNICORN-MAIN-007                WC-UNICORN-MAIN-007  ok
+  title                                 QuestTitle_1625CF                  QuestTitle_1625CF  ok
+  level                                 0                                  0  ok
+  mainline                              true                               true  ok
+  goal count                            4                                  4  ok
+  goal names (in order)                 [1_WizardQuestGoals_00000253, 2_WizardQuestGoals_Kill, 3_WizardQuestGoals_00000146, 4_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_00000253, 2_WizardQuestGoals_Kill, 3_WizardQuestGoals_00000146, 4_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTY, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA] [GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTY, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA]  ok
+  dialog blocks (ActorDialog count)     5                                  5  ok
+  dialog entries (NPCDialogEntry count) 8                                  8  ok
+  dialog entries per container          {2_WizardQuestGoals_Kill/Completion(blocks=1, entries=2), 2_WizardQuestGoals_Kill/Prep(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=3)} {2_WizardQuestGoals_Kill/Completion(blocks=1, entries=2), 2_WizardQuestGoals_Kill/Prep(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=3)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+PASS: 5 fixture(s), 50 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).
+--- rc=0
+
+=== E1. lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== E2. typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== E3. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== E4. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== E5. build
+$ npm run build
+✓ 2276 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-CXfIHclh.css                  33.78 kB │ gzip:   7.15 kB
+dist/assets/QuestGoalLogicEditor-DW3U0WlE.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-uAOys0OO.js                  661.43 kB │ gzip: 199.96 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.70s
+--- rc=0
+
+# finished 2026-09-26T20:22:52-04:00

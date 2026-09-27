@@ -1,0 +1,77 @@
+# p3-08 gate — lead-run on 854b585 + the story tree
+# started 2026-09-26T18:10:35-04:00
+=== 1. npm test
+$ npm test
+ ✓ tests/unit/quest-dialog.test.ts (28 tests) 3516ms
+   ✓ the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field  3498ms
+ ✓ tests/unit/save-pipeline.test.ts (21 tests) 4259ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  731ms
+   ✓ Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)  440ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  391ms
+
+ Test Files  39 passed (39)
+      Tests  990 passed (990)
+   Start at  18:10:35
+   Duration  5.29s (transform 4.96s, setup 0ms, collect 16.76s, tests 27.83s, environment 13ms, prepare 4.57s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+  ✓  141 [chromium] › tests/ui/extraction.spec.ts:924:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (379ms)
+  ✓  142 [chromium] › tests/ui/extraction.spec.ts:945:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.2s)
+  ✓  143 [chromium] › tests/ui/extraction.spec.ts:976:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (484ms)
+  ✓  144 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (371ms)
+  ✓  145 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (786ms)
+  ✓  146 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (691ms)
+  ✓  147 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (545ms)
+  ✓  148 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (892ms)
+  ✓  149 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.1s)
+  ✓  150 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.0s)
+
+  150 passed (41.9s)
+--- rc=0
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-DUvZZjmQ.css                  33.55 kB │ gzip:   7.11 kB
+dist/assets/QuestGoalLogicEditor-CTV5a_VQ.js   293.59 kB │ gzip:  97.76 kB
+dist/assets/index-DdTNaI6W.js                  638.28 kB │ gzip: 192.57 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.63s
+--- rc=0
+
+# finished 2026-09-26T18:11:42-04:00

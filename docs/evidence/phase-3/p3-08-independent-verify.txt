@@ -1,0 +1,338 @@
+# p3-08 — lead's independent verification of the dialog model
+#
+# Written from the specs + the real corpus, NOT from the executor's tests. Byte-level
+# preservation checks (JSON.stringify encodes insertion order, so stringify equality IS
+# key-order equality). Nulls and empty strings are skipped in the benign re-set because the
+# builders' documented contract turns an empty input into a DELETE.
+# Run: npx vitest run --config /tmp/vitest.p308.config.ts
+#
+## Run output
+```
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ ../../../../../tmp/p308-lead-verify.test.ts (9 tests) 413ms
+   ✓ p3-08 lead verification — the dialog model against the corpus > re-sets every expressible field of every entry and changes nothing (D57)  354ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  18:15:01
+   Duration  1.35s (transform 90ms, setup 0ms, collect 574ms, tests 413ms, environment 0ms, prepare 85ms)
+
+```
+
+## What it independently established
+- corpus: 767 dialog lists (322 quest-level + 445 goal-level), 739 tag groups, 1706 entries in
+  exactly THREE key shapes (1698 full / 6 truncated at 45 keys / 2 headless at 60 keys), tags
+  Completion 418 / Prep 316 / "" 5.
+- every one of the 1706 entries is fully modelled (unmodelledEntryKeys empty everywhere), and the
+  model's field order equals the corpus's own 65-value order.
+- D57 byte-level: a benign re-set of every expressible field of every one of the 1706 entries
+  leaves all 767 lists byte-identical, key order at every depth included.
+- the 8 sparse entries (6 truncated + 2 headless) stay sparse after an edit to a field they DO
+  have - no padding, and the edit lands.
+- add/duplicate: Add Dialog Tag appends a 6-key group and the existing groups are byte-identical;
+  a NEW group carries exactly one entry (the lead directed this: 0 of 739 corpus groups has an
+  empty entries array, and p3-06's addGroupEdits precedent is "start with one child"); the new
+  entry's keys are exactly $type + the 65 corpus value keys in corpus order; Add Dialog Entry
+  appends with the existing entries byte-identical; Duplicate copies verbatim.
+- the corpus-empty fields survive: m_action "" (1706/1706), group m_dialogEvents null (739/739),
+  entry m_requirements null (1706/1706), and the $type is never rebuilt or reordered.
+- the "" tag is a rendered group, not dropped: (empty tag) is its own label and (no tag key) is a
+  different, honest label for the absent case.
+- the references: m_actorTemplateID -> npcs (number), m_walkAwayNpcTemplateID -> npcs,
+  m_cameraZoneName -> zones, m_dialog is a string-key field with a display helper; the
+  m_cameraHidePlayers numeric domain {0,1,2,3} is fully offered; and all three encoded-string
+  lists (m_npcStandInList / m_dialogAnimationList / m_dialogTurningList) round-trip every corpus
+  element exactly through the text helper (my own pass over the real values).
+- the 5 accordions cover all 7 domain groups with Basic the only open one, and every modelled
+  field is reachable through exactly one accordion.
+
+## My own errors, recorded
+Six of my assertions failed on first runs and EVERY ONE was mine, never the model's:
+1-3. guessed signatures again: addDialogTagEdits(listPath, index, presence, tag) and
+     addDialogEntryEdits(listPath, groupIndex, index, presence) - both take an index AND a
+     presence object (the p3-07 convention I had already been burned by);
+4.   dialogTagLabel takes the GROUP object, not the tag value (my call passed a string and got the
+     "absent key" label, which is correct behaviour for a string);
+5.   I assumed a new tag group would contain an entry; it did not, and the model's own doc said so
+     - I then measured the corpus (0 of 739 groups has an empty entries array) and directed the
+     change, so my spec now asserts one entry;
+6.   the field-order assertion failed only through a knock-on of my own shape/presence misuse.
+A verification spec is code too; the value is that it dares to disagree, and the credibility is in
+reporting when the disagreement is its own.
+
+## Appendix - the verification spec source
+```ts
+/**
+ * LEAD INDEPENDENT VERIFICATION — p3-08 dialog model (task 3.8).
+ *
+ * Written from the specs + the real corpus, NOT from the executor's tests. The preservation
+ * checks are byte-level: `JSON.stringify` encodes insertion order, so stringify equality IS
+ * key-order equality. Skips a null or empty-string value for the "benign re-set" check, because
+ * the builders' documented contract turns an empty input into a DELETE.
+ *
+ * Run: npx vitest run --config /tmp/vitest.p308.config.ts
+ */
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { describe, expect, it } from 'vitest';
+
+import * as D from '/home/jason/Documents/git-projects/spiraldb-ui/client/src/lib/quest-dialog';
+import * as T from '/home/jason/Documents/git-projects/spiraldb-ui/client/src/lib/requirement-tree';
+import { applyEdits } from '/home/jason/Documents/git-projects/spiraldb-ui/shared/document';
+
+const require = createRequire('/home/jason/Documents/git-projects/spiraldb-ui/');
+const JSON5 = require('json5');
+const ROOT = '/home/jason/Documents/git-projects/spiraldb';
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+const short = (t: unknown): string =>
+  String(t).replace(/^Imcodec\.ObjectProperty\.TypeCache\./, '').replace(/, Imcodec\.ObjectProperty$/, '');
+
+interface ListCase { file: string; doc: Record<string, unknown>; path: (string | number)[]; value: Record<string, unknown>; }
+const lists: ListCase[] = [];
+const groups: Array<{ file: string; doc: Record<string, unknown>; listPath: (string | number)[]; gi: number; value: Record<string, unknown> }> = [];
+const entries: Array<{ file: string; doc: Record<string, unknown>; listPath: (string | number)[]; gi: number; ei: number; value: Record<string, unknown> }> = [];
+
+for (const file of readdirSync(`${ROOT}/QuestTemplates`).filter((f) => f.endsWith('.json')).sort()) {
+  let doc: Record<string, unknown>;
+  try { doc = JSON5.parse(readFileSync(`${ROOT}/QuestTemplates/${file}`, 'utf8')) as Record<string, unknown>; } catch { continue; }
+  const collect = (path: (string | number)[], value: unknown): void => {
+    if (!isObj(value)) return;
+    lists.push({ file, doc, path, value });
+    const gs = Array.isArray(value.m_dialogs) ? value.m_dialogs : [];
+    gs.forEach((grp, gi) => {
+      if (!isObj(grp)) return;
+      groups.push({ file, doc, listPath: path, gi, value: grp });
+      const es = Array.isArray(grp.m_dialogEntries) ? grp.m_dialogEntries : [];
+      es.forEach((e, ei) => { if (isObj(e)) entries.push({ file, doc, listPath: path, gi, ei, value: e }); });
+    });
+  };
+  collect([D.DIALOG_LIST_KEY], doc[D.DIALOG_LIST_KEY]);
+  (Array.isArray(doc.m_goals) ? (doc.m_goals as unknown[]) : []).forEach((g, gi) => {
+    if (isObj(g)) collect(['m_goals', gi, D.DIALOG_LIST_KEY], g.m_dialogs ?? g[D.DIALOG_LIST_KEY]);
+  });
+}
+
+const entryKeyCounts = new Map<string, number>();
+for (const e of entries) entryKeyCounts.set(Object.keys(e.value).join(','), (entryKeyCounts.get(Object.keys(e.value).join(',')) ?? 0) + 1);
+
+describe('p3-08 lead verification — the dialog model against the corpus', () => {
+  it('loads the real corpus: 767 lists, 739 tag groups, 1706 entries in three key shapes', () => {
+    expect(lists.length).toBe(767);
+    expect(groups.length).toBe(739);
+    expect(entries.length).toBe(1706);
+    const shapes = [...entryKeyCounts.entries()].sort((a, b) => b[1] - a[1]);
+    expect(shapes.length).toBe(3);
+    expect(shapes.map(([, n]) => n).sort((a, b) => b - a)).toEqual([1698, 6, 2]);
+    // The two sparse shapes are real: one is a truncation, one drops the leading identity block.
+    const full = shapes[0][0].split(',');
+    const truncated = shapes.find(([k]) => k.split(',').length === 45);
+    const headless = shapes.find(([k]) => !k.includes('m_personaName'));
+    expect(full.length).toBe(66);
+    expect(truncated).toBeTruthy();
+    expect(headless).toBeTruthy();
+    // Tags, including the empty one.
+    const tags = new Map<string, number>();
+    for (const g of groups) tags.set(String(g.value.m_dialogTag), (tags.get(String(g.value.m_dialogTag)) ?? 0) + 1);
+    expect(tags.get('Completion')).toBe(418);
+    expect(tags.get('Prep')).toBe(316);
+    expect(tags.get('')).toBe(5);
+  });
+
+  it('models every key the corpus carries (nothing unmodelled) with the full order preserved', () => {
+    const problems: string[] = [];
+    for (const e of entries) {
+      const unmodelled = D.unmodelledEntryKeys(e.value);
+      if (unmodelled.length > 0) problems.push(`${e.file} g${e.gi}e${e.ei}: unmodelled ${unmodelled.join(',')}`);
+    }
+    expect(problems.slice(0, 5)).toEqual([]);
+    // The full shape's order equals the model's own field order (minus $type).
+    const fullShape = [...entryKeyCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const corpusKeys = fullShape.split(',').filter((k) => k !== '$type');
+    expect(D.dialogEntryValueKeys().join('|')).toBe(corpusKeys.join('|'));
+    // The wrapper and entry $types are the corpus's own.
+    expect(D.LIST_TYPE_STRING).toBe('Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty');
+    expect(D.ENTRY_TYPE_STRING).toBe('Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty');
+    for (const l of lists) expect(short(l.value.$type), l.file).toBe('ActorDialogList');
+    for (const e of entries) expect(short(e.value.$type), e.file).toBe('NPCDialogEntry');
+  });
+
+  it('re-sets every expressible field of every entry and changes nothing (D57)', () => {
+    const problems: string[] = [];
+    let checked = 0;
+    let edits = 0;
+    for (const e of entries) {
+      const usable: unknown[] = [];
+      for (const spec of D.DIALOG_ENTRY_FIELD_SPECS) {
+        const v = e.value[spec.key];
+        if (v === null || v === undefined || v === '') continue;
+        const [p, g, i] = [e.listPath, e.gi, e.ei];
+        if (spec.kind === 'text' || spec.kind === 'string-key') usable.push(D.setEntryTextFieldEdit(p, g, i, spec.key, true, String(v)));
+        else if (spec.kind === 'number') usable.push(D.setEntryNumberFieldEdit(p, g, i, spec.key, true, String(v)));
+        else if (spec.kind === 'number-select') usable.push(D.setEntryNumberSelectEdit(p, g, i, spec.key, true, String(v)));
+        else if (spec.kind === 'boolean') usable.push(D.setEntryBooleanFieldEdit(p, g, i, spec.key, Boolean(v)));
+        else if (spec.kind === 'friendly-name') usable.push(D.setEntryIdFieldEdit(p, g, i, spec, true, String(v)));
+        else if (spec.kind === 'string-list') usable.push(D.setEntryStringListEdit(p, g, i, spec.key, true, D.stringListToText(v)));
+      }
+      const real = usable.filter((x) => x !== null && x !== undefined) as never[];
+      if (real.length === 0) continue;
+      checked += 1;
+      edits += real.length;
+      const after = applyEdits(e.doc as never, real) as Record<string, unknown>;
+      if (JSON.stringify(after) !== JSON.stringify(e.doc)) problems.push(`${e.file} g${e.gi}e${e.ei}: bytes changed`);
+    }
+    expect(problems.slice(0, 6)).toEqual([]);
+    expect(checked).toBe(entries.length);
+    expect(edits).toBeGreaterThan(1000);
+  });
+
+  it('never pads a sparse entry: an edit to a present field leaves the absent ones absent', () => {
+    const sparse = entries.filter((e) => !('m_personaName' in e.value) || !('m_displayButtonsOnTimedDialog' in e.value));
+    expect(sparse.length).toBe(8);
+    const problems: string[] = [];
+    for (const e of sparse) {
+      const before = Object.keys(e.value);
+      const after = applyEdits(e.doc as never, [
+        D.setEntryTextFieldEdit(e.listPath, e.gi, e.ei, 'm_dialog', true, 'LEAD_PROBE'),
+      ]) as Record<string, unknown>;
+      const list = (after.m_dialogList ?? (after.m_goals as unknown[])).valueOf();
+      void list;
+      // Walk to the edited entry along the same path and compare its key list.
+      let node: unknown = after;
+      for (const seg of D.dialogEntryPath(e.listPath, e.gi, e.ei)) {
+        node = node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[seg as string] : undefined;
+      }
+      if (!isObj(node)) { problems.push(`${e.file} g${e.gi}e${e.ei}: entry lost`); continue; }
+      if (Object.keys(node).join('|') !== before.join('|')) problems.push(`${e.file}: keys ${Object.keys(node).join(',')}`);
+      if ((node.m_dialog as string) !== 'LEAD_PROBE') problems.push(`${e.file}: edit did not land`);
+    }
+    expect(problems.slice(0, 5)).toEqual([]);
+  });
+
+  it('adds a tag and an entry with the corpus shapes, and duplicates byte-for-byte', () => {
+    const l = lists.find((x) => Array.isArray(x.value.m_dialogs) && (x.value.m_dialogs as unknown[]).length > 1)!;
+    expect(l).toBeTruthy();
+    const groupsBefore = (l.value.m_dialogs as unknown[]).length;
+
+    const withTag = applyEdits(
+      l.doc as never,
+      D.addDialogTagEdits(l.path, groupsBefore, { list: true, dialogs: true }, 'Prep'),
+    ) as Record<string, unknown>;
+    let node: unknown = withTag;
+    for (const seg of l.path) node = (node as Record<string, unknown>)[seg as string];
+    const afterGroups = (node as Record<string, unknown>).m_dialogs as unknown[];
+    expect(afterGroups.length).toBe(groupsBefore + 1);
+    expect(JSON.stringify(afterGroups.slice(0, groupsBefore))).toBe(JSON.stringify(l.value.m_dialogs));
+    const newGroup = afterGroups[afterGroups.length - 1] as Record<string, unknown>;
+    expect(Object.keys(newGroup)).toEqual([
+      'm_dialogTag', 'm_dialogEntries', 'm_madlibs', 'm_dialogEvents', 'm_noAggroWhileDialogIsUp', 'm_noAggroNoDelay',
+    ]);
+    expect(newGroup.m_dialogTag).toBe('Prep');
+    // The lead directed this: the corpus has 0 of 739 groups with an empty entries array, and
+    // p3-06's recorded rule for the same situation is "start with one child", so Add Dialog Tag
+    // must not invent a shape the corpus has never had.
+    expect((newGroup.m_dialogEntries as unknown[]).length).toBe(1);
+    const newEntry = (newGroup.m_dialogEntries as Record<string, unknown>[])[0];
+    expect(Object.keys(newEntry)).toEqual(['$type', ...D.dialogEntryValueKeys()]);
+    expect(newEntry.$type).toBe(D.ENTRY_TYPE_STRING);
+    expect(newEntry.m_requirements).toBeNull();
+
+    const origEntryCount = ((l.value.m_dialogs as Record<string, unknown>[])[0].m_dialogEntries as unknown[]).length;
+    const withEntry = applyEdits(
+      l.doc as never,
+      D.addDialogEntryEdits(l.path, 0, origEntryCount, { entries: true }),
+    ) as Record<string, unknown>;
+    let n2: unknown = withEntry;
+    for (const seg of D.dialogEntriesPath(l.path, 0)) n2 = (n2 as Record<string, unknown>)[seg as string];
+    const afterEntries = n2 as unknown[];
+    const origEntries = (l.value.m_dialogs as Record<string, unknown>[])[0].m_dialogEntries as unknown[];
+    expect(origEntries.length).toBe(origEntryCount);
+    expect(afterEntries.length).toBe(origEntries.length + 1);
+    expect(JSON.stringify(afterEntries.slice(0, origEntries.length))).toBe(JSON.stringify(origEntries));
+
+    const dup = applyEdits(l.doc as never, D.duplicateEntryEdits(l.path, 0, 0, (l.value.m_dialogs as Record<string, unknown>[])[0].m_dialogEntries[0])) as Record<string, unknown>;
+    let n3: unknown = dup;
+    for (const seg of D.dialogEntriesPath(l.path, 0)) n3 = (n3 as Record<string, unknown>)[seg as string];
+    const dupList = n3 as unknown[];
+    expect(JSON.stringify(dupList[0])).toBe(JSON.stringify(dupList[1]));
+  });
+
+  it('keeps the corpus-empty fields exactly as they are', () => {
+    // m_action is "" in 1706/1706, group m_dialogEvents is null in 739/739, entry
+    // m_requirements is null in 1706/1706.
+    expect(entries.filter((e) => e.value.m_action === '').length).toBe(1706);
+    expect(groups.filter((g) => g.value.m_dialogEvents === null).length).toBe(739);
+    expect(entries.filter((e) => e.value.m_requirements === null).length).toBe(1706);
+    const action = D.DIALOG_ENTRY_FIELD_SPECS.find((s) => s.key === 'm_action')!;
+    expect(action.kind).toBe('text');
+    // The requirement slot still mounts the shared tree's reader on a real (null) value.
+    expect(T.readRequirementTree(['x'], null)).toBeNull();
+    const l = lists.find((x) => Array.isArray(x.value.m_dialogs) && (x.value.m_dialogs as unknown[]).length > 0)!;
+    const e = (l.value.m_dialogs as Record<string, unknown>[])[0].m_dialogEntries as Record<string, unknown>[];
+    const after = applyEdits(l.doc as never, [
+      D.setEntryTextFieldEdit(l.path, 0, 0, 'm_dialog', true, 'PROBE'),
+    ]) as Record<string, unknown>;
+    let node: unknown = after;
+    for (const seg of D.dialogEntryPath(l.path, 0, 0)) node = (node as Record<string, unknown>)[seg as string];
+    expect((node as Record<string, unknown>).m_action).toBe('');
+    expect((node as Record<string, unknown>).m_requirements).toBeNull();
+    expect((node as Record<string, unknown>).$type).toBe(e[0].$type);
+  });
+
+  it('labels the empty tag and does not drop it', () => {
+    const emptyTagged = groups.filter((g) => g.value.m_dialogTag === '');
+    expect(emptyTagged.length).toBe(5);
+    expect(D.EMPTY_TAG_LABEL).toBe('(empty tag)');
+    expect(D.dialogTagLabel(emptyTagged[0].value)).toBe(D.EMPTY_TAG_LABEL);
+    // And an absent key is a different, honest label.
+    expect(D.dialogTagLabel({ m_dialogEntries: [] })).toBe(D.ABSENT_TAG_LABEL);
+    const l = lists.find((x) => (x.value.m_dialogs as Record<string, unknown>[]).some((g) => g.m_dialogTag === ''))!;
+    expect(l).toBeTruthy();
+    const view = D.readDialogList(l.path, l.value);
+    expect(view.groups.length).toBe((l.value.m_dialogs as unknown[]).length);
+  });
+
+  it('declares the reference sources the corpus uses, and keeps a miss verbatim', () => {
+    const byKey = new Map(D.DIALOG_ENTRY_FIELD_SPECS.map((s) => [s.key, s]));
+    expect([...(byKey.get('m_actorTemplateID')!.nameSources ?? [])]).toEqual(['npcs']);
+    expect(byKey.get('m_actorTemplateID')!.idValueType).toBe('number');
+    expect([...(byKey.get('m_walkAwayNpcTemplateID')!.nameSources ?? [])]).toEqual(['npcs']);
+    expect([...(byKey.get('m_cameraZoneName')!.nameSources ?? [])]).toEqual(['zones']);
+    // m_dialog is a string-table key: the model must expose a display helper and keep the key.
+    expect(byKey.get('m_dialog')!.kind).toBe('string-key');
+    expect(typeof D.stringKeyDisplay).toBe('function');
+    // m_cameraHidePlayers' measured domain is {0,1,2,3}: every real value is offered or preserved.
+    const hide = byKey.get('m_cameraHidePlayers')!;
+    expect(hide.kind).toBe('number-select');
+    const measured = new Set(entries.map((e) => e.value.m_cameraHidePlayers));
+    const offered = new Set((hide.options ?? []).map((o) => Number(o)));
+    expect([...measured].every((v) => offered.has(Number(v)))).toBe(true);
+    // The three encoded-string lists round-trip exactly through the model's text helper.
+    const problems: string[] = [];
+    for (const spec of D.DIALOG_ENTRY_FIELD_SPECS.filter((s) => s.kind === 'string-list')) {
+      for (const e of entries) {
+        const v = e.value[spec.key];
+        if (!Array.isArray(v)) continue;
+        const back = D.parseStringListText(D.stringListToText(v));
+        if (JSON.stringify(back) !== JSON.stringify(v)) problems.push(`${e.file}.${spec.key}: ${JSON.stringify(v)} -> ${JSON.stringify(back)}`);
+      }
+    }
+    expect(problems.slice(0, 5)).toEqual([]);
+  });
+
+  it('maps the 5 accordions onto all 7 domain groups with Basic open', () => {
+    const accordions = D.DIALOG_ACCORDIONS;
+    expect(accordions.length).toBe(5);
+    expect(accordions.filter((a) => a.openByDefault).map((a) => a.id)).toEqual(['Basic']);
+    const covered = new Set(accordions.flatMap((a) => [...a.groups]));
+    const allGroups = new Set(D.DIALOG_ENTRY_FIELD_SPECS.map((s) => s.group));
+    expect([...allGroups].every((g) => covered.has(g))).toBe(true);
+    expect(allGroups.size).toBe(7);
+    // Every modelled field is reachable through exactly one accordion.
+    const seen = new Set<string>();
+    for (const a of accordions) for (const f of D.dialogFieldsInAccordion(a)) seen.add(f.key);
+    expect(seen.size).toBe(D.DIALOG_ENTRY_FIELD_SPECS.length);
+  });
+});```

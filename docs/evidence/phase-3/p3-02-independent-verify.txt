@@ -1,0 +1,29 @@
+# p3-02 — independent lead verification (raw)
+# date: 2026-09-26T10:54:28-04:00  HEAD: 2f3c86e
+
+## my own ac1 sweep, importing the SHIPPED shared/document.ts (not a reimplementation)
+$ npx tsx /tmp/lead-p302-verify.mts
+real : files=322 deepEqual=322 keyOrderSame=322 nullPathsSame=322 bytesEqPlainStringify=322 failures=0
+clone: files=322 deepEqual=322 keyOrderSame=322 nullPathsSame=322 bytesEqPlainStringify=322 failures=0
+
+## assertion sensitivity (mechanism behind the executor's falsifications #1/#2)
+  null-dropping writer       -> isDeepStrictEqual(src, reparsed) = false  (caught)
+  key-reordering writer      -> isDeepStrictEqual(src, reparsed) = true   (deep-equal alone MISSES it)
+  ...which is why the harness asserts document key order explicitly (test lines 142/368/458).
+
+## ac2 coverage, counted from the suite's own printed rows
+  recorded distinct $type strings (quest_corpus_type_strings.json): 26
+  covered by the sample arm rows: 26   missing: NONE
+  covered by the real-corpus arm rows: 26   missing: NONE
+  coverage line printed: [p3-02 ac2] sample quest: covered=26/26 recorded $type strings (goals=5, results=14, requirements=3, dialog=3)
+
+## bundle delta (the json5 question)
+  HEAD (b6aefa4) build: 495813 B assets/index-CPmYBVzB.js
+  p3-02 tree build:     495813 B assets/index-CPmYBVzB.js  (same content hash -> 0 B delta)
+  grep -rl JSON5 client/dist -> (nothing)
+  shared/document.ts imports: NONE (dependency-free; the 4 json5 hits are doc prose explaining why)
+
+## fixture provenance
+  server/test/fixtures/quest_null_stripped_pipeline.json md5 20e9ec054bd15300f502c1d33fc0b89c
+  == data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json (this tool's own pipeline write)
+  identical to any real corpus file? NO (checked all 322 top-level *.json)

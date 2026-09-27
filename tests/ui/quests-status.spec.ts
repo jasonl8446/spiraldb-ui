@@ -242,9 +242,14 @@ test.describe('the optimistic badge (D51(e))', () => {
     await expect(reviewed).toHaveAttribute('aria-disabled', 'false');
     await expect(verified).toHaveAttribute('aria-disabled', 'false');
 
-    // The Edit button of task 2.7 is untouched by this story.
+    // The Edit control asserted here used to be task 2.7's inert `aria-disabled` placeholder
+    // ("untouched by this story"). Story p3-10 replaced it with the real view/edit toggle, so
+    // the property this line keeps is the one that still matters on this page: Edit is not one
+    // of the status actions and never becomes disabled by a status (its own state is
+    // `aria-pressed`, and what it toggles is `quests-edit-mode.spec.ts`'s subject).
     const edit = main.getByRole('button', { name: 'Edit' });
-    await expect(edit).toHaveAttribute('aria-disabled', 'true');
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
+    await expect(edit).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
 

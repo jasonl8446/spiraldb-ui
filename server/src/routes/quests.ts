@@ -34,10 +34,21 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  * | case                                         | status |
  * |----------------------------------------------|--------|
  * | body without a usable `quest`/`m_questName`  | 400    |
+ * | a schema failure (task 3.1) or a **blocking rule finding** (task 3.9) | 400 |
  * | `settings.spiraldb_path` not configured      | 400    |
  * | unknown quest name (GET `/:name`)            | 404    |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14) | 409 |
  * | anything else thrown by the pipeline         | 500    |
+ *
+ * **The 400 body (story p3-09).** `{ error }` is unchanged; a body that fails the schema pass
+ * or the rule pass also carries `fields`: a `path → [message, …]` map keyed by the shared
+ * `formatDocPath` (`m_startGoals[0]`, `m_goals[1].m_goalName`), with the request envelope's
+ * own `quest.` prefix stripped so a schema key matches the key the client's engine uses. The
+ * rule pass re-runs
+ * `shared/quest/validation.ts` — the engine the client editor runs — with the friendly-name
+ * tables injected, and only **blocking** findings reject the request. Warnings (an unlisted
+ * zone path; a reference no table holds) are not a 400: they are the AC's "warning, save still
+ * enabled" path, and the corpus ships 94 of them.
  *
  * A 500 is deliberately used for every other pipeline failure — including the
  * pipeline's own actionable `SpiraldbFileError` (e.g. an empty `settings.user_name`,
@@ -102,7 +113,13 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
   /** The documented status mapping; 500 logs the thrown value like the middleware. */
   function fail(res: Response, error: unknown): void {
     if (error instanceof QuestRequestError) {
-      res.status(400).json({ error: error.message } satisfies ApiError);
+      // Story p3-09: the rule (and schema) failures carry a per-field error map alongside the
+      // one-line message, so a client can place each message under its own control. The map is
+      // absent for the Phase-2 hand-written checks, whose 400 bodies are unchanged.
+      res.status(400).json({
+        error: error.message,
+        ...(error.fields === undefined ? {} : { fields: error.fields }),
+      } satisfies ApiError & { fields?: Record<string, string[]> });
       return;
     }
     if (error instanceof DirtyRepoError) {

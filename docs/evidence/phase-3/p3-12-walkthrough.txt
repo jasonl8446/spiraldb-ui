@@ -1,0 +1,119 @@
+# p3-12 — Phase-3 tier-2 walkthrough transcript (lead-run, D23)
+
+Rig (D65(g) applied): `cp data/spiraldb-ui.db /tmp/p312-tier2.db` + `DELETE FROM settings`,
+`SPIRALDB_PATH="$PWD/data/test-spiraldb"` (the D17 clone), the built `dist`, `PORT=3216`,
+`NODE_ENV=test`. **No save was pressed in this pass**, so nothing was written anywhere; the rig was
+killed by PID afterwards and no listener remained on 3216 (nor on 3001/5173).
+
+Driven with playwright-mcp (subagents have no browser MCP, so tier-2 is the lead's lane by D23 —
+this story is therefore lead-executed rather than dispatched). DOM assertions below are read from
+the live page; screenshots are committed beside this file.
+
+## The three quests, and why each was chosen (measured, all `is_mainline = 1`)
+
+| # | Quest | Measured shape | What it contributes |
+|---|---|---|---|
+| Q1 | `WC-COMMONS-MAIN-002-STORM` | mainline, 4 goals / 4 logic entries, dialog-heaviest in the corpus (**28** entries) | the AC's "mainline multi-goal" + "dialog-heavy" in one quest |
+| Q2 | `WC-OLDE-MAIN-003A` | mainline, **6 goals / 6 logic entries**, the corpus's **only 3-child requirement tree** | the richest real flowchart and the largest requirement group |
+| Q3 | `WC-UNICORN-MAIN-002` | mainline, 2 goals, 20 dialog entries, and one of the **7 untyped** requirement wrappers | the untyped-wrapper case (D62b) |
+
+## Q1 — `WC-COMMONS-MAIN-002-STORM`
+
+**Goal Logic (flowchart)** — `screenshots: p3-12-q1-flowchart.png`
+```
+nodes                      5      (4 goals + the synthetic "✓ Complete")
+edges                      4
+Complete node present      true
+toolbar                    Zoom in, Zoom out, Fit to view, Auto-layout, Add GoalLogicEntry
+disconnected banner        (none — every goal is reachable from m_startGoals)
+logic entries listed       4
+```
+
+**Requirements (tree)** — `screenshots: p3-12-q1-requirements.png`
+```
+regions                    Quest requirements editor / Requirements / Preparation requirements / Prune requirements
+cards                      2  ->  "Group m_requirements", "ReqHasEntry m_requirements[0]"
+type selector options      ReqHasQuest, ReqHasEntry, ReqSchoolOfFocus, ReqIsSchool
+```
+
+**Dialog** — `screenshots: p3-12-q1-dialog.png`
+```
+tag sections               5
+entry cards                28   (the corpus's dialog-heaviest quest)
+accordions                 "▾Basic=true", "▸Camera=false", "▸Sound=false", "▸Animation=false", "▸Advanced=false"
+"(empty tag)" shown        false  (correct: this quest has no "" tag)
+```
+
+## Q2 — `WC-OLDE-MAIN-003A`
+
+**Goal Logic (flowchart)** — `screenshots: p3-12-q2-flowchart.png`
+```
+nodes                      7      (6 named goals + "✓ Complete")
+edges                      6
+node labels                1_…TalkNPC (Persona), 2_…Explore (Waypoint), 3_…Explore (Waypoint),
+                           4_…KillBounty (Bounty), 5_…Explore (Waypoint), 6_…TalkNPC (Persona), ✓ Complete
+edge accessible names      "Edge from goal:1_WizardQuestGoals_TalkNPC to goal:2_WizardQuestGoals_Explore"
+                           "Edge from goal:2_… to goal:3_…", "Edge from goal:3_… to goal:4_…" …
+disconnected banner        (none)
+```
+This is the richest real graph in the corpus (6 goals chained through 6 logic entries), and it
+exercises four of the five goal types in one picture.
+
+**Requirements (tree)** — `screenshots: p3-12-q2-requirements.png`
+```
+cards                      4  ->  "Group m_requirements", "ReqHasEntry m_requirements[0]",
+                                  "ReqHasEntry m_requirements[1]", "ReqHasEntry m_requirements[2]"
+type selector options      ReqHasQuest, ReqHasEntry, ReqSchoolOfFocus, ReqIsSchool
+```
+The three-child group is the corpus's **only** one (child counts measured 1 → 312, 2 → 1, 3 → 1), and
+it renders all three children.
+
+**Dialog**
+```
+tag sections               3
+entry cards                9
+```
+
+## Q3 — `WC-UNICORN-MAIN-002`
+
+**Requirements (tree) — the untyped wrapper** — `screenshots: p3-12-q3-untyped-wrapper.png`
+```
+cards                      "Group m_requirements", "ReqHasEntry m_requirements[0]", "ReqHasEntry m_requirements[1]"
+wrapper key has no class   true   (the wrapper renders as "Group m_requirements" with NO TypeName,
+                                  which is the correct rendering of a wrapper carrying no `$type`)
+type selector options      ReqHasQuest, ReqHasEntry, ReqSchoolOfFocus, ReqIsSchool
+```
+This is the D62(b) rule confirmed on a third quest: an **untyped** wrapper stays untyped in the UI —
+it is displayed as an untyped group rather than being given a class name it does not have.
+
+**Goal Logic (flowchart)**
+```
+nodes                      3      (2 goals + "✓ Complete")
+edges                      2
+Complete node present      true
+disconnected banner        (none)
+```
+
+**Dialog**
+```
+tag sections               3
+entry cards                20
+accordions                 "▾Basic=true", "▸Camera=false", "▸Sound=false", "▸Animation=false", …
+```
+
+## A recurring, already-documented console line
+
+Every page in this pass logged exactly one console error:
+`Failed to load resource: the server responded with a status of 404 (Not Found) @ /api/names/npcs/0`.
+That is the **sentinel `0`** in `m_walkAwayNpcTemplateID` reaching the friendly-name lookup — the
+displayed behaviour is correct (the raw `0` is shown and never rewritten, the D59(d) miss path), it
+was recorded in p3-08 as a Phase-5 polish candidate, and it appears on every dialog-bearing quest
+because `0` means "no walk-away NPC" in 1,675 of 1,706 real entries (D64f).
+
+## Corrections made while measuring (recorded: a transcript is evidence only if it is honest)
+
+- My first accordion check used an exact text match on `"Basic"`, but the button's text carries the
+  disclosure glyph (`"▾Basic"`), so it reported `basicOpen: false` on Q3 — a **query artefact, not a
+  product finding**. Re-measured as `"▾Basic=true"` with the other four collapsed, on both Q1 and Q3.
+- My first attempt to query the quest list by `?search=<name>` returned unrelated rows (the endpoint
+  did not filter as I assumed), so the mainline flags were read from the database instead.

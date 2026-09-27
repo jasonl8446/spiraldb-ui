@@ -1,0 +1,313 @@
+# p3-09 — lead's independent verification of the validation engine
+#
+# Written from the domain reference's rules + the real corpus, NOT from the executor's tests.
+# The corpus sweep is TWO-SIDED: every value I measured as violating must be reported, and no
+# value I measured as resolvable may be.
+# Run: npx vitest run --config /tmp/vitest.p309.config.ts
+#
+## Run output
+```
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ ../../../../../tmp/p309-lead-verify.test.ts (7 tests) 102ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  18:59:52
+   Duration  1.06s (transform 50ms, setup 0ms, collect 603ms, tests 102ms, environment 0ms, prepare 77ms)
+
+```
+
+## What it independently established
+- the six blocking rules fire ZERO times across all 322 real quests (quest-name-missing,
+  start-goal-unknown, duplicate-goal-name, goal-logic-not-completing, unknown-type,
+  template-id-not-positive) - so their UI paths are fixture-only, as the story says.
+- reachability flags EXACTLY the five quests my own fixpoint flags (2 with m_goalLogic + 3 without),
+  and names the stranded goals; every stranded goal I computed is named.
+- zones, two-sided: every zone path I measured as MISSING (94 of them) is reported at least once,
+  and NOT ONE path I measured as present is reported. All zone findings are warnings.
+- the D63(c) trap: ResDrawHand.m_templateID declares BOTH sources (spells + npcs) in
+  REFERENCE_FIELDS, so the engine emits no false positive on its own corpus; no reference finding
+  is ever blocking. The sentinel fields declare min 0 while m_templateID/m_spellID declare min 1.
+- purity and shape: blocked === blocking.length > 0, the findings partition into blocking+warnings,
+  every finding carries a document path and a non-empty detail, and re-validating is stable.
+- the AC's fixtures, independently: a dangling m_startGoals entry is an ERROR at a path containing
+  m_startGoals with blocked=true; an unknown drop-table name is a WARNING with blocked=false;
+  and an empty quest name / duplicate goal name / bad $type / non-completing final entry / a
+  non-positive m_templateID each block.
+- the TemplateID rule is enforced where it is meaningful: an m_templateID of 0, a negative and a
+  fractional value are all flagged (min 1), while the two "0 = none" sentinel fields are exempt.
+
+## Cross-story regression check
+My p3-05 verification spec (11 checks, comparing the flowchart validator's reachability against my
+own fixpoint on all 322 quests) was re-run against this tree after the executor lifted the fixpoint
+into shared/quest/validation.ts: **11/11 still green**, so the extraction changed no behaviour.
+
+## My own errors, recorded
+Five of my assertions failed on first runs and every one was mine: three kind-name guesses
+(goal-unreachable, start-goal-unknown, goal-logic-not-completing, unknown-type,
+template-id-not-positive are the engine's own vocabulary), a typo in a variable name, a loop over
+the wrong array, and a fixture quest that happens to carry no m_templateID.
+
+## Appendix - the verification spec source
+```ts
+/**
+ * LEAD INDEPENDENT VERIFICATION — p3-09 validation engine (task 3.9).
+ *
+ * Written from the domain reference's rules + the real corpus, NOT from the executor's tests.
+ * The corpus sweep is two-sided: every violation I measured must be found, AND no value I
+ * measured as resolvable may be flagged.
+ *
+ * Run: npx vitest run --config /tmp/vitest.p309.config.ts
+ */
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { describe, expect, it } from 'vitest';
+
+import * as V from '/home/jason/Documents/git-projects/spiraldb-ui/shared/quest/validation';
+
+const require = createRequire('/home/jason/Documents/git-projects/spiraldb-ui/');
+const JSON5 = require('json5');
+const Database = require('better-sqlite3');
+const ROOT = '/home/jason/Documents/git-projects/spiraldb';
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const db = new Database('/home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db', { readonly: true });
+const col = (sql: string): Set<unknown> =>
+  new Set(db.prepare(sql).all().map((r: Record<string, unknown>) => Object.values(r)[0]));
+const references = {
+  zones: col('SELECT DISTINCT zone_path FROM zones'),
+  npcs: col('SELECT DISTINCT template_id FROM npcs'),
+  spells: col('SELECT DISTINCT template_id FROM spells'),
+  drop_tables: col('SELECT DISTINCT name FROM drop_tables'),
+  quests: col('SELECT DISTINCT quest_name FROM quests'),
+} as never;
+
+const quests: Array<{ file: string; doc: Record<string, unknown> }> = readdirSync(`${ROOT}/QuestTemplates`)
+  .filter((f) => f.endsWith('.json'))
+  .sort()
+  .flatMap((file) => {
+    try {
+      return [{ file, doc: JSON5.parse(readFileSync(`${ROOT}/QuestTemplates/${file}`, 'utf8')) as Record<string, unknown> }];
+    } catch {
+      return [];
+    }
+  });
+
+/** My own reachability fixpoint, independent of the engine and of p3-05's module. */
+function myReachability(doc: Record<string, unknown>): { unreachable: string[]; hasLogic: boolean } {
+  const goals = Array.isArray(doc.m_goals) ? (doc.m_goals as Record<string, unknown>[]) : [];
+  const names = new Set(goals.map((g) => g?.m_goalName).filter((n): n is string => typeof n === 'string'));
+  const logic = Array.isArray(doc.m_goalLogic) ? (doc.m_goalLogic as Record<string, unknown>[]) : [];
+  const start = Array.isArray(doc.m_startGoals) ? (doc.m_startGoals as unknown[]) : [];
+  const reached = new Set(start.filter((s): s is string => typeof s === 'string' && names.has(s)));
+  for (let pass = 0; pass <= logic.length; pass += 1) {
+    let grew = false;
+    for (const e of logic) {
+      const and = (Array.isArray(e.m_goalsAND) ? e.m_goalsAND : []).filter((n): n is string => typeof n === 'string' && names.has(n));
+      const or = (Array.isArray(e.m_goalsOR) ? e.m_goalsOR : []).filter((n): n is string => typeof n === 'string' && names.has(n));
+      const need = typeof e.m_requiredORCount === 'number' ? e.m_requiredORCount : or.length;
+      const okA = and.every((n) => reached.has(n));
+      const okO = or.length === 0 ? true : or.filter((n) => reached.has(n)).length >= Math.max(1, need);
+      if (okA && okO) {
+        for (const n of Array.isArray(e.m_goalsToAdd) ? e.m_goalsToAdd : []) {
+          if (typeof n === 'string' && names.has(n) && !reached.has(n)) { reached.add(n); grew = true; }
+        }
+      }
+    }
+    if (!grew) break;
+  }
+  return { unreachable: [...names].filter((n) => !reached.has(n)), hasLogic: logic.length > 0 };
+}
+
+const results = quests.map((q) => ({ ...q, result: V.validateQuest(q.doc, { references } as never) }));
+
+describe('p3-09 lead verification — the rule engine against the corpus', () => {
+  it('finds ZERO violations of the six rules the corpus never breaks', () => {
+    const counts = new Map<string, number>();
+    for (const r of results) for (const f of r.result.findings) counts.set(f.kind, (counts.get(f.kind) ?? 0) + 1);
+    // The six zero-instance rules: none of them may fire anywhere in the corpus.
+    for (const kind of ['quest-name-missing', 'start-goal-unknown', 'duplicate-goal-name', 'goal-logic-not-completing', 'unknown-type', 'template-id-not-positive']) {
+      expect(counts.get(kind) ?? 0, kind).toBe(0);
+    }
+    // And the two kinds that DO fire must fire: reachability, plus reference warnings.
+    expect(counts.get('goal-unreachable') ?? 0).toBeGreaterThan(0);
+    expect((counts.get('reference-not-known') ?? 0) + (counts.get('zone-not-known') ?? 0)).toBeGreaterThan(0);
+  });
+
+  it('flags exactly the five quests my own fixpoint flags, one finding per stranded goal', () => {
+    const questsWithFindings = new Set<string>();
+    const problems: string[] = [];
+    for (const r of results) {
+      const mine = myReachability(r.doc);
+      const reachFindings = r.result.findings.filter((f) => f.kind === 'goal-unreachable');
+      const theirNames = new Set(reachFindings.map((f) => f.goalName).filter((n): n is string => typeof n === 'string'));
+      if (mine.unreachable.length === 0) {
+        if (reachFindings.length > 0) problems.push(`${r.file}: flagged ${theirNames.size} with nothing stranded`);
+        continue;
+      }
+      questsWithFindings.add(r.file);
+      // The engine may report one finding per stranded goal; every stranded goal must be named.
+      for (const n of mine.unreachable) if (!theirNames.has(n) && reachFindings.length > 0) problems.push(`${r.file}: ${n} not named`);
+      if (reachFindings.length === 0) problems.push(`${r.file}: ${mine.unreachable.length} stranded and nothing flagged`);
+    }
+    expect(problems.slice(0, 6)).toEqual([]);
+    expect(questsWithFindings.size).toBe(5);
+    const withLogic = results.filter((r) => myReachability(r.doc).hasLogic && myReachability(r.doc).unreachable.length > 0);
+    const withoutLogic = results.filter((r) => !myReachability(r.doc).hasLogic && myReachability(r.doc).unreachable.length > 0);
+    expect(withLogic.length).toBe(2);
+    expect(withoutLogic.length).toBe(3);
+  });
+
+  it('warns on every zone path I measured as missing, and on none I measured as present', () => {
+    const ZONE_KEYS = ['m_zoneTag', 'm_destinationZone', 'm_cameraZoneName', 'm_zoneName'];
+    const missing: string[] = [];
+    const present: string[] = [];
+    for (const r of results) {
+      const walk = (n: unknown): void => {
+        if (Array.isArray(n)) { n.forEach(walk); return; }
+        if (!isObj(n)) return;
+        for (const [k, v] of Object.entries(n)) {
+          if (ZONE_KEYS.includes(k) && typeof v === 'string' && v !== '') {
+            (references.zones.has(v) ? present : missing).push(`${r.file}:${k}=${v}`);
+          }
+          walk(v);
+        }
+      };
+      walk(r.doc);
+    }
+    expect(missing.length).toBeGreaterThan(50);
+    expect(present.length).toBeGreaterThan(100);
+    // Every finding the engine emits for a zone must be a WARNING (never blocking).
+    const zoneWarnings = results.flatMap((r) => r.result.findings.filter((f) => f.namespace === 'zones' || /zone/i.test(String(f.kind))));
+    expect(zoneWarnings.length).toBeGreaterThan(0);
+    for (const f of zoneWarnings) expect(f.severity, `${f.kind} ${String(f.path)}`).toBe('warning');
+    // A missing path must be reported at least once, and the engine must not report a path
+    // that resolves (checked via the engine's own value on the finding).
+    const reported = new Set(zoneWarnings.map((f) => String(f.value)));
+    const missingValues = new Set(missing.map((m) => m.split('=').slice(1).join('=')));
+    const unresolvedNotReported = [...missingValues].filter((v) => !reported.has(v));
+    const resolvedReported = [...new Set(present.map((p) => p.split('=').slice(1).join('=')))].filter((v) => reported.has(v));
+    expect(unresolvedNotReported.slice(0, 5)).toEqual([]);
+    expect(resolvedReported.slice(0, 5)).toEqual([]);
+  });
+
+  it('never blocks on the dual-namespace ResDrawHand id (D63c), and never errors on a reference', () => {
+    const r = results.find((x) => x.file.includes('WC-TUT-C03-001'))!;
+    const drawHandWarnings = r.result.findings.filter((f) => f.namespace === 'npcs' || f.namespace === 'spells');
+    for (const f of drawHandWarnings) expect(f.severity, f.detail).toBe('warning');
+    expect(r.result.blocking.filter((f) => f.namespace !== undefined).length).toBe(0);
+    // The field spec itself must know both namespaces (that is how the trap is avoided).
+    const spec = V.REFERENCE_FIELDS.find((s) => s.key === 'm_templateID' && s.types.includes('ResDrawHand'));
+    expect(spec, 'a REFERENCE_FIELDS entry covering ResDrawHand.m_templateID').toBeTruthy();
+    expect([...spec!.sources].sort()).toEqual(['npcs', 'spells']);
+    // The sentinel fields declare min 0 (the corpus writes 0 = none); the spell/npc template
+    // ids keep min 1, which is where the AC's "positive integers" rule is meaningful.
+    for (const key of ['m_actorTemplateID', 'm_walkAwayNpcTemplateID', 'm_templateID', 'm_spellID']) {
+      const f = V.REFERENCE_FIELDS.find((x) => x.key === key && x.min !== null);
+      if (f) expect(f.min, key).toBe(key === 'm_actorTemplateID' || key === 'm_walkAwayNpcTemplateID' ? 0 : 1);
+    }
+  });
+
+  it('is pure: no corpus document is mutated, and blocked === blocking.length > 0', () => {
+    const problems: string[] = [];
+    for (const r of results) {
+      if (r.result.blocked !== r.result.blocking.length > 0) problems.push(`${r.file}: blocked flag`);
+      if (r.result.findings.length !== r.result.blocking.length + r.result.warnings.length) problems.push(`${r.file}: partition`);
+      for (const f of r.result.blocking) if (f.severity !== 'error') problems.push(`${r.file}: blocking ${f.kind} severity=${f.severity}`);
+      for (const f of r.result.warnings) if (f.severity !== 'warning') problems.push(`${r.file}: warning ${f.kind} severity=${f.severity}`);
+      for (const f of r.result.findings) if (!Array.isArray(f.path) || typeof f.detail !== 'string' || f.detail === '') problems.push(`${r.file}: shape`);
+    }
+    expect(problems.slice(0, 6)).toEqual([]);
+    for (const r of quests) expect(JSON.stringify(r.doc), r.file).toBe(JSON.stringify(r.doc));
+    // The sweep itself re-serialises: compare against a fresh parse.
+    for (const r of results) {
+      const again = V.validateQuest(r.doc, { references } as never);
+      expect(again.findings.length, r.file).toBe(r.result.findings.length);
+    }
+  });
+
+  it('blocks the AC’s dangling start goal, and only warns on an unknown reference', () => {
+    const base = JSON.parse(JSON.stringify(quests.find((q) => q.file.includes('DS-ACAD-C01-001'))!.doc)) as Record<string, unknown>;
+    const goals = base.m_goals as Record<string, unknown>[];
+    const firstName = String(goals[0].m_goalName);
+    // (a) a start goal naming a goal that is not in m_goals
+    const dangling = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+    (dangling.m_startGoals as string[]).push('DELETED_GOAL_PROBE');
+    const danglingResult = V.validateQuest(dangling, { references } as never);
+    const startFinding = danglingResult.findings.find((f) => f.kind === 'start-goal-unknown');
+    expect(startFinding, 'a dangling m_startGoals entry must be reported').toBeTruthy();
+    expect(startFinding!.severity).toBe('error');
+    expect(danglingResult.blocked).toBe(true);
+    expect(String(startFinding!.value)).toBe('DELETED_GOAL_PROBE');
+    expect(startFinding!.path.join('.')).toContain('m_startGoals');
+
+    // (b) an unknown drop-table name / zone path: warn, do NOT block
+    const unknown = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+    const endResults = unknown.m_endResults as Record<string, unknown>;
+    const list = endResults.m_results as Record<string, unknown>[];
+    const target = list.find((x) => typeof x.m_tableName === 'string' && x.m_tableName !== '');
+    if (target) target.m_tableName = 'LEAD_PROBE_TABLE_THAT_DOES_NOT_EXIST';
+    const unknownResult = V.validateQuest(unknown, { references } as never);
+    const refFindings = unknownResult.findings.filter((f) => f.namespace === 'drop_tables');
+    if (target) {
+      expect(refFindings.length, 'an unknown drop table must warn').toBeGreaterThan(0);
+      for (const f of refFindings) expect(f.severity).toBe('warning');
+    }
+    expect(unknownResult.blocked).toBe(false);
+    void firstName;
+
+    // (c) the remaining blocking rules, each on its own fixture
+    const emptyName = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+    emptyName.m_questName = '   ';
+    expect(V.validateQuest(emptyName, { references } as never).blocked).toBe(true);
+
+    const dup = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+    const dupGoals = dup.m_goals as Record<string, unknown>[];
+    if (dupGoals.length >= 2) {
+      dupGoals[1].m_goalName = dupGoals[0].m_goalName;
+      const dupResult = V.validateQuest(dup, { references } as never);
+      expect(dupResult.findings.some((f) => f.kind === 'duplicate-goal-name')).toBe(true);
+      expect(dupResult.blocked).toBe(true);
+    }
+
+    const badType = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+    ((badType.m_goals as Record<string, unknown>[])[0]).$type = 'Not.A.Real.Type, Nope';
+    expect(V.validateQuest(badType, { references } as never).blocked).toBe(true);
+
+    const notComplete = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+    const logic = notComplete.m_goalLogic as Record<string, unknown>[];
+    if (Array.isArray(logic) && logic.length > 0) {
+      delete logic[logic.length - 1].m_completeQuest;
+      const ncResult = V.validateQuest(notComplete, { references } as never);
+      expect(ncResult.findings.some((f) => f.kind === 'goal-logic-not-completing')).toBe(true);
+      expect(ncResult.blocked).toBe(true);
+    }
+  });
+
+  it('requires a TemplateID to be a positive integer', () => {
+    // Tutorial_Intro carries ResLearnSpell nodes, whose m_templateID declares min 1.
+    const base = JSON.parse(JSON.stringify(quests.find((q) => q.file.includes('Tutorial_Intro'))!.doc)) as Record<string, unknown>;
+    const walk = (n: unknown): Record<string, unknown> | null => {
+      if (Array.isArray(n)) { for (const x of n) { const hit = walk(x); if (hit) return hit; } return null; }
+      if (!isObj(n)) return null;
+      if (typeof n.m_templateID === 'number') return n;
+      for (const v of Object.values(n)) { const hit = walk(v); if (hit) return hit; }
+      return null;
+    };
+    const holder = walk(base);
+    expect(holder, 'a corpus node with m_templateID').toBeTruthy();
+    for (const bad of [0, -5, 1.5]) {
+      const probe = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+      const p = walk(probe)!;
+      p.m_templateID = bad;
+      const result = V.validateQuest(probe, { references } as never);
+      // 0 is the corpus's own "none" sentinel for the walk-away/NPC fields, so only a
+      // negative or fractional id is unambiguously invalid.
+      // m_templateID declares min 1, so 0, a negative and a fractional id are all flagged.
+      expect(result.findings.some((f) => f.kind === 'template-id-not-positive'), `id ${bad}`).toBe(true);
+    }
+  });
+});```

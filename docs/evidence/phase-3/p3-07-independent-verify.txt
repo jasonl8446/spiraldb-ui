@@ -1,0 +1,365 @@
+# p3-07 — lead's independent verification of the results model
+#
+# Written from the specs + the real corpus, NOT from the executor's tests. Each check
+# recomputes its expectation from the raw JSON, and the friendly-name checks resolve
+# against the LIVE SQLite tables. JSON.stringify encodes insertion order, so stringify
+# equality IS key-order equality.
+# Run: npx vitest run --config /tmp/vitest.p307.config.ts
+#
+## Run output
+```
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ ../../../../../tmp/p307-lead-verify.test.ts (10 tests) 82ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  17:36:37
+   Duration  1.41s (transform 82ms, setup 0ms, collect 1.00s, tests 82ms, environment 0ms, prepare 64ms)
+
+```
+
+## What it independently established
+- corpus: 381 result nodes across the four homes (2188 wrappers = 322 start + 322 end + 772
+  complete + 772 activate), all 14 types with the measured counts (ResDropTable 317 ... the
+  seven single-node types incl. the two fieldless ones).
+- field sets: for ALL 381 nodes the model's field list equals the node's own keys minus `$type`,
+  IN ORDER, and unmodelledResultKeys is empty — no invented field, no dropped field, no reorder.
+- kinds: every field's declared kind matches the real value's JS type (incl. idValueType: a
+  template id is a number, a table/zone/quest name a string).
+- D57 byte-level: re-setting every expressible field of every field-bearing node (379; the two
+  fieldless types have nothing to write) to its own value leaves the whole document
+  byte-identical, key order at every depth included.
+- wrapper: all 2188 wrappers keep exactly ['m_results'] and gain NO $type when a result is added
+  through addResultEdits at the array-present / array-absent / wrapper-absent shapes.
+- new nodes: for each of the 14 types, newResultObject's key order equals that type's own corpus
+  order (measured from the real nodes) and its $type literal has the exact
+  'Imcodec.ObjectProperty.TypeCache.<Name>, Imcodec.ObjectProperty' shape.
+- friendly names: every friendly-name field's declared nameSources resolve ALL of that field's
+  distinct corpus values in the live tables — and ResDrawHand.m_templateID declares BOTH spells
+  and npcs, which is the only way its 8 real values can all be named (6 spells / 2 npcs, none in
+  both; a single-source dropdown would leave six of them nameless).
+- the ResLearnSpell requirement slot: newResultRequirementsWrapper() is UNTYPED with the corpus
+  key order (m_requirements, m_applyNOT, m_operator); the p3-06 shared model reads it as a
+  readable group; and all 21 real wrappers are untyped with ReqSchoolOfFocus children.
+- the D60(d) tally gap: the 18 real m_tallyCounter.m_tallyResults slots read through
+  readResultCards without inventing nodes, and the model exposes the tally paths.
+- the sound router: the 6-key measured order, a new router is untagged and in that order, and the
+  corpus's one router matches.
+
+## My own six mistakes (recorded: a verification spec is code too)
+The first runs failed on MY errors, never the model's:
+1-3. I guessed builder signatures: they are all (listPath, index, key, present, raw) — and
+     setResultIdFieldEdit takes the FIELD SPEC rather than a key, while the router builders take
+     the router value + a router field spec. I passed a node path where the model wanted the list
+     path plus an index.
+4.   I assumed an empty string was an expressible no-op; the builders' contract is delete-on-empty,
+     so re-setting '' would have DELETED the key. (The executor's sweep handles this by re-setting
+     through the primitive instead — a better answer than mine.)
+5.   My node traversal used an isObj predicate that excludes arrays, so every path through
+     m_goals[] resolved to undefined.
+6.   My expected type-count list broke ties in the wrong order: equal counts sort alphabetically
+     under my comparator, and I had written ResDespawn out of place (and left a silly
+     'ResRespawn'.replace(...) artifact behind).
+The model was right in all six cases.
+
+## Appendix - the verification spec source
+```ts
+/**
+ * LEAD INDEPENDENT VERIFICATION — p3-07 results model (task 3.7).
+ *
+ * Written from the specs + the real corpus, NOT from the executor's tests. Every check
+ * recomputes its expectation from the raw JSON (or from the live SQLite tables for the
+ * friendly-name sources). `JSON.stringify` encodes insertion order, so stringify equality
+ * IS key-order equality.
+ *
+ * Run: npx vitest run --config /tmp/vitest.p307.config.ts
+ */
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { describe, expect, it } from 'vitest';
+
+import * as R from '/home/jason/Documents/git-projects/spiraldb-ui/client/src/lib/quest-results';
+import * as T from '/home/jason/Documents/git-projects/spiraldb-ui/client/src/lib/requirement-tree';
+import { applyEdits } from '/home/jason/Documents/git-projects/spiraldb-ui/shared/document';
+
+const require = createRequire('/home/jason/Documents/git-projects/spiraldb-ui/');
+const JSON5 = require('json5');
+const Database = require('better-sqlite3');
+const ROOT = '/home/jason/Documents/git-projects/spiraldb';
+
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+const short = (t: unknown): string =>
+  String(t).replace(/^Imcodec\.ObjectProperty\.TypeCache\./, '').replace(/, Imcodec\.ObjectProperty$/, '');
+
+interface Node {
+  file: string;
+  doc: Record<string, unknown>;
+  listPath: (string | number)[];
+  index: number;
+  value: Record<string, unknown>;
+}
+const nodes: Node[] = [];
+const wrappers: Array<{ file: string; doc: Record<string, unknown>; path: (string | number)[]; value: unknown }> = [];
+
+for (const file of readdirSync(`${ROOT}/QuestTemplates`).filter((f) => f.endsWith('.json')).sort()) {
+  let doc: Record<string, unknown>;
+  try { doc = JSON5.parse(readFileSync(`${ROOT}/QuestTemplates/${file}`, 'utf8')) as Record<string, unknown>; } catch { continue; }
+  const push = (listPath: (string | number)[], wrapper: unknown): void => {
+    if (!isObj(wrapper)) return;
+    wrappers.push({ file, doc, path: listPath, value: wrapper });
+    const list = Array.isArray(wrapper.m_results) ? wrapper.m_results : [];
+    list.forEach((v, index) => { if (isObj(v)) nodes.push({ file, doc, listPath, index, value: v }); });
+  };
+  push(['m_startResults'], doc.m_startResults);
+  push(['m_endResults'], doc.m_endResults);
+  const goals = Array.isArray(doc.m_goals) ? doc.m_goals : [];
+  goals.forEach((goal, gi) => {
+    if (!isObj(goal)) return;
+    push(['m_goals', gi, 'm_completeResults'], goal.m_completeResults);
+    push(['m_goals', gi, 'm_activateResults'], goal.m_activateResults);
+  });
+}
+
+/** The tally slot D60(d) left open for this story: goals carrying m_tallyCounter.m_tallyResults. */
+const tallySlots: Array<{ file: string; doc: Record<string, unknown>; path: (string | number)[]; value: unknown }> = [];
+for (const file of readdirSync(`${ROOT}/QuestTemplates`).filter((f) => f.endsWith('.json'))) {
+  let doc: Record<string, unknown>;
+  try { doc = JSON5.parse(readFileSync(`${ROOT}/QuestTemplates/${file}`, 'utf8')) as Record<string, unknown>; } catch { continue; }
+  (Array.isArray(doc.m_goals) ? doc.m_goals : []).forEach((goal, gi) => {
+    if (!isObj(goal) || !isObj(goal.m_tallyCounter)) return;
+    const counter = goal.m_tallyCounter as Record<string, unknown>;
+    if (isObj(counter.m_tallyResults)) {
+      tallySlots.push({ file, doc, path: ['m_goals', gi, 'm_tallyCounter', 'm_tallyResults'], value: counter.m_tallyResults });
+    }
+  });
+}
+
+describe('p3-07 lead verification — the results model against the corpus', () => {
+  it('loads the real corpus: 381 result nodes in 322 quests, all 14 types', () => {
+    const counts = new Map<string, number>();
+    for (const n of nodes) counts.set(short(n.value.$type), (counts.get(short(n.value.$type)) ?? 0) + 1);
+    expect(nodes.length).toBe(381);
+    expect(wrappers.length).toBe(322 * 2 + 772 * 2); // start/end + per-goal complete/activate
+    expect([...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))).toEqual([
+      ['ResDropTable', 317], ['ResLearnSpell', 21], ['ResAddDynaMod', 13], ['ResGiveSpell', 10],
+      ['ResDrawHand', 8], ['ResPostEvent', 3], ['ResAddSpell', 2],
+      // ties broken alphabetically: the seven types with exactly one corpus node
+      ['ResAddHealth', 1], ['ResAddMana', 1], ['ResDespawn', 1], ['ResModifyEntry', 1],
+      ['ResPlaySound', 1], ['ResTeleport', 1], ['ResWait', 1],
+    ]);
+  });
+
+  it('models exactly the fields the corpus carries, in the corpus order, for all 381 nodes', () => {
+    const problems: string[] = [];
+    for (const n of nodes) {
+      const spec = R.resultTypeSpecForResult(n.value);
+      if (!spec) { problems.push(`${n.file}#${n.index}: no spec for ${short(n.value.$type)}`); continue; }
+      const corpusKeys = Object.keys(n.value).filter((k) => k !== '$type');
+      const specKeys = spec.fields.map((f) => f.key);
+      if (specKeys.join('|') !== corpusKeys.join('|')) {
+        problems.push(`${n.file}#${n.index} ${spec.shortName}: spec [${specKeys.join(',')}] vs corpus [${corpusKeys.join(',')}]`);
+      }
+      if (R.unmodelledResultKeys(n.value).length > 0) {
+        problems.push(`${n.file}#${n.index}: unmodelled ${R.unmodelledResultKeys(n.value).join(',')}`);
+      }
+    }
+    expect(problems.slice(0, 8)).toEqual([]);
+  });
+
+  it('declares a field kind that matches the real value type', () => {
+    const problems: string[] = [];
+    for (const n of nodes) {
+      const spec = R.resultTypeSpecForResult(n.value)!;
+      for (const f of spec.fields) {
+        const v = n.value[f.key];
+        if (v === null || v === undefined) continue;
+        const actual = Array.isArray(v) ? 'array' : typeof v;
+        const ok =
+          f.kind === 'text' || f.kind === 'enum' ? actual === 'string'
+          : f.kind === 'number' ? actual === 'number'
+          : f.kind === 'boolean' ? actual === 'boolean'
+          : f.kind === 'friendly-name' ? actual === (f.idValueType ?? 'string')
+          : f.kind === 'router' || f.kind === 'requirements' ? actual === 'object'
+          : false;
+        if (!ok) problems.push(`${n.file}#${n.index} ${spec.shortName}.${f.key}: kind=${f.kind} idValueType=${String(f.idValueType)} vs ${actual}`);
+      }
+    }
+    expect(problems.slice(0, 8)).toEqual([]);
+  });
+
+  it('re-sets every expressible field to its own value and changes nothing (D57)', () => {
+    const problems: string[] = [];
+    let checkedNodes = 0;
+    let editsApplied = 0;
+    for (const n of nodes) {
+      const spec = R.resultTypeSpecForResult(n.value)!;
+      const edits: unknown[] = [];
+      for (const f of spec.fields) {
+        const v = n.value[f.key];
+        if (v === null || v === undefined) continue; // a null has no expressible no-op write
+        if (v === '') continue; // an empty string would DELETE the key, not re-set it
+        if (f.kind === 'text' || f.kind === 'enum') edits.push(R.setResultTextFieldEdit(n.listPath, n.index, f.key, true, String(v)));
+        else if (f.kind === 'number') edits.push(R.setResultNumberFieldEdit(n.listPath, n.index, f.key, true, String(v)));
+        else if (f.kind === 'boolean') edits.push(R.setResultBooleanFieldEdit(n.listPath, n.index, f.key, Boolean(v)));
+        else if (f.kind === 'friendly-name') edits.push(R.setResultIdFieldEdit(n.listPath, n.index, f, true, String(v)));
+        else if (f.kind === 'router' && isObj(v)) {
+          for (const rf of R.SOUND_ROUTER_FIELD_SPECS) {
+            const rv = v[rf.key];
+            if (rv === null || rv === undefined || typeof rv === 'object') continue;
+            if (rf.kind === 'boolean') edits.push(R.setRouterBooleanFieldEdit(n.listPath, n.index, v, rf, Boolean(rv)));
+            else edits.push(R.setRouterFieldEdit(n.listPath, n.index, v, rf, true, String(rv)));
+          }
+        }
+      }
+      const usable = edits.filter((e) => e !== null && e !== undefined) as never[];
+      if (usable.length === 0) continue;
+      checkedNodes += 1;
+      editsApplied += usable.length;
+      const after = applyEdits(n.doc as never, usable) as Record<string, unknown>;
+      if (JSON.stringify(after) !== JSON.stringify(n.doc)) problems.push(`${n.file}#${n.index}: bytes changed`);
+    }
+    expect(problems.slice(0, 8)).toEqual([]);
+    // ResAddHealth and ResAddMana carry ONLY their `$type`, so they have no expressible
+    // field write — every other one of the 381 nodes is covered.
+    expect(nodes.length - checkedNodes).toBe(2);
+    expect(editsApplied).toBeGreaterThan(700);
+  });
+
+  it('adds a result to every home without ever tagging the wrapper', () => {
+    const problems: string[] = [];
+    for (const w of wrappers) {
+      const beforeKeys = isObj(w.value) ? Object.keys(w.value).join('|') : 'not-object';
+      const items = isObj(w.value) && Array.isArray(w.value.m_results);
+      const after = applyEdits(
+        w.doc as never,
+        R.addResultEdits(w.path, items ? (w.value as { m_results: unknown[] }).m_results.length : 0, 'ResDropTable', {
+          wrapper: true,
+          items,
+        }),
+      ) as Record<string, unknown>;
+      let node: unknown = after;
+      for (const seg of w.path) {
+        node = node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[seg as string] : undefined;
+      }
+      if (!isObj(node)) { problems.push(`${w.file} ${w.path.join('.')}: gone`); continue; }
+      if (Object.keys(node).join('|') !== beforeKeys) problems.push(`${w.file} ${w.path.join('.')}: wrapper keys ${Object.keys(node).join(',')}`);
+      if ('$type' in node) problems.push(`${w.file} ${w.path.join('.')}: wrapper gained a $type`);
+      const list = Array.isArray(node.m_results) ? node.m_results : [];
+      if (list.length !== (isObj(w.value) && Array.isArray(w.value.m_results) ? w.value.m_results.length : 0) + 1) {
+        problems.push(`${w.file} ${w.path.join('.')}: length`);
+      }
+    }
+    expect(problems.slice(0, 8)).toEqual([]);
+    expect(wrappers.length).toBe(322 * 2 + 772 * 2);
+  });
+
+  it('gives every new type its corpus key order and the exact $type literal', () => {
+    const corpusOrder = new Map<string, string>();
+    for (const n of nodes) {
+      const t = short(n.value.$type);
+      if (!corpusOrder.has(t)) corpusOrder.set(t, Object.keys(n.value).join('|'));
+    }
+    expect(corpusOrder.size).toBe(14);
+    const problems: string[] = [];
+    for (const spec of R.RESULT_TYPE_SPECS) {
+      const fresh = R.newResultObject(spec.shortName);
+      const want = corpusOrder.get(spec.shortName);
+      if (!want) { problems.push(`${spec.shortName}: no corpus node to compare`); continue; }
+      if (Object.keys(fresh).join('|') !== want) problems.push(`${spec.shortName}: new order [${Object.keys(fresh).join(',')}] vs corpus [${want}]`);
+      if (fresh.$type !== spec.$type) problems.push(`${spec.shortName}: $type mismatch`);
+      if (!String(spec.$type).startsWith('Imcodec.ObjectProperty.TypeCache.')) problems.push(`${spec.shortName}: $type not corpus-shaped`);
+      if (!String(spec.$type).endsWith(', Imcodec.ObjectProperty')) problems.push(`${spec.shortName}: $type missing the assembly suffix`);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('names every ID field from the table(s) the corpus actually uses', () => {
+    const db = new Database('/home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db', { readonly: true });
+    const columns: Record<string, string> = {
+      zones: 'zone_path', spells: 'template_id', npcs: 'template_id', drop_tables: 'name', quests: 'quest_name',
+    };
+    const sets = new Map<string, Set<unknown>>();
+    for (const [table, column] of Object.entries(columns)) {
+      sets.set(table, new Set(db.prepare(`SELECT DISTINCT ${column} AS v FROM ${table}`).all().map((r: { v: unknown }) => r.v)));
+    }
+    const misses: string[] = [];
+    let friendlyFields = 0;
+    for (const spec of R.RESULT_TYPE_SPECS) {
+      for (const f of spec.fields) {
+        if (f.kind !== 'friendly-name') continue;
+        friendlyFields += 1;
+        if (!f.nameSources || f.nameSources.length === 0) { misses.push(`${spec.shortName}.${f.key}: no name source declared`); continue; }
+        const values = [...new Set(nodes
+          .filter((n) => short(n.value.$type) === spec.shortName)
+          .map((n) => n.value[f.key])
+          .filter((v) => v !== null && v !== undefined && v !== ''))];
+        const unresolved = values.filter((v) => !f.nameSources!.some((s) => sets.get(s)?.has(v)));
+        if (unresolved.length > 0) {
+          misses.push(`${spec.shortName}.${f.key} (sources ${f.nameSources.join('+')}): ${unresolved.length}/${values.length} unresolved ${JSON.stringify(unresolved.slice(0, 3))}`);
+        }
+      }
+    }
+    // The measured split: ResDrawHand's template id needs BOTH namespaces, or 6 of 8 real values are nameless.
+    const drawHand = R.RESULT_TYPE_SPECS.find((s) => s.shortName === 'ResDrawHand')!;
+    const templateId = drawHand.fields.find((f) => f.key === 'm_templateID')!;
+    expect([...(templateId.nameSources ?? [])].sort()).toEqual(['npcs', 'spells']);
+    expect(friendlyFields).toBeGreaterThanOrEqual(9);
+    expect(misses).toEqual([]);
+    db.close();
+  });
+
+  it('builds an UNTYPED requirement wrapper the shared p3-06 tree can read', () => {
+    const wrapper = R.newResultRequirementsWrapper();
+    expect(Object.keys(wrapper)).toEqual(['m_requirements', 'm_applyNOT', 'm_operator']);
+    expect('$type' in wrapper).toBe(false);
+    // Cross-model: the p3-06 shared editor's own reader must accept it.
+    const view = T.readRequirementTree(['m_requirements'], wrapper);
+    expect(view).not.toBeNull();
+    expect(view!.readable).toBe(true);
+    expect(T.requirementNodeIsGroup(wrapper)).toBe(true);
+    // And every real ResLearnSpell requirement wrapper is likewise untyped and readable.
+    const learn = nodes.filter((n) => short(n.value.$type) === 'ResLearnSpell');
+    expect(learn.length).toBe(21);
+    for (const n of learn) {
+      const rv = n.value.m_requirements;
+      if (!isObj(rv)) continue;
+      expect('$type' in rv, n.file).toBe(false);
+      expect(T.readRequirementTree(['x'], rv)?.readable, n.file).toBe(true);
+      for (const child of T.requirementGroupChildren(rv)) {
+        expect(short((child as Record<string, unknown>).$type)).toBe('ReqSchoolOfFocus');
+      }
+    }
+  });
+
+  it('closes the D60(d) tally gap: the corpus tally wrapper is readable', () => {
+    const first = tallySlots[0];
+    expect(first, 'the corpus has goals with a nested m_tallyCounter.m_tallyResults').toBeTruthy();
+    expect(tallySlots.length).toBe(18);
+    for (const slot of tallySlots) {
+      const cards = R.readResultCards(slot.path, slot.value);
+      expect(Array.isArray(cards), slot.file).toBe(true);
+      // The measured shape is an empty m_results array, so the read must not invent nodes.
+      const list = isObj(slot.value) && Array.isArray(slot.value.m_results) ? slot.value.m_results : [];
+      expect(cards.length, slot.file).toBe(list.length);
+    }
+    expect(R.TALLY_COUNTER_PATH).toBe('m_tallyCounter');
+    expect(R.TALLY_RESULTS_PATH).toBe('m_tallyResults');
+  });
+
+  it('keeps the sound router an untagged sub-object with its own key order', () => {
+    expect(R.SOUND_ROUTER_FIELD_SPECS.map((f) => f.key)).toEqual([
+      'm_locX', 'm_locY', 'm_locZ', 'm_routingType', 'm_useLocation', 'm_useTriggerLocation',
+    ]);
+    const fresh = R.newSoundRouter();
+    expect(Object.keys(fresh)).toEqual(R.SOUND_ROUTER_FIELD_SPECS.map((f) => f.key));
+    expect('$type' in fresh).toBe(false);
+    const sounds = nodes.filter((n) => R.hasSoundRouter(n.value));
+    expect(sounds.length).toBe(1);
+    for (const s of sounds) {
+      expect(Object.keys(s.value.m_router as object)).toEqual(R.SOUND_ROUTER_FIELD_SPECS.map((f) => f.key));
+    }
+  });
+});```

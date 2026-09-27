@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useState, type ReactNode } from 'react';
 
 import type { QuestObject } from '../../lib/api';
 import {
@@ -33,9 +33,38 @@ import { Badge } from '../ui/badge';
 export interface QuestPreviewProps {
   quest: QuestObject;
   className?: string;
+  /**
+   * Replaces any tab's read-only body with a live editor (plan task 3.3/3.4, stories
+   * p3-03/p3-04).
+   *
+   * The extraction page and the mobile overlay pass nothing, so they keep the read-only
+   * tabs the Phase-2 specs pin; the detail page passes `{ Info, Goals }`. A **map** rather
+   * than one prop per tab (p3-03 shipped `infoPanel`) because p3-05..p3-08 each add their
+   * own entry: a missing key falls back to that tab's read-only body, so a caller never
+   * has to know the tab list.
+   */
+  panels?: Partial<Record<PreviewTab, ReactNode>>;
 }
 
-export default function QuestPreview({ quest, className }: QuestPreviewProps): JSX.Element {
+/**
+ * How a panel asks this component to switch tabs.
+ *
+ * A tab's editor sometimes has to hand the user to another tab — the Goal Logic flowchart's
+ * `Edit Goal` context item means "open the Goals tab, that is where a goal's fields live"
+ * (story p3-05) — and the tab state is `QuestPreview`'s own. The context is the smallest
+ * channel that does not add a second tab state or a second document: the provider wraps the
+ * panel and the value is `useState`'s own stable setter. `null` outside a preview, so a panel
+ * rendered on its own (a unit-style render, a future reuse) degrades to doing nothing rather
+ * than throwing.
+ */
+export const PreviewTabSelectContext = createContext<((tab: PreviewTab) => void) | null>(null);
+
+/** The tab switch, or `null` when no preview is above this panel. */
+export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
+  return useContext(PreviewTabSelectContext);
+}
+
+export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
   const [tab, setTab] = useState<PreviewTab>('Info');
   const panelId = useId();
 
@@ -82,14 +111,28 @@ export default function QuestPreview({ quest, className }: QuestPreviewProps): J
         aria-labelledby={`${panelId}-tab-${tab}`}
         className="min-h-0 flex-1 overflow-y-auto p-4"
       >
-        {renderPanel(tab, quest)}
+        <PreviewTabSelectContext.Provider value={setTab}>
+          {renderPanel(tab, quest, panels)}
+        </PreviewTabSelectContext.Provider>
       </div>
     </div>
   );
 }
 
-/** One tab's body. Kept as a plain function so no tab pays for the others' hooks. */
-function renderPanel(tab: PreviewTab, quest: QuestObject): JSX.Element {
+/**
+ * One tab's body. Kept as a plain function so no tab pays for the others' hooks —
+ * and so a tab with a caller-supplied editor renders it instead of the read-only list.
+ * A tab absent from {@link QuestPreviewProps.panels} gets its own p2-07 body.
+ */
+function renderPanel(
+  tab: PreviewTab,
+  quest: QuestObject,
+  panels?: Partial<Record<PreviewTab, ReactNode>>,
+): JSX.Element {
+  const editor = panels?.[tab];
+  if (editor !== undefined) {
+    return <>{editor}</>;
+  }
   switch (tab) {
     case 'Info':
       return <InfoPanel quest={quest} />;
@@ -171,7 +214,8 @@ function RequirementsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   return (
     <section aria-label="Requirements" className="flex flex-col gap-4">
       <p className="text-xs text-zinc-500">
-        Read-only JSON — the structured requirement tree arrives with the Phase 3 editor.
+        Read-only JSON — this preview is the extraction page's; the structured requirement tree is
+        edited in the Requirements tab of the quest detail page.
       </p>
       <JsonBlock label="m_requirements" value={quest.m_requirements} />
       <JsonBlock label="m_prepRequirements" value={quest.m_prepRequirements} />
@@ -184,6 +228,10 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   const endResults = arrayOf(nested(quest.m_endResults, 'm_results'));
   return (
     <section aria-label="Results" className="flex flex-col gap-4">
+      <p className="text-xs text-zinc-500">
+        Read-only JSON — this preview is the extraction page's; the structured result editor is in
+        the Results tab of the quest detail page.
+      </p>
       {endResults.length > 0 ? (
         <ul className="flex flex-wrap gap-2">
           {endResults.map((result, index) => (
@@ -205,7 +253,8 @@ function DialogPanel({ quest }: { quest: QuestObject }): JSX.Element {
   return (
     <section aria-label="Dialog" className="flex flex-col gap-4">
       <p className="text-xs text-zinc-500">
-        Read-only JSON — the full dialog editor arrives in Phase 3.
+        Read-only JSON — this preview is the extraction page’s; the structured dialog editor is in
+        the Dialog tab of the quest detail page.
       </p>
       <JsonBlock label="m_dialogList" value={quest.m_dialogList} />
     </section>

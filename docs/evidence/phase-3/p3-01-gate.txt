@@ -1,0 +1,60 @@
+# p3-01 lead-run gate — 2026-09-26T13:56:24Z — commit b4e0cbe
+
+## 1. npm test
+       |                   ^
+     81|     const failures: string[] = [];
+     82|     const types = new Set<string>();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 32 passed (33)
+      Tests  1 failed | 800 passed (801)
+   Start at  09:56:24
+   Duration  4.52s (transform 3.44s, setup 0ms, collect 11.86s, tests 12.07s, environment 8ms, prepare 3.66s)
+
+
+## 2. npm run test:ui
+  ✓  61 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (783ms)
+  ✓  62 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (705ms)
+  ✓  63 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (512ms)
+  ✓  64 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (862ms)
+  ✓  65 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.0s)
+  ✓  66 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (946ms)
+
+  66 passed (31.6s)
+# (the earlier [1/1] failure in run 1 was my own temporary verification probe zz-lead-p301-verify.test.ts,
+#  deleted before the final run; the repo's own suite is 32 files / 800 tests.)
+
+## 1b. npm test (clean, after removing the probe)
+
+ Test Files  32 passed (32)
+      Tests  800 passed (800)
+   Start at  09:57:13
+   Duration  4.55s (transform 3.57s, setup 0ms, collect 11.86s, tests 11.64s, environment 8ms, prepare 3.67s)
+
+
+## 3. npm run lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+## 4. npm run typecheck:tests
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+typecheck:tests rc=0
+
+## 5. tsc server + client
+server tsc rc=0
+client tsc rc=0
+
+## 6. npm run build
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-CS_3gzUU.css   29.95 kB │ gzip:   6.56 kB
+dist/assets/index-CPmYBVzB.js   495.75 kB │ gzip: 152.48 kB
+✓ built in 1.83s
+build rc=0

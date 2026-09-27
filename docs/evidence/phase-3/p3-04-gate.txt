@@ -1,0 +1,107 @@
+=========== 1/6 npm test
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:956:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:117:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (57 tests) 2936ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank  433ms
+ ✓ tests/unit/save-pipeline.test.ts (21 tests) 4097ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  684ms
+   ✓ Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)  351ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  414ms
+
+ Test Files  35 passed (35)
+      Tests  863 passed (863)
+   Start at  15:12:55
+   Duration  4.94s (transform 3.68s, setup 0ms, collect 12.44s, tests 16.53s, environment 10ms, prepare 3.93s)
+
+--- rc=0
+
+=========== 2/6 npm run test:ui
+  ✓  72 [chromium] › tests/ui/quests-status.spec.ts:344:3 › the identity gate fires first (D38/D43) › dismissing the identity dialog aborts the transition entirely (434ms)
+  ✓  75 [chromium] › tests/ui/quests-status.spec.ts:360:3 › the history timeline › renders the entries newest first with the spec`s anatomy (362ms)
+  ✓  74 [chromium] › tests/ui/quests-goals-editor.spec.ts:655:3 › string-table lookups on m_goalTitle › a hit resolves, a miss shows the raw key, and the empty key is never requested (632ms)
+  ✓  39 [chromium] › tests/ui/extraction.spec.ts:774:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (6.5s)
+  ✓  76 [chromium] › tests/ui/quests-status.spec.ts:389:3 › the history timeline › an entry with no history says so explicitly (397ms)
+  ✓  78 [chromium] › tests/ui/extraction.spec.ts:807:3 › results phase › Save Selected saves only the selected quest (536ms)
+  ✓  73 [chromium] › tests/ui/quests-browse.spec.ts:416:3 › loading and failure › a failed list shows the server message and recovers on Try again (1.7s)
+  ✓  77 [chromium] › tests/ui/quests-goals-editor.spec.ts:691:3 › the ID-referencing controls › selecting a zone writes its zone_path (988ms)
+  ✓  80 [chromium] › tests/ui/extraction.spec.ts:825:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (341ms)
+  ✓  79 [chromium] › tests/ui/quests-status.spec.ts:402:3 › the history timeline › the history panel shows the transition it just made (860ms)
+  ✓  82 [chromium] › tests/ui/extraction.spec.ts:844:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (384ms)
+  ✓  81 [chromium] › tests/ui/quests-goals-editor.spec.ts:711:3 › the ID-referencing controls › the persona control keeps an unlisted name and suggests npc names (693ms)
+  ✓  83 [chromium] › tests/ui/extraction.spec.ts:880:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (6.1s)
+  ✓  84 [chromium] › tests/ui/extraction.spec.ts:924:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (358ms)
+  ✓  85 [chromium] › tests/ui/extraction.spec.ts:945:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (6.1s)
+  ✓  86 [chromium] › tests/ui/extraction.spec.ts:976:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (502ms)
+  ✓  87 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (389ms)
+  ✓  88 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (838ms)
+  ✓  89 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (604ms)
+  ✓  90 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (545ms)
+  ✓  91 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (892ms)
+  ✓  92 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.0s)
+  ✓  93 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.0s)
+
+  93 passed (33.2s)
+--- rc=0
+
+=========== 3/6 npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=========== 4/6 npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=========== 5a/6 tsc server
+--- rc=0
+
+=========== 5b/6 tsc client
+--- rc=0
+
+=========== 6/6 npm run build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1769 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.51 kB │ gzip:   0.33 kB
+dist/assets/index-CG9UfPr1.css   31.75 kB │ gzip:   6.81 kB
+dist/assets/index-DJC-fq-T.js   573.96 kB │ gzip: 176.38 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.84s
+--- rc=0
+
+=========== gate complete

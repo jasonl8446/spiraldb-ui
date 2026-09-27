@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { serializeDoc } from '../../../shared/document.js';
 import { fileNameFor, UNKEYED_FILE_NAME, type ObjectFileType } from '../../../shared/naming.js';
 import type { StatusObjectType } from './status.js';
 import { isPlainObject, parseJsonLenient } from './sync/json.js';
@@ -284,9 +285,16 @@ export function readSpiraldbJson(filePath: string): unknown {
  * files, and omitting it makes every update diff report "\ No newline at end of
  * file" — exactly the noise D45(1) asks this story to minimise. The result is
  * still clean JSON: `JSON.parse` accepts it unchanged.
+ *
+ * **Single home (D5):** the rule itself lives in `shared/document.ts`'s
+ * `serializeDoc` — the document model task 3.2 introduces for the Phase-3 editors
+ * — and this function delegates to it, so the bytes the Phase-1/2 pipeline writes
+ * and the bytes an editor writes cannot drift apart. Behaviour is deliberately
+ * unchanged: two-space indent, insertion key order, explicit `null`s kept, one
+ * trailing newline. `tests/unit/spiraldb-files.test.ts` pins the exact bytes.
  */
 export function stringifySpiraldbJson(data: unknown): string {
-  return `${JSON.stringify(data, null, 2)}\n`;
+  return serializeDoc(data);
 }
 
 /**

@@ -1,0 +1,43 @@
+# p3-10 — lead's independent verification of the edit layer (task 3.10)
+#
+# Written from the specs, NOT from the executor's tests. Every check is byte-level, because
+# JSON.stringify encodes insertion order (stringify equality IS key-order equality). AC3's
+# clause is 'discarding restores the loaded document exactly', so that is what is proven.
+# Run: npx vitest run --config /tmp/vitest.p310.config.ts
+#
+## Run output
+```
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ ../../../../../tmp/p310-lead-verify.test.ts (6 tests) 83ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  19:37:36
+   Duration  3.59s (transform 190ms, setup 0ms, collect 2.31s, tests 83ms, environment 0ms, prepare 419ms)
+
+```
+
+## What it independently established
+- over ALL 322 real corpus quests: a freshly loaded document is never dirty; a round of edits
+  (m_questTitle, and m_goals[0].m_goalTitle / m_level where they exist) makes it dirty; reset
+  restores it BYTE-EXACTLY (documentsEqual AND JSON.stringify equality, so key order included);
+  and the dirty flag is false again after the reset.
+- dirty is an honest byte comparison, not an "an edit happened" flag: editing a value back to the
+  loaded one is CLEAN again.
+- a key-ORDER-only change (same values, different order) is DIRTY, and documentsEqual correctly
+  reports byte-inequality - i.e. the document's bytes, not just its values, are the contract.
+- markQuestDocumentSaved advances the baseline, so a saved document is clean and a later reset
+  restores the SAVED document (not the originally loaded one).
+- an untouched document resets to itself, and a second reset is a no-op.
+
+## My own errors, recorded
+Three of my assertions failed on first runs and every one was mine:
+1. I guessed that editQuestDocument took ONE edit; it takes an ARRAY of edits.
+2. I edited m_goals[0].m_goalTitle unconditionally, and the shared primitives refuse to invent an
+   intermediate (a quest whose m_goals is absent cannot have m_goals[0] set) - my sweep now edits
+   only paths that exist.
+3. I expected documentsEqual to ignore key order; it is byte-level BY DESIGN, so a reorder is
+   "not equal" there while a value-level comparison still says equal. I corrected my expectation
+   rather than the model.
