@@ -308,7 +308,7 @@ function LoadedQuest({
         'Goal Logic': (
           <Suspense
             fallback={
-              <p role="status" className="p-4 text-sm text-zinc-500">
+              <p role="status" className="p-4 text-sm text-zinc-400">
                 Loading flowchart…
               </p>
             }
@@ -394,7 +394,7 @@ function BackLink(): JSX.Element {
   return (
     <Link
       to="/quests"
-      className="inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
     >
       <ArrowLeft className="h-4 w-4" aria-hidden="true" />
       {BACK_TO_QUESTS_LABEL}

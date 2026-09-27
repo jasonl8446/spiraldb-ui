@@ -114,7 +114,7 @@ function QuestJsonToolbar({
 }): JSX.Element {
   return (
     <div className={cn('flex items-center justify-between gap-2', className)}>
-      <span className="font-mono text-xs text-zinc-500" aria-hidden="true">
+      <span className="font-mono text-xs text-zinc-400" aria-hidden="true">
         {JSON_PANEL_GLYPH}
       </span>
       <div className="flex items-center gap-2">

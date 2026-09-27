@@ -125,7 +125,7 @@ export default function QuestsPage(): JSX.Element {
                 aria-controls="quests-results"
                 onClick={() => setFilter(tab.filter)}
                 className={cn(
-                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                   active
                     ? 'border-blue-500 text-white'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200',
@@ -141,7 +141,7 @@ export default function QuestsPage(): JSX.Element {
 
         <div className="relative md:w-64">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
             aria-hidden="true"
           />
           <Input
@@ -173,7 +173,7 @@ export default function QuestsPage(): JSX.Element {
             <p role="alert" className="text-sm text-zinc-200">
               {QUESTS_LOAD_ERROR}
             </p>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-zinc-400">
               {serverMessage(quests.error, QUESTS_LOAD_ERROR)}
             </p>
             <Button
@@ -197,7 +197,7 @@ export default function QuestsPage(): JSX.Element {
             <Card>
               <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
                 <p className="text-sm text-zinc-200">{emptyStateMessage(filter)}</p>
-                <p className="text-sm text-zinc-500">{EMPTY_STATE_HINT}</p>
+                <p className="text-sm text-zinc-400">{EMPTY_STATE_HINT}</p>
               </CardContent>
             </Card>
           ) : isMobile ? (

@@ -213,7 +213,7 @@ export default function ObjectDetailPage({
           <p role="alert" className="text-sm text-zinc-200">
             {loadError}
           </p>
-          <p className="text-sm text-zinc-500">{serverMessage(object.error, loadError)}</p>
+          <p className="text-sm text-zinc-400">{serverMessage(object.error, loadError)}</p>
           <Button
             variant="outline"
             onClick={() => {

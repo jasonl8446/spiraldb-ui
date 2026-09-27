@@ -439,7 +439,9 @@ test.describe('AC1: Mark Reviewed with notes on a DropTable moves the entry, its
     // Before: two extracted rows, so the counts have somewhere to move to.
     await expect(filterTab(page, 'drop tables', 'Extracted')).toContainText('2');
     await expect(filterTab(page, 'drop tables', 'Reviewed')).toContainText('0');
-    await expect(firstRow(page)).toContainText('Status: Extracted');
+    // p5-05: the table's Status cell is the shared `StatusBadge` (colour + the status word);
+    // the label is now visible text as well as an accessible name.
+    await expect(firstRow(page).getByLabel('Status: Extracted')).toContainText('Extracted');
 
     // Into the detail page through the row's own link (the AC's own route).
     await page.getByRole('link', { name: DROP_A, exact: true }).click();
@@ -512,7 +514,7 @@ test.describe('AC1: Mark Reviewed with notes on a DropTable moves the entry, its
     // invalidated query produced.
 
     // The AC's sentence: the dot and the counts render the payload the refetch replaced.
-    await expect(firstRow(page)).toContainText('Status: Reviewed');
+    await expect(firstRow(page).getByLabel('Status: Reviewed')).toContainText('Reviewed');
     await expect(filterTab(page, 'drop tables', 'Reviewed')).toContainText('1');
     await expect(filterTab(page, 'drop tables', 'Extracted')).toContainText('1');
   });
@@ -544,7 +546,7 @@ test.describe('AC1: Mark Reviewed with notes on a DropTable moves the entry, its
     await expect
       .poll(() => state.recorded.listRequests.npcinventory ?? 0)
       .toBeGreaterThan(listRequestsBefore);
-    await expect(firstRow(page)).toContainText('Status: Reviewed');
+    await expect(firstRow(page).getByLabel('Status: Reviewed')).toContainText('Reviewed');
     await expect(filterTab(page, 'NPC inventories', 'Reviewed')).toContainText('1');
     await expect(filterTab(page, 'NPC inventories', 'Extracted')).toContainText('1');
   });

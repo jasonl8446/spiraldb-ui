@@ -92,10 +92,10 @@ export default function QuestRequirementsEditor({
       <section aria-label={GOAL_REQUIREMENTS_SECTION_LABEL} className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="font-mono text-xs text-zinc-400">{GOAL_REQUIREMENTS_PATH}</h2>
-          <p className="text-xs text-zinc-500">{GOAL_REQUIREMENTS_NOTE}</p>
+          <p className="text-xs text-zinc-400">{GOAL_REQUIREMENTS_NOTE}</p>
         </div>
         {goals.length === 0 ? (
-          <p className="text-sm text-zinc-500">{NO_GOALS_TEXT}</p>
+          <p className="text-sm text-zinc-400">{NO_GOALS_TEXT}</p>
         ) : (
           <ul className="flex min-w-0 flex-col gap-4">
             {goals.map((goal, index) => {
@@ -137,7 +137,7 @@ function Slot({
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
         <h2 className="font-mono text-xs text-zinc-400">{fieldKey}</h2>
-        {note === undefined ? null : <p className="text-xs text-zinc-500">{note}</p>}
+        {note === undefined ? null : <p className="text-xs text-zinc-400">{note}</p>}
       </div>
       <RequirementTreeEditor state={state} path={path} label={label} />
     </div>

@@ -26,7 +26,7 @@ export default function StubPage({ route }: { route: AppRoute }): JSX.Element {
           <p className="text-sm text-zinc-400">
             This route is wired into the shell; the page itself is built in Phase {route.phase}.
           </p>
-          <p className="mt-3 font-mono text-xs text-zinc-500">{route.path}</p>
+          <p className="mt-3 font-mono text-xs text-zinc-400">{route.path}</p>
         </CardContent>
       </Card>
 

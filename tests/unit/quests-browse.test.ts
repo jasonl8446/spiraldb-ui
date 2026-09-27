@@ -103,9 +103,16 @@ describe('relativeTime', () => {
 });
 
 describe('the column spec', () => {
-  it('is the spec table verbatim — seven columns, widths, sortability (L254-262)', () => {
+  it('is the spec table — seven columns, widths, sortability (L254-262), with p5-05\'s measured exception', () => {
+    // Everything but `status` is the spec table verbatim. `status` is **104px, not the spec's
+    // 40px**: story p5-05 replaced the colour-only dot with the shared `StatusBadge` (colour
+    // *and* the status word) because `docs/spec-ui-design.md` L545 requires "colour AND
+    // text/icon", WCAG 1.4.1 has no axe rule to catch a colour-only mark, and the same row
+    // already rendered a text badge in the mobile card list (`QuestCardList`). The 40px pin at
+    // L256 is a layout detail the wider badge supersedes; recorded as a deliberate deviation by
+    // measurement (D86), not as spec drift.
     expect(QUEST_COLUMNS).toEqual([
-      { id: 'status', header: 'Status', widthPx: 40, sortable: true },
+      { id: 'status', header: 'Status', widthPx: 104, sortable: true },
       { id: 'quest_name', header: 'Quest Name', widthPx: null, sortable: true },
       { id: 'level', header: 'Level', widthPx: 60, sortable: true },
       { id: 'goal_count', header: 'Goals', widthPx: 60, sortable: true },

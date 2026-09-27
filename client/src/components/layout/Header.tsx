@@ -84,7 +84,7 @@ export default function Header({ onOpenNav, onOpenSearch }: HeaderProps): JSX.El
         </span>
         <kbd
           aria-hidden="true"
-          className="hidden rounded border border-zinc-700 px-1 font-sans text-[10px] leading-4 text-zinc-500 lg:inline"
+          className="hidden rounded border border-zinc-700 px-1 font-sans text-[10px] leading-4 text-zinc-400 lg:inline"
         >
           {SEARCH_SHORTCUT_HINT}
         </kbd>

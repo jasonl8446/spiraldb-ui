@@ -248,7 +248,7 @@ function SearchResultItem({
         <span className="truncate text-xs text-zinc-400">{secondary}</span>
       )}
       {href === null ? (
-        <span className="ml-auto shrink-0 text-xs text-zinc-500">{SEARCH_NOT_LINKED_SUFFIX}</span>
+        <span className="ml-auto shrink-0 text-xs text-zinc-400">{SEARCH_NOT_LINKED_SUFFIX}</span>
       ) : null}
     </CommandItem>
   );

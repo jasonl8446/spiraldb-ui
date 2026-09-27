@@ -96,7 +96,7 @@ export interface ZoneTransferFormProps {
 
 /** The native control classes the shared dialog/result editors use, so a select matches an input. */
 const CONTROL_CLASS =
-  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950';
 
 export default function ZoneTransferForm({
   document,
@@ -143,12 +143,12 @@ export default function ZoneTransferForm({
               <span className="font-mono text-sm text-zinc-100">
                 {typeof zoneName === 'string' && zoneName !== '' ? zoneName : '—'}
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-zinc-400">
                 ZoneName (the key of this file — the dropdown shows the synced display name)
               </span>
             </>
           )}
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-zinc-400">
             The dropdown’s label comes from the synced `zones` names type (`display_name`); the
             editor derives no display name of its own.
           </span>
@@ -171,7 +171,7 @@ export default function ZoneTransferForm({
           )}
 
           {rows.length === 0 ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               {hasTeleports
                 ? 'This zone has no teleport triggers (the file carries an empty Teleports array).'
                 : 'This file carries no Teleports key yet.'}
@@ -236,7 +236,7 @@ export default function ZoneTransferForm({
                 <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                 Add teleport
               </Button>
-              <span className="pb-2 text-xs text-zinc-500">
+              <span className="pb-2 text-xs text-zinc-400">
                 a new row starts at {NEW_TELEPORT_DESTINATION_LOC} and it matches this zone
               </span>
             </div>
@@ -282,7 +282,7 @@ function RawFieldsDisclosure({
           aria-label={RAW_FIELDS_LABEL}
           className="rounded-md border border-zinc-800 bg-zinc-950/40"
         >
-          <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+          <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
             {`${RAW_FIELDS_LABEL} (${rawFields.length} unmodelled)`}
           </summary>
           <div className="border-t border-zinc-800 p-3">
@@ -368,7 +368,7 @@ function TeleportRow({
           className={`w-full font-mono md:w-96 ${fieldBorder(locMessages) ?? ''}`.trim()}
           onChange={(event) => state.edit(teleportDestinationLocEdit(index, event.target.value))}
         />
-        <span id={locHintId} className="text-xs text-zinc-500">
+        <span id={locHintId} className="text-xs text-zinc-400">
           {DESTINATION_LOC_HINT}
         </span>
         <FieldMessages messages={locMessages} id={locMessagesId} />
@@ -438,7 +438,7 @@ function TeleportRow({
               </option>
             ))}
           </select>
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-zinc-400">
             The corpus carries one member, TELEPORT_STATIC. A value this editor does not know is
             kept exactly as stored and shown as unrecognised.
           </span>

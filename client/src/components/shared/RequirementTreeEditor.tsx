@@ -148,7 +148,7 @@ function EmptySlot({
   const address = formatDocPath(path);
   return (
     <div className="flex flex-col gap-2 rounded-md border border-dashed border-zinc-800 p-3">
-      <p className="text-sm text-zinc-500">{NO_REQUIREMENTS_TEXT}</p>
+      <p className="text-sm text-zinc-400">{NO_REQUIREMENTS_TEXT}</p>
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
@@ -255,7 +255,7 @@ function GroupCard({
         )}
       >
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-zinc-500">{GROUP_LABEL}</span>
+          <span className="font-mono text-xs text-zinc-400">{GROUP_LABEL}</span>
           <OperatorToggle state={state} node={node} />
           <div className="ml-auto">
             <DeleteButton state={state} path={node.path} label={address} />
@@ -391,7 +391,7 @@ function LeafCard({
               id={`${id}-not`}
               type="checkbox"
               checked={node.applyNOT}
-              className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
               onChange={() => state.edit(toggleApplyNOTEdit(node.path, node.value))}
             />
           </Labelled>
@@ -523,7 +523,7 @@ function FieldControl({
           aria-describedby={describedBy}
           type="checkbox"
           checked={value === true}
-          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           onChange={(event) =>
             state.edit(setBooleanFieldEdit(node.path, field.key, event.target.checked))
           }
@@ -589,7 +589,7 @@ function Labelled({
       </label>
       {children}
       {help === undefined || help === '' ? null : (
-        <p id={helpId} className="text-xs text-zinc-500">
+        <p id={helpId} className="text-xs text-zinc-400">
           {help}
         </p>
       )}
@@ -599,7 +599,7 @@ function Labelled({
 
 /** The shared input/select styling (the same classes the Info/Goals editors use). */
 const CONTROL_CLASS =
-  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950';
 
 /** A scalar document value as an input's text — `null`/absent render empty. */
 function scalarText(value: unknown): string {

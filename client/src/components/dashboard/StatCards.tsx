@@ -12,7 +12,7 @@ import { cn } from '../../lib/utils';
  *
  * Each card is the spec's anatomy exactly: `zinc-900` (the `Card` primitive's own
  * surface), the label in `text-sm text-zinc-400`, the number in `text-3xl font-bold`,
- * a status-coloured bar, and the percentage in `text-xs text-zinc-500`.
+ * a status-coloured bar, and the percentage in `text-xs text-zinc-400`.
  *
  * The **Total** card is the one the spec draws differently: it carries "all objects"
  * instead of a bar and a percentage. A bar there would be the Verified card's bar
@@ -45,7 +45,7 @@ export default function StatCards({ cards }: StatCardsProps): JSX.Element {
               {String(card.value)}
             </p>
             {card.key === 'total' ? (
-              <p className="text-xs text-zinc-500">{card.hint}</p>
+              <p className="text-xs text-zinc-400">{card.hint}</p>
             ) : (
               <>
                 <div
@@ -57,7 +57,7 @@ export default function StatCards({ cards }: StatCardsProps): JSX.Element {
                     style={{ width: `${String(card.percent)}%` }}
                   />
                 </div>
-                <p className="text-xs text-zinc-500" data-stat-percent={card.key}>
+                <p className="text-xs text-zinc-400" data-stat-percent={card.key}>
                   {formatPercent(card.percent)}
                 </p>
               </>

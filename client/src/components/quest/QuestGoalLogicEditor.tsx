@@ -62,6 +62,7 @@ import {
   type GoalLogicNode,
   type GoalLogicValidation,
 } from '../../lib/quest-goal-logic';
+import { motionDuration, prefersReducedMotion } from '../../lib/reduced-motion';
 import { cn } from '../../lib/utils';
 import { FieldMessages, fieldAriaInvalid, useFieldMessages } from '../shared/FieldValidation';
 import { Badge } from '../ui/badge';
@@ -94,6 +95,13 @@ export const VALIDATION_DETAILS_LABEL = 'Goal logic validation details';
 export const ZOOM_IN_LABEL = 'Zoom in';
 export const ZOOM_OUT_LABEL = 'Zoom out';
 export const FIT_VIEW_LABEL = 'Fit to view';
+/**
+ * The fit-to-view animation's duration, exported so the tier-1 reduced-motion spec can
+ * name the number it asserts against. Under `prefers-reduced-motion: reduce` it is passed
+ * to React Flow as `0` (an instant jump) — a d3 transition is not reachable by any
+ * stylesheet rule (plan task 5.5 AC#11; `lib/reduced-motion.ts`).
+ */
+export const FIT_VIEW_DURATION_MS = 200;
 export const AUTO_LAYOUT_LABEL = 'Auto-layout';
 export const ADD_ENTRY_LABEL = 'Add GoalLogicEntry';
 export const ENTRIES_LIST_LABEL = 'Goal logic entries';
@@ -307,7 +315,7 @@ function GoalLogicCanvas({ state }: { state: QuestDocumentState }): JSX.Element 
             ref={wrapper}
             tabIndex={-1}
             onKeyDown={onCanvasKeyDown}
-            className="h-[60vh] min-h-[22rem] w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="h-[60vh] min-h-[22rem] w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
             <ReactFlow
               nodes={nodes}
@@ -374,7 +382,9 @@ function GoalLogicCanvas({ state }: { state: QuestDocumentState }): JSX.Element 
               size="icon"
               aria-label={FIT_VIEW_LABEL}
               title={FIT_VIEW_LABEL}
-              onClick={() => fitView({ duration: 200 })}
+              onClick={() =>
+                fitView({ duration: motionDuration(prefersReducedMotion(), FIT_VIEW_DURATION_MS) })
+              }
             >
               <Maximize className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -514,7 +524,7 @@ function EntryInspector({
     <div className="flex w-full shrink-0 flex-col gap-2 lg:w-80">
       <h3 className="text-sm font-medium text-zinc-200">{ENTRIES_LIST_LABEL}</h3>
       {entries.length === 0 ? (
-        <p className="text-xs text-zinc-500">{NO_ENTRIES_TEXT}</p>
+        <p className="text-xs text-zinc-400">{NO_ENTRIES_TEXT}</p>
       ) : (
         <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
           {entries.map((item, index) => (
@@ -524,7 +534,7 @@ function EntryInspector({
                 aria-current={selected === index}
                 onClick={() => onSelect(selected === index ? null : index)}
                 className={cn(
-                  'w-full truncate rounded-md border px-2 py-1 text-left font-mono text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  'w-full truncate rounded-md border px-2 py-1 text-left font-mono text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                   selected === index
                     ? 'border-blue-500 bg-blue-500/10 text-zinc-50'
                     : 'border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:text-zinc-100',
@@ -538,7 +548,7 @@ function EntryInspector({
       )}
 
       {entry === undefined || selected === null ? (
-        <p className="text-xs text-zinc-500">{SELECT_ENTRY_TEXT}</p>
+        <p className="text-xs text-zinc-400">{SELECT_ENTRY_TEXT}</p>
       ) : (
         <div
           role="group"
@@ -737,7 +747,7 @@ function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JS
       </div>
       <span className="truncate pl-1 text-xs text-zinc-400">{node.typeName}</span>
       {first === undefined ? null : (
-        <span className="truncate pl-1 text-[11px] text-zinc-500">
+        <span className="truncate pl-1 text-[11px] text-zinc-400">
           {first.label}: {first.value}
         </span>
       )}
@@ -767,7 +777,7 @@ const NODE_TYPES = { goalLogic: GoalLogicNodeCard };
 /* ------------------------------------------------------------------ styling */
 
 const MENU_ITEM_CLASS =
-  'flex items-center gap-2 rounded px-2 py-1 text-left text-xs text-zinc-200 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'flex items-center gap-2 rounded px-2 py-1 text-left text-xs text-zinc-200 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950';
 
 /** The card's left-stripe class, taken from the p3-04 badge vocabulary's `bg-*` token. */
 export function typeStripeClass(badgeClass: string): string {

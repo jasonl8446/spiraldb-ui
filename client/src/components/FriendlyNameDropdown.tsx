@@ -149,7 +149,7 @@ export default function FriendlyNameDropdown({
             aria-invalid={invalid || undefined}
             className={cn(
               'w-full justify-between font-normal',
-              isPlaceholder && 'text-zinc-500',
+              isPlaceholder && 'text-zinc-400',
               invalid && 'border-red-500',
             )}
           >

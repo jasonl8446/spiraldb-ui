@@ -48,7 +48,7 @@ export default function SharedComponentsPreview(): JSX.Element {
               aria-label={`Preview ${type} friendly name dropdown`}
               placeholder={`Search ${type}…`}
             />
-            <p className="font-mono text-xs text-zinc-500">
+            <p className="font-mono text-xs text-zinc-400">
               raw id: {values[type] === undefined || values[type] === '' ? '(none)' : values[type]}
             </p>
           </div>

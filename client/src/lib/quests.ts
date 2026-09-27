@@ -57,7 +57,7 @@ export interface QuestColumnSpec {
  * relative time / Actions 80px **not** sortable.
  */
 export const QUEST_COLUMNS: readonly QuestColumnSpec[] = [
-  { id: 'status', header: 'Status', widthPx: 40, sortable: true },
+  { id: 'status', header: 'Status', widthPx: 104, sortable: true },
   { id: 'quest_name', header: 'Quest Name', widthPx: null, sortable: true },
   { id: 'level', header: 'Level', widthPx: 60, sortable: true },
   { id: 'goal_count', header: 'Goals', widthPx: 60, sortable: true },

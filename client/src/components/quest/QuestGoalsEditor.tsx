@@ -70,6 +70,7 @@ import {
   type FieldValidationMessage,
 } from '../shared/FieldValidation';
 import { withValidationBorder } from '../../lib/quest-validation';
+import { prefersReducedMotion } from '../../lib/reduced-motion';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Badge } from '../ui/badge';
@@ -152,7 +153,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
     <section aria-label={GOALS_EDITOR_LABEL} className="flex flex-col gap-3">
       <StartGoalsValidation />
       {goals.length === 0 ? (
-        <p className="text-sm text-zinc-500">{NO_GOALS_TEXT}</p>
+        <p className="text-sm text-zinc-400">{NO_GOALS_TEXT}</p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -252,9 +253,14 @@ function GoalCard({
   // only rule whose subject is the node, and this card is the node's surface.
   const nodeMessages = useFieldMessages([GOALS_PATH, index]);
 
+  // dnd-kit hands its sort animation back as an inline `transition` string. That is the one
+  // animation a stylesheet cannot gate by class alone (it needs `!important` to beat an
+  // inline declaration), so it is gated at the source as well: with
+  // `prefers-reduced-motion: reduce` the card jumps straight to its new slot. See
+  // `lib/reduced-motion.ts` and plan task 5.5 AC#11.
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition,
+    transition: prefersReducedMotion() ? undefined : transition,
   };
 
   return (
@@ -272,7 +278,7 @@ function GoalCard({
             {...attributes}
             {...listeners}
             aria-label={`${REORDER_HANDLE_LABEL} ${name ?? index + 1}`}
-            className="cursor-grab rounded-md border border-zinc-700 px-2 py-1 text-sm text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:cursor-grabbing"
+            className="cursor-grab rounded-md border border-zinc-700 px-2 py-1 text-sm text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:cursor-grabbing"
           >
             ☰
           </button>
@@ -340,7 +346,7 @@ function GoalSummary({ goal }: { goal: unknown }): JSX.Element | null {
     <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
       {lines.map((line) => (
         <div key={line.label} className="flex min-w-0 gap-2">
-          <dt className="shrink-0 text-zinc-500">{line.label}:</dt>
+          <dt className="shrink-0 text-zinc-400">{line.label}:</dt>
           <dd className="truncate text-zinc-300" title={line.value}>
             {line.value}
           </dd>
@@ -373,7 +379,7 @@ function GoalEditPanel({
       </div>
 
       <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
-        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
           {SHARED_BASE_FIELDS_LABEL}
         </summary>
         <div className="grid grid-cols-1 gap-x-4 gap-y-3 border-t border-zinc-800 p-3 md:grid-cols-2">
@@ -405,7 +411,7 @@ function GoalFieldControl({
   const messages = useFieldMessages(path);
   const messagesId = `${GOALS_PATH}-${index}-${field.key}-messages`;
   const inputClass = withValidationBorder(
-    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
     messages,
   );
   const ariaInvalid = fieldAriaInvalid(messages);
@@ -492,7 +498,7 @@ function GoalFieldControl({
           aria-invalid={ariaInvalid}
           type="checkbox"
           checked={value === true}
-          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           onChange={(event) =>
             state.edit(goalBooleanFieldEdit(index, field.key, event.target.checked))
           }
@@ -553,7 +559,7 @@ function GoalFieldMessages({
 }): JSX.Element {
   return (
     <>
-      {help === '' ? null : <p className="text-xs text-zinc-500">{help}</p>}
+      {help === '' ? null : <p className="text-xs text-zinc-400">{help}</p>}
       <FieldMessages messages={messages} id={id} />
     </>
   );
@@ -613,7 +619,7 @@ function NpcNameField({
         placeholder="NPC name"
         aria-invalid={fieldAriaInvalid(messages)}
         className={withValidationBorder(
-          'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+          'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
           messages,
         )}
         onChange={(event) => {
@@ -679,7 +685,7 @@ function RawFieldsDisclosure({ goal }: { goal: unknown }): JSX.Element {
   ].filter((part): part is string => part !== null);
   return (
     <details className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40">
-      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
         {RAW_FIELDS_LABEL} ({counts.join(', ')})
       </summary>
       <div className="border-t border-zinc-800 p-3">
@@ -689,7 +695,7 @@ function RawFieldsDisclosure({ goal }: { goal: unknown }): JSX.Element {
           </p>
         )}
         {complex.length === 0 ? null : (
-          <p className="mb-2 text-xs text-zinc-500">
+          <p className="mb-2 text-xs text-zinc-400">
             Not edited in this tab:{' '}
             {complex
               .map((key) => `${key} (${complexFieldOwner(key) ?? 'no Phase-3 editor'})`)
@@ -724,7 +730,7 @@ function AddGoalControl({
         <select
           id={id}
           value={type}
-          className="min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           onChange={(event) => onTypeChange(event.target.value as GoalShortTypeName)}
         >
           {GOAL_TYPE_SPECS.map((spec) => (

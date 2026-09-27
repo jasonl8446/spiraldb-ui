@@ -156,7 +156,7 @@ export default function SettingsPage(): JSX.Element {
                     setEdits((previous) => ({ ...previous, [field.key]: event.target.value }))
                   }
                 />
-                <p className="text-xs text-zinc-500">{field.hint}</p>
+                <p className="text-xs text-zinc-400">{field.hint}</p>
               </div>
             ))
           )}
@@ -176,7 +176,7 @@ export default function SettingsPage(): JSX.Element {
                 setEdits((previous) => ({ ...previous, user_name: event.target.value }))
               }
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               Used to attribute status changes, metadata and commits.
             </p>
           </div>
@@ -210,7 +210,7 @@ export default function SettingsPage(): JSX.Element {
               autoComplete="off"
               className="font-mono text-zinc-400"
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               Set automatically when a save creates this session&apos;s{' '}
               <span className="font-mono">content/YYYY-MM-DD</span> branch. Read-only: the save
               pipeline owns the branch strategy.
@@ -251,19 +251,19 @@ export default function SettingsPage(): JSX.Element {
           ) : (
             <dl className="grid gap-3 sm:grid-cols-3">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-zinc-500">Last Sync</dt>
+                <dt className="text-xs uppercase tracking-wide text-zinc-400">Last Sync</dt>
                 <dd className="mt-1 text-sm text-zinc-200">
                   {formatLocalTimestamp(syncStatus.data?.last_sync ?? latest?.sync_timestamp)}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-zinc-500">Revision</dt>
+                <dt className="text-xs uppercase tracking-wide text-zinc-400">Revision</dt>
                 <dd className="mt-1 truncate font-mono text-sm text-zinc-200">
                   {syncStatus.data?.revision ?? latest?.revision ?? '—'}
                 </dd>
               </div>
               <div className="sm:col-span-3">
-                <dt className="text-xs uppercase tracking-wide text-zinc-500">Results</dt>
+                <dt className="text-xs uppercase tracking-wide text-zinc-400">Results</dt>
                 <dd className="mt-1 text-sm text-zinc-200">
                   {latest === undefined ? 'Never synced' : formatHistoryCounts(latest)}
                 </dd>
@@ -282,7 +282,7 @@ export default function SettingsPage(): JSX.Element {
               )}
               {syncing ? 'Syncing…' : 'Sync Now'}
             </Button>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-400">
               A full sync unpacks the WAD and takes about 20 seconds.
             </span>
           </div>
@@ -329,7 +329,7 @@ export default function SettingsPage(): JSX.Element {
                       <TableCell className="whitespace-nowrap">
                         {formatLocalTimestamp(row.sync_timestamp)}
                         {row.revision === null ? null : (
-                          <span className="mt-0.5 block font-mono text-xs text-zinc-500">
+                          <span className="mt-0.5 block font-mono text-xs text-zinc-400">
                             {row.revision}
                           </span>
                         )}

@@ -35,11 +35,17 @@ const CommandInput = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
   <div className="flex items-center border-b border-zinc-800 px-3" cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
+    <Search className="mr-2 h-4 w-4 shrink-0 text-zinc-400" aria-hidden="true" />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        'flex h-10 w-full rounded-md bg-transparent py-3 text-sm text-zinc-50 outline-none placeholder:text-zinc-500 disabled:cursor-not-allowed disabled:opacity-50',
+        // `outline-none` **with** the spec's ring, not without one: the p5-05 audit
+        // (docs/evidence/phase-5/p5-05-d1-audit.md §3) found this input was the only
+        // text field in the palette with `outline-none` and no replacement, i.e. the
+        // ⌘K palette's only focus stop had no visible focus at all. The base
+        // `:focus-visible` rule in index.css covers this too; the utilities are here so
+        // the intent survives a refactor.
+        'flex h-10 w-full rounded-md bg-transparent py-3 text-sm text-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...props}
@@ -115,7 +121,7 @@ function CommandShortcut({
   ...props
 }: React.HTMLAttributes<HTMLSpanElement>): JSX.Element {
   return (
-    <span className={cn('ml-auto text-xs tracking-widest text-zinc-500', className)} {...props} />
+    <span className={cn('ml-auto text-xs tracking-widest text-zinc-400', className)} {...props} />
   );
 }
 CommandShortcut.displayName = 'CommandShortcut';

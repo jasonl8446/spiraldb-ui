@@ -267,7 +267,7 @@ export default function ObjectIdMultiSelect<T extends string | number>({
   return (
     <div className="flex flex-col gap-3">
       {values.length === 0 ? (
-        <p className="text-xs text-zinc-500">{emptyText}</p>
+        <p className="text-xs text-zinc-400">{emptyText}</p>
       ) : (
         <ul className="flex flex-wrap gap-2" aria-label={`${noun} chips`}>
           {values.map((value, index) => {
@@ -282,7 +282,7 @@ export default function ObjectIdMultiSelect<T extends string | number>({
                       // The position keeps the accessible name unique when a file carries the
                       // same value twice (14 NpcInventory files do), which strict locators need.
                       aria-label={`Remove ${label} (${index + 1})`}
-                      className="rounded-sm text-zinc-400 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="rounded-sm text-zinc-400 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                       onClick={() => onChange(removeAtIndex(values, index))}
                     >
                       <X className="h-3 w-3" aria-hidden="true" />

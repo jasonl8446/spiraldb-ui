@@ -48,7 +48,7 @@ export default function TypeProgressSection({ rows }: TypeProgressSectionProps):
               <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                 <span className="text-sm text-zinc-200">{row.label}</span>
                 {/* One text node for the whole fraction, exactly as the spec writes it. */}
-                <span className="text-xs text-zinc-500" data-type-summary={row.objectType}>
+                <span className="text-xs text-zinc-400" data-type-summary={row.objectType}>
                   {`${row.fraction} (${formatPercent(row.percent)})`}
                 </span>
               </div>

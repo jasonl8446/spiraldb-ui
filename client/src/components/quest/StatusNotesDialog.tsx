@@ -95,9 +95,9 @@ export default function StatusNotesDialog({
             disabled={submitting}
             placeholder={NOTES_PLACEHOLDER}
             onChange={(event) => onNotesChange(event.target.value)}
-            className="flex w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 shadow-sm transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 shadow-sm transition-colors placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
           />
-          <p className="text-xs text-zinc-500">{NOTES_HINT}</p>
+          <p className="text-xs text-zinc-400">{NOTES_HINT}</p>
         </div>
 
         {error === null ? null : (

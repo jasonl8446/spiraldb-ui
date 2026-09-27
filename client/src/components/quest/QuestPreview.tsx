@@ -8,6 +8,7 @@ import {
   shortTypeName,
   type PreviewTab,
 } from '../../lib/extract';
+import { nextTabIndex } from '../../lib/tablist';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 
@@ -81,7 +82,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
         aria-label="Quest preview sections"
         className="flex flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2"
       >
-        {PREVIEW_TABS.map((name) => {
+        {PREVIEW_TABS.map((name, index) => {
           const selected = name === tab;
           return (
             <button
@@ -92,8 +93,20 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
               aria-selected={selected}
               aria-controls={`${panelId}-panel`}
               onClick={() => setTab(name)}
+              // APG tablist keys, the same automatic activation the click performs; the
+              // rule is shared with the list pages' filter tabs (`lib/tablist.ts`).
+              onKeyDown={(event) => {
+                const next = nextTabIndex(event.key, index, PREVIEW_TABS.length);
+                if (next === null) {
+                  return;
+                }
+                event.preventDefault();
+                const target = PREVIEW_TABS[next];
+                setTab(target);
+                document.getElementById(`${panelId}-tab-${target}`)?.focus();
+              }}
               className={cn(
-                'border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                'border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                 selected
                   ? 'border-blue-500 font-medium text-zinc-50'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200',
@@ -213,7 +226,7 @@ function GoalLogicPanel({ quest }: { quest: QuestObject }): JSX.Element {
 function RequirementsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   return (
     <section aria-label="Requirements" className="flex flex-col gap-4">
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-400">
         Read-only JSON — this preview is the extraction page's; the structured requirement tree is
         edited in the Requirements tab of the quest detail page.
       </p>
@@ -228,7 +241,7 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   const endResults = arrayOf(nested(quest.m_endResults, 'm_results'));
   return (
     <section aria-label="Results" className="flex flex-col gap-4">
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-400">
         Read-only JSON — this preview is the extraction page's; the structured result editor is in
         the Results tab of the quest detail page.
       </p>
@@ -252,7 +265,7 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
 function DialogPanel({ quest }: { quest: QuestObject }): JSX.Element {
   return (
     <section aria-label="Dialog" className="flex flex-col gap-4">
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-400">
         Read-only JSON — this preview is the extraction page’s; the structured dialog editor is in
         the Dialog tab of the quest detail page.
       </p>
@@ -262,19 +275,19 @@ function DialogPanel({ quest }: { quest: QuestObject }): JSX.Element {
 }
 
 function Empty({ text }: { text: string }): JSX.Element {
-  return <p className="text-sm text-zinc-500">{text}</p>;
+  return <p className="text-sm text-zinc-400">{text}</p>;
 }
 
 /** A definition list of primitive fields; never renders `[object Object]`. */
 function FieldList({ fields }: { fields: Array<[string, string]> }): JSX.Element {
   if (fields.length === 0) {
-    return <p className="text-sm text-zinc-500">No scalar fields.</p>;
+    return <p className="text-sm text-zinc-400">No scalar fields.</p>;
   }
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
       {fields.map(([key, value]) => (
         <div key={key} className="min-w-0">
-          <dt className="font-mono text-xs text-zinc-500">{key}</dt>
+          <dt className="font-mono text-xs text-zinc-400">{key}</dt>
           <dd className="truncate text-sm text-zinc-200" title={value}>
             {value}
           </dd>
@@ -288,7 +301,7 @@ function FieldList({ fields }: { fields: Array<[string, string]> }): JSX.Element
 function JsonBlock({ label, value }: { label: string; value: unknown }): JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="mb-1 font-mono text-xs text-zinc-500">{label}</p>
+      <p className="mb-1 font-mono text-xs text-zinc-400">{label}</p>
       <pre className="max-h-72 overflow-auto rounded-md border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-300">
         {value === undefined ? 'undefined' : JSON.stringify(value, null, 2)}
       </pre>

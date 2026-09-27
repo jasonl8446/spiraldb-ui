@@ -262,9 +262,9 @@ export default function ExtractionPage(): JSX.Element {
         {quests.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-              <PackageSearch className="h-10 w-10 text-zinc-500" aria-hidden="true" />
+              <PackageSearch className="h-10 w-10 text-zinc-400" aria-hidden="true" />
               <p className="text-sm text-zinc-200">No quests found in this packet capture.</p>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-400">
                 The capture was parsed successfully but contained no quest definitions. Discard it
                 and try another one.
               </p>

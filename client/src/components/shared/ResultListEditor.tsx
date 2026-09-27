@@ -153,9 +153,9 @@ export default function ResultListEditor({
   return (
     <section aria-label={label} className={cn('flex min-w-0 flex-col gap-3', className)}>
       {!wrapperIsObject ? (
-        <p className="text-sm text-zinc-500">{NO_RESULT_WRAPPER_TEXT}</p>
+        <p className="text-sm text-zinc-400">{NO_RESULT_WRAPPER_TEXT}</p>
       ) : cards.length === 0 ? (
-        <p className="text-sm text-zinc-500">{NO_RESULTS_TEXT}</p>
+        <p className="text-sm text-zinc-400">{NO_RESULTS_TEXT}</p>
       ) : (
         <ul className="flex min-w-0 flex-col gap-3">
           {cards.map((card) => (
@@ -189,7 +189,7 @@ function ResultCard({
         className="min-w-0 rounded-md border border-zinc-800 border-l-4 border-l-blue-500 bg-zinc-900/40 p-3"
       >
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-zinc-500">{card.index + 1}</span>
+          <span className="font-mono text-xs text-zinc-400">{card.index + 1}</span>
           <span className="font-mono text-sm text-zinc-100">{card.title}</span>
           {card.spec === null ? (
             <span className="text-xs text-amber-400">
@@ -267,7 +267,7 @@ function ResultFieldControl({
           path={resultRequirementsPath(card.listPath, card.index)}
           label={`Requirements for ${card.address}`}
         />
-        <p id={describedBy} className="text-xs text-zinc-500">
+        <p id={describedBy} className="text-xs text-zinc-400">
           {field.help}
         </p>
       </div>
@@ -289,7 +289,7 @@ function ResultFieldControl({
           aria-describedby={describedBy}
           type="checkbox"
           checked={view.value === true}
-          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           onChange={(event) =>
             state.edit(
               setResultBooleanFieldEdit(card.listPath, card.index, field.key, event.target.checked),
@@ -398,7 +398,7 @@ function NameField({
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="font-mono text-xs text-zinc-400">{field.key}</span>
-        <p className="text-xs text-zinc-500">{field.help}</p>
+        <p className="text-xs text-zinc-400">{field.help}</p>
       </div>
     );
   }
@@ -516,7 +516,7 @@ function DualSourceNameField({
           state.edit(setResultIdFieldEdit(card.listPath, card.index, field, view.present, rawId))
         }
       />
-      <p id={describedBy} className="text-xs text-zinc-500">
+      <p id={describedBy} className="text-xs text-zinc-400">
         {field.help}
       </p>
       <FieldMessages messages={messages} id={messagesId} />
@@ -580,7 +580,7 @@ function RouterField({
                   id={subId}
                   type="checkbox"
                   checked={subValue === true}
-                  className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                   onChange={(event) =>
                     state.edit(
                       setRouterBooleanFieldEdit(
@@ -660,8 +660,8 @@ function RouterField({
           );
         })}
       </div>
-      {present ? null : <p className="text-xs text-zinc-500">{ROUTER_ABSENT_NOTE}</p>}
-      <p id={describedBy} className="text-xs text-zinc-500">
+      {present ? null : <p className="text-xs text-zinc-400">{ROUTER_ABSENT_NOTE}</p>}
+      <p id={describedBy} className="text-xs text-zinc-400">
         {field.help}
       </p>
     </div>
@@ -681,7 +681,7 @@ function RawFieldsDisclosure({ card }: { card: ResultCardView }): JSX.Element | 
   }
   return (
     <details className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40">
-      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
         {`${RAW_FIELDS_LABEL} (${unmodelled.length} unmodelled)`}
       </summary>
       <div className="border-t border-zinc-800 p-3">
@@ -792,7 +792,7 @@ function Labelled({
       </label>
       {children}
       {help === undefined || help === '' ? null : (
-        <p id={helpId} className="text-xs text-zinc-500">
+        <p id={helpId} className="text-xs text-zinc-400">
           {help}
         </p>
       )}
@@ -803,7 +803,7 @@ function Labelled({
 
 /** The shared input/select styling (the same classes the other live panels use). */
 const CONTROL_CLASS =
-  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950';
 
 /** `true` for a non-null, non-array object. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -106,7 +106,7 @@ export default function NpcSpellInventoryForm({
               <span className="font-mono text-sm text-zinc-100">
                 {templateId === undefined || templateId === null ? '—' : String(templateId)}
               </span>
-              <span className="text-xs text-zinc-500">TemplateID (the key of this file)</span>
+              <span className="text-xs text-zinc-400">TemplateID (the key of this file)</span>
             </>
           )}
         </CardContent>
@@ -118,7 +118,7 @@ export default function NpcSpellInventoryForm({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {rows.length === 0 ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               This trainer offers no spells (the file carries an empty Spells array).
             </p>
           ) : (
@@ -231,7 +231,7 @@ export default function NpcSpellInventoryForm({
                   }}
                 />
               </div>
-              <span className="pb-2 text-xs text-zinc-500">
+              <span className="pb-2 text-xs text-zinc-400">
                 <Plus className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
                 picking a spell appends a row
               </span>

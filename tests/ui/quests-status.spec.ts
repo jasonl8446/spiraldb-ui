@@ -144,7 +144,11 @@ test.describe('the transition flow', () => {
   }) => {
     const recorded = await mockQuestsApi(page);
     await page.goto('/quests');
-    await expect(firstRowStatusCell(page)).toContainText(EXTRACTED_BADGE);
+    // p5-05: the desktop table's Status cell is now the shared `StatusBadge` (colour **and**
+    // the status word) instead of a colour-only dot, so the cell's own text carries the label
+    // and its `aria-label` still names it. Both are asserted — the arm's claim (that the
+    // optimistic flip moved this row's status) is unchanged and now has two channels.
+    await expect(firstRowStatusCell(page).getByLabel(EXTRACTED_BADGE)).toContainText('Extracted');
 
     await firstRow(page)
       .getByRole('button', { name: `Change status: ${QUEST}` })
@@ -176,7 +180,7 @@ test.describe('the transition flow', () => {
     await expect(dialog).toHaveCount(0);
     // The row's own status dot moved, and the filter tabs' counts moved with it
     // (the optimistic write keeps the list's summary in step, D49(b)).
-    await expect(firstRowStatusCell(page)).toContainText(REVIEWED_BADGE);
+    await expect(firstRowStatusCell(page).getByLabel(REVIEWED_BADGE)).toContainText('Reviewed');
     await expect(filterTabCount(page, 'Extracted')).toContainText('44');
     await expect(filterTabCount(page, 'Reviewed')).toContainText('121');
   });

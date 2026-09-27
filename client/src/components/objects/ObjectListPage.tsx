@@ -36,6 +36,7 @@ import {
 } from '../../lib/objects';
 import { cn } from '../../lib/utils';
 import { useApiErrorToast } from '../../hooks/useApiErrorToast';
+import { nextTabIndex } from '../../lib/tablist';
 import NewObjectControl from './NewObjectControl';
 import ObjectCardList from './ObjectCardList';
 import ObjectTable, { type ObjectListColumn } from './ObjectTable';
@@ -174,7 +175,7 @@ export default function ObjectListPage({
           aria-label={objectFilterLabel(nounPlural)}
           className="flex flex-wrap gap-1 border-b border-zinc-800"
         >
-          {tabs.map((tab) => {
+          {tabs.map((tab, index) => {
             const active = tab.filter === filter;
             return (
               <button
@@ -185,8 +186,23 @@ export default function ObjectListPage({
                 aria-selected={active}
                 aria-controls={`${idPrefix}-results`}
                 onClick={() => setFilter(tab.filter)}
+                // The APG tablist keys (ArrowLeft/ArrowRight/Home/End), moving focus and
+                // selecting in one press — the same `setFilter` a click uses. Without this
+                // the role was claimed but the keyboard model was not implemented
+                // (docs/evidence/phase-5/p5-05-d1-audit.md §7.4); the pure rule lives in
+                // `lib/tablist.ts`.
+                onKeyDown={(event) => {
+                  const next = nextTabIndex(event.key, index, tabs.length);
+                  if (next === null) {
+                    return;
+                  }
+                  event.preventDefault();
+                  const target = tabs[next];
+                  setFilter(target.filter);
+                  document.getElementById(`${idPrefix}-filter-${target.filter}`)?.focus();
+                }}
                 className={cn(
-                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                   active
                     ? 'border-blue-500 text-white'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200',
@@ -202,7 +218,7 @@ export default function ObjectListPage({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative md:w-64">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
               aria-hidden="true"
             />
             <Input
@@ -241,7 +257,7 @@ export default function ObjectListPage({
             <p role="alert" className="text-sm text-zinc-200">
               {loadError}
             </p>
-            <p className="text-sm text-zinc-500">{serverMessage(query.error, loadError)}</p>
+            <p className="text-sm text-zinc-400">{serverMessage(query.error, loadError)}</p>
             <Button
               variant="outline"
               onClick={() => {
@@ -267,7 +283,7 @@ export default function ObjectListPage({
                 <p className="text-sm text-zinc-200">
                   {objectEmptyStateMessage(filter, nounPlural)}
                 </p>
-                <p className="text-sm text-zinc-500">{OBJECT_EMPTY_STATE_HINT}</p>
+                <p className="text-sm text-zinc-400">{OBJECT_EMPTY_STATE_HINT}</p>
               </CardContent>
             </Card>
           ) : isMobile ? (

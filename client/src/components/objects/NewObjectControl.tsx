@@ -187,7 +187,7 @@ export default function NewObjectControl({
                 aria-invalid={!built.ok && rawKey !== ''}
                 aria-describedby={`${config.fileType}-new-key-help`}
               />
-              <p id={`${config.fileType}-new-key-help`} className="text-xs text-zinc-500">
+              <p id={`${config.fileType}-new-key-help`} className="text-xs text-zinc-400">
                 {spec.keyHelp}
               </p>
             </div>
@@ -208,11 +208,11 @@ export default function NewObjectControl({
                 {spec.defaults.map((field) => (
                   <li key={field.key} className="font-mono text-xs text-zinc-400">
                     {field.key}: {JSON.stringify(field.value)}
-                    <span className="ml-2 font-sans text-zinc-500">{field.note}</span>
+                    <span className="ml-2 font-sans text-zinc-400">{field.note}</span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-xs text-zinc-500">{spec.defaultsNote}</p>
+              <p className="mt-2 text-xs text-zinc-400">{spec.defaultsNote}</p>
             </details>
 
             <DialogFooter>

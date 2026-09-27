@@ -27,7 +27,7 @@ export default function ExtractingCard({ file, onCancel }: ExtractingCardProps):
       <CardContent className="flex flex-col gap-5 p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <FileJson className="h-8 w-8 shrink-0 text-zinc-500" aria-hidden="true" />
+            <FileJson className="h-8 w-8 shrink-0 text-zinc-400" aria-hidden="true" />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-zinc-50" title={file.name}>
                 {file.name}

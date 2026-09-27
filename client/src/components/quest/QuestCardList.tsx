@@ -31,13 +31,13 @@ export default function QuestCardList({ rows, className }: QuestCardListProps): 
         <li key={row.quest_name}>
           <Link
             to={`/quests/${encodeURIComponent(row.quest_name)}`}
-            className="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
             <span className="truncate font-mono text-sm text-zinc-100">{row.quest_name}</span>
             <span className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-zinc-400">Level {row.level ?? '—'}</span>
               <StatusBadge status={questStatus(row)} />
-              <span className="text-xs text-zinc-500">{relativeTime(row.modified_at)}</span>
+              <span className="text-xs text-zinc-400">{relativeTime(row.modified_at)}</span>
             </span>
           </Link>
         </li>

@@ -136,7 +136,7 @@ export default function TreasureCardInventoryForm({
               <span className="font-mono text-sm text-zinc-100">
                 {templateId === undefined || templateId === null ? '—' : String(templateId)}
               </span>
-              <span className="text-xs text-zinc-500">TemplateID (the key of this file)</span>
+              <span className="text-xs text-zinc-400">TemplateID (the key of this file)</span>
             </>
           )}
         </CardContent>
@@ -153,13 +153,13 @@ export default function TreasureCardInventoryForm({
             </p>
           )}
           {referenceUsed ? null : (
-            <p data-reference-used="false" className="text-xs text-zinc-500">
+            <p data-reference-used="false" className="text-xs text-zinc-400">
               {SPELL_NAMES_NOT_LOADED_NOTE}
             </p>
           )}
 
           {rows.length === 0 ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               {hasCards
                 ? 'This NPC sells no treasure cards (the file carries an empty TreasureCards array).'
                 : 'This file carries no TreasureCards key yet.'}
@@ -214,7 +214,7 @@ export default function TreasureCardInventoryForm({
                 <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                 Add card
               </Button>
-              <span className="pb-2 text-xs text-zinc-500">
+              <span className="pb-2 text-xs text-zinc-400">
                 a new card starts at price {newTreasureCardEntry('x').Price as number}
               </span>
             </div>
@@ -287,7 +287,7 @@ function TreasureCardRow({
           className="w-32"
           onChange={(event) => state.edit(treasureCardPriceEdit(index, event.target.value))}
         />
-        <span id={priceHelpId} className="text-xs text-zinc-500">
+        <span id={priceHelpId} className="text-xs text-zinc-400">
           Gold. The corpus’s prices are 100, 150, 200 and 250.
         </span>
         {showsHint ? (

@@ -143,10 +143,10 @@ function ActivityRowItem({ entry }: { entry: ActivityEntry }): JSX.Element {
       <span className="text-sm text-zinc-200">
         <span className="font-mono text-zinc-100">{label}</span>{' '}
         <span>{historyActionText(entry)}</span>
-        {href === null ? <span className="text-xs text-zinc-500"> — not linked</span> : null}
+        {href === null ? <span className="text-xs text-zinc-400"> — not linked</span> : null}
       </span>
       <time
-        className="shrink-0 whitespace-nowrap text-xs text-zinc-500"
+        className="shrink-0 whitespace-nowrap text-xs text-zinc-400"
         dateTime={entry.changed_at ?? undefined}
       >
         {relativeTime(entry.changed_at)}
@@ -175,7 +175,7 @@ function ActivityRowItem({ entry }: { entry: ActivityEntry }): JSX.Element {
           </Link>
         )}
         {entry.changed_by === null || entry.changed_by === '' ? null : (
-          <p className="text-xs text-zinc-500">by {entry.changed_by}</p>
+          <p className="text-xs text-zinc-400">by {entry.changed_by}</p>
         )}
         {hasHistoryNotes(entry) ? (
           <p className="text-sm italic text-zinc-400">{entry.notes}</p>

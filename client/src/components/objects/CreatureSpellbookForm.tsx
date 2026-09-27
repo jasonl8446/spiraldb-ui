@@ -103,7 +103,7 @@ export default function CreatureSpellbookForm({
               {typeof deckName === 'string' && deckName !== '' ? deckName : '—'}
             </span>
           )}
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-zinc-400">
             DeckName (the key of this file; all 134 corpus names are unique)
           </span>
         </CardContent>
@@ -115,7 +115,7 @@ export default function CreatureSpellbookForm({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {spells.length === 0 ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               This deck has no spells (the file carries an empty SpellTemplateIds array).
             </p>
           ) : (
@@ -127,7 +127,7 @@ export default function CreatureSpellbookForm({
                     key={index}
                     className="flex flex-wrap items-end gap-2 rounded-md border border-zinc-800 p-2"
                   >
-                    <span className="pb-2 font-mono text-xs text-zinc-500">{position}</span>
+                    <span className="pb-2 font-mono text-xs text-zinc-400">{position}</span>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-zinc-400">Spell</span>
                       <FriendlyNameDropdown
