@@ -1,0 +1,179 @@
+p4-06 (plan task 4.8, WizardZoneData / ZoneTransfer editor) — the LIVE rig transcript
+Recorded by the story executor during the D3 evidence run. Nothing was committed to this repo by
+the executor; the lead commits. The D17 clone was written and restored (proven below).
+
+D70(h) rig discipline, item by item:
+  * a FRESH port (3231) and a FRESH database: the DB is a copy of the owner’s data/spiraldb-ui.db
+    with `DELETE FROM settings` run first, so the boot seeds spiraldb_path/user_name from the
+    environment instead of inheriting the copy’s rows.
+  * the running server’s identity was asserted BEFORE any probe was trusted.
+  * spiraldb_path points at the D17 CLONE (data/test-spiraldb), never the owner’s fork — and the
+    fork was verified untouched afterwards (md5 + porcelain).
+  * the clone was restored to 18dc924 afterwards and the restore is proven below.
+  * the rig was killed by PID; nothing is left listening on 3231/5173/3001 and no tsx server
+    process remains.
+
+$ rm -rf /tmp/p406-live && mkdir -p /tmp/p406-live
+$ cp data/spiraldb-ui.db /tmp/p406-live/p406-live.db
+$ python3 -c "import sqlite3; c=sqlite3.connect('/tmp/p406-live/p406-live.db'); c.execute('DELETE FROM settings'); c.commit()"
+  settings rows after delete: 0
+  zones rows in the copy: 1241
+
+$ git -C data/test-spiraldb rev-parse HEAD   -> 18dc92477d54b1e911796960407ce7710e703697
+$ git -C data/test-spiraldb status --porcelain | wc -l  -> 0
+$ ss -ltn | grep -E "3001|5173|3231"   -> nothing listening
+$ ps -eo pid,cmd | grep "tsx server/src/index"   -> none (no stale server to answer a probe)
+
+$ setsid env PORT=3231 SPIRALDB_UI_DB=/tmp/p406-live/p406-live.db \
+      SPIRALDB_PATH=$PWD/data/test-spiraldb USER_NAME=p4-06-executor \
+      SPIRALDB_UI_SKIP_IMPORT=1 npx tsx server/src/index.ts > /tmp/p406-live/server.log &
+  [spiraldb-ui] database ready at /tmp/p406-live/p406-live.db
+  [spiraldb-ui] API listening on http://localhost:3231
+
+  identity probe (the assertion that the server is MINE, before anything else):
+  $ curl -s localhost:3231/api/settings
+  {"aurorium_path": "/home/jason/Documents/git-projects/Aurorium",
+   "git_branch": "content/2026-09-27",
+   "imcodec_path": ".../Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec",
+   "spiraldb_path": "/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb",
+   "user_name": "p4-06-executor"}
+  $ ss -ltnp | grep 3231  -> LISTEN *:3231 (pid 2140868, the child of THIS rig)
+
+  live reads:
+  $ curl -s localhost:3231/api/zone-transfers            -> HTTP 200
+    objects 1205   missing_directory False   duplicates 2   skipped 0
+    summary {'total': 1205, 'extracted': 1205, 'reviewed': 0, 'verified': 0}
+    every row's status: 'extracted'   (statuses present: ['extracted'])
+    (1205 objects for 1207 files: the two duplicate ZoneName pairs collapse, D19 — and the
+     duplicate list is returned in `duplicate_keys`, non-empty, which is what the list page’s
+     corpus notice renders)
+  $ curl -s "localhost:3231/api/zone-transfers/Housing_WizardCommonsApt%2FHouse_WizardCommonsApt_Ext_Pre"  -> HTTP 200
+    keys ['ZoneName', 'Events', 'Teleports']          <- the file’s own order (1,206/1,207)
+    ZoneName Housing_WizardCommonsApt/House_WizardCommonsApt_Ext_Pre
+    Events   []                                       <- the drift field, verbatim
+    Teleports 1
+    nested keys ['m_exitTeleporter', 'm_teleporterTag', 'm_teleportType', 'm_transitionID',
+                 'm_destinationLoc', 'm_destinationZone']
+    m_destinationLoc -27.24142,2009.2,-3.051758E-05,0  <- scientific notation, a real value
+  $ curl -s localhost:3231/api/names/zones               -> HTTP 200
+    rows 1241
+    sample ('Aquila/AQ_Z00_Hub', 'Aquila / AQ Z00 Hub')  <- the dropdown’s humanized label source
+  $ curl -s localhost:3231/api/status/zone_transfers     -> 1205 entries, all extracted
+    summary {'total': 1205, 'extracted': 1205, 'reviewed': 0, 'verified': 0}
+    (CORRECTED MEASUREMENT: the brief said this family has 0 entry_status rows. It has 1205,
+     created by the first-startup corpus import — server/src/services/import.ts lists
+     {objectType: 'zone_transfer', directory: 'ZoneTransfer', keyField: 'ZoneName'} in
+     IMPORT_TYPE_SPECS, and 1205 is the distinct-key count because the two duplicate pairs are
+     skipped first-file-wins. The constant in shared/simpleObjects/zoneTransfer.ts carries 1205.)
+
+  the shared engine (the same module the client form runs) over the LIVE served document:
+  $ npx tsx /tmp/p406-live/engine.ts
+    http status          : 200
+    served keys          : ZoneName,Events,Teleports
+    served Events        : []
+    served loc           : -27.24142,2009.2,-3.051758E-05,0
+    isDestinationLoc(loc): true
+    findings             : 0
+    blocking             : 0
+    blocked              : false
+    referenceUsed        : false
+    corpus constants     : files 1207 | scientific values 133 | status rows 1205
+  -> the BLOCKING format rule blocks nothing on a real file: it accepts this scientific-notation
+     value, which a plain-float regex would have rejected.
+
+  ARM A — the no-op save (the AC’s "survives save byte-identically", live):
+  $ md5sum data/test-spiraldb/ZoneTransfer/WizardZoneDatas_10306-A.json
+    5f5603dd735c5ac22298b4c4fdf0d30b     (identical to the owner’s fork copy)
+  $ curl -s -X POST localhost:3231/api/zone-transfers -H "content-type: application/json" \
+      --data-binary @/tmp/p406-live/post-noop.json     # {"object": <the served document, unmodified>}
+  HTTP 200
+    key "Housing_WizardCommonsApt/House_WizardCommonsApt_Ext_Pre"
+    file_type "zonetransfer"   object_type "zone_transfer"
+    outcome "updated"   action "update"
+    commit ""                              <- NO commit: the bytes were already canonical
+    commit_message "spiraldb: update zone_transfer Housing_WizardCommonsApt/..."
+    file "ZoneTransfer/WizardZoneDatas_10306-A.json"   <- the LEGACY path is kept (D19)
+    status_created false   warnings []
+  $ git -C data/test-spiraldb rev-parse --short HEAD   -> 18dc924   (unchanged)
+  $ md5sum data/test-spiraldb/ZoneTransfer/WizardZoneDatas_10306-A.json
+    5f5603dd735c5ac22298b4c4fdf0d30b     (unchanged: the save wrote the same bytes)
+  -> `Events: []`, the key order and the legacy filename all survived a live save with zero
+     textual change. This is the AC2 arm at its strongest: nothing to normalise, nothing lost.
+
+  ARM B — one modelled nested edit (the diff must be that field and nothing else):
+  $ python3 -c "... d['Teleports'][0]['Teleport']['m_transitionID'] = 5 ..."
+  $ curl -s -X POST localhost:3231/api/zone-transfers -H "content-type: application/json" \
+      --data-binary @/tmp/p406-live/post-edit.json
+  HTTP 200
+    commit "08ab16b0727ddac9dff9a6b9bfce4b6b7efac674"
+    commit_message "spiraldb: update zone_transfer Housing_WizardCommonsApt/House_WizardCommonsApt_Ext_Pre"
+    file "ZoneTransfer/WizardZoneDatas_10306-A.json"   warnings []
+  $ git -C data/test-spiraldb log -1 --format="%H %s"
+    08ab16b0727ddac9dff9a6b9bfce4b6b7efac674 spiraldb: update zone_transfer Housing_WizardCommonsApt/House_WizardCommonsApt_Ext_Pre
+  $ git -C data/test-spiraldb diff HEAD~1 HEAD -- ZoneTransfer/WizardZoneDatas_10306-A.json
+    diff --git a/ZoneTransfer/WizardZoneDatas_10306-A.json b/ZoneTransfer/WizardZoneDatas_10306-A.json
+    index b69a007..d5169d7 100644
+    --- a/ZoneTransfer/WizardZoneDatas_10306-A.json
+    +++ b/ZoneTransfer/WizardZoneDatas_10306-A.json
+    @@ -8,7 +8,7 @@
+             "m_exitTeleporter": 0,
+             "m_teleporterTag": 0,
+             "m_teleportType": "TELEPORT_STATIC",
+    -        "m_transitionID": 0,
+    +        "m_transitionID": 5,
+             "m_destinationLoc": "-27.24142,2009.2,-3.051758E-05,0",
+             "m_destinationZone": "Housing_WizardCommonsApt/House_WizardCommonsApt_Int_Pre"
+           }
+  -> ONE line. `Events: []` is not in the diff, the five other nested keys are not in the diff, the
+     key order is not in the diff, and the filename is the legacy one. That is D5’s
+     merge-not-replace and the AC2 drift guard, on the real save path.
+  $ cat data/test-spiraldb/ZoneTransfer/WizardZoneDatas_10306-A.json
+    {
+      "ZoneName": "Housing_WizardCommonsApt/House_WizardCommonsApt_Ext_Pre",
+      "Events": [],
+      "Teleports": [
+        {
+          "TriggerName": "Teleport location",
+          "Teleport": {
+            "m_exitTeleporter": 0,
+            "m_teleporterTag": 0,
+            "m_teleportType": "TELEPORT_STATIC",
+            "m_transitionID": 5,
+            "m_destinationLoc": "-27.24142,2009.2,-3.051758E-05,0",
+            "m_destinationZone": "Housing_WizardCommonsApt/House_WizardCommonsApt_Int_Pre"
+          }
+        }
+      ]
+    }
+  $ md5sum data/test-spiraldb/ZoneTransfer/WizardZoneDatas_10306-A.json
+    15bf53702d3ad059c5f9d5b7ef8537a0     (the one field, and nothing else)
+
+  the restore, proven:
+  $ kill -TERM 2140845 2140857 2140868        (the rig’s own pids)
+  $ ss -ltnp | grep -E "3001|5173|3231"   -> nothing listening
+  $ ps -eo pid,cmd | grep "server/src/index"   -> no tsx server processes
+  $ git -C data/test-spiraldb reset --hard 18dc924
+    HEAD is now at 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+  $ git -C data/test-spiraldb status --porcelain | wc -l  -> 0
+  $ git -C data/test-spiraldb rev-parse HEAD  -> 18dc92477d54b1e911796960407ce7710e703697
+  $ md5sum data/test-spiraldb/ZoneTransfer/WizardZoneDatas_10306-A.json
+    5f5603dd735c5ac22298b4c4fdf0d30b     <- byte-identical to the pre-run file
+  $ md5sum /home/jason/Documents/git-projects/spiraldb/ZoneTransfer/WizardZoneDatas_10306-A.json
+    5f5603dd735c5ac22298b4c4fdf0d30b     and the owner fork’s porcelain: 0 lines
+    (the fork was never written: no rig ever pointed at it, and its bytes are unchanged)
+
+What this transcript proves, and what it does not:
+  PROVES  the real API serves 1205 ZoneTransfer entries with the duplicate pair reported; a real
+          document arrives with `Events: []` and its own key order; the shared engine — with the
+          format rule now BLOCKING — accepts the real scientific-notation location (0 findings,
+          blocked false); a live no-op save writes nothing (commit "", bytes unchanged); a live
+          one-field edit commits exactly that line with `Events` and the nested order untouched;
+          and the D17 clone is back at 18dc924 with the file byte-identical while the owner’s fork
+          was never written.
+  DOES NOT prove the browser rendering of the inline error, the disabled Save button, the
+          disclosure or the repeater — those are the hermetic tier-1 arms
+          (tests/ui/zone-transfer-editor.spec.ts, 13 passed).
+  NOT RUN  no screen was photographed (D23’s tier-2 mobile/visual pass belongs to the phase PR).
+  SCOPE   the live save path was exercised on ONE real file (chosen because it carries a
+          scientific-notation location and a single teleport). The 1,207-file claims are the unit
+          sweep’s, in-process over the same bytes (tests/unit/zone-transfer-model.test.ts).
