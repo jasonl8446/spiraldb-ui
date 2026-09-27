@@ -1,0 +1,163 @@
+p4-07 (plan task 4.9, GlobalRegistry editor) — the LIVE consolidation rig transcript
+Recorded by the story executor during the D3 evidence run (2026-09-27). Nothing was committed to
+this repo by the executor; the lead commits. The D17 clone was written and restored (proven below).
+
+D70(h) rig discipline, item by item:
+  * a FRESH port (3417) and a FRESH database: the DB is a copy of the owner's data/spiraldb-ui.db
+    with `DELETE FROM settings` run first, so the boot seeds spiraldb_path/user_name from the
+    environment instead of inheriting the copy's rows (the server reads settings at startup).
+  * the running server's identity was asserted BEFORE any probe was trusted.
+  * spiraldb_path points at the D17 CLONE (data/test-spiraldb), never the owner's fork — and the
+    fork was verified untouched afterwards (porcelain 0 + the legacy file's md5 before and after).
+  * the clone was restored to its exact pre-state afterwards (branch, HEAD 18dc924, `main` at
+    f3f8b5c, 42 commits, 0 porcelain, the legacy file present with its original md5) and the
+    restore is proven below. NOTE: the first attempt of this run is why the restore is exact —
+    `reset --hard` on the checked-out branch did NOT cover `main`, which had been moved by
+    `checkout main`; the second run captures the pre-state (branch + HEAD + main + commit count)
+    and puts every one of them back.
+  * the rig was killed by PID (its process group); nothing is left listening on 3417/5173/3001 and
+    no `tsx server/src/index` process remains.
+
+WHICH CLAIM THIS RUN PROVES, AND WHICH THE IN-PROCESS TESTS PROVE
+  * This run proves AC2 **against a real git repository**: the one commit's message, that the SAME
+    commit's tree adds `GlobalRegistry/globalregistry.json` and deletes
+    `GlobalRegistry/GlobalRegistryModels_1-A.json` (`--no-renames`; see the rename-detection note),
+    that the directory holds exactly one file afterwards, and that `entry_status` gained nothing
+    for the type's real `object_type` `global_registry` (D74(c)).
+  * The in-process suites prove the **merge rule** (case-sensitive keys, later-files-win with an
+    explicitly injected order), the row builders, the value handling, the consolidation plan, the
+    pipeline's `removePaths` mechanism and the DELETE-a-file-we-did-not-read refusal. The live
+    corpus holds ONE file, so "later wins" cannot be proven live at all — that is a fixture claim
+    and it is labelled as one.
+  * The tier-1 spec (`tests/ui/global-registry-editor.spec.ts`, 14 tests, hermetic) proves the
+    page: the merged table, add/edit/remove/rename, the value rules, the pre-save disclosure
+    naming the files to be removed, the POST body, and AC3's "no status route is called at all".
+
+RENAME DETECTION NOTE (an honest correction to the brief's expectation): `git show --stat` renders
+this commit as `{GlobalRegistryModels_1-A.json => globalregistry.json} | 5 +++--` because git's
+rename detection sees 88%-similar content — it is a DISPLAY choice, not the tree. The tree is an
+add and a delete, which `git show --name-status --no-renames` and
+`git diff-tree -r --no-renames --name-status` both print below, from the same commit object.
+
+==============================================================================
+PRE-STATE (captured, so the restore below is provable against it)
+==============================================================================
+  branch           : content/2026-09-27
+  HEAD             : 18dc92477d54b1e911796960407ce7710e703697
+  main             : f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+  commits on branch: 42
+  fork legacy md5  : d8bd51030e8ad9764371dab9d8dc4323
+  clone porcelain  : 0
+  clone GlobalRegistry/: GlobalRegistryModels_1-A.json
+  fork porcelain   : 0
+  ports 3001/5173/3417 : 0 listeners
+  stale tsx servers: 0
+
+==============================================================================
+BOOT — fresh port 3417, settings-stripped DB copy (the boot seeds spiraldb_path
+       and user_name from the environment: seeded BEFORE any probe)
+==============================================================================
+  settings rows after DELETE: 0
+  entry_status rows for global_registry BEFORE: 0
+  entry_status rows total BEFORE: 2271
+[spiraldb-ui] API listening on http://localhost:3417
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+  rig PID: 2191092
+
+--- IDENTITY PROBE (asserted before any probe is trusted) ---
+  spiraldb_path: /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  user_name    : p4-07-executor
+LISTEN 0      511                *:3417             *:*    users:(("MainThread",pid=2191092,fd=24))
+  -> the clone and this rig's identity: every answer below is mine.
+
+==============================================================================
+AC1 LIVE — the list and the MERGED view
+==============================================================================
+  objects: ['GlobalRegistryModels_1-A'] | statuses: [None]
+  summary: None | skipped: [] | missing_directory: False
+  top-level keys: ['GlobalRegistryValues'] | wrapper keys: 23 | distinct: 23
+  all integers  : True
+  Localization  : 1 (the integer, never 1.0)
+  key order     : ['Localization', 'Christmas', 'Halloween', 'WizardDay'] ...
+  GET with an arbitrary key (the key is a NAME, not a selector): HTTP 200
+
+==============================================================================
+AC2 LIVE, SAVE 1 — the consolidation: ONE commit, one file
+==============================================================================
+  request: the whole merged view, 24 wrapper entries (wrapper key kept: ['GlobalRegistryValues'] )
+  key/file_type/object_type : globalregistry / globalregistry / None
+  outcome/action           : created / update
+  commit_message (subject) : 'spiraldb: update global_registry globalregistry'
+  commit                   : 2906908c761a1daa6d916dde6be8d1270e157d11
+  file                     : GlobalRegistry/globalregistry.json
+  status/status_created    : None / False
+  warnings                 : ['Consolidated 1 file(s) into GlobalRegistry/globalregistry.json in one commit: GlobalRegistry/GlobalRegistryModels_1-A.json.']
+
+  $ git -C data/test-spiraldb log -1 --format='%s'
+spiraldb: update global_registry globalregistry
+  $ git -C data/test-spiraldb show --stat --format='%h %s' HEAD   (git's RENAME DETECTION view)
+2906908 spiraldb: update global_registry globalregistry
+
+ .../{GlobalRegistryModels_1-A.json => globalregistry.json}           | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+  $ git -C data/test-spiraldb show --name-status --no-renames --format= HEAD   (THE TREE: an ADD and a DELETE)
+D	GlobalRegistry/GlobalRegistryModels_1-A.json
+A	GlobalRegistry/globalregistry.json
+  $ git -C data/test-spiraldb diff-tree -r --no-renames --name-status HEAD   (the same, from the commit object)
+2906908c761a1daa6d916dde6be8d1270e157d11
+D	GlobalRegistry/GlobalRegistryModels_1-A.json
+A	GlobalRegistry/globalregistry.json
+  commits on the branch: before 42 -> now 43  (ONE commit)
+  $ ls data/test-spiraldb/GlobalRegistry/   (AC2c: exactly one file)
+globalregistry.json
+  $ cat data/test-spiraldb/GlobalRegistry/globalregistry.json | head -6   (the wrapper is intact)
+{
+  "GlobalRegistryValues": {
+    "Localization": 1,
+    "Christmas": 1,
+    "Halloween": 0,
+    "WizardDay": 0,
+  $ entry_status for global_registry AFTER save 1:
+    rows: 0 | total: 2271
+    distinct object_types: ['creature_spellbook', 'drop_table', 'npc_inventory', 'npc_spell_inventory', 'quest', 'treasure_card_inventory', 'zone_transfer']
+  $ git -C data/test-spiraldb status --porcelain | wc -l -> 0 (clean after the commit)
+
+==============================================================================
+AC2 LIVE, SAVE 2 — a second save replaces NOTHING (the plan is empty)
+==============================================================================
+  the served file after save 1 has 24 entries (including P4_07_Probe)
+  outcome/action   : updated / update
+  commit_message   : 'spiraldb: update global_registry globalregistry'
+  warnings         : [] <- nothing to consolidate
+  $ git -C data/test-spiraldb diff-tree -r --no-renames --name-status HEAD   (save 2's commit: a modify only)
+fcfb1cb1766c9ba18df38e5136c3ebae88e68e32
+M	GlobalRegistry/globalregistry.json
+  $ ls data/test-spiraldb/GlobalRegistry/   (still exactly one file)
+globalregistry.json
+
+==============================================================================
+RESTORE — and the proof of it
+==============================================================================
+  $ git -C data/test-spiraldb checkout content/2026-09-27
+Already on 'content/2026-09-27'
+  $ git -C data/test-spiraldb reset --hard 18dc924
+HEAD is now at 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+  $ git -C data/test-spiraldb branch -f main f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37   (main was moved by this run; put it back)
+  HEAD=18dc92477d54b1e911796960407ce7710e703697  (pre-state 18dc92477d54b1e911796960407ce7710e703697)
+  main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37  (pre-state f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37)
+  branch=content/2026-09-27  (pre-state content/2026-09-27)
+  commits on branch: 42  (pre-state 42)
+  porcelain: 0  (0 = clean)
+  $ ls data/test-spiraldb/GlobalRegistry/   (the legacy file is back; globalregistry.json is gone)
+GlobalRegistryModels_1-A.json
+  md5 d8bd51030e8ad9764371dab9d8dc4323  (pre-state d8bd51030e8ad9764371dab9d8dc4323 — also the fork's own md5)
+  $ git -C /home/jason/Documents/git-projects/spiraldb status --porcelain | wc -l -> 0  (the OWNER'S fork: untouched)
+  fork legacy md5: d8bd51030e8ad9764371dab9d8dc4323
+  HONEST LIMIT: the clone's reflog retains the probe commits (git keeps unreferenced
+  objects for a while); no branch references them after this restore.
+
+==============================================================================
+TEARDOWN
+==============================================================================
+  listeners on 3001/5173/3417: 0
+  stale tsx servers: 0

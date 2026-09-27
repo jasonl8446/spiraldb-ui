@@ -1,0 +1,77 @@
+# p4-07 gate — lead-run on 7e10944 + the story tree
+# started 2026-09-27T08:56:09-04:00
+=== 1. npm test
+$ npm test
+   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  323ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  333ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  629ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  493ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  418ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  420ms
+
+ Test Files  51 passed (51)
+      Tests  1255 passed (1255)
+   Start at  08:56:09
+   Duration  8.19s (transform 6.51s, setup 0ms, collect 25.15s, tests 55.39s, environment 14ms, prepare 6.83s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+  ✓  243 [chromium] › tests/ui/simple-object-editors.spec.ts:654:3 › AC3 — CreatureSpellbook › saves exactly two document keys, with the reordered array (596ms)
+  ✓  244 [chromium] › tests/ui/extraction.spec.ts:992:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (475ms)
+  ✓  245 [chromium] › tests/ui/zone-transfer-editor.spec.ts:636:3 › AC2 — the Events drift guard and the raw-fields disclosure › carries Events through the save byte-identically, with the file’s key order (543ms)
+  ✓  247 [chromium] › tests/ui/zone-transfer-editor.spec.ts:672:3 › AC2 — the Events drift guard and the raw-fields disclosure › a document with nothing unmodelled shows no disclosure at all (457ms)
+  ✓  246 [chromium] › tests/ui/extraction.spec.ts:1011:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (886ms)
+  ✓  248 [chromium] › tests/ui/extraction.spec.ts:1038:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (701ms)
+  ✓  249 [chromium] › tests/ui/extraction.spec.ts:1069:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (545ms)
+  ✓  250 [chromium] › tests/ui/extraction.spec.ts:1095:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (925ms)
+  ✓  251 [chromium] › tests/ui/extraction.spec.ts:1138:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.1s)
+  ✓  252 [chromium] › tests/ui/extraction.spec.ts:1234:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.1s)
+
+  252 passed (47.5s)
+--- rc=0
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-D3wF0opM.css                  34.39 kB │ gzip:   7.25 kB
+dist/assets/QuestGoalLogicEditor-BwTVozjp.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-CczKzg9q.js                  736.87 kB │ gzip: 218.86 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.08s
+--- rc=0
+
+# finished 2026-09-27T08:57:28-04:00
