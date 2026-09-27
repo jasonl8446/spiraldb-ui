@@ -1,31 +1,41 @@
-import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { numberIdFromRaw, NPC_INVENTORY_LIST_KEY, readNumberList } from '@shared/simpleObjects';
 
-import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
+import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Input } from '../ui/input';
+import ObjectIdMultiSelect from './ObjectIdMultiSelect';
 
 /**
- * The NpcInventory editor — plan task 4.3's form, mounted on task 4.1's generic
- * detail scaffolding so the scaffolding is **provably used** rather than built and
- * left unwired (the story's own acceptance criterion).
+ * The NpcInventory editor — plan task 4.3's form (story p4-01 built the first version, story
+ * p4-03 closed AC1's remaining gap).
  *
- * The spec's two fields (docs/spec-ui-design.md L479-482): the NPC `TemplateID` as a
- * friendly-name dropdown over the `npcs` table (architecture rule 5 — the raw id is
- * what is stored, and the hidden input carries it), and the `Inventory` as removable
- * chips. The document schema is `docs/spec-domain-reference.md` L121-136.
+ * ## What p4-01 already had, and what this story added
  *
- * It edits through {@link DocPath}s and `setAtPath` rather than spreading the object:
- * decision D58 makes the shared document primitives the editors' mutation contract,
- * so the baseline/dirty/reset machinery the layout owns keeps working and key order,
- * explicit `null`s and unknown keys survive an edit (D5/D57).
+ * AC1 asks for two controls and a save path. p4-01's version already delivered the first and the
+ * *frame* of the second:
  *
- * `Inventory` is replaced whole (add/remove) rather than mutated by index: an array's
- * membership and order are the editor's, and the server's D5 merge takes the incoming
- * array — so "remove the third chip" is one unambiguous edit.
+ * | AC1's words | p4-01 | now |
+ * |---|---|---|
+ * | "NPC `FriendlyNameDropdown`" | ✅ over `npcs`, raw id in a hidden field | unchanged |
+ * | "**searchable multi-select over item names**" | ❌ chips showed **raw numeric ids** and the only way to add one was a numeric text box — there was no search over the 79,835 items at all | ✅ `ObjectIdMultiSelect`: a cmdk search over `items` names **and** ids, chips showing the **name** |
+ * | "rendered as removable chips" | ✅ removable, raw id per chip | ✅ removable by **index** (so a pre-existing duplicate survives), chip text = name, or the raw id for the 42 measured misses |
+ * | "renders, edits, saves via the pipeline" | ✅ mounted on task 4.1's generic detail page ⇒ `POST /api/npc-inventories` | unchanged — the pipeline is the page's; `ObjectDetailPage` owns the save |
+ *
+ * The numeric add box p4-01 had is **kept inside the multi-select** rather than dropped: 42 of
+ * the corpus's 3,205 distinct item ids have no synced name, so the name search cannot reach them
+ * and typing an id is the only way to put one back (D60(c)/D63(c)).
+ *
+ * ## The shape it edits
+ *
+ * The document is `{TemplateID, Inventory}` and **nothing else** (215/215 files — see
+ * `shared/simpleObjects/npcInventory.ts`, which also carries the other measured numbers). It
+ * edits through `DocPath`s and `state.edit` rather than spreading the object: D58 makes the
+ * shared document primitives the editors' mutation contract, so key order and unknown keys
+ * survive (D5/D57) and the layout's baseline/dirty machinery keeps working.
+ *
+ * `Inventory` is replaced **whole** on every change (add, remove, "Add id"): membership is the
+ * editor's, and the server's D5 merge takes the incoming array — so "remove the third chip" is
+ * one unambiguous edit, and the one file that carries `[]` still saves `[]`.
  */
 export interface NpcInventoryFormProps {
   /** The live document (the layout's baseline-aware model). */
@@ -34,20 +44,10 @@ export interface NpcInventoryFormProps {
   mode: 'view' | 'edit';
   /**
    * The live document state — the D58 mutation contract (`edit`/`editAll`) rather than a
-   * bespoke setter, so a form that mounts a shared editor (`RequirementTreeEditor`) needs no
-   * adapter. Story p4-02 replaced p4-01's `onSet` with this.
+   * bespoke setter, so a form that mounts a shared editor needs no adapter.
    */
   state: QuestDocumentState;
   disabled?: boolean;
-}
-
-/** The `Inventory` array of a document, as numbers (an unparsable entry is dropped). */
-function inventoryOf(document: Record<string, unknown>): number[] {
-  const raw = document.Inventory;
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-  return raw.filter((value): value is number => typeof value === 'number');
 }
 
 export default function NpcInventoryForm({
@@ -58,27 +58,7 @@ export default function NpcInventoryForm({
 }: NpcInventoryFormProps): JSX.Element {
   const editing = mode === 'edit' && !disabled;
   const templateId = document.TemplateID;
-  const inventory = inventoryOf(document);
-  const [pendingItem, setPendingItem] = useState('');
-
-  function addItem(): void {
-    const parsed = Number(pendingItem.trim());
-    if (!Number.isInteger(parsed) || parsed < 0) {
-      return;
-    }
-    if (!inventory.includes(parsed)) {
-      state.edit({ op: 'set', path: ['Inventory'], value: [...inventory, parsed] });
-    }
-    setPendingItem('');
-  }
-
-  function removeItem(item: number): void {
-    state.edit({
-      op: 'set',
-      path: ['Inventory'],
-      value: inventory.filter((value) => value !== item),
-    });
-  }
+  const inventory = readNumberList(document, NPC_INVENTORY_LIST_KEY);
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,12 +73,13 @@ export default function NpcInventoryForm({
               name="TemplateID"
               value={typeof templateId === 'number' ? templateId : null}
               onChange={(rawId) => {
-                const parsed = Number(rawId);
-                state.edit({
-                  op: 'set',
-                  path: ['TemplateID'],
-                  value: Number.isInteger(parsed) ? parsed : rawId,
-                });
+                // The one raw-id conversion (`shared/ulong.ts` through the model): the document
+                // must carry a JSON number, never the control's string. An unparsable id writes
+                // nothing, so the key keeps the value it had.
+                const parsed = numberIdFromRaw(rawId);
+                if (parsed !== undefined) {
+                  state.edit({ op: 'set', path: ['TemplateID'], value: parsed });
+                }
               }}
               aria-label="NPC TemplateID"
               placeholder="Select an NPC…"
@@ -118,57 +99,20 @@ export default function NpcInventoryForm({
         <CardHeader>
           <CardTitle className="text-sm">Inventory</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {inventory.length === 0 ? (
-            <p className="text-xs text-zinc-500">This NPC's inventory is empty.</p>
-          ) : (
-            <ul className="flex flex-wrap gap-2" aria-label="Inventory items">
-              {inventory.map((item) => (
-                <li key={item}>
-                  <Badge variant="secondary" className="gap-1 font-mono">
-                    {item}
-                    {editing ? (
-                      <button
-                        type="button"
-                        aria-label={`Remove item ${item}`}
-                        className="rounded-sm text-zinc-400 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                        onClick={() => removeItem(item)}
-                      >
-                        <X className="h-3 w-3" aria-hidden="true" />
-                      </button>
-                    ) : null}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {editing ? (
-            <div className="flex items-end gap-2">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-zinc-400" htmlFor="npc-inventory-add">
-                  Add an item id
-                </label>
-                <Input
-                  id="npc-inventory-add"
-                  value={pendingItem}
-                  inputMode="numeric"
-                  onChange={(event) => setPendingItem(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      addItem();
-                    }
-                  }}
-                  className="w-40"
-                />
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                Add
-              </Button>
-            </div>
-          ) : null}
+        <CardContent>
+          <ObjectIdMultiSelect
+            type="items"
+            noun="item"
+            idPrefix="npc-inventory"
+            values={inventory}
+            disabled={!editing}
+            emptyText="This NPC's inventory is empty (the file carries an empty Inventory array)."
+            rawIdLabel="Add an item id"
+            help="42 of the corpus's 3,205 distinct item ids have no synced name and show as raw ids."
+            onChange={(next) => {
+              state.edit({ op: 'set', path: [NPC_INVENTORY_LIST_KEY], value: next });
+            }}
+          />
         </CardContent>
       </Card>
     </div>

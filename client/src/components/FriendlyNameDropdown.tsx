@@ -44,8 +44,18 @@ export interface FriendlyNameDropdownProps {
   onChange: (rawId: string) => void;
   /** Hidden input name — the form field carrying the raw id. */
   name: string;
-  /** Offer an explicit "None" entry that clears the selection. */
+  /**
+   * Offer an explicit "None" entry that clears the selection (`onChange('')`).
+   *
+   * The option's text is {@link emptyLabel}, so a caller whose domain spells the empty value
+   * differently can say so — story p4-03's `NPCSpellEntry.RequiredSpellID` is the case that
+   * needed it: its `0` means "no prerequisite" and the AC requires the option to read
+   * **`none (0)`** while the stored value stays `0`, so that form passes `emptyLabel` and maps
+   * `''` back to `0` itself.
+   */
   allowEmpty?: boolean;
+  /** The clear option's text; `'None'` by default (unchanged for every existing caller). */
+  emptyLabel?: string;
   disabled?: boolean;
   /** Accessible label for the combobox trigger. Defaults to `Select <type>`. */
   'aria-label'?: string;
@@ -67,6 +77,7 @@ export default function FriendlyNameDropdown({
   onChange,
   name,
   allowEmpty = false,
+  emptyLabel = 'None',
   disabled = false,
   'aria-label': ariaLabel,
   placeholder,
@@ -185,7 +196,7 @@ export default function FriendlyNameDropdown({
                       className={cn('mr-2 h-4 w-4', id === '' ? 'opacity-100' : 'opacity-0')}
                       aria-hidden="true"
                     />
-                    None
+                    {emptyLabel}
                   </CommandItem>
                 ) : null}
                 {names.options.map((option) => (

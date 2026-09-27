@@ -5,7 +5,9 @@ import { Toaster } from 'sonner';
 import { objectTypeConfig } from '@shared/objectTypes';
 
 import AppLayout from './components/layout/AppLayout';
+import CreatureSpellbookForm from './components/objects/CreatureSpellbookForm';
 import NpcInventoryForm from './components/objects/NpcInventoryForm';
+import NpcSpellInventoryForm from './components/objects/NpcSpellInventoryForm';
 import DropTableDetailPage from './pages/DropTableDetailPage';
 import ObjectDetailPage from './pages/ObjectDetailPage';
 import ObjectListPage from './components/objects/ObjectListPage';
@@ -41,10 +43,12 @@ import {
  * Task 4.1 wired **one** of the eight object families end to end (NpcInventory) so
  * the generic scaffolding is provably used; story p4-02 added the second
  * (DropTable, whose form mounts the shared requirement tree inline and whose route
- * is driven by its own page so the duplicate-name rule can inject the corpus). The
- * remaining six keep their Phase-4 stub until their own tasks (4.4-4.9) supply a
- * form. Both route paths and the config rows come from `shared/objectTypes.ts`, so a
- * page and the API path the server mounts cannot disagree.
+ * is driven by its own page so the duplicate-name rule can inject the corpus); story
+ * p4-03 added the third and fourth (NpcSpellInventory and CreatureSpellbook, both
+ * plain `ObjectDetailPage` + form pairs). The remaining four keep their Phase-4 stub
+ * until their own tasks (4.6-4.9) supply a form. Both route paths and the config rows
+ * come from `shared/objectTypes.ts`, so a page and the API path the server mounts
+ * cannot disagree.
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +74,8 @@ const queryClient = new QueryClient({
  * shadow the extraction page.
  */
 const NPC_INVENTORY = objectTypeConfig('npcinventory');
+const NPC_SPELL_INVENTORY = objectTypeConfig('npcspellinventory');
+const CREATURE_SPELLBOOK = objectTypeConfig('creaturespellbook');
 const DROP_TABLE = objectTypeConfig('droptable');
 
 function elementFor(route: AppRoute): JSX.Element {
@@ -98,6 +104,44 @@ function elementFor(route: AppRoute): JSX.Element {
           backLabel="Back to NPC Inventories"
           renderForm={({ document, mode, state }) => (
             <NpcInventoryForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/npc-spell-inventories':
+      return (
+        <ObjectListPage
+          config={NPC_SPELL_INVENTORY}
+          nounPlural="NPC spell inventories"
+          keyHeader="NPC"
+        />
+      );
+    case '/npc-spell-inventories/:id':
+      return (
+        <ObjectDetailPage
+          config={NPC_SPELL_INVENTORY}
+          nounPlural="NPC spell inventories"
+          backLabel="Back to NPC Spell Inventories"
+          renderForm={({ document, mode, state }) => (
+            <NpcSpellInventoryForm document={document} mode={mode} state={state} />
+          )}
+        />
+      );
+    case '/creature-spellbooks':
+      return (
+        <ObjectListPage
+          config={CREATURE_SPELLBOOK}
+          nounPlural="creature spellbooks"
+          keyHeader="Deck name"
+        />
+      );
+    case '/creature-spellbooks/:name':
+      return (
+        <ObjectDetailPage
+          config={CREATURE_SPELLBOOK}
+          nounPlural="creature spellbooks"
+          backLabel="Back to Creature Spellbooks"
+          renderForm={({ document, mode, state }) => (
+            <CreatureSpellbookForm document={document} mode={mode} state={state} />
           )}
         />
       );

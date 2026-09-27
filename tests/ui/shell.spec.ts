@@ -276,6 +276,19 @@ test.describe('sidebar navigation', () => {
         await expect(
           page.getByRole('main').getByRole('columnheader', { name: 'NPC' }),
         ).toBeVisible();
+      } else if (item.path === '/npc-spell-inventories' || item.path === '/creature-spellbooks') {
+        // Story p4-03 replaced these two routes' stubs with the real generic object
+        // lists (plan tasks 4.4/4.5). Same shape as the branch above: the list page is
+        // one component, so the literals are per-family props, and
+        // `tests/ui/simple-object-editors.spec.ts` owns the detail editors' contracts.
+        const expected =
+          item.path === '/npc-spell-inventories'
+            ? { placeholder: 'Search NPC spell inventories...', column: 'NPC' }
+            : { placeholder: 'Search creature spellbooks...', column: 'Deck name' };
+        await expect(page.getByRole('main').getByPlaceholder(expected.placeholder)).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: expected.column }),
+        ).toBeVisible();
       } else {
         await expect(
           page.getByRole('main').getByText(`Arrives in Phase ${item.phase}`),

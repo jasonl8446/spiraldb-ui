@@ -18,6 +18,14 @@ import { expect, test, type Page, type Route } from '@playwright/test';
  * `missing_directory: true` with zero rows, `NpcDropTable/`'s real situation), the
  * detail page's status badge, its Edit → form → Save round-trip with the exact POST
  * body, and the JSON panel toggle.
+ *
+ * **Story p4-03 rewrote this file's Inventory assertions, and that is a phase transition
+ * rather than a weakened test** (the reasoning D59(a) records for the same kind of move): the
+ * `Inventory` control is now the multi-select AC1 asks for, so the chips render item **names**
+ * from the mocked `items` table, the chip list is named `item chips`, and the add box is the
+ * shared `RawIdAddControl`'s (`Add an item id` + `Add id`). The two behaviours the old
+ * assertions pinned — the POST body, and an unresolved id surviving as a raw value — are still
+ * asserted, the second of them more strongly than before (the raw id is what the chip *shows*).
  */
 
 /** One `objects[]` row of `GET /api/npc-inventories`. */
@@ -141,6 +149,21 @@ async function mockObjectsApi(
   );
   // The NPC friendly-name dropdown's list read (rendered as soon as Edit is pressed).
   await page.route('**/api/names/npcs*', (route) => route.fulfill({ json: { npcs: [] } }));
+  // The Inventory multi-select's names table (story p4-03 replaced the raw-id chips with a
+  // searchable multi-select over `items`, so this read now happens on mount). `160999` — the id
+  // the Edit test adds — is deliberately absent, so that chip must show the raw id: the same
+  // miss-safe behaviour the 42 real misses get (D60(c)/D63(c)). The component resolves every
+  // chip label from this one cached list, so an unresolved id issues no extra request at all.
+  await page.route('**/api/names/items', (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          { gid: 160936, name: 'Black Mantle' },
+          { gid: 160943, name: 'Spiral Wand' },
+        ],
+      },
+    }),
+  );
 
   await page.route('**/api/status/npc_inventories', (route) =>
     route.fulfill({
@@ -303,9 +326,13 @@ test.describe('the generic object detail (NpcInventory)', () => {
     await expect(page.getByRole('main').getByText('2001', { exact: true }).first()).toBeVisible();
     await expect(page.getByRole('main').getByText('Reviewed', { exact: true })).toBeVisible();
 
-    // View mode: the inventory entries as chips, no add-item control.
+    // View mode: the inventory entries as chips over item NAMES (story p4-03 — p4-01's chips
+    // showed raw ids and this spec asserted them), and no add control at all.
     await expect(
-      page.getByRole('list', { name: 'Inventory items' }).getByText('160936'),
+      page.getByRole('list', { name: 'item chips' }).getByText('Black Mantle'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('list', { name: 'item chips' }).getByText('Spiral Wand'),
     ).toBeVisible();
     await expect(page.getByLabel('Add an item id')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
@@ -327,10 +354,9 @@ test.describe('the generic object detail (NpcInventory)', () => {
     await expect(addInput).toBeVisible();
 
     await addInput.fill('160999');
-    await page.getByRole('button', { name: 'Add' }).click();
-    await expect(
-      page.getByRole('list', { name: 'Inventory items' }).getByText('160999'),
-    ).toBeVisible();
+    await page.getByRole('button', { name: 'Add id' }).click();
+    // No synced name for 160999, so the chip shows the raw id and invents nothing.
+    await expect(page.getByRole('list', { name: 'item chips' }).getByText('160999')).toBeVisible();
 
     // Editing makes the document dirty, which is what enables Save.
     const save = page.getByRole('button', { name: 'Save' });
