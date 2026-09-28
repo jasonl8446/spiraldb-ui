@@ -86,6 +86,69 @@ export function formatDocPath(path: DocPath): string {
 }
 
 /**
+ * The inverse of {@link formatDocPath}: `m_goals[2].m_goalText` → `['m_goals', 2, 'm_goalText']`.
+ *
+ * It exists because one caller receives a path as **text**: the evidence API (task 6.6,
+ * `server/src/services/questEvidence.ts`) hands each text row the path of the file value that
+ * references it as a formatted string, and story p6-08's insert reducer must turn that string back
+ * into the path an edit addresses. The grammar is exactly the one {@link formatDocPath} writes and
+ * nothing else: a leading key, then `.key` or `[index]` steps, indices as decimal with no leading
+ * zero (which is how `formatDocPath` renders them).
+ *
+ * A string it cannot parse **returns `null`** rather than a best-effort path. A path is an address,
+ * and a wrong address writes to the wrong place — the one caller treats `null` as "this row has no
+ * target", which is the safe half of the same fact. Round-tripping `formatDocPath` ↔ `parseDocPath`
+ * is pinned by `tests/unit/document-path.test.ts`.
+ */
+export function parseDocPath(path: string): DocPath | null {
+  if (path === '') {
+    return null;
+  }
+  const segments: (string | number)[] = [];
+  // `true` when the next thing that may start is a key, `false` when it must be a step.
+  let expectKey = true;
+  let cursor = 0;
+  while (cursor < path.length) {
+    const char = path[cursor];
+    if (char === '.') {
+      if (expectKey) {
+        return null;
+      }
+      expectKey = true;
+      cursor += 1;
+      continue;
+    }
+    if (char === '[') {
+      if (expectKey) {
+        return null;
+      }
+      const close = path.indexOf(']', cursor);
+      if (close === -1) {
+        return null;
+      }
+      const digits = path.slice(cursor + 1, close);
+      if (!/^(?:0|[1-9][0-9]*)$/.test(digits)) {
+        return null;
+      }
+      segments.push(Number(digits));
+      cursor = close + 1;
+      continue;
+    }
+    if (!expectKey) {
+      return null;
+    }
+    const key = /^[^.[\]]+/.exec(path.slice(cursor));
+    if (key === null) {
+      return null;
+    }
+    segments.push(key[0]);
+    cursor += key[0].length;
+    expectKey = false;
+  }
+  return expectKey ? null : segments;
+}
+
+/**
  * Takes an already-parsed document and **keeps it**: the same reference comes back, so nothing is
  * normalised, no schema is consulted and no default is injected.
  *

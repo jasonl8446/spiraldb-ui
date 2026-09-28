@@ -865,6 +865,115 @@ export function getQuest(name: string): Promise<QuestObject> {
   return apiFetch<QuestObject>(`/api/quests/${encodeURIComponent(name)}`);
 }
 
+/* ---------------------------------------------------------- quests (evidence) */
+
+/**
+ * The **catalog link's** provenance (task 6.6, docs/spec-api.md L486-489) — `quests.title_source`
+ * / `quest_ids.link_kind`. It is **not** the quests list endpoint's per-file `title_source`
+ * (`resolved | rawKey | missing`, spec-data-model L209-214): the two fields share a name and answer
+ * different questions, and `lib/evidence-insert.ts`'s badge is keyed on this enum only.
+ */
+export type EvidenceTitleSource = 'direct' | 'inferred' | 'none';
+
+/** Which rung of the speaker ladder answered for one dialogue line. */
+export type EvidenceSpeakerSource = 'override' | 'composed' | 'template' | 'raw';
+
+export interface QuestEvidenceHeader {
+  /** `null` on the id tier: an id with no linked catalog name has no name. */
+  quest_name: string | null;
+  quest_id: number | null;
+  has_definition: boolean;
+  link_kind: EvidenceTitleSource;
+  title: string | null;
+  title_source: EvidenceTitleSource;
+  /** `quest_ids.inference_basis` when the link is inferred — an inferred link never travels alone. */
+  inference_basis: string | null;
+}
+
+/** One row of the quest's **own** `WizQst<id>_*` table. */
+export interface QuestEvidenceTextRow {
+  key: string;
+  value: string;
+  category: string;
+  used_by_this_file: boolean;
+  /** The path of the file value that references this key (a formatted `DocPath`), or `null`. */
+  field: string | null;
+}
+
+export interface QuestEvidenceGoalRef {
+  wad: string;
+  entry: string;
+  class: string;
+}
+
+export interface QuestEvidenceGoalGate {
+  goal_name: string;
+  required_status: string | null;
+  refs: QuestEvidenceGoalRef[];
+}
+
+export interface QuestEvidenceSpeaker {
+  name: string;
+  source: EvidenceSpeakerSource;
+  persona: string;
+  override_key: string | null;
+  st_key: string | null;
+}
+
+/** One `NPCDialogEntry` the quest file records. */
+export interface QuestEvidenceDialogue {
+  index: number;
+  /** The entry's path (a formatted `DocPath`). */
+  field: string;
+  /** The `WizQst<id>_*` key the entry's `m_dialog` names, when it names one. */
+  dialog_key: string | null;
+  /** `true` when {@link dialog_key} is a row of **this quest's own** table. */
+  own_table: boolean;
+  text: string | null;
+  speaker: QuestEvidenceSpeaker;
+  portrait: string | null;
+  sound: string | null;
+  /** `m_cameraName`, verbatim — a display hint, never the speaker's name. */
+  camera_name: string | null;
+  actor_template_id: number | null;
+}
+
+/** One field `REFERENCE_FIELDS` declares as a reference, resolved against the synced tables. */
+export interface QuestEvidenceReference {
+  field: string;
+  value: unknown;
+  key: string;
+  sources: string[];
+  kind: string | null;
+  /** The friendly half and the single display rule's rendering, or `null` on a miss. */
+  resolved: { label: string; display: string } | null;
+}
+
+/** `GET /api/quests/:name/evidence` — the one shape both evidence endpoints answer. */
+export interface QuestEvidence {
+  quest: QuestEvidenceHeader;
+  text_rows: QuestEvidenceTextRow[];
+  goal_gates: QuestEvidenceGoalGate[];
+  dialogue: QuestEvidenceDialogue[];
+  references: QuestEvidenceReference[];
+  /** Misses are counted here, never dropped (spec-api L481-482, L453-454). */
+  warnings: string[];
+}
+
+/** TanStack Query key for one quest's evidence read (the name is part of the key). */
+export function evidenceQueryKey(name: string): readonly [string, string] {
+  return ['quest-evidence', name] as const;
+}
+
+/**
+ * `GET /api/quests/:name/evidence` — task 6.6's per-quest evidence surface, read by the evidence
+ * panel (story p6-08). A resolved live join over the indexed tables: there is no materialised
+ * evidence table, so an unknown name 404s exactly like the detail read.
+ */
+export function getQuestEvidence(name: string): Promise<QuestEvidence> {
+  return apiFetch<QuestEvidence>(`/api/quests/${encodeURIComponent(name)}/evidence`);
+}
+
 /* ------------------------------------------------------------- quests (save) */
 
 /**

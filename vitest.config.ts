@@ -22,5 +22,27 @@ export default defineConfig({
      * claim weaker) while still failing a genuinely hung test.
      */
     testTimeout: 30_000,
+    /**
+     * One file at a time — **because the D17 clone (`data/test-spiraldb`) is shared mutable state**
+     * and more than one suite now mutates it.
+     *
+     * The hazard is recorded, not discovered here: D66(g) ("a latent flake risk") noted that
+     * `quest-edit-isolation` resets the clone while several corpus sweeps read it, and that the
+     * fix is to serialise the clone-mutating tests (`fileParallelism: false`, a per-file sequence
+     * setting, or a dedicated temp clone) or to accept the flake. Story p6-08 added the **second**
+     * clone writer (`quest-evidence-insert-isolation`, whose save must land in the D17 clone
+     * because that is the run's save corpus), and the flake stopped being latent: measured on this
+     * host, the parallel run failed **both** suites — one saw the other's in-flight file write
+     * (`DirtyRepoError`), and the other's `git diff` lost the quest file because a `reset --hard`
+     * landed mid-flight. That is the same shape gate-3's first run hit.
+     *
+     * Measured cost of the fix on this host: the unit suite goes from 11 s wall to ~51 s (82 files,
+     * 1,701 tests). The two clone-mutating suites each hold the clone for ~1.5 s, so the serial
+     * run pays almost nothing for them; the rest is lost parallelism, which is the price of a
+     * deterministic gate. A dedicated temp clone was the cheaper-looking alternative, but the save
+     * corpus the criterion names is the D17 clone itself, and a proof against a copy would not be
+     * the criterion's proof.
+     */
+    fileParallelism: false,
   },
 });

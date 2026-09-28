@@ -73,6 +73,88 @@ export const MOCK_QUEST = {
   m_dialogList: { m_dialogEntries: [] },
 };
 
+/**
+ * The default `GET /api/quests/:name/evidence` body (story p6-08).
+ *
+ * Shape copied from `docs/spec-api.md` L424-469 literally, like every other fixture in this file:
+ * a fixture that imported the server's own types could only prove the client agrees with itself.
+ * The quest name is {@link MOCK_QUEST}'s, and the two text rows are one **used** row (with the
+ * provenance path the panel groups it under) and one **available** row (`field: null`) — the split
+ * the spec's ASCII draws and the insert covers.
+ */
+export const MOCK_EVIDENCE = {
+  quest: {
+    quest_name: MOCK_QUEST.m_questName,
+    quest_id: 126861,
+    has_definition: true,
+    link_kind: 'inferred',
+    title: 'Wizard Tours',
+    title_source: 'inferred',
+    inference_basis: 'neighbour midpoint between QuestTitle_1ED8D and QuestTitle_1ED8F',
+  },
+  text_rows: [
+    {
+      key: 'WizQst1A2B_00000000',
+      value: 'Fixture line used by this file.',
+      category: 'WizQst1A2B',
+      used_by_this_file: true,
+      field: 'm_questTitle',
+    },
+    {
+      key: 'WizQst1A2B_00000004',
+      value: 'Fixture line available to this file.',
+      category: 'WizQst1A2B',
+      used_by_this_file: false,
+      field: null,
+    },
+    {
+      key: 'WizQst1A2B_00000005',
+      value: 'A second available fixture line.',
+      category: 'WizQst1A2B',
+      used_by_this_file: false,
+      field: null,
+    },
+  ],
+  goal_gates: [
+    {
+      goal_name: 'WC-UNICORN-MAIN-004_Complete',
+      required_status: 'Completed',
+      refs: [{ wad: 'WizardCity.wad', entry: 'Gate_1', class: 'ReqHasQuest' }],
+    },
+  ],
+  dialogue: [
+    {
+      index: 0,
+      field: 'm_dialogList.m_dialogs[0].m_dialogEntries[0]',
+      dialog_key: 'WizQst1A2B_00000000',
+      own_table: true,
+      text: 'Fixture line used by this file.',
+      speaker: {
+        name: 'Cyrus Drake',
+        source: 'composed',
+        persona: 'WC-RAV-NPC02_Persona',
+        override_key: null,
+        st_key: 'NPCFormats_First_Last',
+      },
+      portrait: null,
+      sound: null,
+      camera_name: 'LOCATION',
+      actor_template_id: 9002,
+    },
+  ],
+  references: [
+    {
+      field: 'm_goals[0].m_destinationZone',
+      value: 'DragonSpire/DS_A3_Kings',
+      key: 'm_destinationZone',
+      sources: ['zones'],
+      kind: 'zones',
+      resolved: { label: 'DS_A3_Kings', display: 'DragonSpire/DS_A3_Kings (DS_A3_Kings)' },
+    },
+  ],
+  warnings: [],
+};
+
 /** The fixed instant the fixtures' mtimes hang off (the relative text is asserted). */
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -223,6 +305,14 @@ export interface QuestsMockOptions {
   patchDelayMs?: number;
   /** Replaces the `POST /api/quests` answer entirely (for the 400/500 cases, story p3-10). */
   onSave?: RouteHandler;
+  /**
+   * The `GET /api/quests/:name/evidence` payload (story p6-08's panel). Defaults to
+   * {@link MOCK_EVIDENCE}, whose quest name is {@link MOCK_QUEST}'s so the panel beside the editor
+   * describes the quest on screen.
+   */
+  evidence?: unknown;
+  /** Replaces the evidence answer entirely (for the 404/500 arms). */
+  onEvidence?: RouteHandler;
 }
 
 /** What the mocked API recorded, so a spec can assert what was *not* requested. */
@@ -263,6 +353,14 @@ export interface QuestsMockRecorded {
    * payload that one form edit produced — including that nothing else moved.
    */
   savePosts: Array<Record<string, unknown>>;
+  /**
+   * How many evidence reads were made (story p6-08). Zero unless the Evidence tab was opened: the
+   * panel's query is `enabled: railTab === 'evidence'`, so an unrelated spec never reaches this
+   * route at all (D40).
+   */
+  evidenceRequests: number;
+  /** The evidence request paths, in order — the quest the panel asked about. */
+  evidenceUrls: string[];
 }
 
 /**
@@ -285,6 +383,8 @@ export async function mockQuestsApi(
     settingsPuts: [],
     nameLookups: [],
     savePosts: [],
+    evidenceRequests: 0,
+    evidenceUrls: [],
   };
   const rows = options.rows ?? mockQuestRows();
   const history = options.history ?? [];
@@ -394,6 +494,24 @@ export async function mockQuestsApi(
       return;
     }
     await route.fulfill({ json: options.detail ?? MOCK_QUEST });
+  });
+
+  /**
+   * `GET /api/quests/:name/evidence` (task 6.6, read by story p6-08's panel).
+   *
+   * Registered **after** the detail route on purpose: the detail route's glob stops at the next
+   * `/`, so it cannot match this longer path, and Playwright runs the most recently registered
+   * matching route first anyway — this handler owns the path without any ordering question.
+   */
+  await page.route('**/api/quests/*/evidence', async (route) => {
+    recorded.evidenceRequests += 1;
+    recorded.urls.push(route.request().url());
+    recorded.evidenceUrls.push(new URL(route.request().url()).pathname);
+    if (options.onEvidence !== undefined) {
+      await options.onEvidence(route);
+      return;
+    }
+    await route.fulfill({ json: options.evidence ?? MOCK_EVIDENCE });
   });
 
   // The whole status surface of one entry, one handler: `GET .../history` and

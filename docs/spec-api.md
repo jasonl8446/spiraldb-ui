@@ -501,6 +501,11 @@ on them rather than on a sample:
   available. `used_by_this_file` is a **per-row computed predicate**: the file's own string values are collected,
   and a row is used iff its **key is one of those whole strings** — no prefix test, no naming convention.
 - `dialogue[].field`, `dialogue[].dialog_key`, `dialogue[].own_table`, `dialogue[].camera_name`,
+  **`dialogue[].field` points at the dialog ENTRY, not at the `m_dialog` leaf that holds the key** —
+  measured (`m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[0]`), and the distinction matters to an
+  insert: `text_rows[].field` names the value's own path, whereas a dialogue row's entry path must have
+  `.m_dialog` appended (or the field focused) before anything can be written there. A row's `field` is
+  `null` when nothing references it.
   `dialogue[].actor_template_id` — the entry's path, its `m_dialog` key, and **whether that key belongs to *this*
   quest's own table**. `own_table` is not decoration: a quest file legitimately carries a top-level `m_dialogList`
   whose entries point at a **sibling** quest's table (measured on `WC-CYCLOPS-MAIN-002`: 27 entries, 22 under

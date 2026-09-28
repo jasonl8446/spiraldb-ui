@@ -336,6 +336,16 @@ In the quest editor (view and edit modes) and reachable from a catalog entry: 6.
 goal text into the focused goal, location name into `m_locationName`. Nothing inserts automatically; a warning that
 cannot block Save applies exactly as elsewhere (D72).
 
+
+> **Measured note, added by p6-08: the "goal text" arm creates a field the corpus does not have.** Across all 322
+> corpus files, **0 of 772 goals carry an `m_goalText` key** (absent, not empty) and **no `WizQst*_Goal*Text` row
+> exists anywhere in `string_table` (0 of 216,991)** — so this arm *adds* `m_goalText` to the focused goal rather
+> than replacing one, and the insertable rows are ordinary rows of the quest's own table. It is schema-valid
+> (proved against the save pipeline's own `SaveQuestRequestSchema`). The dialogue and location arms are the ones
+> the corpus actually exercises: `m_dialog` is a string-table key on every entry, and `m_locationName` holds a key
+> (`ZoneLocName_*`, or a quest's own `WizQst*_*`) on 746 of 772 goals. **The document stores keys; the panel shows
+> text.**
+
 **Acceptance:** inserting a dialogue row sets the field and the file's `git diff` shows only that field; an inferred
 title is visibly marked inferred; the panel never writes to the file; covered by a tier-1 UI spec plus a unit test of
 the insert reducer.

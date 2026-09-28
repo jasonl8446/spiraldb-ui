@@ -2,6 +2,12 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    /**
+     * Set because a test in this tree renders a React component (`renderToStaticMarkup` in
+     * `evidence-panel.test.ts`), so the program includes a `.tsx` module. It changes nothing for
+     * `.ts` files, and the option is the same one `client/tsconfig.json` already uses.
+     */
+    "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,

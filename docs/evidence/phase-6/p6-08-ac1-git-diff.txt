@@ -1,0 +1,30 @@
+p6-08 (story) / plan task 6.7 — ac1: the insert's raw git diff through the real save pipeline,
+and the D17 clone's restore proof.
+source: npx vitest run tests/unit/quest-evidence-insert-isolation.test.ts
+date: 2026-09-28
+
+the row inserted is a DIALOGUE ROW from task 6.6's own service (evidence.dialogue, the
+quest-level entry that names the sibling table's key WizQst17318E_00000006), into the focused
+dialog entry m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog, whose key was
+WizQst17318F_00000006. The value written is the row's KEY — never the row's text.
+
+===== p6-08 AC1 raw git diff (QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json) =====
+diff --git a/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json b/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+index a7ccb18..97f6654 100644
+--- a/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
++++ b/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+@@ -34,7 +34,7 @@
+                 "m_guiDisplay": "",
+                 "m_maxTimeSeconds": -1,
+                 "m_invisible": false,
+-                "m_dialog": "WizQst17318F_00000006",
++                "m_dialog": "WizQst17318E_00000006",
+                 "m_picture": "GUI/NpcPortraits/Portrait_Human_Drake_A_NPC.dds",
+                 "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/CyrusDrake_005_01.mp3",
+                 "m_action": "",
+===== end raw diff =====
+
+===== p6-08 AC1 clone restore (18dc92477d54b1e911796960407ce7710e703697) =====
+branch=content/2026-09-27 head=18dc92477d54b1e911796960407ce7710e703697 main=f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 count=42 porcelain="" questFiles=322
+main ref unchanged: true; refs identical: true
+===== end restore =====
