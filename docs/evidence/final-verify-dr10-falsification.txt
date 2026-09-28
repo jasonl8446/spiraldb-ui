@@ -1,0 +1,766 @@
+# DR-10 falsification transcript — one file, three cases, md5-verified restores
+# case=baseline  : the new code + the new tests
+# case=broken-1  : the PRE-D82(a) early return re-introduced inside the new structure
+# case=broken-2  : HEAD's server/src/services/import.ts restored verbatim (weak form: the new API is absent)
+
+==================== case=baseline ====================
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/import.test.ts (41 tests) 35ms
+
+ Test Files  1 passed (1)
+      Tests  41 passed (41)
+   Start at  03:28:31
+   Duration  412ms (transform 111ms, setup 0ms, collect 95ms, tests 35ms, environment 0ms, prepare 134ms)
+
+rc=0
+
+==================== case=broken-1 (pre-D82(a) early return) ====================
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ❯ tests/unit/import.test.ts (41 tests | 10 failed) 40ms
+   ✓ runCorpusImport > imports every mapped entry with per-type counts, reported duplicates included 5ms
+   ✓ runCorpusImport > writes status=extracted and the injected timestamp for every row 1ms
+   ✓ runCorpusImport > stores the object_key set the fixture tree defines 1ms
+   ✓ runCorpusImport > writes no status_history rows on a first adoption (an import is not a transition) 1ms
+   ✓ the skip list > scans exactly the eight mapped directories 0ms
+   ✓ the skip list > never imports from QuestMetadatas/ or GlobalRegistry/ 1ms
+   ✓ the skip list > never descends into QuestTemplates/droptables/ 1ms
+   ✓ the skip list > skips non-JSON files and files without the key field 1ms
+   ✓ key extraction > stores TemplateID as a string, numeric or already-string alike 1ms
+   ✓ key extraction > keeps a zone key containing a slash verbatim 1ms
+   ✓ key extraction > normalizeImportKey(164320) → "164320" 0ms
+   ✓ key extraction > normalizeImportKey("1025") → "1025" 0ms
+   ✓ key extraction > normalizeImportKey("") → undefined 0ms
+   ✓ key extraction > normalizeImportKey(null) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(undefined) → undefined 0ms
+   ✓ key extraction > normalizeImportKey({}) → undefined 0ms
+   ✓ key extraction > normalizeImportKey([1]) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(null) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(null) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(0) → "0" 0ms
+   ✓ legacy trailing commas > imports a file that strict JSON.parse rejects 1ms
+   ✓ unparsable files and missing directories > counts an unparsable file and keeps importing the rest 1ms
+   ✓ unparsable files and missing directories > treats a missing directory as normal and flags it 1ms
+   ✓ unparsable files and missing directories > handles an existing but empty directory without flagging it missing 1ms
+   ✓ unparsable files and missing directories > is a no-op result (not an error) when the repository root does not exist 1ms
+   ✓ duplicate keys > reports a duplicate key without aborting the import (the first file wins) 1ms
+   ✓ duplicate keys > allows the same key under two different types (UNIQUE is per type) 1ms
+   × idempotency > adopts nothing and re-writes nothing on the second run (row-by-row, not by count) 4ms
+     → expected 0 to be greater than 0
+   × idempotency > adopts the corpus keys alongside rows the scan does not know about 2ms
+     → expected false to be true // Object.is equality
+   × the idempotent backfill (D82(a)) > adopts a file that arrives later, with the provenance history row the tool writes 1ms
+     → expected false to be true // Object.is equality
+   × the idempotent backfill (D82(a)) > leaves a reviewed row — status, note, timestamps, attribution and history — untouched 1ms
+     → expected +0 to be 1 // Object.is equality
+   × the idempotent backfill (D82(a)) > changes nothing at all on a second backfill (whole-row comparison, twice) 1ms
+     → expected +0 to be 1 // Object.is equality
+   × the idempotent backfill (D82(a)) > adopts a whole family that appears later, and keeps a missing one as zero work 2ms
+     → expected { imported: +0, skipped: +0, …(3) } to deeply equal { imported: +0, skipped: +0, …(3) }
+   × the idempotent backfill (D82(a)) > is not an error when the corpus root does not exist and the table has rows 1ms
+     → expected false to be true // Object.is equality
+   × the idempotent backfill (D82(a)) > rolls the adoption AND its history row back together when a later insert fails 2ms
+     → expected [Function] to throw an error
+   × the idempotent backfill (D82(a)) > counts a key that races in between the read and the insert as skipped, not twice 1ms
+     → expected false to be true // Object.is equality
+   × the idempotent backfill (D82(a)) > records the adoption for the status endpoint the palette reads 1ms
+     → expected { ran: false, imported: +0, …(1) } to deeply equal { ran: true, imported: 1, …(1) }
+   ✓ single transaction > rolls every insert back when one of them fails 1ms
+   ✓ default clock > uses ISO-8601 UTC and the same value for importedAt and every row 1ms
+   ✓ the in-memory import record (GET /api/status/_import) > reflects the last run of this process and resets to zeros when cleared 1ms
+   ✓ the in-memory import record (GET /api/status/_import) > records the skip too, so a second startup reports ran=false 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/import.test.ts > idempotency > adopts nothing and re-writes nothing on the second run (row-by-row, not by count)
+AssertionError: expected 0 to be greater than 0
+ ❯ tests/unit/import.test.ts:524:19
+    522|     });
+    523| 
+    524|     expect(reads).toBeGreaterThan(0);
+       |                   ^
+    525|     expect(second.ran).toBe(false);
+    526|     expect(second.imported).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  tests/unit/import.test.ts > idempotency > adopts the corpus keys alongside rows the scan does not know about
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/unit/import.test.ts:563:24
+    561|     // fixture keys are backfilled next to it — and it is untouched, t…
+    562|     // all (its `extracted_at` came from the column default, not from …
+    563|     expect(result.ran).toBe(true);
+       |                        ^
+    564|     expect(result.imported).toBe(9);
+    565|     expect(result.importedAt).toBe(IMPORTED_AT);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > adopts a file that arrives later, with the provenance history row the tool writes
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/unit/import.test.ts:610:24
+    608| 
+    609|     // Counts move by exactly one, and only for the new key.
+    610|     expect(second.ran).toBe(true);
+       |                        ^
+    611|     expect(second.imported).toBe(1);
+    612|     expect(second.importedAt).toBe(LATER);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > leaves a reviewed row — status, note, timestamps, attribution and history — untouched
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/unit/import.test.ts:685:29
+    683|       now: () => '2026-09-27T09:30:00.000Z',
+    684|     });
+    685|     expect(second.imported).toBe(1);
+       |                             ^
+    686| 
+    687|     // Byte-for-byte: the human's transition is not re-stamped, re-sta…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > changes nothing at all on a second backfill (whole-row comparison, twice)
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/unit/import.test.ts:723:36
+    721|       now: () => '2026-09-27T09:30:00.000Z',
+    722|     });
+    723|     expect(firstBackfill.imported).toBe(1);
+       |                                    ^
+    724|     const afterFirst = snapshot(db);
+    725|     const rows = countRows(db);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > adopts a whole family that appears later, and keeps a missing one as zero work
+AssertionError: expected { imported: +0, skipped: +0, …(3) } to deeply equal { imported: +0, skipped: +0, …(3) }
+
+- Expected
++ Received
+
+  {
+-   "directoryMissing": true,
++   "directoryMissing": false,
+    "duplicates": [],
+    "failed": 0,
+    "imported": 0,
+    "skipped": 0,
+  }
+
+ ❯ tests/unit/import.test.ts:752:49
+    750|     const firstBackfill = runCorpusImport({ db, spiraldbPath: tree, no…
+    751|     expect(firstBackfill.ran).toBe(false);
+    752|     expect(firstBackfill.byType.npc_drop_table).toEqual({
+       |                                                 ^
+    753|       imported: 0,
+    754|       skipped: 0,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > is not an error when the corpus root does not exist and the table has rows
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/unit/import.test.ts:800:87
+    798|     expect(result.imported).toBe(0);
+    799|     expect(result.failed).toBe(0);
+    800|     expect(STATUS_OBJECT_TYPES.every((type) => result.byType[type].dir…
+       |                                                                                       ^
+    801|     expect(snapshot(db)).toBe(before);
+    802|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > rolls the adoption AND its history row back together when a later insert fails
+AssertionError: expected [Function] to throw an error
+
+- Expected: 
+null
+
++ Received: 
+undefined
+
+ ❯ tests/unit/import.test.ts:823:7
+    821|     expect(() =>
+    822|       runCorpusImport({ db, spiraldbPath: tree, now: () => '2026-09-27…
+    823|     ).toThrow(/blocked/);
+       |       ^
+    824| 
+    825|     // A partial backfill must leave neither the status row nor its pr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > counts a key that races in between the read and the insert as skipped, not twice
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/unit/import.test.ts:856:19
+    854|     });
+    855| 
+    856|     expect(raced).toBe(true);
+       |                   ^
+    857|     expect(result.imported).toBe(0);
+    858|     expect(result.ran).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > records the adoption for the status endpoint the palette reads
+AssertionError: expected { ran: false, imported: +0, …(1) } to deeply equal { ran: true, imported: 1, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "imported": 1,
+-   "imported_at": "2026-09-27T09:30:00.000Z",
+-   "ran": true,
++   "imported": 0,
++   "imported_at": null,
++   "ran": false,
+  }
+
+ ❯ tests/unit/import.test.ts:879:38
+    877|     // `ran` is what the client's once-only announcement keys off (D37…
+    878|     // adoption the palette could not previously see is announced.
+    879|     expect(importStatusBody(result)).toEqual({
+       |                                      ^
+    880|       ran: true,
+    881|       imported: 1,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  10 failed | 31 passed (41)
+   Start at  03:27:57
+   Duration  410ms (transform 70ms, setup 0ms, collect 88ms, tests 40ms, environment 0ms, prepare 54ms)
+
+rc=1
+
+==================== case=broken-2 (HEAD import.ts verbatim) ====================
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ❯ tests/unit/import.test.ts (41 tests | 30 failed) 38ms
+   × runCorpusImport > imports every mapped entry with per-type counts, reported duplicates included 9ms
+     → runCorpusImport is not a function
+   × runCorpusImport > writes status=extracted and the injected timestamp for every row 1ms
+     → runCorpusImport is not a function
+   × runCorpusImport > stores the object_key set the fixture tree defines 1ms
+     → runCorpusImport is not a function
+   × runCorpusImport > writes no status_history rows on a first adoption (an import is not a transition) 2ms
+     → runCorpusImport is not a function
+   ✓ the skip list > scans exactly the eight mapped directories 1ms
+   × the skip list > never imports from QuestMetadatas/ or GlobalRegistry/ 1ms
+     → runCorpusImport is not a function
+   × the skip list > never descends into QuestTemplates/droptables/ 1ms
+     → runCorpusImport is not a function
+   × the skip list > skips non-JSON files and files without the key field 1ms
+     → runCorpusImport is not a function
+   × key extraction > stores TemplateID as a string, numeric or already-string alike 1ms
+     → runCorpusImport is not a function
+   × key extraction > keeps a zone key containing a slash verbatim 1ms
+     → runCorpusImport is not a function
+   ✓ key extraction > normalizeImportKey(164320) → "164320" 0ms
+   ✓ key extraction > normalizeImportKey("1025") → "1025" 0ms
+   ✓ key extraction > normalizeImportKey("") → undefined 0ms
+   ✓ key extraction > normalizeImportKey(null) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(undefined) → undefined 0ms
+   ✓ key extraction > normalizeImportKey({}) → undefined 0ms
+   ✓ key extraction > normalizeImportKey([1]) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(null) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(null) → undefined 0ms
+   ✓ key extraction > normalizeImportKey(0) → "0" 0ms
+   × legacy trailing commas > imports a file that strict JSON.parse rejects 2ms
+     → runCorpusImport is not a function
+   × unparsable files and missing directories > counts an unparsable file and keeps importing the rest 1ms
+     → runCorpusImport is not a function
+   × unparsable files and missing directories > treats a missing directory as normal and flags it 1ms
+     → runCorpusImport is not a function
+   × unparsable files and missing directories > handles an existing but empty directory without flagging it missing 1ms
+     → runCorpusImport is not a function
+   × unparsable files and missing directories > is a no-op result (not an error) when the repository root does not exist 1ms
+     → runCorpusImport is not a function
+   × duplicate keys > reports a duplicate key without aborting the import (the first file wins) 1ms
+     → runCorpusImport is not a function
+   × duplicate keys > allows the same key under two different types (UNIQUE is per type) 0ms
+     → runCorpusImport is not a function
+   × idempotency > adopts nothing and re-writes nothing on the second run (row-by-row, not by count) 1ms
+     → runCorpusImport is not a function
+   × idempotency > adopts the corpus keys alongside rows the scan does not know about 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > adopts a file that arrives later, with the provenance history row the tool writes 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > leaves a reviewed row — status, note, timestamps, attribution and history — untouched 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > changes nothing at all on a second backfill (whole-row comparison, twice) 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > adopts a whole family that appears later, and keeps a missing one as zero work 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > is not an error when the corpus root does not exist and the table has rows 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > rolls the adoption AND its history row back together when a later insert fails 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > counts a key that races in between the read and the insert as skipped, not twice 1ms
+     → runCorpusImport is not a function
+   × the idempotent backfill (D82(a)) > records the adoption for the status endpoint the palette reads 1ms
+     → runCorpusImport is not a function
+   × single transaction > rolls every insert back when one of them fails 3ms
+     → expected [Function] to throw error matching /blocked/ but got 'runCorpusImport…'
+   × default clock > uses ISO-8601 UTC and the same value for importedAt and every row 1ms
+     → runCorpusImport is not a function
+   × the in-memory import record (GET /api/status/_import) > reflects the last run of this process and resets to zeros when cleared 1ms
+     → runCorpusImport is not a function
+   × the in-memory import record (GET /api/status/_import) > records the skip too, so a second startup reports ran=false 0ms
+     → runCorpusImport is not a function
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 30 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/import.test.ts > runCorpusImport > imports every mapped entry with per-type counts, reported duplicates included
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:232:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/30]⎯
+
+ FAIL  tests/unit/import.test.ts > runCorpusImport > writes status=extracted and the injected timestamp for every row
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:246:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/30]⎯
+
+ FAIL  tests/unit/import.test.ts > runCorpusImport > stores the object_key set the fixture tree defines
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:260:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/30]⎯
+
+ FAIL  tests/unit/import.test.ts > runCorpusImport > writes no status_history rows on a first adoption (an import is not a transition)
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:281:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the skip list > never imports from QuestMetadatas/ or GlobalRegistry/
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:306:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the skip list > never descends into QuestTemplates/droptables/
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:319:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the skip list > skips non-JSON files and files without the key field
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:333:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/30]⎯
+
+ FAIL  tests/unit/import.test.ts > key extraction > stores TemplateID as a string, numeric or already-string alike
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:347:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/30]⎯
+
+ FAIL  tests/unit/import.test.ts > key extraction > keeps a zone key containing a slash verbatim
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:363:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/30]⎯
+
+ FAIL  tests/unit/import.test.ts > legacy trailing commas > imports a file that strict JSON.parse rejects
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:401:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/30]⎯
+
+ FAIL  tests/unit/import.test.ts > unparsable files and missing directories > counts an unparsable file and keeps importing the rest
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:414:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/30]⎯
+
+ FAIL  tests/unit/import.test.ts > unparsable files and missing directories > treats a missing directory as normal and flags it
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:425:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/30]⎯
+
+ FAIL  tests/unit/import.test.ts > unparsable files and missing directories > handles an existing but empty directory without flagging it missing
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:443:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/30]⎯
+
+ FAIL  tests/unit/import.test.ts > unparsable files and missing directories > is a no-op result (not an error) when the repository root does not exist
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:457:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/30]⎯
+
+ FAIL  tests/unit/import.test.ts > duplicate keys > reports a duplicate key without aborting the import (the first file wins)
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:471:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/30]⎯
+
+ FAIL  tests/unit/import.test.ts > duplicate keys > allows the same key under two different types (UNIQUE is per type)
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:485:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/30]⎯
+
+ FAIL  tests/unit/import.test.ts > idempotency > adopts nothing and re-writes nothing on the second run (row-by-row, not by count)
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:503:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/30]⎯
+
+ FAIL  tests/unit/import.test.ts > idempotency > adopts the corpus keys alongside rows the scan does not know about
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:558:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > adopts a file that arrives later, with the provenance history row the tool writes
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:597:19
+    595|     const tree = backfillCorpus();
+    596|     const db = memoryDb();
+    597|     const FIRST = runCorpusImport({ db, spiraldbPath: tree, now: () =>…
+       |                   ^
+    598|     expect(FIRST.ran).toBe(true);
+    599|     expect(FIRST.imported).toBe(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > leaves a reviewed row — status, note, timestamps, attribution and history — untouched
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:653:5
+    651|     const tree = backfillCorpus();
+    652|     const db = memoryDb();
+    653|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    654| 
+    655|     // A human reviews one quest, with a note, through the real transi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > changes nothing at all on a second backfill (whole-row comparison, twice)
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:707:5
+    705|     const tree = backfillCorpus();
+    706|     const db = memoryDb();
+    707|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    708|     applyStatusChange(db, {
+    709|       objectType: 'quest',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > adopts a whole family that appears later, and keeps a missing one as zero work
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:745:5
+    743|     const tree = backfillCorpus();
+    744|     const db = memoryDb();
+    745|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    746| 
+    747|     // NpcDropTable/ does not exist in this tree (it does not exist in…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > is not an error when the corpus root does not exist and the table has rows
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:788:5
+    786|     const db = memoryDb();
+    787|     const tree = backfillCorpus();
+    788|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    789|     const before = snapshot(db);
+    790| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > rolls the adoption AND its history row back together when a later insert fails
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:807:5
+    805|     const db = memoryDb();
+    806|     const tree = backfillCorpus();
+    807|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    808|     const before = snapshot(db);
+    809| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > counts a key that races in between the read and the insert as skipped, not twice
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:834:5
+    832|     const db = memoryDb();
+    833|     const tree = backfillCorpus();
+    834|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    835| 
+    836|     addQuest(tree, 'DS-BF-005');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the idempotent backfill (D82(a)) > records the adoption for the status endpoint the palette reads
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:868:5
+    866|     const db = memoryDb();
+    867|     const tree = backfillCorpus();
+    868|     runCorpusImport({ db, spiraldbPath: tree, now: () => IMPORTED_AT }…
+       |     ^
+    869|     addQuest(tree, 'DS-BF-006');
+    870| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/30]⎯
+
+ FAIL  tests/unit/import.test.ts > single transaction > rolls every insert back when one of them fails
+AssertionError: expected [Function] to throw error matching /blocked/ but got 'runCorpusImport…'
+
+- Expected: 
+/blocked/
+
++ Received: 
+"__vite_ssr_import_5__.runCorpusImport is not a function"
+
+ ❯ tests/unit/import.test.ts:895:27
+    893|     );
+    894| 
+    895|     expect(() => run(db)).toThrow(/blocked/);
+       |                           ^
+    896| 
+    897|     // Without the surrounding transaction the earlier inserts would h…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/30]⎯
+
+ FAIL  tests/unit/import.test.ts > default clock > uses ISO-8601 UTC and the same value for importedAt and every row
+TypeError: runCorpusImport is not a function
+ ❯ tests/unit/import.test.ts:907:20
+    905|     const db = memoryDb();
+    906| 
+    907|     const result = runCorpusImport({ db, spiraldbPath: root });
+       |                    ^
+    908| 
+    909|     expect(result.importedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the in-memory import record (GET /api/status/_import) > reflects the last run of this process and resets to zeros when cleared
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:920:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/30]⎯
+
+ FAIL  tests/unit/import.test.ts > the in-memory import record (GET /api/status/_import) > records the skip too, so a second startup reports ran=false
+TypeError: runCorpusImport is not a function
+ ❯ run tests/unit/import.test.ts:124:10
+    122| 
+    123| function run(db: Db, spiraldbPath = root, now = () => IMPORTED_AT): Im…
+    124|   return runCorpusImport({ db, spiraldbPath, now });
+       |          ^
+    125| }
+    126| 
+ ❯ tests/unit/import.test.ts:931:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/30]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  30 failed | 11 passed (41)
+   Start at  03:28:24
+   Duration  466ms (transform 64ms, setup 0ms, collect 89ms, tests 38ms, environment 0ms, prepare 61ms)
+
+rc=1
+
+==================== md5 evidence ====================
+# baseline md5 of the touched files (before any edit):
+22eded19728de0a92b6f0dcad05dff6f  server/src/services/import.ts
+b4578a7991d38fad3038f9e7ba27b758  server/src/index.ts
+aeb0295285f9bc62e3a3cf31aa1e29a3  tests/unit/import.test.ts
+fb9596febe330c0e6ecb513460612dda  tests/unit/quests-api.test.ts
+df4c393a381d5e93fac29c33384bb7ad  docs/spec-data-model.md
+# the new import.ts (state the work is committed in):
+7040d3d257eec58808b24273e13516aa  server/src/services/import.ts
+# HEAD's import.ts as restored for case=broken-2:
+22eded19728de0a92b6f0dcad05dff6f  /tmp/dr10/import.ts.head
+# after each restore the working file was re-hashed and re-run (case=baseline rc=0 above).

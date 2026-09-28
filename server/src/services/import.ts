@@ -2,18 +2,51 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Db } from '../db.js';
-import { STATUS_OBJECT_TYPES, type StatusObjectType } from './status.js';
+import { isStatusObjectType, STATUS_OBJECT_TYPES, type StatusObjectType } from './status.js';
 import { isPlainObject, parseJsonLenient } from './sync/json.js';
 
 /**
- * First-startup import of the existing SpiralDB corpus (task 1.6,
- * docs/spec-data-model.md L254-279).
+ * Adopting the existing SpiralDB corpus into `entry_status` (task 1.6,
+ * docs/spec-data-model.md L254-279, plus D82(a)'s idempotent backfill).
  *
- * Runs only while `entry_status` is empty, then never again: the owner's existing
- * 2.2k entries are adopted as `status='extracted'` exactly once, and the count is
- * surfaced to the UI as the spec's once-only toast ("Imported {n} existing
- * entries from SpiralDB", L260). On every later startup the table has rows, so
- * the function returns `{ ran: false, imported: 0, … }` without touching a file.
+ * Two modes, one path, because both are the same operation — "make the tracked
+ * table cover the corpus" — and because a growing corpus is the owner's normal
+ * workflow (D82(a)):
+ *
+ * - **first adoption** (`entry_status` is empty): the spec's first-startup
+ *   import. Every corpus key is adopted as `status='extracted'` in ONE
+ *   transaction, the count is surfaced to the UI as the spec's once-only toast
+ *   ("Imported {n} existing entries from SpiralDB", L260), and **no**
+ *   `status_history` row is written — the whole table appears at once, which is
+ *   an origin rather than a transition.
+ * - **reconcile** (`entry_status` has rows): D82(a)'s idempotent backfill. The
+ *   first-startup-only version left every file that arrived later invisible to
+ *   `entry_status` — and therefore to the search palette and to any status
+ *   write, which 404s on a key with no row. Every corpus key that has no row is
+ *   adopted exactly as above, **plus** one `status_history` row recording where
+ *   it came from; a later arrival *is* a change to a dataset that already
+ *   existed, and it gets the same five-column creation row the tool's other two
+ *   creation paths write (`savePipeline.ts`'s insert, with notes from
+ *   `captureSourceNote` / `CREATED_VIA_UI_NOTE`).
+ *
+ * **ADDITIVE ONLY.** This function never deletes, never re-statuses and never
+ * re-writes a row that already exists, and it never restamps a timestamp: a
+ * human's `reviewed` status, its note and its history must survive a backfill
+ * untouched (D69(b)'s invisible-second-writer failure). The guarantee is
+ * structural rather than careful — the only statements below are `SELECT`,
+ * `INSERT OR IGNORE INTO entry_status`, `INSERT INTO status_history` for a row
+ * this call just inserted, and one `COUNT`-shaped read: there is no `UPDATE`,
+ * no `DELETE` and no `INSERT OR REPLACE` in the file, and an already-tracked key
+ * is filtered out *before* any insert is attempted.
+ *
+ * **Cost.** Cost is paid at every startup (the reconcile must look, or it cannot
+ * find later files); it is bounded by the corpus, not by the table — one read of
+ * the tracked keys, eight directory reads, and one lenient parse per `.json`
+ * file (measured on the owner's 2,279-file corpus: **76-133 ms**, and **zero**
+ * INSERT statements when nothing is missing, which is the steady state). A
+ * cached "already scanned" marker was rejected on purpose: a stale marker is the
+ * failure class D82(b) names for this run, and it would make the backfill
+ * silently stop running when a database is copied or a corpus restored.
  *
  * The reader is the corpus' lenient one (L238-253): most SpiralDB files carry
  * **trailing commas**, so every parse goes through `parseJsonLenient`
@@ -86,7 +119,7 @@ export interface ImportDeps {
   readFile?: (file: string) => string;
 }
 
-export interface RunFirstStartupImportOptions {
+export interface RunCorpusImportOptions {
   db: Db;
   /** `settings.spiraldb_path` — the SpiralDB repository root to scan. */
   spiraldbPath: string;
@@ -97,9 +130,17 @@ export interface RunFirstStartupImportOptions {
 }
 
 export interface ImportTypeCounts {
-  /** Rows inserted into `entry_status`. */
+  /** Rows this run inserted into `entry_status`. */
   imported: number;
-  /** Candidate files that yielded no usable key, plus duplicates and non-JSON. */
+  /**
+   * Candidate files that yielded no usable key, plus duplicates and non-JSON.
+   *
+   * A file whose key the table **already tracks** is deliberately not counted
+   * here: it yielded a usable key, so it is not "skipped" in the sense above, and
+   * counting it would report every corpus file as skipped on every steady-state
+   * startup. `imported + skipped + failed` therefore equals the files that
+   * needed a decision, not every file the scan read.
+   */
   skipped: number;
   /** Files that could not be read or parsed as JSON. */
   failed: number;
@@ -110,15 +151,55 @@ export interface ImportTypeCounts {
 }
 
 export interface ImportResult {
-  /** `true` only when the import actually ran (the table was empty). */
+  /**
+   * `true` when this process adopted rows from the corpus: the table was empty
+   * (the spec's first-startup import, which "runs" even when the corpus holds
+   * nothing) or the reconcile backfilled at least one later-arriving key. `false`
+   * when the table already covered the corpus and this run wrote nothing — the
+   * client's once-only toast keys off this (D37).
+   */
   ran: boolean;
   imported: number;
   skipped: number;
   failed: number;
   /** All eight singular types, zeros included. */
   byType: Record<StatusObjectType, ImportTypeCounts>;
-  /** The single `extracted_at` written to every row; `null` when skipped. */
+  /**
+   * The single `extracted_at` written to every row this run adopted; `null` when
+   * it adopted none.
+   */
   importedAt: string | null;
+}
+
+/** One scanned file: its key, and the corpus-relative path its history note names. */
+export interface ScannedCorpusEntry {
+  key: string;
+  /**
+   * `<Directory>/<file>.json` — the provenance the backfill's history note
+   * records. Composed with `/` rather than `path.join` so a note written on one
+   * platform reads the same on another (the corpus stores `/`).
+   */
+  file: string;
+}
+
+/**
+ * The `status_history.changed_by` a corpus adoption records.
+ *
+ * A literal, not `settings.user_name`: nobody asked for this write at the moment
+ * it happens, and attributing an automatic adoption to the configured human
+ * would be a false audit trail (the live database's `user_name` is `""` as well,
+ * which would record nothing at all). The two paths that *are* user-driven pass
+ * the resolved user; this one names the writer.
+ */
+export const CORPUS_IMPORT_ACTOR = 'corpus import';
+
+/**
+ * The `status_history.notes` a corpus adoption records — the counterpart of
+ * `captureSourceNote` ("Imported from packet capture {file}") for the corpus
+ * rather than for a capture, and the answer to "where did this row come from?".
+ */
+export function corpusImportNote(file: string): string {
+  return `Imported from SpiralDB corpus ${file}`;
 }
 
 /** Default directory reader: `withFileTypes` narrowed to the fields we use. */
@@ -174,19 +255,20 @@ function scanType(
   counts: ImportTypeCounts,
   readDirectory: (directory: string) => ImportDirectoryEntry[],
   readFile: (file: string) => string,
-): string[] {
+): ScannedCorpusEntry[] {
   const directory = path.join(root, spec.directory);
 
   let entries: ImportDirectoryEntry[];
   try {
     entries = readDirectory(directory);
   } catch {
-    // A directory that is not there (NpcDropTable/ today) contributes nothing.
+    // A directory that is not there (NpcDropTable/ today) contributes nothing:
+    // absent is zero work, never an error.
     counts.directoryMissing = true;
     return [];
   }
 
-  const keys: string[] = [];
+  const keys: ScannedCorpusEntry[] = [];
   const seen = new Set<string>();
 
   // Sorted by name so the scan — and therefore "the first file wins" for a
@@ -227,7 +309,7 @@ function scanType(
     }
 
     seen.add(key);
-    keys.push(key);
+    keys.push({ key, file: `${spec.directory}/${entry.name}` });
   }
 
   return keys;
@@ -246,75 +328,153 @@ export function getLastImportResult(): ImportResult | null {
   return lastImportResult;
 }
 
+/** Every `(object_type, object_key)` the table already holds, grouped by type. */
+interface TrackedKeys {
+  /** Rows in `entry_status`, whatever their type — the first-adoption test. */
+  total: number;
+  byType: Record<StatusObjectType, Set<string>>;
+}
+
 /**
- * Imports the existing SpiralDB corpus exactly once.
+ * Reads the tracked keys once for the whole reconcile — ONE statement, and the
+ * only reason a steady-state startup needs the database at all.
  *
- * Skips (and records nothing) whenever `entry_status` already has rows. All
- * inserts happen in ONE transaction, so a failure leaves the table exactly as it
- * was — the next startup then retries the import instead of adopting a half of
- * the corpus.
+ * A row whose `object_type` is outside the eight tracked types (a hand-written
+ * `global_registry` row, say) still counts toward `total`: it is a row the
+ * spec's first-startup import must not run against, even though this scan has no
+ * directory for it.
  */
-export function runFirstStartupImport(options: RunFirstStartupImportOptions): ImportResult {
+function readTrackedKeys(db: Db): TrackedKeys {
+  const rows = db
+    .prepare<[], { object_type: string; object_key: string }>(
+      'SELECT object_type, object_key FROM entry_status',
+    )
+    .all();
+
+  const byType = Object.fromEntries(
+    STATUS_OBJECT_TYPES.map((objectType) => [objectType, new Set<string>()]),
+  ) as Record<StatusObjectType, Set<string>>;
+
+  for (const row of rows) {
+    if (isStatusObjectType(row.object_type)) {
+      byType[row.object_type].add(row.object_key);
+    }
+  }
+
+  return { total: rows.length, byType };
+}
+
+/**
+ * Makes `entry_status` cover the SpiralDB corpus: the spec's first-startup
+ * import when the table is empty, D82(a)'s idempotent backfill when it is not.
+ *
+ * The two modes share one scan and one insert path so a key adopted at first
+ * startup and a key adopted later are the same row shape; they differ in exactly
+ * one place, the history row (see the module doc).
+ *
+ * All inserts happen in ONE transaction, so a failure leaves the table exactly as
+ * it was — the next startup then retries instead of adopting half of the corpus.
+ * The reconcile's steady state (nothing missing) executes **no** write
+ * statement at all and returns `ran: false` with the scan's real per-type
+ * accounting.
+ */
+export function runCorpusImport(options: RunCorpusImportOptions): ImportResult {
   const { db, spiraldbPath } = options;
   const now = options.now ?? (() => new Date().toISOString());
   const readDirectory = options.deps?.readdir ?? readDirectoryEntries;
   const readFile = options.deps?.readFile ?? ((file: string) => readFileSync(file, 'utf8'));
 
   const byType = emptyByType();
-  const shouldRun =
-    (db.prepare('SELECT COUNT(*) AS count FROM entry_status').get() as { count: number }).count ===
-    0;
+  const tracked = readTrackedKeys(db);
+  // "Empty" is about the whole table, not the eight tracked types: a database
+  // that holds rows this scan does not know about is still a database the spec's
+  // first-startup import must not run against.
+  const firstAdoption = tracked.total === 0;
 
-  if (!shouldRun) {
-    const skipped: ImportResult = {
-      ran: false,
-      imported: 0,
-      skipped: 0,
-      failed: 0,
-      byType,
-      importedAt: null,
-    };
-    recordImportResult(skipped);
-    return skipped;
-  }
-
-  const importedAt = now();
-  const insert = db.prepare(
-    `INSERT OR IGNORE INTO entry_status (object_type, object_key, status, extracted_at)
-     VALUES (?, ?, 'extracted', ?)`,
-  );
-
-  const rows: Array<[StatusObjectType, string]> = [];
+  const candidates: Array<[StatusObjectType, ScannedCorpusEntry]> = [];
   for (const spec of IMPORT_TYPE_SPECS) {
     const counts = byType[spec.objectType];
-    for (const key of scanType(spiraldbPath, spec, counts, readDirectory, readFile)) {
-      rows.push([spec.objectType, key]);
+    const trackedKeys = tracked.byType[spec.objectType];
+    for (const entry of scanType(spiraldbPath, spec, counts, readDirectory, readFile)) {
+      // Already tracked: not a candidate, and not counted (see ImportTypeCounts).
+      // This is the ADDITIVE-ONLY filter: the insert below is never even
+      // attempted for a key that has a row, so nothing about that row — status,
+      // notes, timestamps, history — is in reach of this function.
+      if (trackedKeys.has(entry.key)) {
+        continue;
+      }
+      candidates.push([spec.objectType, entry]);
     }
   }
 
-  const insertAll = db.transaction((batch: Array<[StatusObjectType, string]>): void => {
-    for (const [objectType, objectKey] of batch) {
-      const info = insert.run(objectType, objectKey, importedAt);
+  const skipped = STATUS_OBJECT_TYPES.reduce((sum, type) => sum + byType[type].skipped, 0);
+  const failed = STATUS_OBJECT_TYPES.reduce((sum, type) => sum + byType[type].failed, 0);
+
+  if (!firstAdoption && candidates.length === 0) {
+    // The steady state: the corpus is fully tracked. Every statement above was a
+    // read; report no work rather than a zero-row import.
+    const steady: ImportResult = {
+      ran: false,
+      imported: 0,
+      skipped,
+      failed,
+      byType,
+      importedAt: null,
+    };
+    recordImportResult(steady);
+    return steady;
+  }
+
+  const importedAt = now();
+  const insertEntry = db.prepare(
+    `INSERT OR IGNORE INTO entry_status (object_type, object_key, status, extracted_at)
+     VALUES (?, ?, 'extracted', ?)`,
+  );
+  const insertHistory = db.prepare(
+    `INSERT INTO status_history (entry_status_id, old_status, new_status, notes, changed_by, changed_at)
+     VALUES (?, NULL, 'extracted', ?, ?, ?)`,
+  );
+
+  const adoptAll = db.transaction((batch: Array<[StatusObjectType, ScannedCorpusEntry]>): void => {
+    for (const [objectType, entry] of batch) {
       const counts = byType[objectType];
+      const info = insertEntry.run(objectType, entry.key, importedAt);
       if (info.changes === 0) {
-        // Only reachable through a UNIQUE conflict the in-memory dedupe missed.
+        // Only reachable through a UNIQUE conflict this read missed — another
+        // process adopted the key between the read and this insert. Its row (and
+        // whatever history it already had) is left alone and no second history
+        // row is written for it.
         counts.skipped += 1;
-        counts.duplicates.push(objectKey);
-      } else {
-        counts.imported += 1;
+        counts.duplicates.push(entry.key);
+        continue;
+      }
+      counts.imported += 1;
+      if (!firstAdoption) {
+        insertHistory.run(
+          info.lastInsertRowid,
+          corpusImportNote(entry.file),
+          CORPUS_IMPORT_ACTOR,
+          importedAt,
+        );
       }
     }
   });
 
-  insertAll(rows);
+  adoptAll(candidates);
+
+  const imported = STATUS_OBJECT_TYPES.reduce((sum, type) => sum + byType[type].imported, 0);
+  // A first adoption "ran" even when the corpus yielded nothing (the spec's
+  // import of an empty/absent corpus is a completed import, not a skip); the
+  // reconcile ran only if it actually adopted a row.
+  const ran = firstAdoption || imported > 0;
 
   const result: ImportResult = {
-    ran: true,
-    imported: STATUS_OBJECT_TYPES.reduce((sum, objectType) => sum + byType[objectType].imported, 0),
-    skipped: STATUS_OBJECT_TYPES.reduce((sum, objectType) => sum + byType[objectType].skipped, 0),
-    failed: STATUS_OBJECT_TYPES.reduce((sum, objectType) => sum + byType[objectType].failed, 0),
+    ran,
+    imported,
+    skipped: STATUS_OBJECT_TYPES.reduce((sum, type) => sum + byType[type].skipped, 0),
+    failed: STATUS_OBJECT_TYPES.reduce((sum, type) => sum + byType[type].failed, 0),
     byType,
-    importedAt,
+    importedAt: ran ? importedAt : null,
   };
 
   recordImportResult(result);

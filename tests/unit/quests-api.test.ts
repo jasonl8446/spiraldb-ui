@@ -11,7 +11,7 @@ import { MEMORY_DB, openDb, writeSettings, type Db } from '@server/db';
 import { createQuestsRouter } from '@server/routes/quests';
 import { createStatusRouter } from '@server/routes/status';
 import { countQuestGoals, buildQuestRows } from '@server/services/sync/corpus';
-import { runFirstStartupImport } from '@server/services/import';
+import { runCorpusImport } from '@server/services/import';
 import {
   captureSourceNote,
   listQuests,
@@ -271,7 +271,7 @@ describe('GET /api/quests — the browse list (ac1)', () => {
 
     const h = harness({ root });
     // The real first-startup import (the boot path) populates entry_status.
-    const imported = runFirstStartupImport({ db: h.db, spiraldbPath: root });
+    const imported = runCorpusImport({ db: h.db, spiraldbPath: root });
     expect(imported.imported).toBe(3);
     applyStatusChange(h.db, {
       objectType: 'quest',
@@ -301,8 +301,12 @@ describe('GET /api/quests — the browse list (ac1)', () => {
     const root = corpusRoot();
     writeFile(root, 'QuestTemplates/a.json', questText('DS-P206-E-001'));
     const h = harness({ root });
-    runFirstStartupImport({ db: h.db, spiraldbPath: root });
-    // A quest file the tool never imported — the one documented divergence.
+    runCorpusImport({ db: h.db, spiraldbPath: root });
+    // A quest file the tool never imported — the one documented divergence. It
+    // is a *within-one-process* divergence now: the next startup's reconcile
+    // adopts it (D82(a), `tests/unit/import.test.ts`), but this running process
+    // has not looked at the corpus again, so the list and the status table
+    // disagree exactly as they always did.
     writeFile(root, 'QuestTemplates/b.json', questText('DS-P206-E-002'));
 
     const list = await request(h.app).get('/api/quests').expect(200);
