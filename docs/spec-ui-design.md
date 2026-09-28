@@ -58,12 +58,15 @@ matches either** value (spec-api.md's widened `?q=`). Per family:
 | QuestTemplate | `m_questName` | `quests.title` (title key) | yes |
 | NpcInventory, NpcSpellInventory, NpcDropTable, TreasureCardInventory | `TemplateID` | `npcs.name` | **only when the template is an NPC** |
 | ZoneTransfer | `ZoneName` | `zones.display_name` / humanizer | yes |
-| CreatureSpellbook | `DeckName` | `decks.name` (task 6.9) | yes, once `decks` is populated |
+| CreatureSpellbook | `DeckName` | `decks.name` (task 6.9) | **not yet** — technical value alone until task 6.9 populates `decks` |
 | DropTable | `Name` | none — `description` is NULL in 316 of 317 rows; the key *is* the name | **no** |
 | GlobalRegistry | dictionary key | none | **no** |
 
 **A family with no friendly source renders the technical value alone and says why** — it never gets a
-humaniser, because a humanised key reads as a name that does not exist.
+humaniser, because a humanised key reads as a name that does not exist. **Three families are in that
+state today** (p6-06-ac1): DropTable and GlobalRegistry permanently, and **CreatureSpellbook until
+task 6.9 populates `decks`** — so a pair assertion for CreatureSpellbook must not be written before
+then, and its row must say which of the two states it is in rather than rendering a blank label.
 
 **`npcs` is not a roster.** Its 23,033 rows are client *object templates* with no type classification
 (D33): the low ids are engine objects (`Player Object`, `PetObject`, `GenericCinematicActor`,

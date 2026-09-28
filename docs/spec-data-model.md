@@ -175,7 +175,8 @@ CREATE TABLE IF NOT EXISTS quest_ids (
   title TEXT,                    -- resolved title text
   text_rows INTEGER NOT NULL DEFAULT 0,  -- rows in the quest's own WizQst<id>_* tables
   matched_quest_name TEXT,       -- the catalog name this id belongs to, when linked
-  link_kind TEXT                 -- 'direct' | 'inferred' | 'none'
+  link_kind TEXT,                -- 'direct' | 'inferred' | 'none'
+  inference_basis TEXT           -- why an 'inferred' link was accepted (P6-11) — never a bare claim
 );
 CREATE INDEX IF NOT EXISTS idx_quest_ids_matched ON quest_ids(matched_quest_name);
 
@@ -201,6 +202,14 @@ catalog link's provenance (`direct` | `inferred` | `none`, P6-11). The quests **
 (`resolved` | `rawKey` | `missing`) and is unchanged by Phase 6; the evidence endpoint's
 `title_source` is the column. Same name, two meanings, two homes — a reader who assumes one will
 mis-read the other.
+
+**An inferred link never travels alone.** `quest_ids.inference_basis` records what the interpolation
+rested on — the anchored neighbours either side of the gap — **and** the two conditions the candidate
+had to pass: a `QuestTitle_*` key exists *and* its `WizQst` table is non-empty (P6-11). That is the
+column p6-04-ac2 means by "the row carries `link=inferred` **plus its basis**": labelling a guess
+without recording its basis would make an inferred title indistinguishable from a verified one, and
+the run's own rule is that inferred material is shown, labelled, and **never written** into a
+loadable file (P6-6). The evidence endpoint surfaces the basis beside the label.
 
 **Sync staging (inside the existing transaction, P6-4 keeps the transactional replace).** Corpus
 rows are written first (the D19 scan the sync already performs), then catalog rows are merged, then
