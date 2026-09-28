@@ -342,9 +342,22 @@ describe('D88 — no mounted router family installs its own CORS grant (per-rout
 
       const simple = await request(app).get(url).set('Origin', FOREIGN_ORIGIN);
       expectNoCorsGrant(simple.headers);
-      // A 5xx would mean the probe never reached the app's own error path, so the absence
-      // above could be "the route never ran" rather than "the route granted nothing".
-      expect(simple.status, `GET ${url} reached the app's 4xx path`).toBeLessThan(500);
+      // The probe must be answered as **this application's JSON**, so the absence above is an absence
+      // rather than a dead socket or a non-JSON stub. It is deliberately *only* that:
+      //
+      //  - pinning `< 500` was this arm's own **CI-only defect** (PR #8's `ci` run, 34 s,
+      //    `expected 500 to be less than 500`): on a runner with no corpus (D55) a data-reading
+      //    family legitimately fails through the error handler;
+      //  - pinning the `{ error }` envelope was the same mistake one step further in: locally
+      //    `/api/global-registry/___posture_probe___` *matches a real route* and answers that
+      //    family's own JSON document, with no `error` key at all.
+      //
+      // What holds in every environment is the media type; the traversal claim is carried by the
+      // per-prefix loop itself plus the root probe below.
+      expect(
+        String(simple.headers['content-type'] ?? ''),
+        `GET ${url} was answered as this app's JSON`,
+      ).toContain('application/json');
 
       // The exploit's wire shape per family, not only for `/api/settings`.
       const preflight = await request(app).options(url).set(EXPLOIT_PREFLIGHT);
@@ -354,9 +367,13 @@ describe('D88 — no mounted router family installs its own CORS grant (per-rout
       measured[prefix === '' ? '(root)' : prefix] = simple.status;
     }
 
-    // Positive partner for the whole loop (D78(d)): at least the root probe must be the
-    // app's JSON 404 — proof that these requests traverse the router and are answered by
-    // this application, so the per-prefix absences are absences.
+    // The traversal claim, made explicit: *every* derived prefix was probed (a derivation that
+    // silently shrank the loop would leave this short), and the one probe that matches no route in
+    // any environment — the root — is this app's own JSON 404 (D78(d)'s positive partner).
+    expect(
+      Object.keys(measured).length,
+      'probes actually issued, one per derived mount prefix',
+    ).toBe(prefixes.length);
     expect(measured['(root)']).toBe(404);
   });
 });

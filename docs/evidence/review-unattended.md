@@ -75,6 +75,32 @@ unused `records` binding after a refactor (eslint `no-unused-vars`; `TS6133`), a
 three of my new files. Both were fixed and re-run to green — the transcripts are the re-runs, which is
 why check 1 was also re-run last (its file changed after the first pass).
 
+### The PR's own CI caught a CI-only defect in this review's newest arm — the gate working as designed
+
+This run's last unpushed commits had never faced the boundary, and pushing them turned `npm test` red
+on the runner in **34 s**: `tests/unit/server-security-posture.test.ts`'s per-prefix arm asserted
+`status < 500`, which is a *local-only* truth — on a runner with no corpus (D55) the quests detail
+route legitimately fails through the app's error handler and answers **500**
+(`expected 500 to be less than 500`). This is the D68/D81 class, found by the very gate those decisions
+exist for, and on a test written by this review. The record keeps the red run rather than only the
+green one.
+
+Reproduced locally **before** touching the arm (`SPIRALDB_PATH=/nonexistent/no-corpus` → the identical
+message), then fixed twice over, because the first fix was the same mistake one step further in:
+
+1. pinning the `{ error }` envelope made the **CI** condition green and the **local** run red —
+   `/api/global-registry/___posture_probe___` matches a real route and answers that family's own JSON
+   document, with no `error` key at all;
+2. the arm now asserts only what holds in every environment — the probe is answered as this app's
+   **JSON** — and carries the traversal claim two environment-independent ways: every derived prefix
+   was probed (`Object.keys(measured).length === prefixes.length`, so a broken derivation cannot shrink
+   the loop), and the root probe, which matches no route anywhere, is the app's own JSON 404.
+
+Verified green under **both** conditions (`10 passed` with the corpus, `10 passed` with
+`SPIRALDB_PATH=/nonexistent/no-corpus`), and still red under the deliberate per-family
+`Access-Control-Allow-Origin` grant *in the CI condition* — so the relaxation removed an
+environment-dependent assertion without weakening the pin.
+
 ### Check 7's three full runs, and the carried families
 
 `npm run test:ui` flaked twice before the clean run, in **two of the four families this project already
@@ -309,7 +335,10 @@ not forcing it.
 - **Outcome**: ship. Nine findings fixed with break-proofs (H-1 harness identity, M-1 per-route CORS,
   M-2 warning ordering, M-3 long-key axis, M-4 + L-1/L-2/L-3 records/criteria/table). No unfixed
   HIGH/MEDIUM. Two escalation items, both *decisions* (R-1 `Origin`/`Host`, R-2 body limit). Two
-  consecutive verification cycles added no new HIGH/MEDIUM.
+  consecutive verification cycles added no new HIGH/MEDIUM. Pushing the branch surfaced **one CI-only
+  defect in this review's own new arm** (a local-only `status < 500` assertion on a corpus-less
+  runner), caught by PR #8's `ci` in 34 s, reproduced locally, fixed to the environment-independent
+  invariant and re-verified under both conditions (§2).
 - **Ledger delta**: `revision` 1→9, `architectVerified` 41→63 (22 flips, each with quoted raw evidence),
   `criterionAmendments` 0→8, seven evidence fields annotated, `passes` never changed.
 - **D-items**: D92, D93, D94, D95.
