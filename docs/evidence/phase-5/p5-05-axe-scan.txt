@@ -10,6 +10,6 @@ Verdict: none.
 === Quest list (/quests) — critical/serious: 0, other: 0, consoleErrors: 0
   (edit mode as loaded: hook=1)
 
-=== Quest detail (edit mode) (/quests/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 0
+=== Quest detail (edit mode) (/quests/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 2
 
-=== DropTable detail (/drop-tables/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 0
+=== DropTable detail (/drop-tables/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 1
