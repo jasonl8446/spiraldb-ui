@@ -1,0 +1,11 @@
+=== prod SPA fallback + API 404 (no Vite)
+/                                          200 text/html; charset=UTF-8 shell-identical=yes
+/quests                                    200 text/html; charset=UTF-8 shell-identical=yes
+/quests/MB-YARD1-C01-001                   200 text/html; charset=UTF-8 shell-identical=yes
+/drop-tables/DS-ACAD1-C01-001              200 text/html; charset=UTF-8 shell-identical=yes
+/settings                                  200 text/html; charset=UTF-8 shell-identical=yes
+/zone-transfers/WizardCity%2FWC_Hub        200 text/html; charset=UTF-8 shell-identical=yes
+/nope-not-a-route                          200 text/html; charset=UTF-8 shell-identical=yes
+=== /api unknown path stays JSON:
+api/unknown-nope -> 404 application/json; charset=utf-8
+{"error":"Not found"}

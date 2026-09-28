@@ -1,0 +1,90 @@
+########## d3-api-matrix
+=== [P1 #8] names: the spec's own example and an unknown id
+items/4808            -> {"gid":4808,"name":"Twice Stitched Boots"} [200]
+items/999999999       -> {"error":"Unknown items id \"999999999\""} [404]
+spells/607923         -> {"template_id":607923,"name":"Firecat Alley"} [200]
+npcs/1397242          -> {"template_id":1397242,"name":"AZ-Parrot-Darkshaman-A_StandIn"} [200]
+zones (encoded slash) -> {"zone_path":"WizardCity/WC_Hub","display_name":"Wizard City / WC Hub","world":"WizardCity"} [200]
+unknown type          -> {"error":"Unknown name type \"nonsense\". Valid types: items, spells, npcs, quests, zones, drop_tables, strings"} [404]
+=== [P1 #13 / D32] settings PUT matrix
+PUT invalid dir       -> {"error":"aurorium_path \"/nope\" is not an existing directory"} [400]
+PUT unknown key       -> {"error":"Unknown settings key: nonsense. Allowed keys: aurorium_path, imcodec_path, user_name, spiraldb_path, git_branch"} [400]
+PUT non-string        -> {"error":"Invalid value for spiraldb_path: expected a string but received number"} [400]
+PUT {} (no-op)        -> {"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-27","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/tmp/p5-09/corpus","user_name":"Dry Run (p5-09)"} [200]
+PUT valid (full map)  -> {"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-27","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/tmp/p5-09/corpus","user_name":"Dry Run (p5-09)"} [200]
+=== [P2 #10 / D37] list vs status summaries
+quests count 328 summary {"total":328,"extracted":327,"reviewed":0,"verified":1} skipped 0
+status  entries 328 summary {"total":328,"extracted":327,"reviewed":0,"verified":1}
+=== [P2 #11] JSON5 tolerance on a real legacy file (28 trailing commas)
+strict JSON.parse: FAILS -> Expected double-quoted property name in JSON at position 482
+GET /api/quests/WC-COMMONS-MAIN-002-FIRE -> keys 36 | m_questName WC-COMMONS-MAIN-002-FIRE | m_goals 4
+
+########## d3-api-matrix2
+=== [P1 #2] fresh DB schema in the clone's isolated database
+tables (11): drop_tables, entry_status, items, npcs, quests, settings, spells, status_history, string_table, sync_history, zones
+indexes (3): idx_entry_status_key, idx_entry_status_status, idx_entry_status_type
+sync_history rows: 3 | entry_status rows: 2277 | status_history rows: 3
+=== [P1 #10 / D37] ?status=extracted: summary counts the WHOLE type, before the filter
+entries 327 summary {"total":328,"extracted":327,"reviewed":0,"verified":1} | summary.total==all-types total: true
+unknown status value  -> {"error":"Invalid status filter \"bogus\": status must be one of extracted, reviewed, verified"} [400]
+=== [P2 #1] the built reader on a non-capture (exit code + stderr)
+reader rc=131
+stdout: 
+stderr: You must install .NET to run this application.
+
+App: /tmp/p5-09/spiraldb-ui/tools/.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+Architecture: x64
+=== [P2 #1] the reader on a real fixture prints a JSON array to stdout
+reader rc=131
+node:internal/modules/cjs/loader:2075
+    throw err;
+    ^
+
+SyntaxError: /tmp/p5-09/reader-ok.json: Unexpected end of JSON input
+    at parse (<anonymous>)
+    at Object..json (node:internal/modules/cjs/loader:2072:39)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at Module.require (node:internal/modules/cjs/loader:1674:12)
+    at require (node:internal/modules/helpers:157:16)
+    at [eval]:1:9
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:451:12
+
+Node.js v24.21.0
+=== [P2 #3] POST /api/extract/quests with a non-capture
+non-capture -> {"error":"Failed to parse packet capture: error: '/tmp/p5-09/spiraldb-ui/data/uploads/fc39720e-1cab-4783-b51f-f46265b76038.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {\"data\":{\"name\":\"MSG_QUESTOFFER\",\"fields\":{...}}}."} [400]
+health after -> {"status":"ok"} [200]
+
+########## d3-api-matrix3
+=== [P3 #10] direct POST with a dangling start goal -> 400 + per-field map
+POST -> {"error":"Missing quest: the request body must carry the quest object in the \"quest\" field."} [400]
+=== [P4 #5] POST a DropTable with RollChance 1.5 -> 400 + field map
+POST -> {"error":"DropTable validation failed with 1 validation error (Roll chance out of range).","fields":{"RollChance":["Roll chance 1.5 must be a number between 0 and 1."]}} [400]
+empty Name -> {"error":"DropTable validation failed with 1 validation error (Missing name).","fields":{"Name":["A drop table needs a non-empty Name before it can be saved. The Name is also the file’s key and what NpcDropTable and ResDropTable reference."]}} [400]
+=== [P4 #3/#8/#9] the create that bootstraps a directory absent from the corpus (NpcDropTable)
+before: ls: cannot access '/tmp/p5-09/corpus/NpcDropTable': No such file or directory
+POST -> {"key":"5150099","file_type":"npcdroptable","object_type":"npc_drop_table","outcome":"created","action":"create","commit":"b20000438a8fcc34e92aac530f5afb67ea159190","branch":"content/2026-09-27","commit_message":"spiraldb: create npc_drop_table 5150099\n\np5-09 dry run: created live so the dashboard sees it","file":"NpcDropTable/npcdroptable_5150099.json","status":{"object_type":"npc_drop_table","object_key":"5150099","status":"extracted","extracted_at":"2026-09-28T02:10:32.147Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"},"status_created":true,"warnings":[]} [200]
+after: total 4
+-rw-r--r-- 1 jason users 78 Sep 27 22:10 npcdroptable_5150099.json
+detail read-back (ulong key) -> {"TemplateID":5150099,"DropTableNames":["DS-ACAD1-C01-001"]} [200]
+status row -> {"total":1,"extracted":1,"reviewed":0,"verified":0} [{"object_type":"npc_drop_table","object_key":"5150099","status":"extracted","extracted_at":"2026-09-28T02:10:32.147Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"}]
+history -> {"history":[{"old_status":null,"new_status":"extracted","notes":"Created via UI","changed_by":"Dry Run (p5-09)","changed_at":"2026-09-28T02:10:32.147Z"}]}
+commit: b200004 spiraldb: create npc_drop_table 5150099
+spiraldb: create npc_drop_table 5150099
+
+ NpcDropTable/npcdroptable_5150099.json | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+########## d3-api-matrix4
+=== [P3 #10] direct POST {quest} with a dangling start goal (correct envelope this time)
+POST -> {"error":"Quest validation failed with 1 validation error (Unknown start goal).","fields":{"m_startGoals[0]":["The start goal \"NO-SUCH-GOAL-EXISTS\" is not defined in m_goals. Set another start goal or restore the deleted goal."]}} [400]
+=== [P4 #3] a create on a second family (TreasureCardInventory? no: NpcInventory, corpus-present) is not re-run here; the DropTable create path is refused by the duplicate-name rule (P4 #5's other arm):
+POST a DropTable whose Name already exists (no key) -> {"error":"DropTable validation failed with 1 validation error (Duplicate name).","fields":{"Name":["The name \"DS-ACAD1-C01-001\" is already used by another drop table. Names must be unique across all drop tables, because other files reference a table by name."]}} [400]
+=== [P2 #7 / D14] dirty-repo guard: make the corpus dirty, then POST an unmodified save
+porcelain lines: 1
+POST -> {"error":"SpiralDB repo at /tmp/p5-09/corpus has uncommitted changes — resolve them first. The save pipeline never stashes or discards your work. git status --porcelain (1): M README.md"} [409]
+commits unchanged: yes  (b20000438a8fcc34e92aac530f5afb67ea159190 -> b20000438a8fcc34e92aac530f5afb67ea159190)
+restored: porcelain lines 0
+

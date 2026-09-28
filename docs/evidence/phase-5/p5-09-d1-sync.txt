@@ -1,0 +1,84 @@
+########## RUN 1 — isolated full sync (fresh unpack), SPIRALDB_UI_DB=/tmp/p5-09/dryrun.db
+
+> spiraldb-ui@0.1.0 sync
+> tsx scripts/sync-names.ts
+
+[spiraldb-ui] sync database at /tmp/p5-09/dryrun.db
+=== SpiralDB UI — friendly-name sync ===
+  status              : SUCCESS
+  revision            : V_r806919.Wizard_1_610
+  tree                : unpacked /tmp/spiraldb-wad-oi3AWy
+  items               : 79,835
+  spells              : 18,173
+  npcs                : 23,033
+  quests              : 328
+  zones               : 1,241
+  drop_tables         : 317
+  string_table        : 216,991
+  manifest entries    : 137,423 ids
+  manifest ids used   : 121,041 rows keyed by the manifest (fallback 0)
+  id mismatches       : 0 rows (embedded m_templateID vs manifest)
+  missing manifest    : 0 rows
+  dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)
+  unpack / scan / write: 18.2 s / 3.3 s / 450 ms
+  total               : 22.0 s
+  sync_history        : success row written at 2026-09-28T01:43:45Z
+
+real	0m23.675s
+user	0m21.833s
+sys	0m9.191s
+sync rc=0
+
+########## RUN 2 — warm reuse of a tree that no longer exists -> FAILED (the unpack tree is a temp dir; --tree needs a retained tree)
+
+> spiraldb-ui@0.1.0 sync
+> tsx scripts/sync-names.ts --tree /tmp/spiraldb-wad-oi3AWy
+
+[spiraldb-ui] sync database at /tmp/p5-09/dryrun.db
+=== SpiralDB UI — friendly-name sync ===
+  status              : FAILED
+  revision            : V_r806919.Wizard_1_610
+  tree                : reused /tmp/spiraldb-wad-oi3AWy
+  error               : Could not read the template manifest at /tmp/spiraldb-wad-oi3AWy/TemplateManifest_deser.json — without it the authoritative spell id space is unavailable and rows would silently lose their ids (ENOENT: no such file or directory, open '/tmp/spiraldb-wad-oi3AWy/TemplateManifest_deser.json').
+  sync_history        : failed row written at 2026-09-28T01:44:20Z
+Sync failed: Could not read the template manifest at /tmp/spiraldb-wad-oi3AWy/TemplateManifest_deser.json — without it the authoritative spell id space is unavailable and rows would silently lose their ids (ENOENT: no such file or directory, open '/tmp/spiraldb-wad-oi3AWy/TemplateManifest_deser.json').
+
+real	0m0.665s
+user	0m0.605s
+sys	0m0.130s
+sync2 rc=1
+
+########## RUN 3 — full sync with a CLEARED dotnet-shim log (the D3 falsification run)
+
+> spiraldb-ui@0.1.0 sync
+> tsx scripts/sync-names.ts
+
+[spiraldb-ui] sync database at /tmp/p5-09/dryrun.db
+=== SpiralDB UI — friendly-name sync ===
+  status              : SUCCESS
+  revision            : V_r806919.Wizard_1_610
+  tree                : unpacked /tmp/spiraldb-wad-wze5q5
+  items               : 79,835
+  spells              : 18,173
+  npcs                : 23,033
+  quests              : 328
+  zones               : 1,241
+  drop_tables         : 317
+  string_table        : 216,991
+  manifest entries    : 137,423 ids
+  manifest ids used   : 121,041 rows keyed by the manifest (fallback 0)
+  id mismatches       : 0 rows (embedded m_templateID vs manifest)
+  missing manifest    : 0 rows
+  dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)
+  unpack / scan / write: 25.7 s / 4.6 s / 608 ms
+  total               : 30.9 s
+  sync_history        : success row written at 2026-09-28T01:46:10Z
+
+real	0m33.226s
+user	0m29.599s
+sys	0m11.902s
+sync3 rc=0
+
+########## dotnet shim log after run 3:
+cat: /tmp/p5-09/dotnet-called.log: No such file or directory
+(file absent — dotnet never invoked)

@@ -1,0 +1,25 @@
+=== import breakdown (first boot, /api/status/_import)
+{"ran":true,"imported":2277,"imported_at":"2026-09-28T01:47:22.910Z"}
+=== per-type entry_status via /api/status/all summary
+quests                     {"total":328,"extracted":328,"reviewed":0,"verified":0}
+drop_tables                {"total":317,"extracted":317,"reviewed":0,"verified":0}
+npc_inventories            {"total":215,"extracted":215,"reviewed":0,"verified":0}
+npc_spell_inventories      {"total":77,"extracted":77,"reviewed":0,"verified":0}
+creature_spellbooks        {"total":134,"extracted":134,"reviewed":0,"verified":0}
+treasure_card_inventories  {"total":1,"extracted":1,"reviewed":0,"verified":0}
+zone_transfers             {"total":1205,"extracted":1205,"reviewed":0,"verified":0}
+npc_drop_tables            {"total":0,"extracted":0,"reviewed":0,"verified":0}
+=== dashboard overall + types
+overall {"total":2277,"extracted":2277,"reviewed":0,"verified":0,"percent_verified":0}
+types {"quest":{"total":328,"extracted":328,"reviewed":0,"verified":0},"drop_table":{"total":317,"extracted":317,"reviewed":0,"verified":0},"npc_inventory":{"total":215,"extracted":215,"reviewed":0,"verified":0},"npc_spell_inventory":{"total":77,"extracted":77,"reviewed":0,"verified":0},"creature_spellbook":{"total":134,"extracted":134,"reviewed":0,"verified":0},"npc_drop_table":{"total":0,"extracted":0,"reviewed":0,"verified":0},"treasure_card_inventory":{"total":1,"extracted":1,"reviewed":0,"verified":0},"zone_transfer":{"total":1205,"extracted":1205,"reviewed":0,"verified":0}}
+[eval]:1
+let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('overall',JSON.stringify(j.overall));console.log('types',JSON.stringify(j.types));const sum=j.types.reduce((a,t)=>a+t.total,0);console.log('sum(types.total)=',sum,'== overall.total',sum===j.overall.total)})
+                                                                                                                                                                                              ^
+
+TypeError: j.types.reduce is not a function
+    at Socket.<anonymous> ([eval]:1:191)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v24.21.0
