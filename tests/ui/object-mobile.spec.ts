@@ -542,7 +542,18 @@ const PHONE: Size = { width: 375, height: 800 };
 const BOUNDARY_MOBILE: Size = { width: 767, height: 800 };
 const BOUNDARY_DESKTOP: Size = { width: 768, height: 800 };
 
-const screenshotPath = (name: string): string => `docs/evidence/phase-4/${name}`;
+/**
+ * Where this spec's own screenshots are written.
+ *
+ * **Not** `docs/evidence/phase-4/` any more (story p5-08 fixed this). The screenshots above are
+ * regenerated on every run, so writing them over the committed phase-4 PNGs meant one full
+ * `npm run test:ui` dirtied 15–22 of another phase's committed binaries and every story had to
+ * restore them by hand (measured repeatedly, and recorded as D83(d)). Phase evidence is
+ * committed **once, by the story that produced it**; a suite re-run must not rewrite it.
+ * `test-results/` is gitignored (`playwright.config.ts` already points Playwright's own
+ * artifacts there), so a run's screenshots are inspectable and cannot reach a commit.
+ */
+const screenshotPath = (name: string): string => `test-results/object-mobile/${name}`;
 
 /* --------------------------------------------------------------- AC#13: the list */
 

@@ -13,9 +13,8 @@ import { expect, test as base, type Locator, type Page } from '@playwright/test'
  *
  * CI has no sibling repositories, no `data/spiraldb-ui.db` and no WAD data, so the
  * specs may not depend on the developer's corpus: `mockShellApi()` fulfils
- * `/api/settings`, `/api/sync/status`, `/api/sync/history` and the three bulk name
- * tables (the stub pages mount the shared-components panel, which would otherwise
- * pull 79,835 real item rows) with fixed values. These specs test **our UI** —
+ * `/api/settings`, `/api/sync/status`, `/api/sync/history` and every route-specific
+ * endpoint the pages below read, with fixed values. These specs test **our UI** —
  * layout, routing, highlighting, collapse, spinner/toast — not the sync engine or
  * the corpus: the real ~22 s sync is covered by the tier-2 browser evidence in
  * `docs/evidence/phase-1/story-p1-10.md` and by the sync unit tests.
@@ -203,17 +202,14 @@ async function mockShellApi(page: Page): Promise<void> {
     }),
   );
 
-  // The stub pages mount `SharedComponentsPreview`, which bulk-loads these three
-  // tables; unmocked they would return the developer's real synced rows.
-  await page.route('**/api/names/items', (route) =>
-    route.fulfill({ json: { items: [{ gid: 1001, name: 'Mock Item' }] } }),
-  );
-  await page.route('**/api/names/spells', (route) =>
-    route.fulfill({ json: { spells: [{ template_id: 2002, name: 'Mock Spell' }] } }),
-  );
-  await page.route('**/api/names/npcs', (route) =>
-    route.fulfill({ json: { npcs: [{ template_id: 3003, name: 'Mock NPC' }] } }),
-  );
+  // Story p5-08 removed the three `/api/names/{items,spells,npcs}` mocks that used to live
+  // here. They existed for one reason only: the `SharedComponentsPreview` panel that the
+  // "Arrives in Phase N" stub pages mounted, which bulk-loaded all three tables. Story p5-08
+  // deleted both (no route renders a stub any more, so the panel was reachable from nowhere).
+  // Nothing this file visits reads those tables: the only components that do are the detail
+  // and editor forms, behind a `FriendlyNameDropdown`, and this file's routes are the 12
+  // sidebar list routes plus `/`, `/quests/extract`, `/quests/:questName` and `/settings`.
+  // The mocks' absence is observable in this file's own run rather than assumed.
 
   // Story p2-08 replaced the `/quests` and `/quests/:questName` stubs with real
   // pages: the browse list reads `GET /api/quests` and the detail page reads one

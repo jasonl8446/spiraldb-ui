@@ -20,7 +20,6 @@ import GlobalRegistryPage from './pages/GlobalRegistryPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
-import StubPage from './pages/StubPage';
 import TreasureCardInventoryDetailPage from './pages/TreasureCardInventoryDetailPage';
 import { UserNameGateProvider } from './hooks/useUserNameGate';
 import { APP_ROUTES, type AppRoute } from './lib/routes';
@@ -38,13 +37,11 @@ import {
  * and removes its temporary diagnostic surface, keeping the pieces task 1.7 made
  * durable: `UserNameGateProvider`, `UserNameDialog` and `lib/api.ts`).
  *
- * Routing is generated from the `APP_ROUTES` table, so the spec-api L325-350
- * route list has exactly one home and cannot drift from the sidebar: every route
- * exists, the built pages (`/` — the dashboard, from story p5-01 — `/settings` from
- * p1-08, `/quests/extract` from p2-07, `/quests` and `/quests/:questName` from p2-08,
- * `/npc-inventories` and its detail route from p4-01, `/drop-tables` and
- * `/drop-tables/:name` from p4-02) render for real, and every other route renders the
- * "Arrives in Phase N" stub with the phase recorded in the table (decision D39 item 7).
+ * Routing is generated from the `APP_ROUTES` table, so the spec-api route list has
+ * exactly one home and cannot drift from the sidebar: **every one of its 20 routes
+ * renders a real page** (the last stub fell in story p5-01), and story p5-08 deleted
+ * `StubPage` and pointed the table's unreachable `default:` arm at the real 404 page
+ * (see `elementFor` below).
  *
  * Task 4.1 wired **one** of the eight object families end to end (NpcInventory) so
  * the generic scaffolding is provably used; story p4-02 added the second
@@ -80,10 +77,14 @@ const queryClient = new QueryClient({
  * The page a route renders.
  *
  * Built pages are listed explicitly by path — the `phase` in `APP_ROUTES` is the
- * phase that *owns* the page, not a switch, so a built page is wired here once
- * (`/` — the dashboard — in p5-01, `/settings` in p1-08, `/quests/extract` in p2-07,
- * the browse list and its detail page in p2-08) and everything else keeps the
- * "Arrives in Phase N" stub.
+ * phase that *owns* the page, not a switch — and every path in the table has its own
+ * branch, so the `default:` arm is unreachable in practice and exists only because a
+ * `switch` on a `string` cannot be proved exhaustive to the type checker. It renders
+ * the shell's real **not-found** page and nothing else: story p5-08 deleted the
+ * "Arrives in Phase N" stub (and the `SharedComponentsPreview` panel it mounted), since
+ * with all 20 routes real it was reachable from no route at all — a stale stub is a
+ * false affordance. `tests/unit/ui-shell.test.ts` still pins the route table, and
+ * `tests/ui/shell.spec.ts` asserts the absence of the stub's text on every page.
  *
  * `/quests/extract` is listed before `/quests/:questName` in `APP_ROUTES` and the
  * router ranks the static path higher regardless, so the detail route can never
@@ -227,7 +228,10 @@ function elementFor(route: AppRoute): JSX.Element {
       // the page owns that hook rather than a render prop.
       return <GlobalRegistryPage />;
     default:
-      return <StubPage route={route} />;
+      // Unreachable: every path in `APP_ROUTES` is cased above (story p5-08 deleted the
+      // last stub). It stays because TypeScript cannot prove a `switch` on a `string`
+      // exhaustive, and it renders the real 404 page rather than a stub.
+      return <NotFoundPage />;
   }
 }
 

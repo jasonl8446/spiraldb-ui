@@ -41,7 +41,7 @@ This project integrates with several sibling repositories. Do NOT modify these d
 
 1. **Verification status lives in local SQLite only** — Never add status/tracking fields to SpiralDB JSON files or metadata. The SpiralDB repo stays clean.
 2. **Friendly names are synced, not hardcoded** — All ID-to-name mappings come from the sync script parsing WAD files. Never hardcode name lookups.
-3. **Save = file write + metadata + git commit** — Every save writes the template JSON, updates its metadata (companion `QuestMetadatas/` file for quests — located by the `Name` field inside existing files, not by filename; embedded audit fields for all other types), then auto-commits.
+3. **Save = file write + metadata + git commit** — Every save writes the template JSON, updates its metadata (companion `QuestMetadatas/` file for quests — located by the `Name` field inside existing files, not by filename), then auto-commits. **Audit fields are never stamped**: only `DropTable` documents carry the `CreatedAt`/`CreatedBy`/`ModifiedAt`/`ModifiedBy` quartet, and the editor renders it without ever writing it (`shared/objectTypes.ts`'s `audit`, decision D69(b)) — refreshing it generically would add an invisible second writer across ~2,000 corpus files and break the rule that a save's `git diff` shows only the field the user edited.
 4. **Packet parsing goes through CLI wrapper** — Node.js never parses packet captures directly. Always call the .NET CLI wrapper as a subprocess.
 5. **Form editors use friendly name dropdowns** — All ID fields in editors must show human-readable names via the FriendlyNameDropdown component, storing the raw ID in a hidden field.
 
