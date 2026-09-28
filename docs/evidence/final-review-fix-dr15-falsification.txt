@@ -1,0 +1,112 @@
+DR-15 falsification ledger — run on the FINAL test-file bytes.
+Script: /tmp/dr15/controls-final.sh (each rc captured immediately after its own command;
+every mutation followed by an md5-verified restore of server/src/app.ts and server/src/index.ts).
+
+=== per-case summary (case=label rc=N, then the failing assertions) ===
+case=baseline rc=0
+case=A-wildcard-cors-readded rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin, access-control-allow-methods, access-control-allow-headers: expected [ 'access-control-allow-origin', …(2) ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=B-nonloopback-and-bare-listen rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > server/src/index.ts binds the loopback literal (source assertion) > declares HOST as the IPv4 loopback literal, '127.0.0.1'
+    AssertionError: the HOST literal in server/src/index.ts: expected '0.0.0.0' to be '127.0.0.1' // Object.is equality
+     FAIL  tests/unit/server-security-posture.test.ts > server/src/index.ts binds the loopback literal (source assertion) > passes HOST to app.listen, not a port-only listen that would bind the wildcard
+    AssertionError: the second app.listen argument: expected undefined to be 'HOST' // Object.is equality
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=C-entrypoint-middleware rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > server/src/index.ts binds the loopback literal (source assertion) > installs no middleware of its own — the arm a test over the createApp() object cannot see
+    AssertionError: an app.use( in the entrypoint: expected 'import { existsSync } from \'node:fs\…' not to match /app\.use\(/
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=D-narrowed-string-origin-cors rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin, access-control-allow-methods, access-control-allow-headers: expected [ 'access-control-allow-origin', …(2) ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=F-array-origin-cors rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200
+    AssertionError: Vary: Origin — how cors() marks an answer that varies by origin: expected 'origin' not to contain 'origin'
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-methods, access-control-allow-headers: expected [ Array(2) ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET
+    AssertionError: Vary: Origin — how cors() marks an answer that varies by origin: expected 'origin' not to contain 'origin'
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=E-function-origin-allowlist rc=0
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=final-restored-green rc=0
+
+=== case script output ===
+---- summary ----
+case=baseline rc=0
+case=A-wildcard-cors-readded rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin, access-control-allow-methods, access-control-allow-headers: expected [ 'access-control-allow-origin', …(2) ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=B-nonloopback-and-bare-listen rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > server/src/index.ts binds the loopback literal (source assertion) > declares HOST as the IPv4 loopback literal, '127.0.0.1'
+    AssertionError: the HOST literal in server/src/index.ts: expected '0.0.0.0' to be '127.0.0.1' // Object.is equality
+     FAIL  tests/unit/server-security-posture.test.ts > server/src/index.ts binds the loopback literal (source assertion) > passes HOST to app.listen, not a port-only listen that would bind the wildcard
+    AssertionError: the second app.listen argument: expected undefined to be 'HOST' // Object.is equality
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=C-entrypoint-middleware rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > server/src/index.ts binds the loopback literal (source assertion) > installs no middleware of its own — the arm a test over the createApp() object cannot see
+    AssertionError: an app.use( in the entrypoint: expected 'import { existsSync } from \'node:fs\…' not to match /app\.use\(/
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=D-narrowed-string-origin-cors rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin, access-control-allow-methods, access-control-allow-headers: expected [ 'access-control-allow-origin', …(2) ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-origin: expected [ 'access-control-allow-origin' ] to deeply equal []
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=F-array-origin-cors rc=1
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200
+    AssertionError: Vary: Origin — how cors() marks an answer that varies by origin: expected 'origin' not to contain 'origin'
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204
+    AssertionError: Access-Control-* headers on a foreign-origin response: access-control-allow-methods, access-control-allow-headers: expected [ Array(2) ] to deeply equal []
+     FAIL  tests/unit/server-security-posture.test.ts > D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET
+    AssertionError: Vary: Origin — how cors() marks an answer that varies by origin: expected 'origin' not to contain 'origin'
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=E-function-origin-allowlist rc=0
+server/src/app.ts: OK
+server/src/index.ts: OK
+case=final-restored-green rc=0
+
+=== the re-added middleware's wire shape (probe under case A) ===
+[probe] OPTIONS /api/settings  Origin: http://foreign.example  ACRM: PUT
+[probe] status: 204
+[probe] access-control-allow-origin: *
+[probe] access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+[probe] access-control-allow-headers: content-type
+
+=== the array-origin form: no ACAO, but Vary: Origin (probe under case F) ===
+[probe] foreign-origin GET /api/health status: 200
+[probe]   access-control-allow-origin: undefined
+[probe]   vary: Origin
+
+=== source identity before and after every mutation/restore ===
+3191b4ea5843ba5d615f9e819ed076f4  server/src/app.ts
+b4578a7991d38fad3038f9e7ba27b758  server/src/index.ts
