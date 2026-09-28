@@ -65,6 +65,23 @@ export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
   return useContext(PreviewTabSelectContext);
 }
 
+/**
+ * The DOM id of one tab button — the panel's `useId` plus the tab name with its whitespace
+ * replaced by a hyphen.
+ *
+ * The replacement is **load-bearing, not cosmetic**. `Goal Logic` is the one two-word tab, and
+ * an HTML `id` must not contain a space — while `aria-labelledby` is a *space-separated list of
+ * ids*. The un-slugged form produced `id=":r1:-tab-Goal Logic"` and a tabpanel labelled
+ * `aria-labelledby=":r1:-tab-Goal Logic"`, which a browser parses as **two** ids
+ * (`:r1:-tab-Goal` and `Logic`), neither of which exists — so that pane had no accessible name
+ * at all. axe reports exactly that as the `aria-valid-attr-value` "element ID does not exist"
+ * *incomplete* (`tests/ui/a11y.spec.ts`, the `quest-detail:Goal Logic` arm). Both the `id` and
+ * every lookup go through this one function, so the two can never drift.
+ */
+function tabDomId(panelId: string, name: PreviewTab): string {
+  return `${panelId}-tab-${name.replace(/\s+/g, '-')}`;
+}
+
 export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
   const [tab, setTab] = useState<PreviewTab>('Info');
   const panelId = useId();
@@ -89,7 +106,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
               key={name}
               type="button"
               role="tab"
-              id={`${panelId}-tab-${name}`}
+              id={tabDomId(panelId, name)}
               aria-selected={selected}
               aria-controls={`${panelId}-panel`}
               onClick={() => setTab(name)}
@@ -103,7 +120,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
                 event.preventDefault();
                 const target = PREVIEW_TABS[next];
                 setTab(target);
-                document.getElementById(`${panelId}-tab-${target}`)?.focus();
+                document.getElementById(tabDomId(panelId, target))?.focus();
               }}
               className={cn(
                 'border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
@@ -121,7 +138,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
       <div
         role="tabpanel"
         id={`${panelId}-panel`}
-        aria-labelledby={`${panelId}-tab-${tab}`}
+        aria-labelledby={tabDomId(panelId, tab)}
         className="min-h-0 flex-1 overflow-y-auto p-4"
       >
         <PreviewTabSelectContext.Provider value={setTab}>

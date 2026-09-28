@@ -698,6 +698,17 @@ type GoalLogicFlowEdge = Edge<{ edge: GoalLogicEdge }>;
  * name, the `$type`'s TypeName (D60h), the first summary line and the Start badge. The stripe
  * takes its colour from the p3-04 badge vocabulary (`goals.ts`'s `badgeClass`), so the
  * flowchart and the Goals tab name one palette.
+ *
+ * ## The handles carry `title`, never `aria-label` (story p5-07)
+ *
+ * React Flow's `Handle` renders a bare `<div>` with **no role**, and `aria-label` is
+ * *prohibited* on the generic role (ARIA 1.2) — axe reports it as the **serious**
+ * `aria-prohibited-attr` on this tab (`tests/ui/a11y.spec.ts`). The label was therefore inert
+ * for assistive tech while looking like a name, which is the worst of both. `title` carries the
+ * same words legally: it is the pointer user's tooltip and the generic element's accessible-name
+ * fallback. The handles are pointer affordances either way — edge creation is drag-only, and the
+ * keyboard-equivalent edit is the `EntryInspector`'s `m_goalsAND`/`m_goalsOR` lists beside the
+ * canvas (the audit's §1 ruling, `docs/evidence/phase-5/p5-05-d1-audit.md`).
  */
 function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JSX.Element {
   const node = data.node;
@@ -714,7 +725,7 @@ function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JS
           type="target"
           position={Position.Left}
           isConnectable={false}
-          aria-label={TARGET_HANDLE_LABEL}
+          title={TARGET_HANDLE_LABEL}
         />
         <span className="text-sm font-medium text-emerald-300">{node.name}</span>
       </div>
@@ -738,7 +749,7 @@ function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JS
         type="target"
         position={Position.Left}
         isConnectable
-        aria-label={TARGET_HANDLE_LABEL}
+        title={TARGET_HANDLE_LABEL}
         className="!bg-zinc-500"
       />
       <div className="flex items-center gap-2 pl-1">
@@ -755,7 +766,6 @@ function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JS
         type="source"
         id="and"
         position={Position.Right}
-        aria-label={`${AND_HANDLE_LABEL} (solid)`}
         title={`${AND_HANDLE_LABEL} (solid)`}
         className="!bg-zinc-300"
       />
@@ -764,7 +774,6 @@ function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JS
         id="or"
         position={Position.Right}
         style={{ top: '72%' }}
-        aria-label={`${OR_HANDLE_LABEL} (dashed)`}
         title={`${OR_HANDLE_LABEL} (dashed)`}
         className="!border-2 !border-dashed !border-zinc-300 !bg-zinc-900"
       />

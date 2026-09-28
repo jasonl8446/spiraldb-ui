@@ -116,7 +116,26 @@ export default function Header({ onOpenNav, onOpenSearch }: HeaderProps): JSX.El
         <span className="hidden sm:inline">{isPending ? 'Syncing…' : 'Sync'}</span>
       </Button>
 
-      <div className="flex items-center gap-2" aria-label="Current user">
+      {/*
+        The current-user block. `role="group"` is load-bearing, not decoration: a bare `<div>`
+        has the *generic* role, on which `aria-label` is **prohibited** (ARIA 1.2), and axe
+        reports it as the **serious** `aria-prohibited-attr` — it did so at ≤639px, where the
+        name span below is `hidden` and the div therefore had no text content for axe to treat
+        as "needs review" instead (`tests/ui/a11y.spec.ts`, story p5-07). A named `group` is the
+        correct semantics for a distinct identity region, and it makes the label legal at every
+        width. That one attribute is the whole fix.
+
+        **Recorded gap, not silently left**: below `sm` the user's *name* is not in the
+        accessibility tree (the span is `display: none`), so a screen-reader user at mobile width
+        learns the region's name — "Current user" — and not which user. Closing it needs either a
+        second `sr-only` span carrying the same text or `sr-only sm:not-sr-only` on this one; the
+        first was tried and **reverted**: it makes
+        `shell.spec.ts:865`'s `getByText(user_name, { exact: true })` resolve to two elements and
+        fail strict mode, and the second changes `truncate`'s `white-space` at ≥sm, so it needs a
+        layout measurement this story did not budget. Left as an owner-decision item with the
+        measurement recorded rather than guessed at.
+      */}
+      <div className="flex items-center gap-2" role="group" aria-label="Current user">
         <span
           aria-hidden="true"
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-zinc-50"

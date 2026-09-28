@@ -82,12 +82,37 @@ async function copyQuestJson(quest: QuestJsonData): Promise<void> {
   }
 }
 
+/**
+ * The two Solarized syntax colours that fail WCAG AA on **this panel's** `zinc-950` well, and
+ * their measured replacements (story p5-07's automated scan, `tests/ui/a11y.spec.ts`).
+ *
+ * `darkStyles` is tuned for the library's own container background `rgb(0, 43, 54)`; the app
+ * swaps that for `zinc-950` (`#09090b`, `jsonContainerClass` above), which darkens the
+ * background and drops two of the seven syntax colours under the 4.5:1 text floor:
+ *
+ * | syntax colour | library value | on `#09090b` | replacement | on `#09090b` |
+ * |---|---|---|---|---|
+ * | string value | `rgb(203, 75, 22)` | **4.32:1** ✗ | `orange-300` `#fdba74` | 11.79:1 ✓ |
+ * | number value | `rgb(211, 54, 130)` | **4.38:1** ✗ | `pink-300` `#f9a8d4` | 10.97:1 ✓ |
+ *
+ * The other five (label/punctuation `18.44`, null `8.66`, boolean `7.00`, other `5.41`) pass
+ * and stay the library's. Each entry **replaces** the library class rather than appending to it,
+ * so there is no stylesheet-order question about which colour wins — and a Tailwind bump that
+ * failed to emit these two utilities could only fall back to the container's light `foreground`,
+ * never silently back to the failing Solarized values.
+ */
+const SYNTAX_OVERRIDES: NonNullable<JsonViewProps['style']> = {
+  stringValue: 'text-orange-300',
+  numberValue: 'text-pink-300',
+};
+
 /** The syntax-highlighted tree: top level expanded, nested nodes collapsed. */
 function QuestJsonTree({ quest, wrap }: { quest: QuestJsonData; wrap: boolean }): JSX.Element {
   // The library's own `data` type is a JSON union; `unknown` is the honest input
   // here because the document has not been validated by this component.
   const style: NonNullable<JsonViewProps['style']> = {
     ...darkStyles,
+    ...SYNTAX_OVERRIDES,
     container: jsonContainerClass(wrap),
   };
   return (
