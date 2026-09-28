@@ -53,8 +53,79 @@ const ENV_VAR_BY_KEY: Record<SettingKey, string> = {
  * (`server/migrations/`) in dev, and are copied to `server/dist/server/migrations/`
  * by `scripts/copy-server-assets.mjs` after `tsc` — the same relative position in
  * both layouts, so `../migrations/` resolves either way.
+ *
+ * **Adding a file here is load-bearing**: a new `.sql` file on disk is never
+ * applied until it is listed (task 6.4's measured trap).
  */
-const MIGRATION_FILES = ['0001_init.sql'];
+const MIGRATION_FILES = ['0001_init.sql', '0002_quest_catalog.sql'];
+
+/** The migration whose `quests` column adds are applied by a guarded step (see below). */
+const QUEST_CATALOG_MIGRATION = '0002_quest_catalog.sql';
+
+/**
+ * One `ALTER TABLE ... ADD COLUMN` a migration needs, with the exact spec DDL.
+ *
+ * `sql` is the statement the spec writes (docs/spec-data-model.md L152-155);
+ * `table`/`column` are what the guard reads before issuing it.
+ */
+export interface ColumnAdd {
+  table: string;
+  column: string;
+  sql: string;
+}
+
+/**
+ * The four `quests` columns migration 0002 adds (spec L152-155, verbatim).
+ *
+ * They are applied by {@link applyQuestCatalogColumnAdds} rather than as raw text
+ * in `0002_quest_catalog.sql` because **SQLite has no
+ * `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`** and {@link initSchema} `db.exec`s
+ * every migration file on **every** open — so a plain `ADD COLUMN` would throw
+ * `duplicate column name: has_definition` on the second `openDb()` of the same
+ * file. The guard reads `PRAGMA table_info(quests)` and issues only the missing
+ * columns, which is a data-driven check rather than an error the runner has been
+ * taught to swallow (a genuine duplicate-column error elsewhere still throws).
+ */
+export const QUEST_CATALOG_COLUMN_ADDS: readonly ColumnAdd[] = [
+  {
+    table: 'quests',
+    column: 'has_definition',
+    sql: 'ALTER TABLE quests ADD COLUMN has_definition INTEGER NOT NULL DEFAULT 0',
+  },
+  {
+    table: 'quests',
+    column: 'link_kind',
+    sql: 'ALTER TABLE quests ADD COLUMN link_kind TEXT',
+  },
+  {
+    table: 'quests',
+    column: 'title_source',
+    sql: 'ALTER TABLE quests ADD COLUMN title_source TEXT',
+  },
+  {
+    table: 'quests',
+    column: 'reference_count',
+    sql: 'ALTER TABLE quests ADD COLUMN reference_count INTEGER NOT NULL DEFAULT 0',
+  },
+];
+
+/**
+ * Applies {@link QUEST_CATALOG_COLUMN_ADDS}, skipping every column that already
+ * exists. Returns how many ALTERs it issued, so a test can prove the second call
+ * is 0 without inspecting the schema twice.
+ */
+export function applyQuestCatalogColumnAdds(db: Db): number {
+  let applied = 0;
+  for (const add of QUEST_CATALOG_COLUMN_ADDS) {
+    const columns = db.pragma(`table_info(${add.table})`) as Array<{ name: string }>;
+    if (columns.some((column) => column.name === add.column)) {
+      continue;
+    }
+    db.exec(add.sql);
+    applied += 1;
+  }
+  return applied;
+}
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(MODULE_DIR, '..', 'migrations');
@@ -129,8 +200,14 @@ export function openDb(options: OpenDbOptions = {}): Db {
 }
 
 /**
- * Applies every migration file. Idempotent: the DDL is `CREATE ... IF NOT EXISTS`,
- * so running it repeatedly leaves exactly the same 11 tables and 3 indexes.
+ * Applies every migration file, plus the guard-protected column adds that cannot
+ * be written as idempotent SQL.
+ *
+ * Idempotent by construction: 0001 and 0002 are `CREATE ... IF NOT EXISTS` only,
+ * and 0002's four `ALTER TABLE` statements live in
+ * {@link applyQuestCatalogColumnAdds}, which skips a column that already exists.
+ * Running this repeatedly therefore leaves the same 13 tables, 1 view and 6
+ * indexes (see tests/unit/db.test.ts).
  */
 export function initSchema(db: Db): void {
   for (const file of MIGRATION_FILES) {
@@ -139,6 +216,10 @@ export function initSchema(db: Db): void {
       throw new Error(
         `Migration not found: ${migrationPath}. Run \`npm run build\` (tsc + scripts/copy-server-assets.mjs) so the .sql files are emitted next to the compiled server.`,
       );
+    }
+    if (file === QUEST_CATALOG_MIGRATION) {
+      // Before the file, so the `coverage` view is created against a complete table.
+      applyQuestCatalogColumnAdds(db);
     }
     db.exec(fs.readFileSync(migrationPath, 'utf8'));
   }

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { createSyncRouter } from '@server/routes/sync';
 import type { RunSyncResult, SyncRunner } from '@server/services/sync/execute';
+import { notRunQuestCatalogReport } from '@server/services/sync/questCatalog';
 
 /**
  * Task 1.4g — the three sync endpoints (docs/spec-api.md L235-287).
@@ -56,6 +57,8 @@ const SUCCESS: RunSyncResult = {
   reused: false,
   treeDir: '/tmp/x',
   timings: { unpackMs: 17, scanMs: 2, writeMs: 3 },
+  // The catalog stage always reports; this stub is the "not built here" outcome (task 6.4).
+  catalog: notRunQuestCatalogReport('not-run', 'the catalog stage did not run in this stub'),
 };
 
 function setup(runner?: SyncRunner): { db: Db; app: Express } {

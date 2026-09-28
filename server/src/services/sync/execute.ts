@@ -18,6 +18,13 @@ import {
   loadTemplateManifest,
   type ManifestIdReport,
 } from './manifest.js';
+import {
+  collectQuestCatalog,
+  notRunQuestCatalogReport,
+  writeQuestCatalog,
+  type CollectedQuestCatalog,
+  type QuestCatalogReport,
+} from './questCatalog.js';
 import { resolveRevision } from './revision.js';
 import { buildStringTableRows, type StringTableRow } from './stringtable.js';
 import { scanTemplateTree, type ItemRow, type NpcRow, type SpellRow } from './templates.js';
@@ -35,7 +42,9 @@ import { runUnpack, UnpackError } from './unpack.js';
  * settings → resolveRevision → runUnpack → loadTemplateManifest → scanLangDir ┐
  *                                        ↘ scanTemplateTree(manifest)
  *                                        ↘ buildQuest/Zone/DropTableRows
- *                                        → ONE transaction: DELETE ×7 + bulk INSERT + sync_history
+ *                                        ↘ collectQuestCatalog (wad-scan extract, temp NDJSON)
+ *                                        → ONE transaction: DELETE ×9 + bulk INSERT
+ *                                          + the quest catalog stage + sync_history
  * ```
  *
  * ## Id provenance (D35)
@@ -47,11 +56,12 @@ import { runUnpack, UnpackError } from './unpack.js';
  *
  * ## Transaction contract
  *
- * All seven friendly-name tables and the `success` `sync_history` row are
- * replaced in **one** better-sqlite3 transaction. Any throw rolls the whole thing
- * back — the previous contents of the seven tables survive untouched — and a
- * **separate** transaction then writes a `failed` `sync_history` row with
- * `error_message`, so `GET /api/sync/status` reports the failure.
+ * All seven friendly-name tables, **both catalog tables** (task 6.4) and the
+ * `success` `sync_history` row are replaced in **one** better-sqlite3 transaction.
+ * Any throw rolls the whole thing back — the previous contents of those tables
+ * survive untouched — and a **separate** transaction then writes a `failed`
+ * `sync_history` row with `error_message`, so `GET /api/sync/status` reports the
+ * failure.
  *
  * `status` is `'success'` or `'failed'` only. `'partial'` (the schema's third
  * value) is deliberately not produced: a sync is all-or-nothing per the
@@ -158,6 +168,11 @@ export interface SyncDeps {
   buildQuestRows: typeof buildQuestRows;
   buildZoneRows: typeof buildZoneRows;
   buildDropTableRows: typeof buildDropTableRows;
+  /**
+   * The catalog stage's process half: `wad-scan extract` over the revision's `Data/GameData`.
+   * Injected so no unit test builds or spawns a .NET binary (task 6.4).
+   */
+  collectQuestCatalog: typeof collectQuestCatalog;
 }
 
 export const defaultSyncDeps: SyncDeps = {
@@ -169,6 +184,7 @@ export const defaultSyncDeps: SyncDeps = {
   buildQuestRows,
   buildZoneRows,
   buildDropTableRows,
+  collectQuestCatalog,
 };
 
 export interface RunSyncOptions {
@@ -216,6 +232,8 @@ export interface RunSyncResult {
   /** The unpack tree used (`null` when resolution failed before one existed). */
   treeDir: string | null;
   timings: SyncTimings;
+  /** The catalog stage's outcome, counts and sync-time hold-out (task 6.4). Always present. */
+  catalog: QuestCatalogReport;
   errorMessage?: string;
 }
 
@@ -231,8 +249,17 @@ export function formatSyncTimestamp(date: Date): string {
  */
 export type SyncRunner = (options: RunSyncOptions) => Promise<RunSyncResult>;
 
-/** Every table the transactional replace owns, in insert order. */
+/**
+ * Every table the transactional replace owns, in delete order.
+ *
+ * `quest_catalog_refs` and `quest_ids` lead the list (task 6.4): the refs carry a foreign key to
+ * `quests(quest_name)` with no `ON DELETE` clause and `openDb` switches `foreign_keys` on, so a
+ * refs row still present when `quests` is deleted would fail the whole transaction. Both are
+ * replaced on every sync — including the `skipped` path, where they end up empty.
+ */
 const REPLACED_TABLES = [
+  'quest_catalog_refs',
+  'quest_ids',
   'string_table',
   'items',
   'spells',
@@ -253,14 +280,26 @@ interface SyncRows {
 }
 
 /**
- * Replaces the seven friendly-name tables plus the `success` history row inside
- * one transaction. Throws (and therefore rolls back) on the first bad row.
+ * Replaces the seven friendly-name tables (plus the two catalog tables) and writes the `success`
+ * history row inside one transaction, then stages the quest catalog in the same transaction.
+ * Throws (and therefore rolls back) on the first bad row.
  *
  * Prepared once per run: the bulk `string_table` insert is ~217k rows, so the
  * statement is compiled once and reused, with no per-row string building beyond
  * the key the builder already produced.
+ *
+ * The corpus quest rows go in first, each with `has_definition = 1` — they are the subset of the
+ * catalog that has a file (spec L144-148) — then {@link writeQuestCatalog} merges the catalog
+ * rows, replaces the refs and ids, and recomputes the four derived columns from what it merged.
  */
-function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: string): void {
+function replaceTables(
+  db: Db,
+  rows: SyncRows,
+  revision: string,
+  timestamp: string,
+  catalog: CollectedQuestCatalog,
+  corpusPath: string | null,
+): QuestCatalogReport {
   const insertString = db.prepare(
     'INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)',
   );
@@ -268,7 +307,9 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
   const insertSpell = db.prepare('INSERT INTO spells (template_id, name, school) VALUES (?, ?, ?)');
   const insertNpc = db.prepare('INSERT INTO npcs (template_id, name, npc_type) VALUES (?, ?, ?)');
   const insertQuest = db.prepare(
-    'INSERT INTO quests (quest_name, title, level, is_mainline) VALUES (?, ?, ?, ?)',
+    `INSERT INTO quests
+       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
+     VALUES (?, ?, ?, ?, 1, 'none', 'none', 0)`,
   );
   const insertZone = db.prepare(
     'INSERT INTO zones (zone_path, display_name, world) VALUES (?, ?, ?)',
@@ -280,6 +321,7 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
      VALUES (?, ?, ?, ?, ?, ?, ?, 'success', NULL)`,
   );
 
+  let catalogReport = notRunQuestCatalogReport('not-run', 'the catalog stage did not run');
   const replace = db.transaction(() => {
     for (const table of REPLACED_TABLES) {
       db.prepare(`DELETE FROM ${table}`).run();
@@ -305,6 +347,14 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
     for (const row of rows.drop_tables) {
       insertDropTable.run(row.name, row.description);
     }
+    // Inside the same transaction, after `string_table` is written: the catalog's id links are
+    // resolved against it (see questCatalog.ts).
+    catalogReport = writeQuestCatalog({
+      db,
+      collected: catalog,
+      corpusRows: rows.quests,
+      corpus: corpusPath,
+    });
     insertHistory.run(
       timestamp,
       revision,
@@ -317,6 +367,7 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
   });
 
   replace();
+  return catalogReport;
 }
 
 /**
@@ -378,6 +429,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
   let counts: SyncCounts = { ...ZERO_SYNC_COUNTS };
   let deduplicated: SyncDedupe = { ...ZERO_SYNC_DEDUPE };
   let manifestReport: ManifestIdReport = ZERO_MANIFEST_REPORT;
+  let catalog: QuestCatalogReport | null = null;
 
   try {
     // Inside the try: a missing `settings` table (an un-migrated database) must
@@ -488,9 +540,17 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       string_table: rows.string_table.length,
     };
 
+    // The catalog stage's process half: the game tree the resolved revision names —
+    // `Data/GameData`, derived from the Root.wad path the resolver already validated.
+    // A missing `wad-scan` is a typed `skipped` result, never a throw (p6-03-ac4); a run
+    // that happened and failed does throw, and then this sync fails loudly.
+    const collected = await deps.collectQuestCatalog({
+      gamedataDir: path.dirname(resolved.rootWadPath),
+    });
+
     const timestamp = formatSyncTimestamp(now());
     const writeStarted = Date.now();
-    replaceTables(db, rows, revision, timestamp);
+    catalog = replaceTables(db, rows, revision, timestamp, collected, spiraldbPath);
     timings.writeMs = Date.now() - writeStarted;
 
     return {
@@ -504,6 +564,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       reused,
       treeDir,
       timings,
+      catalog,
     };
   } catch (error) {
     // An unpack that failed after creating its tree leaves it behind
@@ -526,6 +587,9 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       reused,
       treeDir,
       timings,
+      catalog:
+        catalog ??
+        notRunQuestCatalogReport('not-run', `the sync failed before the catalog stage: ${message}`),
       errorMessage: message,
     };
   } finally {

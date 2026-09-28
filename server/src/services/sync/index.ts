@@ -3,9 +3,10 @@
  *
  * The parsers (1.4b–1.4e) do no database I/O and write nothing outside an unpack
  * tree. `runSync` (1.4f) orchestrates them into **one** transaction over the
- * seven friendly-name tables plus the `success` `sync_history` row, with a
- * separate transaction for the `failed` row; `createSyncRouter` (1.4g) and
- * `runSyncCli` (1.4g / `npm run sync`) both drive that single orchestrator.
+ * seven friendly-name tables, the two quest-catalog tables (6.4) and the
+ * `success` `sync_history` row, with a separate transaction for the `failed`
+ * row; `createSyncRouter` (1.4g) and `runSyncCli` (1.4g / `npm run sync`) both
+ * drive that single orchestrator.
  *
  * Pipeline order:
  *
@@ -13,7 +14,8 @@
  * resolveRevision()  →  runUnpack()  →  loadTemplateManifest()  →  scanLangDir()
  *                                    ↘  scanTemplateTree(manifest)
  *                                    ↘  buildQuestRows() / buildZoneRows() / buildDropTableRows()
- *                                    →  runSync(): DELETE ×7 + bulk INSERT + sync_history
+ *                                    ↘  collectQuestCatalog()   (wad-scan extract)
+ *                                    →  runSync(): DELETE ×9 + bulk INSERT + catalog + sync_history
  * ```
  *
  * `loadTemplateManifest` (1.4h, D35) supplies the authoritative template id space
@@ -160,6 +162,7 @@ export {
 
 export {
   SYNC_USAGE,
+  formatCatalogSummary,
   formatSyncSummary,
   parseSyncArgs,
   runSyncCli,
@@ -167,3 +170,25 @@ export {
   type SyncCliArgs,
   type SyncCliOptions,
 } from './cli.js';
+
+export {
+  CATALOG_EXTRACT_SELECT,
+  MAX_ID_COLLISION_SAMPLES,
+  NOT_COLLECTED,
+  ZERO_QUEST_CATALOG_COUNTS,
+  collectQuestCatalog,
+  corpusQuestIdPairs,
+  defaultQuestCatalogDeps,
+  notRunQuestCatalogReport,
+  resolveIdOwnership,
+  writeQuestCatalog,
+  type CollectedQuestCatalog,
+  type CollectQuestCatalogOptions,
+  type IdOwnership,
+  type QuestCatalogCorpusRow,
+  type QuestCatalogCounts,
+  type QuestCatalogDeps,
+  type QuestCatalogReport,
+  type QuestCatalogStatus,
+  type WriteQuestCatalogOptions,
+} from './questCatalog.js';

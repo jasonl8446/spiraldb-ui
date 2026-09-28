@@ -109,6 +109,100 @@ function n(value: number): string {
   return value.toLocaleString('en-US');
 }
 
+/** `78.0%` — the hold-out is reported with one decimal, like p6-04's own report. */
+function percent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+/**
+ * The catalog stage's lines (task 6.4).
+ *
+ * Every outcome is printed, including the `skipped` one — its message names the missing binary and
+ * the command that builds it, so a run on a machine without .NET says what happened instead of
+ * looking like an empty corpus (D55).
+ */
+export function formatCatalogSummary(result: RunSyncResult): string[] {
+  const catalog = result.catalog;
+  const lines = [field('catalog status', catalog.status.toUpperCase())];
+
+  if (catalog.status === 'ok') {
+    const counts = catalog.counts;
+    lines.push(
+      field(
+        'catalog rows',
+        `${n(counts.catalog_rows)} (merged ${n(counts.merged_rows)}, new ${n(counts.catalog_only_rows)})`,
+      ),
+      field(
+        'quests rows',
+        `${n(counts.quests_rows)} (has_definition = 1: ${n(counts.has_definition_rows)})`,
+      ),
+      field(
+        'catalog refs',
+        `${n(counts.references)} rows kept (${n(counts.reference_rows_raw)} raw rows; ` +
+          `${n(counts.duplicate_references)} not inserted by the UNIQUE)`,
+      ),
+      field(
+        'reference keys',
+        `${n(counts.distinct_reference_keys)} distinct (quest, wad, entry, class, goal) with a ` +
+          `NULL goal_name read as '' — SQLite's UNIQUE keeps a NULL goal_name distinct, so the ` +
+          `table holds ${n(counts.references - counts.distinct_reference_keys)} more rows`,
+      ),
+      field(
+        'quest ids',
+        `${n(counts.ids)} (linked ${n(counts.ids_linked)}; ` +
+          `${n(counts.linked_ids_without_text)} links outside the text tier; ` +
+          `${n(counts.id_collision_names)} losing names on ${n(counts.id_collision_ids)} ids)`,
+      ),
+    );
+    // The extractor's own link counts, so `direct/inferred extracted − recorded` is arithmetic a
+    // reader can check: the D73(e) rule — every measurement carries its unit and its population.
+    if (catalog.quests !== null) {
+      lines.push(
+        field(
+          'links extracted',
+          `${n(catalog.quests.direct_links)} direct, ${n(catalog.quests.inferred_links)} inferred, ` +
+            `${n(catalog.quests.no_link)} none (the extractor's own count, catalog rows only)`,
+        ),
+      );
+    }
+    if (counts.id_collision_names > 0) {
+      // A collision is a resolved conflict, so it is named and its unit is stated, not implied.
+      const shown = counts.id_collision_samples.join('; ');
+      const rest = counts.id_collision_names - counts.id_collision_samples.length;
+      lines.push(
+        field(
+          'links lost',
+          `${n(counts.links_lost_direct)} direct + ${n(counts.links_lost_inferred)} inferred ` +
+            `name(s) claimed an id another name owns; a loser keeps link_kind = none`,
+        ),
+        field('id collisions', rest > 0 ? `${shown}; +${n(rest)} more` : shown),
+      );
+    }
+    if (catalog.holdout !== null) {
+      const holdout = catalog.holdout;
+      lines.push(
+        field(
+          'hold-out',
+          `${percent(holdout.accuracy)} (${holdout.method}; ${n(holdout.cases)} cases, ` +
+            `${n(holdout.hits)} hits) on ${holdout.corpus ?? '(unnamed corpus)'}`,
+        ),
+      );
+    }
+    lines.push(
+      field(
+        'catalog timing',
+        `${formatDuration(catalog.extract_ms)} extract + ${formatDuration(
+          catalog.collect_ms,
+        )} read + ${formatDuration(catalog.write_ms)} write`,
+      ),
+    );
+  } else if (catalog.message !== null) {
+    lines.push(field(catalog.reason ?? 'skipped', catalog.message));
+  }
+
+  return lines;
+}
+
 /** Aligned `label : value` line. */
 function field(label: string, value: string): string {
   return `  ${label.padEnd(20)}: ${value}`;
@@ -172,9 +266,11 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('total', formatDuration(result.durationMs)),
       field('sync_history', `success row written at ${result.timestamp}`),
     );
+    lines.push(...formatCatalogSummary(result));
   } else {
     lines.push(field('error', result.errorMessage ?? '(no message)'));
     lines.push(field('sync_history', `failed row written at ${result.timestamp}`));
+    lines.push(...formatCatalogSummary(result));
   }
 
   return lines;

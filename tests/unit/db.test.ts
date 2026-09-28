@@ -9,6 +9,7 @@ import {
   DB_FILE_ENV_VAR,
   DEFAULT_SPIRALDB_PATH,
   MEMORY_DB,
+  applyQuestCatalogColumnAdds,
   buildSeedSettings,
   closeDb,
   defaultDbFile,
@@ -27,9 +28,13 @@ import {
 
 /**
  * Task 1.2 acceptance: the migration matches docs/spec-data-model.md L21-162
- * column-for-column (11 tables, 3 named indexes, the entry_status UNIQUE
- * constraint), the `settings` seed matches L164-169 with the env/NODE_ENV
- * precedence from the lead's decisions, and both steps are idempotent.
+ * column-for-column (the 11 initial tables, 3 named indexes, the entry_status
+ * UNIQUE constraint); task 6.4 adds migration 0002 — the quest catalog
+ * (docs/spec-data-model.md L137-220): two tables, three indexes, the `coverage`
+ * view and four `quests` columns applied by a PRAGMA-guarded step because SQLite
+ * has no `ADD COLUMN IF NOT EXISTS` and this runner re-execs every file on every
+ * open. The `settings` seed matches L164-169 with the env/NODE_ENV precedence from
+ * the lead's decisions, and every step is idempotent.
  *
  * Every test uses `:memory:` or a throwaway file under `data/` (gitignored) —
  * never the real `data/spiraldb-ui.db` (decision D17).
@@ -41,6 +46,8 @@ const EXPECTED_TABLES = [
   'entry_status',
   'items',
   'npcs',
+  'quest_catalog_refs',
+  'quest_ids',
   'quests',
   'settings',
   'spells',
@@ -54,6 +61,20 @@ const EXPECTED_INDEXES = [
   'idx_entry_status_key',
   'idx_entry_status_status',
   'idx_entry_status_type',
+  'idx_quest_catalog_refs_quest',
+  'idx_quest_catalog_refs_wad',
+  'idx_quest_ids_matched',
+];
+
+/** The one view (spec L183-191). */
+const EXPECTED_VIEWS = ['coverage'];
+
+/** The four `quests` columns migration 0002 adds, re-typed from spec L152-155. */
+const EXPECTED_QUEST_CATALOG_COLUMNS: Array<[string, string, number, string | null]> = [
+  ['has_definition', 'INTEGER', 1, '0'],
+  ['link_kind', 'TEXT', 0, null],
+  ['title_source', 'TEXT', 0, null],
+  ['reference_count', 'INTEGER', 1, '0'],
 ];
 
 const EXPECTED_SETTINGS_KEYS = [
@@ -101,6 +122,15 @@ function listIndexes(db: Db): string[] {
   return rows.map((row) => row.name);
 }
 
+function listViews(db: Db): string[] {
+  const rows = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'view' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+    )
+    .all() as Array<{ name: string }>;
+  return rows.map((row) => row.name);
+}
+
 /** Fixed local timestamp: 26 Sep 2026 (month is 0-based). */
 const FIXED_NOW = new Date(2026, 8, 26, 10, 30, 0);
 
@@ -115,18 +145,103 @@ afterEach(() => {
 });
 
 describe('schema introspection', () => {
-  it('creates exactly the 11 tables from the spec, on a fresh in-memory database', () => {
+  it('creates exactly the 13 tables from the spec (11 + migration 0002), on a fresh database', () => {
     const db = open();
 
-    expect(listTables(db)).toHaveLength(11);
+    expect(listTables(db)).toHaveLength(13);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
   });
 
-  it('creates the 3 named entry_status indexes from the spec', () => {
+  it('creates the 6 named indexes from the spec (3 + migration 0002)', () => {
     const db = open();
 
-    expect(listIndexes(db)).toHaveLength(3);
+    expect(listIndexes(db)).toHaveLength(6);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
+  });
+
+  it('creates the coverage view, whose denominators are count(*) on their own tables', () => {
+    const db = open();
+
+    expect(listViews(db)).toEqual(EXPECTED_VIEWS);
+
+    const count = (table: string): number =>
+      (db.prepare(`SELECT count(*) AS c FROM ${table}`).get() as { c: number }).c;
+
+    db.prepare(
+      "INSERT INTO quests (quest_name, title, has_definition) VALUES ('Q-001', 't', 1)",
+    ).run();
+    db.prepare(
+      "INSERT INTO quests (quest_name, title, has_definition) VALUES ('Q-002', 't', 0)",
+    ).run();
+    db.prepare(
+      "INSERT INTO quest_catalog_refs (quest_name, wad, entry, class) VALUES ('Q-002', 'a.wad', 'gamedata.bin', 'WizZoneData')",
+    ).run();
+    db.prepare('INSERT INTO quest_ids (quest_id, text_rows) VALUES (17, 3)').run();
+
+    const coverage = db.prepare('SELECT * FROM coverage').get() as Record<string, number>;
+    // nameable / id_space / references ARE count(*) on their tables — never a second definition.
+    expect(coverage.nameable).toBe(count('quests'));
+    expect(coverage.id_space).toBe(count('quest_ids'));
+    expect(coverage.references).toBe(count('quest_catalog_refs'));
+    expect(coverage).toEqual({
+      nameable: 2,
+      id_space: 1,
+      defined: 1,
+      missing: 1,
+      references: 1,
+    });
+  });
+
+  it('adds the four migration-0002 columns to quests, keeping the PK unchanged (spec L152-155)', () => {
+    const db = open();
+
+    const columns = db.pragma('table_info(quests)') as Array<{
+      name: string;
+      type: string;
+      notnull: number;
+      dflt_value: string | null;
+      pk: number;
+    }>;
+    expect(columns.map((column) => [column.name, column.type])).toEqual([
+      ['quest_name', 'TEXT'],
+      ['title', 'TEXT'],
+      ['level', 'INTEGER'],
+      ['is_mainline', 'BOOLEAN'],
+      ['updated_at', 'DATETIME'],
+      ['has_definition', 'INTEGER'],
+      ['link_kind', 'TEXT'],
+      ['title_source', 'TEXT'],
+      ['reference_count', 'INTEGER'],
+    ]);
+    // The existing primary key is unchanged (task 6.4's first bullet).
+    expect(columns.filter((column) => column.pk > 0).map((column) => column.name)).toEqual([
+      'quest_name',
+    ]);
+    for (const [name, type, notnull, dflt] of EXPECTED_QUEST_CATALOG_COLUMNS) {
+      const column = columns.find((candidate) => candidate.name === name);
+      expect([name, column?.type, column?.notnull, column?.dflt_value]).toEqual([
+        name,
+        type,
+        notnull,
+        dflt,
+      ]);
+    }
+  });
+
+  /**
+   * The measured trap (task 6.4): SQLite has no `ALTER TABLE ... ADD COLUMN IF NOT
+   * EXISTS` and `initSchema` `db.exec`s every migration file on every open, so a raw
+   * `ADD COLUMN` in 0002 would throw `duplicate column name` on the second open. The
+   * guard reads `PRAGMA table_info` and must therefore issue these ALTERs exactly once.
+   */
+  it('applies the guarded quests column adds exactly once across repeated initSchema calls', () => {
+    const db = open();
+
+    expect(applyQuestCatalogColumnAdds(db)).toBe(0);
+    expect(() => initSchema(db)).not.toThrow();
+    expect(() => initSchema(db)).not.toThrow();
+    expect(applyQuestCatalogColumnAdds(db)).toBe(0);
+    expect(db.pragma('table_info(quests)')).toHaveLength(9);
   });
 
   it('matches the spec columns of entry_status, including the UNIQUE constraint', () => {
@@ -329,16 +444,17 @@ describe('settings override precedence', () => {
 });
 
 describe('idempotency', () => {
-  it('re-running initSchema keeps 11 tables, 3 indexes and the seeded rows', () => {
+  it('re-running initSchema keeps 13 tables, 1 view, 6 indexes and the seeded rows', () => {
     const db = open();
     seedSettings(db, { env: {}, now: FIXED_NOW, repoRoot: '/repo' });
 
     expect(() => initSchema(db)).not.toThrow();
     expect(() => initSchema(db)).not.toThrow();
 
-    expect(listTables(db)).toHaveLength(11);
+    expect(listTables(db)).toHaveLength(13);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
-    expect(listIndexes(db)).toHaveLength(3);
+    expect(listViews(db)).toEqual(EXPECTED_VIEWS);
+    expect(listIndexes(db)).toHaveLength(6);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
     expect(readSettings(db)).toEqual({
       aurorium_path: DEFAULT_AURORIUM_PATH,
@@ -349,6 +465,12 @@ describe('idempotency', () => {
     });
   });
 
+  /**
+   * Task 6.4-ac1's own proof, in unit form: the migration must be idempotent for a
+   * **file** database opened twice, because `openDb` re-execs every migration file
+   * on every open. (The real-database evidence re-runs this against a copy of the
+   * live file.)
+   */
   it('re-opening an existing file database is idempotent', () => {
     const file = path.join(makeTempDir(), 'restart.db');
 
@@ -357,11 +479,27 @@ describe('idempotency', () => {
     first.close();
     openConnections.pop();
 
-    const second = open(file);
-    seedSettings(second, { env: { USER_NAME: 'ignored' }, now: FIXED_NOW, repoRoot: '/repo' });
+    // The second open runs 0001+0002 over a database that already has them — the
+    // exact place a raw `ALTER TABLE ADD COLUMN` would throw `duplicate column name`.
+    expect(() => open(file)).not.toThrow();
+    const second = openConnections[openConnections.length - 1] as Db;
 
     expect(listTables(second)).toEqual(EXPECTED_TABLES);
+    expect(listViews(second)).toEqual(EXPECTED_VIEWS);
     expect(listIndexes(second)).toEqual(EXPECTED_INDEXES);
+    expect(
+      (second.pragma('table_info(quests)') as Array<{ name: string }>).map((c) => c.name),
+    ).toEqual([
+      'quest_name',
+      'title',
+      'level',
+      'is_mainline',
+      'updated_at',
+      'has_definition',
+      'link_kind',
+      'title_source',
+      'reference_count',
+    ]);
     expect(readSettings(second).user_name).toBe('');
   });
 });

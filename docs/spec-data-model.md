@@ -160,7 +160,9 @@ CREATE TABLE IF NOT EXISTS quest_catalog_refs (
   quest_name TEXT NOT NULL REFERENCES quests(quest_name),
   wad TEXT NOT NULL,             -- WAD file path (repo-relative)
   entry TEXT NOT NULL,           -- entry name inside the WAD
-  class TEXT NOT NULL,           -- the referencing object's class (e.g. 'ReqHasQuest', 'ReqHasEntry')
+  class TEXT NOT NULL,           -- the NDJSON row's class ('WizZoneData' | 'WizZoneTriggers'); the nested
+                                 -- requirement nodes carry no `$type` (measured: 0 of 5,282), so the
+                                 -- requirement class is recorded per-row separately by the extractor
   goal_name TEXT,                -- the goal gate's name, when the reference carries one
   required_status TEXT,          -- that gate's m_requiredStatus, when present
   UNIQUE(quest_name, wad, entry, class, goal_name)
@@ -187,8 +189,16 @@ SELECT
   (SELECT count(*) FROM quest_ids)                       AS id_space,   -- second tier (~4,830 ids with text)
   (SELECT count(*) FROM quests WHERE has_definition = 1) AS defined,    -- corpus rows in the corpus under test
   (SELECT count(*) FROM quests WHERE has_definition = 0) AS missing,
-  (SELECT count(*) FROM quest_catalog_refs)              AS references;
+  (SELECT count(*) FROM quest_catalog_refs)              AS "references";  -- quoted: REFERENCES is a SQLite keyword
 ```
+
+**Note (added by p6-05): `references` is a SQLite keyword and must be quoted as `"references"`.** Written bare — as this
+block first did — the view does not parse (`near "references": syntax error`, reproduced independently). Quoting keeps
+every column name, and therefore the view's contract, identical to what the API and UI read. The four `quests` column
+adds are *also* not expressible as idempotent DDL: SQLite has no `ADD COLUMN IF NOT EXISTS` and the runner re-executes
+every migration file on each open, so they are applied by a `PRAGMA table_info`-guarded step in `server/src/db.ts` that
+issues only the missing ALTERs — a data-driven check, not error-swallowing, so a real duplicate-column failure still
+throws loudly.
 
 **Reading the `coverage` view.** `nameable` and `id_space` are the two honest denominators (P6-15/
 D110): "`defined` of `nameable` nameable of `id_space` quests the client holds text for". `defined`
