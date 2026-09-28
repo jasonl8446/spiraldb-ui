@@ -37,11 +37,29 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  *    The two settings produce different numbers, which is what makes the reduced-motion
  *    number meaningful.
  *
- * Screenshots (before / mid / after) go to `docs/evidence/phase-5/`.
+ * Screenshots (before / mid / after) go to {@link screenshotPath} — a **gitignored** directory,
+ * never into the committed phase-5 evidence.
  */
 
 const QUEST = 'DS-ACAD1-C01-001';
-const EVIDENCE = 'docs/evidence/phase-5';
+
+/**
+ * Where this spec's own screenshots are written.
+ *
+ * **Not** `docs/evidence/phase-5/` any more (final-verify gate 3 fixed this). These six
+ * screenshots are regenerated on every run and every one of those six paths is **tracked**, so an
+ * official `npm run test:ui` rewrote committed binaries that story p5-05 produced — the same
+ * class of defect story p5-08 fixed for `object-mobile.spec.ts` (D83(d)). Phase evidence is
+ * committed **once, by the story that produced it**; a suite re-run must not touch it.
+ *
+ * That a run happens to rasterise bytes identical to `HEAD` (measured on gate 3: the full suite
+ * *and* a solo run both left all six sha256s equal) is luck, not a contract — the mtimes moved on
+ * every run, and any rendering change (a font, a dependency bump, a sidebar edit) would silently
+ * rewrite another phase's committed evidence. `test-results/` is gitignored
+ * (`playwright.config.ts` already points Playwright's own artifacts there), so a run's
+ * screenshots stay inspectable and cannot reach a commit.
+ */
+const screenshotPath = (name: string): string => `test-results/a11y-reduced-motion/${name}`;
 
 /** Radix's enter animation duration (`tailwindcss-animate`'s `animate-in`), for the sampler. */
 const PANEL_TRANSITION_BUDGET_MS = 320;
@@ -194,7 +212,7 @@ test.describe('reduced motion — computed styles, with the counterfactual', () 
     expect(reduced.property).toBe('none');
     expect(reduced.duration).toBe('0s');
 
-    await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-sidebar.png` });
+    await page.screenshot({ path: screenshotPath('p5-05-reduced-motion-sidebar.png') });
   });
 
   test('the whole rendered DOM obeys the invariant, except the deliberate spinner', async ({
@@ -293,15 +311,15 @@ test.describe('reduced motion — the panel animation, sampled per frame', () =>
     const animated = await samplePaletteOpen(page, PANEL_TRANSITION_BUDGET_MS);
     expect(animated.names.length).toBeGreaterThan(3);
     expect(distinct(animated.names)).toEqual(['enter']);
-    await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-panel-mid-noreduce.png` });
+    await page.screenshot({ path: screenshotPath('p5-05-reduced-motion-panel-mid-noreduce.png') });
     await page.keyboard.press('Escape');
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openPalette(page);
     // The mid-transition capture: taken immediately after the panel appears.
-    await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-panel-mid-reduce.png` });
+    await page.screenshot({ path: screenshotPath('p5-05-reduced-motion-panel-mid-reduce.png') });
     const settled = await samplePaletteOpen(page, PANEL_TRANSITION_BUDGET_MS);
-    await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-panel-after-reduce.png` });
+    await page.screenshot({ path: screenshotPath('p5-05-reduced-motion-panel-after-reduce.png') });
 
     const stopped = await panelAnimation(page);
     expect(stopped.name).toBe('none');
@@ -336,9 +354,9 @@ test.describe('reduced motion — React Flow, sampled per frame', () => {
     expect(distinct(animated).length).toBeGreaterThan(2);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-flowchart-before.png` });
+    await page.screenshot({ path: screenshotPath('p5-05-reduced-motion-flowchart-before.png') });
     const settled = await sampleFitView(page, PANEL_TRANSITION_BUDGET_MS);
-    await page.screenshot({ path: `${EVIDENCE}/p5-05-reduced-motion-flowchart-after.png` });
+    await page.screenshot({ path: screenshotPath('p5-05-reduced-motion-flowchart-after.png') });
 
     // The mid-transition moment: with `duration: 0` (`lib/reduced-motion.ts`) the viewport
     // moves in exactly **one step** — the frame the click lands on, then the fitted value —

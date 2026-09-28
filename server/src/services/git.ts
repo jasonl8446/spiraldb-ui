@@ -56,7 +56,7 @@ export class DirtyRepoError extends Error {
   }
 }
 
-/** The longest caller-supplied commit note kept (final-review gate 2, S4). */
+/** The longest caller-supplied commit note kept, in **code points** (final-review gate 2, S4). */
 export const MAX_COMMIT_NOTES_LENGTH = 255;
 
 /**
@@ -84,7 +84,18 @@ export function sanitizeCommitNotes(value: string | undefined): string | undefin
   if (cleaned === '') {
     return undefined;
   }
-  return cleaned.slice(0, MAX_COMMIT_NOTES_LENGTH);
+  // The cap is applied on **code points**, not UTF-16 code units: `String.prototype.slice`
+  // counts code units, so a slice boundary landing between the halves of a surrogate pair emits
+  // a **lone surrogate** — a string that does not survive a UTF-8 round trip and would reach the
+  // repository as U+FFFD. Measured (final-verify gate 3, the real module): 254 ASCII characters
+  // followed by one astral character (`'a'.repeat(254) + '😀'`) produced a 255-code-unit body
+  // ending in the bare high surrogate `\ud83d`, whose `Buffer.from(…, 'utf8')` re-encode is not
+  // equal to itself. ASCII is unaffected — code units equal code points there — which is why the
+  // pinned length test (`tests/unit/git-service.test.ts`, an ASCII payload) still holds.
+  const points = [...cleaned];
+  return points.length <= MAX_COMMIT_NOTES_LENGTH
+    ? cleaned
+    : points.slice(0, MAX_COMMIT_NOTES_LENGTH).join('');
 }
 
 /** The commit message header (docs/spec-data-model.md L216-223). */

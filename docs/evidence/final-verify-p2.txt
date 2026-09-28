@@ -1,0 +1,375 @@
+
+
+===== p2-01-build.txt =====
+### P2-1a: dotnet --version
+9.0.318
+rc=0
+
+### P2-1b: npm run build:cli
+
+> spiraldb-ui@0.1.0 build:cli
+> NUGET_PACKAGES=$PWD/tools/.nuget dotnet build tools/PacketReaderCli/PacketReaderCli.csproj -c Release -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts && mkdir -p tools/bin && ln -sfn ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader tools/bin/imview-packet-reader
+
+  Determining projects to restore...
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Math/Imcodec.Math.csproj (in 176 ms).
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+  Restored /home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj (in 1.86 sec).
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj (in 1.86 sec).
+  Restored /home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj (in 1.86 sec).
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj (in 1.86 sec).
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj (in 1.86 sec).
+  Restored /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj (in 1.88 sec).
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.Types -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Types/release/Imcodec.Types.dll
+  Imcodec.Math -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Math/release/Imcodec.Math.dll
+  Imcodec.IO -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.IO/release/Imcodec.IO.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/ExternToCsharpCompiler.cs(122,29): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/JSON/JsonToCsharpCompiler.cs(73,66): warning CS8604: Possible null reference argument for parameter 'input' in 'string NameSanitizer.SanitizeIdentifier(string input)'. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+  Imcodec.ObjectProperty.CodeGen -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty.CodeGen/release/Imcodec.ObjectProperty.CodeGen.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(557,54): warning CS0109: The member 'ResDespawn.m_templateID' does not hide an accessible member. The new keyword is not required. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/release/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneTriggers.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/release/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneVolumes.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(257,49): warning CS8618: Non-nullable property 'm_lootTable' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+  Imcodec.ObjectProperty -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty/release/Imcodec.ObjectProperty.dll
+  Imview.PacketReader -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imview.PacketReader/release/Imview.PacketReader.dll
+  PacketReaderCli -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/PacketReaderCli/release/imview-packet-reader.dll
+
+Build succeeded.
+
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/ExternToCsharpCompiler.cs(122,29): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/JSON/JsonToCsharpCompiler.cs(73,66): warning CS8604: Possible null reference argument for parameter 'input' in 'string NameSanitizer.SanitizeIdentifier(string input)'. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(557,54): warning CS0109: The member 'ResDespawn.m_templateID' does not hide an accessible member. The new keyword is not required. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/release/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneTriggers.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/obj/Imcodec.ObjectProperty/release/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ServerPropertyClassSourceGenerator/WizZoneVolumes.g.cs(138,11): warning CS8602: Dereference of a possibly null reference. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs(257,49): warning CS8618: Non-nullable property 'm_lootTable' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj]
+    18 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:27.32
+rc=0
+
+### P2-1c: npm run build:fixturegen
+
+> spiraldb-ui@0.1.0 build:fixturegen
+> NUGET_PACKAGES=$PWD/tools/.nuget dotnet build tools/FixtureGen/FixtureGen.csproj -c Release -p:UseArtifactsOutput=true -p:ArtifactsPath=$PWD/tools/.artifacts && mkdir -p tools/bin && ln -sfn ../.artifacts/bin/FixtureGen/release/fixturegen tools/bin/fixturegen
+
+  Determining projects to restore...
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+  All projects are up-to-date for restore.
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.Math -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Math/release/Imcodec.Math.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.Types -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.Types/release/Imcodec.Types.dll
+  Imcodec.IO -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.IO/release/Imcodec.IO.dll
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Imcodec.ObjectProperty.CodeGen -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty.CodeGen/release/Imcodec.ObjectProperty.CodeGen.dll
+  Imcodec.ObjectProperty -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imcodec.ObjectProperty/release/Imcodec.ObjectProperty.dll
+  Imview.PacketReader -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/Imview.PacketReader/release/Imview.PacketReader.dll
+  FixtureGen -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/FixtureGen/release/fixturegen.dll
+
+Build succeeded.
+
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied. [/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/FixtureGen/FixtureGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Types/Imcodec.Types.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.IO/Imcodec.IO.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/src/Imview.PacketReader/Imview.PacketReader.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+    12 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.72
+rc=0
+
+### P2-1d: binaries exist
+total 12
+drwxr-xr-x 2 jason users 4096 Sep 28 01:25 .
+drwxr-xr-x 8 jason users 4096 Sep 27 22:48 ..
+lrwxrwxrwx 1 jason users   47 Sep 28 01:25 fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+lrwxrwxrwx 1 jason users   62 Sep 28 01:25 imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+rc=0
+
+### P2-1e: resolve symlinks
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/FixtureGen/release/fixturegen
+/home/jason/Documents/git-projects/spiraldb-ui/tools/.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+rc=0
+
+
+===== p2-02-roundtrip.txt =====
+### P2-2 round trip (fixturegen -> packet reader)
+DOTNET_ROOT=/nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet   (D45(3) portable derivation)
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json --output /tmp/fv3/cap.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json
+  quest            DS-ACAD1-C01-001  title=QuestTitle_1ED8D  level=1  mainline=True
+  goals            7 total = 6 in GoalCompilation (m_startGoals) + 1 via MSG_SENDGOAL
+  dialogs          2 block(s) / 7 dialog entry(ies); 1 quest-level, 1 goal-level
+  packets          5 (1 MSG_SENDGOAL, 2 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 1
+  ids              MobileID=1222694116179546111 QuestID=4790368556426464585
+  output           /tmp/fv3/cap.json
+  self-check       GoalCompilation blob (1507 bytes) decodes to 6 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2114 bytes) decodes to 5 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (964 bytes) decodes to 2 entry(ies), trailing flags intact
+fixturegen rc=0
+
+-rw-r--r-- 1 jason users 12639 Sep 28 01:26 /tmp/fv3/cap.json
+
+$ tools/bin/imview-packet-reader --input /tmp/fv3/cap.json  (stdout -> cap-roundtrip.json)
+reader rc=0
+
+$ jq 'length' cap-roundtrip.json
+1
+jq rc=0
+
+$ jq -r '.[].m_questName' cap-roundtrip.json
+DS-ACAD1-C01-001
+jq rc=0
+
+### source quest's m_questName (json5 loader; strict jq expected to fail on the 22 trailing-comma files)
+jq: parse error: Expected another key-value pair at line 349, column 15
+jq rc=5
+
+### node json5 tolerant read of the same source
+strict JSON.parse threw: Expected double-quoted property name in JSON at position 12213 (line 349 column 15)
+node rc=0
+
+### capture file head
+[
+  {
+    "data": {
+      "name": "MSG_QUESTOFFER",
+      "fields": {
+        "MobileID": {
+          "value": 1222694116179546111
+        },
+        "QuestName": {
+          "value": "DS-ACAD1-C01-001"
+        },
+        "QuestTitle": {
+          "value": "QuestTitle_1ED8D"
+        },
+        "Ques
+
+
+===== p2-03-extract.txt =====
+### P2-3: curl -F extraction (server on 3001)
+
+$ curl -F "file=@server/test/fixtures/captures/MB-YARD1-C01-001.json" localhost:3001/api/extract/quests
+http=200 bytes=33596
+curl rc=0
+$ jq '.count'
+1
+jq rc=0
+$ jq -r '.quests[].m_questName'
+MB-YARD1-C01-001
+jq rc=0
+$ jq 'keys'
+[
+  "count",
+  "quests"
+]
+
+### negative control: non-capture must 400
+http=000
+curl(no such file) rc=26
+http=400
+curl rc=0
+{"error":"Failed to parse packet capture: error: '/home/jason/Documents/git-projects/spiraldb-ui/data/uploads/20b1f498-c588-4c3f-b203-816eece83b6a.json' is not a packet capture. Expected a JSON array (or a single object) of envelopes shaped like {\"data\":{\"name\":\"MSG_QUESTOFFER\",\"fields\":{...}}}."}
+### health after the failure
+{"status":"ok"} http=200
+
+
+
+===== p2-04-clone-before.txt =====
+### clone HEAD BEFORE the P2-4 save
+18dc92477d54b1e911796960407ce7710e703697
+content/2026-09-27
+18dc92477d54b1e911796960407ce7710e703697 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+
+
+===== p2-04b-create-probe-gen.txt =====
+### create-path probe: fixturegen an owner-corpus quest ABSENT from the clone
+$ tools/bin/fixturegen --quest /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_WC-COMMONS-MAIN-002-FIRE.json --output /tmp/fv3/create-probe.json
+error: refusing to generate a capture from '/home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_WC-COMMONS-MAIN-002-FIRE.json' — 5 problem(s):
+  - goal[0] m_goalName 'Goal 1' is not '1_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[1] m_goalName 'Goal 2' is not '2_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[2] m_goalName 'Goal 3' is not '3_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[3] m_goalName 'Goal 4' is not '4_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[0] 'Goal 1' carries dialogs but is delivered from the GoalCompilation (m_startGoals has 1 entries): QuestBuilder cannot attach a dialog to a compilation goal.
+fixturegen rc=1
+ls: cannot access '/tmp/fv3/create-probe.json': No such file or directory
+
+ls: cannot access 'data/test-spiraldb/QuestTemplates/questtemplates_WC-COMMONS-MAIN-002-FIRE.json': No such file or directory
+clone-absence check rc=2 (2 = absent, as intended)
+
+
+===== p2-05-clone.txt =====
+### P2-5: the D17 test clone after the UI Save All
+
+$ git -C data/test-spiraldb branch --show-current
+content/2026-09-28
+rc=0
+
+$ git -C data/test-spiraldb log --format='%s (%an)' -3
+spiraldb: update quest WC-FIRECAT-MAIN-004 (FV Gate3)
+spiraldb: update quest MB-YARD1-C01-001 (FV Gate3)
+test-setup: make two quests not-yet-extracted (gate-2 fixture) (Jason)
+rc=0
+
+$ git -C data/test-spiraldb log --format='%H %s' -2  (before/after proof: HEAD was 18dc9247…)
+c47c156974f11bd2e22563035d8bb0ac13e81478 spiraldb: update quest WC-FIRECAT-MAIN-004
+e324535d101ddee9a8f6659a60b9a3e76b9fdc42 spiraldb: update quest MB-YARD1-C01-001
+rc=0
+
+$ git -C data/test-spiraldb diff --stat HEAD~2 HEAD
+ QuestMetadatas/questmetadata_MB-YARD1-C01-001.json |   6 +-
+ .../questmetadata_WC-FIRECAT-MAIN-004.json         |   6 +-
+ .../questtemplates_MB-YARD1-C01-001.json           | 390 +++++++-------
+ .../questtemplates_WC-FIRECAT-MAIN-004.json        | 574 ++++++++++-----------
+ 4 files changed, 477 insertions(+), 499 deletions(-)
+rc=0
+
+$ git -C data/test-spiraldb status --porcelain   (clone working tree clean?)
+rc=0
+
+$ ls -la QuestTemplates/questtemplates_MB-YARD1-C01-001.json QuestMetadatas/
+-rw-r--r-- 1 jason users 63886 Sep 28 01:31 data/test-spiraldb/QuestTemplates/questtemplates_MB-YARD1-C01-001.json
+total 1316
+-rw-r--r--  1 jason users   292 Sep 28 01:31 questmetadata_MB-YARD1-C01-001.json
+-rw-r--r--  1 jason users   298 Sep 28 01:31 questmetadata_WC-FIRECAT-MAIN-004.json
+rc=0
+
+### metadata file for MB-YARD1 (located by the Name field, not the filename — AGENTS rule 3)
+data/test-spiraldb/QuestMetadatas/questmetadata_MB-YARD1-C01-001.json
+grep rc=0
+
+
+===== p2-05b-create-path.txt =====
+### P2-5 (completed): the create path — 'extract quest'
+
+$ git -C data/test-spiraldb branch --show-current
+content/2026-09-28
+rc=0
+
+$ git -C data/test-spiraldb log --format='%s (%an)' -3
+spiraldb: extract quest WC-UNICORN-MAIN-004 (FV Gate3)
+spiraldb: update quest WC-FIRECAT-MAIN-004 (FV Gate3)
+spiraldb: update quest MB-YARD1-C01-001 (FV Gate3)
+rc=0
+
+$ git -C data/test-spiraldb log -1 --format='%H%n%an <%ae>%n%ad%n%s'
+b316b8b9abf24f449df243a6a0fbf4d14a8fe316
+FV Gate3 <FV-Gate3@spiraldb-ui.local>
+Mon Sep 28 01:33:33 2026 -0400
+spiraldb: extract quest WC-UNICORN-MAIN-004
+rc=0
+
+$ git -C data/test-spiraldb show --stat --format='%s' HEAD
+spiraldb: extract quest WC-UNICORN-MAIN-004
+
+ .../questmetadata_WC-UNICORN-MAIN-004.json         |   6 +-
+ .../questtemplates_WC-UNICORN-MAIN-004.json        | 795 +++++++++++++++++++++
+ 2 files changed, 798 insertions(+), 3 deletions(-)
+rc=0
+
+$ ls -la data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json data/test-spiraldb/QuestMetadatas/questmetadata_WC-UNICORN-MAIN-004.json
+-rw-r--r-- 1 jason users   298 Sep 28 01:33 data/test-spiraldb/QuestMetadatas/questmetadata_WC-UNICORN-MAIN-004.json
+-rw-r--r-- 1 jason users 30476 Sep 28 01:33 data/test-spiraldb/QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json
+rc=0
+
+$ git -C data/test-spiraldb status --porcelain
+rc=0
+
+
+===== p2-06-json.txt =====
+### P2-6: saved template is strict JSON (no throw)
+
+$ node -e "JSON.parse(fs.readFileSync('data/test-spiraldb/QuestTemplates/questtemplates_MB-YARD1-C01-001.json','utf8'))"  (was json5-only before the save → see p2-05 transcript)
+JSON.parse OK — m_questName = MB-YARD1-C01-001 | goals = 15
+node rc=0
+$ jq -r '.m_questName' 'data/test-spiraldb/QuestTemplates/questtemplates_MB-YARD1-C01-001.json'
+MB-YARD1-C01-001
+jq rc=0
+
+$ node -e "JSON.parse(fs.readFileSync('data/test-spiraldb/QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json','utf8'))"  (was json5-only before the save → see p2-05 transcript)
+JSON.parse OK — m_questName = WC-FIRECAT-MAIN-004 | goals = 5
+node rc=0
+$ jq -r '.m_questName' 'data/test-spiraldb/QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json'
+WC-FIRECAT-MAIN-004
+jq rc=0
+
+### P2-6b: the metadata companion is strict JSON too
+MB-YARD1-C01-001 metadata OK — keys: QuestTemplateId,Name,Description,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy
+node rc=0
+WC-FIRECAT-MAIN-004 metadata OK — keys: QuestTemplateId,Name,Description,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy
+node rc=0
+
+
+===== p2-07-history.txt =====
+### P2-7: status history for a just-extracted quest
+
+$ curl -s localhost:3001/api/status/quests/MB-YARD1-C01-001/history
+http=200 bytes=177
+curl rc=0
+
+$ jq .
+{
+  "history": [
+    {
+      "old_status": null,
+      "new_status": "extracted",
+      "notes": "Imported from packet capture two-quests.json",
+      "changed_by": "FV Gate3",
+      "changed_at": "2026-09-28T05:31:17.686Z"
+    }
+  ]
+}
+jq rc=0
+
+### the same for the second quest
+http=200
+curl rc=0
+{"history":[{"old_status":null,"new_status":"extracted","notes":"Imported from packet capture two-quests.json","changed_by":"FV Gate3","changed_at":"2026-09-28T05:31:18.679Z"}]}
+
+### and the status row itself
+http=404
+curl rc=0
+{
+  "error": "Not found"
+}

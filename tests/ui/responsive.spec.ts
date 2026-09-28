@@ -397,7 +397,31 @@ function documentFor(fileType: string, key: string): Record<string, unknown> {
     case 'treasure_card_inventory':
       return { TemplateID: Number(key), TreasureCards: [] };
     case 'zone_transfer':
-      return { ZoneName: key, Teleports: [] };
+      // **A real-shaped teleport, carrying the corpus's longest `m_destinationZone`** (93
+      // characters: `DragonSpire/…_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_2`). §1 below used to
+      // assert "no horizontal overflow" against `{ ZoneName: key, Teleports: [] }` with an
+      // 18-character key, so the arm passed while the live page scrolled sideways at 375px:
+      // the zone-path spans render an unbreakable `font-mono` string (final-verify gate 3
+      // measured `documentElement.scrollWidth` 469 vs 360 on `/zone-transfers/WizardCity%2FWC_Hub`,
+      // and 838 vs 360 on the 93-character path). A mock narrower than reality is a **false
+      // pass** — the D78(d) class — so the mock now carries the shape that makes §1 bite.
+      return {
+        ZoneName: key,
+        Teleports: [
+          {
+            TriggerName: 'Teleport location (the zone-path-width probe)',
+            Teleport: {
+              m_destinationLoc: '-2.263153,-464.7307,0.0002441406,-3.125134',
+              m_destinationZone:
+                'DragonSpire/DS_A1_Knowledge/Interiors/DS_Chasm_Gauntlet_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_2',
+              m_exitTeleporter: 0,
+              m_teleporterTag: 0,
+              m_teleportType: 'TELEPORT_STATIC',
+              m_transitionID: 0,
+            },
+          },
+        ],
+      };
     default:
       return { key };
   }

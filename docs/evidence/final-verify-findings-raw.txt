@@ -1,0 +1,262 @@
+
+
+===== findings-gitnotes-astral.txt =====
+### Conditional one-liner #2 — the commit-note cap (server/src/services/git.ts)
+working-tree source of the cap:
+95:  const points = [...cleaned];
+96-  return points.length <= MAX_COMMIT_NOTES_LENGTH
+97-    ? cleaned
+98-    : points.slice(0, MAX_COMMIT_NOTES_LENGTH).join('');
+99-}
+
+$ npx tsx /tmp/fv3/gitnotes-astral.ts   (imports the REAL module)
+[
+  {
+    "label": "254 ascii + one astral (255 code points, 256 code units)",
+    "input_code_units": 256,
+    "input_code_points": 255,
+    "cap": 255,
+    "AFTER_FIX": {
+      "code_units": 256,
+      "code_points": 255,
+      "ends_with_lone_surrogate": false,
+      "utf8_roundtrip_equal": true,
+      "tail": "\"a😀\"",
+      "ascii_body": "aaaaaaaaaa??"
+    },
+    "BEFORE_FIX": {
+      "code_units": 255,
+      "code_points": 255,
+      "ends_with_lone_surrogate": true,
+      "utf8_roundtrip_equal": false,
+      "tail": "\"aa\\ud83d\""
+    },
+    "COMMIT_BODY_AFTER_FIX": {
+      "code_units": 256,
+      "utf8_roundtrip_equal": true,
+      "ascii_tail": "aaaaaaaaaa??"
+    }
+  },
+  {
+    "label": "254 ascii + astral + ascii (256 points — EXERCISES the truncation path)",
+    "input_code_units": 257,
+    "input_code_points": 256,
+    "cap": 255,
+    "AFTER_FIX": {
+      "code_units": 256,
+      "code_points": 255,
+      "ends_with_lone_surrogate": false,
+      "utf8_roundtrip_equal": true,
+      "tail": "\"a😀\"",
+      "ascii_body": "aaaaaaaaaa??"
+    },
+    "BEFORE_FIX": {
+      "code_units": 255,
+      "code_points": 255,
+      "ends_with_lone_surrogate": true,
+      "utf8_roundtrip_equal": false,
+      "tail": "\"aa\\ud83d\""
+    },
+    "COMMIT_BODY_AFTER_FIX": {
+      "code_units": 256,
+      "utf8_roundtrip_equal": true,
+      "ascii_tail": "aaaaaaaaaa??"
+    }
+  },
+  {
+    "label": "253 ascii + astral + 2 ascii (256 points)",
+    "input_code_units": 257,
+    "input_code_points": 256,
+    "cap": 255,
+    "AFTER_FIX": {
+      "code_units": 256,
+      "code_points": 255,
+      "ends_with_lone_surrogate": false,
+      "utf8_roundtrip_equal": true,
+      "tail": "\"😀b\"",
+      "ascii_body": "aaaaaaaaa??b"
+    },
+    "BEFORE_FIX": {
+      "code_units": 255,
+      "code_points": 254,
+      "ends_with_lone_surrogate": false,
+      "utf8_roundtrip_equal": true,
+      "tail": "\"a😀\""
+    },
+    "COMMIT_BODY_AFTER_FIX": {
+      "code_units": 256,
+      "utf8_roundtrip_equal": true,
+      "ascii_tail": "aaaaaaaaa??b"
+    }
+  },
+  {
+    "label": "300 ascii (the pinned ASCII case)",
+    "input_code_units": 300,
+    "input_code_points": 300,
+    "cap": 255,
+    "AFTER_FIX": {
+      "code_units": 255,
+      "code_points": 255,
+      "ends_with_lone_surrogate": false,
+      "utf8_roundtrip_equal": true,
+      "tail": "\"zzz\"",
+      "ascii_body": "zzzzzzzzzzzz"
+    },
+    "BEFORE_FIX": {
+      "code_units": 255,
+      "code_points": 255,
+      "ends_with_lone_surrogate": false,
+      "utf8_roundtrip_equal": true,
+      "tail": "\"zzz\""
+    },
+    "COMMIT_BODY_AFTER_FIX": {
+      "code_units": 255,
+      "utf8_roundtrip_equal": true,
+      "ascii_tail": "zzzzzzzzzzzz"
+    }
+  }
+]
+tsx rc=0
+
+### the pinned unit test for this module still passes
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/git-service.test.ts (20 tests) 1957ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  02:03:47
+   Duration  2.92s (transform 149ms, setup 0ms, collect 203ms, tests 1.96s, environment 0ms, prepare 229ms)
+
+vitest rc=0
+
+
+===== findings-savepipeline.txt =====
+### Conditional one-liner #1 — the save-ledger ordering (server/src/services/savePipeline.ts) — RECORD, not fix
+
+the ledger append site:
+97: * (`069f430e-….json`, written by the owner's own builder) plus this tool's convention file.
+122: * The write order is forced: the object file is written (and the D22 deletions applied) before
+139:  readonly written: string[];
+145:  constructor(options: { root: string; written: string[]; removed: string[]; failure: unknown }) {
+152:      `The save was written but not committed: the SpiralDB working tree at ${options.root} is ` +
+153:        `now dirty. Written: ${options.written.map(rel).join(', ')}.` +
+159:    this.written = options.written;
+199:   * `status_history.notes` for the entry's **first row** — the note written when
+222:  /** Absolute path written. An update writes the file's *original* path. */
+409:        `${spec.fileType} is not a saveable SpiralDB object type — it is written together ` +
+445:    // Two guards on a replacement, both fail-closed before anything is written: the file being
+446:    // written can never delete itself, and a path outside the SpiralDB root is never touched
+
+$ node /tmp/fv/savepipeline-proof.mjs   (predecessor's proof script, re-run fresh)
+[
+  {
+    "case": "symlink",
+    "threw": true,
+    "name": "SpiraldbFileError",
+    "message": "Refusing to write /tmp/fv-saveproof-aVPs8L/link.json: it is a symbolic link, and a save must never write through a link into another tree. Replace the link with the file it points at.",
+    "target_untouched": true,
+    "link_still_a_symlink": true
+  },
+  {
+    "case": "circular-serialization",
+    "threw": true,
+    "name": "SpiraldbFileError",
+    "message": "Could not write SpiralDB file /tmp/fv-saveproof-aVPs8L/fresh.json: Converting circular structure to JSON\n    --> starting at object with constructor 'Object'\n    --- property 'self' closes the circle",
+    "file_created": false,
+    "nothing_written": true
+  },
+  {
+    "case": "control-write",
+    "file_created": true,
+    "bytes": 24
+  }
+]
+node rc=0
+
+
+===== zonefix-F1-mock-only-red.txt =====
+### F1 (instrument contains the defect): §1 run with the real-shaped mock and NO CSS fix
+2026-09-28T02:06:43-04:00
+$ npx playwright test tests/ui/responsive.spec.ts -g '20 routes'
+[WebServer] [client]   VITE v5.4.21  ready in 237 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [client] 2:06:44 AM [vite] http proxy error: /api/status/_import
+[WebServer] [client] AggregateError [ECONNREFUSED]: 
+[WebServer] [client]     at internalConnectMultiple (node:net:1430:18)
+[WebServer] [client]     at afterConnectMultiple (node:net:2099:7)
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://127.0.0.1:3001 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 1 test using 1 worker
+
+(node:222230) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › tests/ui/responsive.spec.ts:546:3 › §1 AC#12: every route at every breakpoint has no horizontal overflow › 20 routes × 8 widths (375/640/767/768/1024/1279/1280/1440) (5.4s)
+
+
+  1) [chromium] › tests/ui/responsive.spec.ts:546:3 › §1 AC#12: every route at every breakpoint has no horizontal overflow › 20 routes × 8 widths (375/640/767/768/1024/1279/1280/1440) 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 375
+    Received:    839
+
+      511 |   }, width);
+      512 |   expect(measured.offenders, 'elements whose right edge is past the viewport').toEqual([]);
+    > 513 |   expect(measured.scrollWidth).toBeLessThanOrEqual(measured.clientWidth);
+          |                                ^
+      514 | }
+      515 |
+      516 | /**
+        at expectNoHorizontalOverflow (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/responsive.spec.ts:513:32)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/responsive.spec.ts:556:9
+
+    Error Context: test-results/responsive-§1-AC-12-every--0684d-67-768-1024-1279-1280-1440--chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/ui/responsive.spec.ts:546:3 › §1 AC#12: every route at every breakpoint has no horizontal overflow › 20 routes × 8 widths (375/640/767/768/1024/1279/1280/1440) 
+npx playwright rc=1
+2026-09-28T02:06:51-04:00
+
+
+===== zonefix-F2-css-plus-mock-green.txt =====
+### F2 (the fix): §1 with the real-shaped mock AND the break-all CSS fix
+2026-09-28T02:08:04-04:00
+$ npx playwright test tests/ui/responsive.spec.ts -g '20 routes'
+[WebServer] [server] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] (node:223075) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:223092) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:223074) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://127.0.0.1:3001 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 275 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+
+Running 1 test using 1 worker
+
+(node:223144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/responsive.spec.ts:546:3 › §1 AC#12: every route at every breakpoint has no horizontal overflow › 20 routes × 8 widths (375/640/767/768/1024/1279/1280/1440) (39.8s)
+
+  1 passed (41.0s)
+npx playwright rc=0
+2026-09-28T02:08:46-04:00
