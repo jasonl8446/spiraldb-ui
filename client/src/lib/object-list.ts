@@ -33,6 +33,56 @@ export const OBJECT_FILTER_STATUS: Record<ObjectFilter, StatusValue | null> = {
   Verified: 'verified',
 };
 
+/**
+ * The one query-param name a list view's filter is carried in — story p5-03
+ * (plan task 5.3; the AC's "filter survives reload via URL param").
+ *
+ * The tab vocabulary has one home (above), so the **URL spelling of that
+ * vocabulary** has the same one home: the hook (`hooks/useStatusFilter.ts`) and
+ * both React halves of the pair read and write it through the three helpers below
+ * rather than each knowing the string.
+ */
+export const OBJECT_FILTER_PARAM = 'filter';
+
+/**
+ * The filter a list view starts on when the URL says nothing.
+ *
+ * `All` is the default, and {@link objectFilterParam} renders it as `null` — so a
+ * default page's URL stays the bare path (`/quests`, not `/quests?filter=All`).
+ * That matters twice over: the pinned route set in `tests/ui/shell.spec.ts` stays
+ * exactly the spec's path list plus an optional suffix, and a default written into
+ * the URL is history noise rather than state.
+ */
+export const DEFAULT_OBJECT_FILTER: ObjectFilter = 'All';
+
+/**
+ * The filter a query-param value names, defaulting on anything else.
+ *
+ * Matching is case-insensitive on the way in — a hand-typed `?filter=verified` is
+ * a reasonable thing for a person to write, and the tab vocabulary is one word
+ * per status — while {@link objectFilterParam} always writes the canonical
+ * spelling back, so the URL can only ever hold `All|Extracted|Reviewed|Verified`.
+ * An unknown value (or none at all) is the default rather than an error: a URL is
+ * not a form, and a stale bookmark should still render a list.
+ */
+export function parseObjectFilter(value: string | null | undefined): ObjectFilter {
+  if (value === null || value === undefined) {
+    return DEFAULT_OBJECT_FILTER;
+  }
+  const match = OBJECT_FILTERS.find((filter) => filter.toLowerCase() === value.toLowerCase());
+  return match ?? DEFAULT_OBJECT_FILTER;
+}
+
+/**
+ * The query-param value for a filter, or `null` when the param should be **absent**.
+ *
+ * `null` is the default branch: `All` is omitted from the URL rather than spelled
+ * out, so `?filter=Extracted` is the only thing a non-default page ever adds.
+ */
+export function objectFilterParam(filter: ObjectFilter): string | null {
+  return filter === DEFAULT_OBJECT_FILTER ? null : filter;
+}
+
 /** The `summary` shape `GET /api/<type>` carries (D49). */
 export interface ObjectStatusSummary {
   total: number;

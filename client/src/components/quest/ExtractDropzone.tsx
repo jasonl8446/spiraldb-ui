@@ -60,12 +60,12 @@ export default function ExtractDropzone({ onFile }: ExtractDropzoneProps): JSX.E
         onClick={() => inputRef.current?.click()}
         className="mx-auto flex w-full flex-col items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       >
-        <Package className="h-12 w-12 text-zinc-500" aria-hidden="true" />
+        <Package className="h-12 w-12 text-zinc-400" aria-hidden="true" />
         <span className="text-lg text-zinc-100">{DROPZONE_PRIMARY}</span>
         <span className="text-sm text-zinc-400">{DROPZONE_SECONDARY}</span>
       </button>
 
-      <p className="mt-6 text-sm text-zinc-500">{UPLOAD_FORMAT_HINT}</p>
+      <p className="mt-6 text-sm text-zinc-400">{UPLOAD_FORMAT_HINT}</p>
 
       <input
         ref={inputRef}

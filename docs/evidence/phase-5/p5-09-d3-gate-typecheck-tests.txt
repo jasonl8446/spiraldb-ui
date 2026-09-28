@@ -1,0 +1,5 @@
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+npm run typecheck:tests rc=0

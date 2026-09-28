@@ -8,10 +8,13 @@ import { updateObjectBody } from '@shared/objectSave';
 
 import ObjectDetailLayout from '../components/objects/ObjectDetailLayout';
 import { FieldValidationProvider } from '../components/shared/FieldValidation';
+import ValidationSummary from '../components/shared/ValidationSummary';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 import { useQuestDocument, type QuestDocumentState } from '../hooks/useQuestDocument';
+import { useApiErrorToast } from '../hooks/useApiErrorToast';
+import { useServerValidation } from '../hooks/useServerValidation';
 import { getStatus, statusQueryKey, type StatusList, type StatusValue } from '../lib/api';
 import { serverMessage } from '../lib/extract';
 import { notifyError, notifySuccess, notifyWarning } from '../lib/notify';
@@ -155,6 +158,11 @@ export default function ObjectDetailPage({
   const noun = objectSingularNoun(nounPlural);
   const loadError = `Could not load this ${noun}.`;
 
+  // The API-error toast with a retry action (AC3, spec L533). A 404 is declined by
+  // `isRetryableQueryError`, so the "entry not found" state below never toasts — retrying a
+  // missing entry would ask the same question and get the same answer.
+  useApiErrorToast(object, loadError);
+
   if (key === '') {
     return (
       <NotFound
@@ -170,8 +178,16 @@ export default function ObjectDetailPage({
     return (
       <div aria-busy="true" className="flex flex-col gap-3">
         <span className="sr-only">Loading entry…</span>
+        {/*
+          Three bands, matching what `ObjectDetailLayout` renders once loaded (story p5-04's
+          layout audit): the header row (back link · family label · key · badge · Edit/Save), the
+          form's first card, and the status history panel a tracked family mounts below it. The
+          previous pair (10 + 40) matched the header and one card only, so the page grew a third
+          block after the fetch.
+        */}
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-24 w-full" />
       </div>
     );
   }
@@ -197,7 +213,7 @@ export default function ObjectDetailPage({
           <p role="alert" className="text-sm text-zinc-200">
             {loadError}
           </p>
-          <p className="text-sm text-zinc-500">{serverMessage(object.error, loadError)}</p>
+          <p className="text-sm text-zinc-400">{serverMessage(object.error, loadError)}</p>
           <Button
             variant="outline"
             onClick={() => {
@@ -309,6 +325,10 @@ function LoadedEntry({
     [validate, document],
   );
   const blocked = useMemo(() => fieldHasError(messages), [messages]);
+  // The **server's** findings for the last failed save (AC3's validation summary). The client's
+  // own `messages` above are already placed inline; these are the ones only the server can know
+  // (the corpus-dependent DropTable duplicate rule), kept so the summary can name the fields.
+  const serverValidation = useServerValidation();
 
   const save = useMutation({
     // The envelope has **one home** (`shared/objectSave.ts`) rather than living inline here: the
@@ -317,6 +337,7 @@ function LoadedEntry({
     // unkeyed family, whose POST rejects a supplied key.
     mutationFn: () => saveObject(config, updateObjectBody(config, objectKey, document)),
     onSuccess: (result) => {
+      serverValidation.clear();
       state.markSaved();
       setMode('view');
       notifySuccess(`Saved ${result.key} (${result.outcome}) — ${result.commit_message}`);
@@ -331,6 +352,7 @@ function LoadedEntry({
       }
     },
     onError: (error) => {
+      serverValidation.capture(error);
       notifyError(serverMessage(error, `Could not save ${objectKey}.`));
     },
   });
@@ -354,6 +376,8 @@ function LoadedEntry({
       {...(editable === undefined ? {} : { editable })}
     >
       <FieldValidationProvider messages={messages}>
+        {/* L537's "summary at top of form if multiple errors" for the server's own findings. */}
+        <ValidationSummary messages={serverValidation.messages} />
         {renderForm({ document, mode, state, messages })}
       </FieldValidationProvider>
     </ObjectDetailLayout>

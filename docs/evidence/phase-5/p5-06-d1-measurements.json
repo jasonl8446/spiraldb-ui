@@ -1,0 +1,4018 @@
+{
+  "story": "p5-06",
+  "instrument": "tests/ui/p5-06-audit.spec.ts (temporary; removed after D3)",
+  "command": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers npx playwright test p5-06-audit --reporter=list",
+  "result": "52 passed (2.2m), 0 unmocked /api/** requests",
+  "widths": [
+    375,
+    639,
+    640,
+    767,
+    768,
+    1023,
+    1024,
+    1279,
+    1280,
+    1440
+  ],
+  "sweep": [
+    {
+      "width": 375,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "maxRight": 375,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 375
+        }
+      ]
+    },
+    {
+      "width": 639,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 639,
+          "clientWidth": 639,
+          "maxRight": 639,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 639
+        }
+      ]
+    },
+    {
+      "width": 640,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 640,
+          "clientWidth": 640,
+          "maxRight": 640,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 640
+        }
+      ]
+    },
+    {
+      "width": 767,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 767,
+          "clientWidth": 767,
+          "maxRight": 767,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": false,
+            "width": 0
+          },
+          "hamburgerVisible": true,
+          "mainLeft": 0,
+          "mainWidth": 767
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "maxRight": 768,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 568
+        }
+      ]
+    },
+    {
+      "width": 1023,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 1023,
+          "clientWidth": 1023,
+          "maxRight": 1023,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 823
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 1024,
+          "clientWidth": 1024,
+          "maxRight": 1024,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 824
+        }
+      ]
+    },
+    {
+      "width": 1279,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 1279,
+          "clientWidth": 1279,
+          "maxRight": 1279,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 200
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 200,
+          "mainWidth": 1079
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "maxRight": 1280,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1020
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "routes": [
+        {
+          "route": "/",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/quests/extract",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/quests",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/quests/DS-ACAD-C01-001",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/drop-tables",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/drop-tables/DROP-A",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/npc-inventories",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/npc-inventories/1025",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/npc-spell-inventories",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/npc-spell-inventories/1057",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/creature-spellbooks",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/creature-spellbooks/deck-a",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/npc-drop-tables",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/npc-drop-tables/12345",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/treasure-card-inventories",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/treasure-card-inventories/2019",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/zone-transfers",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 1,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/zone-transfers/WizardCity%2FWC_Hub",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/global-registry",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        },
+        {
+          "route": "/settings",
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "maxRight": 1440,
+          "offenders": [],
+          "tables": 0,
+          "sidebar": {
+            "visible": true,
+            "width": 260
+          },
+          "hamburgerVisible": false,
+          "mainLeft": 260,
+          "mainWidth": 1180
+        }
+      ]
+    }
+  ],
+  "shells": [
+    {
+      "width": 375,
+      "sidebarVisible": false,
+      "sidebarWidth": null,
+      "hamburgerVisible": true,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 900
+      },
+      "dialogAfterSwipe": 0,
+      "geometry": {
+        "viewportWidth": 375,
+        "clientWidth": 375,
+        "scrollWidth": 375,
+        "bodyScrollWidth": 375,
+        "maxRight": 375,
+        "offenders": [],
+        "sidebar": {
+          "visible": false,
+          "width": 0
+        },
+        "hamburgerVisible": true,
+        "mainLeft": 0,
+        "mainWidth": 375,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=375 right=375 class=\"\"",
+          "<div> w=375 right=375 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=375 right=375 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<header> w=375 right=375 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=375 right=375 class=\"p-6\"",
+          "<section> w=375 right=375 class=\"\""
+        ]
+      }
+    },
+    {
+      "width": 639,
+      "sidebarVisible": false,
+      "sidebarWidth": null,
+      "hamburgerVisible": true,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 900
+      },
+      "dialogAfterSwipe": 0,
+      "geometry": {
+        "viewportWidth": 639,
+        "clientWidth": 639,
+        "scrollWidth": 639,
+        "bodyScrollWidth": 639,
+        "maxRight": 639,
+        "offenders": [],
+        "sidebar": {
+          "visible": false,
+          "width": 0
+        },
+        "hamburgerVisible": true,
+        "mainLeft": 0,
+        "mainWidth": 639,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=639 right=639 class=\"\"",
+          "<div> w=639 right=639 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=639 right=639 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<header> w=639 right=639 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=639 right=639 class=\"p-6\"",
+          "<section> w=639 right=639 class=\"\""
+        ]
+      }
+    },
+    {
+      "width": 640,
+      "sidebarVisible": false,
+      "sidebarWidth": null,
+      "hamburgerVisible": true,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 900
+      },
+      "dialogAfterSwipe": 0,
+      "geometry": {
+        "viewportWidth": 640,
+        "clientWidth": 640,
+        "scrollWidth": 640,
+        "bodyScrollWidth": 640,
+        "maxRight": 640,
+        "offenders": [],
+        "sidebar": {
+          "visible": false,
+          "width": 0
+        },
+        "hamburgerVisible": true,
+        "mainLeft": 0,
+        "mainWidth": 640,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=640 right=640 class=\"\"",
+          "<div> w=640 right=640 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=640 right=640 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<header> w=640 right=640 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=640 right=640 class=\"p-6\"",
+          "<section> w=640 right=640 class=\"\""
+        ]
+      }
+    },
+    {
+      "width": 767,
+      "sidebarVisible": false,
+      "sidebarWidth": null,
+      "hamburgerVisible": true,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 900
+      },
+      "dialogAfterSwipe": 0,
+      "geometry": {
+        "viewportWidth": 767,
+        "clientWidth": 767,
+        "scrollWidth": 767,
+        "bodyScrollWidth": 767,
+        "maxRight": 767,
+        "offenders": [],
+        "sidebar": {
+          "visible": false,
+          "width": 0
+        },
+        "hamburgerVisible": true,
+        "mainLeft": 0,
+        "mainWidth": 767,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=767 right=767 class=\"\"",
+          "<div> w=767 right=767 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=767 right=767 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<header> w=767 right=767 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=767 right=767 class=\"p-6\"",
+          "<section> w=767 right=767 class=\"\""
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "sidebarVisible": true,
+      "sidebarWidth": 200,
+      "hamburgerVisible": false,
+      "geometry": {
+        "viewportWidth": 768,
+        "clientWidth": 768,
+        "scrollWidth": 768,
+        "bodyScrollWidth": 768,
+        "maxRight": 768,
+        "offenders": [],
+        "sidebar": {
+          "visible": true,
+          "width": 200
+        },
+        "hamburgerVisible": false,
+        "mainLeft": 200,
+        "mainWidth": 568,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=768 right=768 class=\"\"",
+          "<div> w=768 right=768 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=768 right=768 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<section> w=768 right=768 class=\"\"",
+          "<header> w=568 right=768 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=568 right=768 class=\"p-6\""
+        ]
+      }
+    },
+    {
+      "width": 1023,
+      "sidebarVisible": true,
+      "sidebarWidth": 200,
+      "hamburgerVisible": false,
+      "geometry": {
+        "viewportWidth": 1023,
+        "clientWidth": 1023,
+        "scrollWidth": 1023,
+        "bodyScrollWidth": 1023,
+        "maxRight": 1023,
+        "offenders": [],
+        "sidebar": {
+          "visible": true,
+          "width": 200
+        },
+        "hamburgerVisible": false,
+        "mainLeft": 200,
+        "mainWidth": 823,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=1023 right=1023 class=\"\"",
+          "<div> w=1023 right=1023 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=1023 right=1023 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<section> w=1023 right=1023 class=\"\"",
+          "<header> w=823 right=1023 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=823 right=1023 class=\"p-6\""
+        ]
+      }
+    },
+    {
+      "width": 1024,
+      "sidebarVisible": true,
+      "sidebarWidth": 200,
+      "hamburgerVisible": false,
+      "geometry": {
+        "viewportWidth": 1024,
+        "clientWidth": 1024,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "maxRight": 1024,
+        "offenders": [],
+        "sidebar": {
+          "visible": true,
+          "width": 200
+        },
+        "hamburgerVisible": false,
+        "mainLeft": 200,
+        "mainWidth": 824,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=1024 right=1024 class=\"\"",
+          "<div> w=1024 right=1024 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=1024 right=1024 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<section> w=1024 right=1024 class=\"\"",
+          "<header> w=824 right=1024 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=824 right=1024 class=\"p-6\""
+        ]
+      }
+    },
+    {
+      "width": 1279,
+      "sidebarVisible": true,
+      "sidebarWidth": 200,
+      "hamburgerVisible": false,
+      "geometry": {
+        "viewportWidth": 1279,
+        "clientWidth": 1279,
+        "scrollWidth": 1279,
+        "bodyScrollWidth": 1279,
+        "maxRight": 1279,
+        "offenders": [],
+        "sidebar": {
+          "visible": true,
+          "width": 200
+        },
+        "hamburgerVisible": false,
+        "mainLeft": 200,
+        "mainWidth": 1079,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=1279 right=1279 class=\"\"",
+          "<div> w=1279 right=1279 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=1279 right=1279 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<section> w=1279 right=1279 class=\"\"",
+          "<header> w=1079 right=1279 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=1079 right=1279 class=\"p-6\""
+        ]
+      }
+    },
+    {
+      "width": 1280,
+      "sidebarVisible": true,
+      "sidebarWidth": 260,
+      "hamburgerVisible": false,
+      "geometry": {
+        "viewportWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "maxRight": 1280,
+        "offenders": [],
+        "sidebar": {
+          "visible": true,
+          "width": 260
+        },
+        "hamburgerVisible": false,
+        "mainLeft": 260,
+        "mainWidth": 1020,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=1280 right=1280 class=\"\"",
+          "<div> w=1280 right=1280 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=1280 right=1280 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<section> w=1280 right=1280 class=\"\"",
+          "<header> w=1020 right=1280 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=1020 right=1280 class=\"p-6\""
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "sidebarVisible": true,
+      "sidebarWidth": 260,
+      "hamburgerVisible": false,
+      "geometry": {
+        "viewportWidth": 1440,
+        "clientWidth": 1440,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "maxRight": 1440,
+        "offenders": [],
+        "sidebar": {
+          "visible": true,
+          "width": 260
+        },
+        "hamburgerVisible": false,
+        "mainLeft": 260,
+        "mainWidth": 1180,
+        "tables": 0,
+        "cardLists": 0,
+        "overflowXAutoContainers": 0,
+        "widest": [
+          "<div> w=1440 right=1440 class=\"\"",
+          "<div> w=1440 right=1440 class=\"min-h-screen bg-zinc-950\"",
+          "<div> w=1440 right=1440 class=\"md:pl-[200px] xl:pl-[260px]\"",
+          "<section> w=1440 right=1440 class=\"\"",
+          "<header> w=1180 right=1440 class=\"sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-80\"",
+          "<main> w=1180 right=1440 class=\"p-6\""
+        ]
+      }
+    }
+  ],
+  "jsonPanels": [
+    {
+      "width": 375,
+      "dialogCount": 1,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 375,
+        "height": 900
+      },
+      "asideWidth": null,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "offenders": []
+    },
+    {
+      "width": 639,
+      "dialogCount": 1,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 639,
+        "height": 900
+      },
+      "asideWidth": null,
+      "scrollWidth": 639,
+      "clientWidth": 639,
+      "offenders": []
+    },
+    {
+      "width": 640,
+      "dialogCount": 1,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 640,
+        "height": 900
+      },
+      "asideWidth": null,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "offenders": []
+    },
+    {
+      "width": 767,
+      "dialogCount": 1,
+      "overlayBox": {
+        "x": 0,
+        "y": 0,
+        "width": 767,
+        "height": 900
+      },
+      "asideWidth": null,
+      "scrollWidth": 767,
+      "clientWidth": 767,
+      "offenders": []
+    },
+    {
+      "width": 768,
+      "dialogCount": 0,
+      "overlayBox": null,
+      "asideWidth": 300,
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "offenders": []
+    },
+    {
+      "width": 1023,
+      "dialogCount": 0,
+      "overlayBox": null,
+      "asideWidth": 300,
+      "scrollWidth": 1023,
+      "clientWidth": 1023,
+      "offenders": []
+    },
+    {
+      "width": 1024,
+      "dialogCount": 0,
+      "overlayBox": null,
+      "asideWidth": 300,
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "offenders": []
+    },
+    {
+      "width": 1279,
+      "dialogCount": 0,
+      "overlayBox": null,
+      "asideWidth": 300,
+      "scrollWidth": 1279,
+      "clientWidth": 1279,
+      "offenders": []
+    },
+    {
+      "width": 1280,
+      "dialogCount": 0,
+      "overlayBox": null,
+      "asideWidth": 400,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "offenders": []
+    },
+    {
+      "width": 1440,
+      "dialogCount": 0,
+      "overlayBox": null,
+      "asideWidth": 400,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": []
+    }
+  ],
+  "statCards": [
+    {
+      "width": 375,
+      "count": 4,
+      "distinctX": 1,
+      "boxes": [
+        {
+          "x": 45,
+          "y": 129
+        },
+        {
+          "x": 45,
+          "y": 275
+        },
+        {
+          "x": 45,
+          "y": 437
+        },
+        {
+          "x": 45,
+          "y": 599
+        }
+      ]
+    },
+    {
+      "width": 639,
+      "count": 4,
+      "distinctX": 1,
+      "boxes": [
+        {
+          "x": 45,
+          "y": 129
+        },
+        {
+          "x": 45,
+          "y": 275
+        },
+        {
+          "x": 45,
+          "y": 437
+        },
+        {
+          "x": 45,
+          "y": 599
+        }
+      ]
+    },
+    {
+      "width": 640,
+      "count": 4,
+      "distinctX": 1,
+      "boxes": [
+        {
+          "x": 45,
+          "y": 129
+        },
+        {
+          "x": 45,
+          "y": 275
+        },
+        {
+          "x": 45,
+          "y": 437
+        },
+        {
+          "x": 45,
+          "y": 599
+        }
+      ]
+    },
+    {
+      "width": 767,
+      "count": 4,
+      "distinctX": 1,
+      "boxes": [
+        {
+          "x": 45,
+          "y": 129
+        },
+        {
+          "x": 45,
+          "y": 275
+        },
+        {
+          "x": 45,
+          "y": 437
+        },
+        {
+          "x": 45,
+          "y": 599
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "count": 4,
+      "distinctX": 2,
+      "boxes": [
+        {
+          "x": 245,
+          "y": 129
+        },
+        {
+          "x": 513,
+          "y": 129
+        },
+        {
+          "x": 245,
+          "y": 291
+        },
+        {
+          "x": 513,
+          "y": 291
+        }
+      ]
+    },
+    {
+      "width": 1023,
+      "count": 4,
+      "distinctX": 2,
+      "boxes": [
+        {
+          "x": 245,
+          "y": 129
+        },
+        {
+          "x": 641,
+          "y": 129
+        },
+        {
+          "x": 245,
+          "y": 291
+        },
+        {
+          "x": 641,
+          "y": 291
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "count": 4,
+      "distinctX": 2,
+      "boxes": [
+        {
+          "x": 245,
+          "y": 129
+        },
+        {
+          "x": 641,
+          "y": 129
+        },
+        {
+          "x": 245,
+          "y": 291
+        },
+        {
+          "x": 641,
+          "y": 291
+        }
+      ]
+    },
+    {
+      "width": 1279,
+      "count": 4,
+      "distinctX": 2,
+      "boxes": [
+        {
+          "x": 245,
+          "y": 129
+        },
+        {
+          "x": 769,
+          "y": 129
+        },
+        {
+          "x": 245,
+          "y": 291
+        },
+        {
+          "x": 769,
+          "y": 291
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "count": 4,
+      "distinctX": 4,
+      "boxes": [
+        {
+          "x": 305,
+          "y": 129
+        },
+        {
+          "x": 552,
+          "y": 129
+        },
+        {
+          "x": 799,
+          "y": 129
+        },
+        {
+          "x": 1046,
+          "y": 129
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "count": 4,
+      "distinctX": 4,
+      "boxes": [
+        {
+          "x": 305,
+          "y": 129
+        },
+        {
+          "x": 592,
+          "y": 129
+        },
+        {
+          "x": 879,
+          "y": 129
+        },
+        {
+          "x": 1166,
+          "y": 129
+        }
+      ]
+    }
+  ],
+  "tableWrappers": [
+    {
+      "width": 375,
+      "table": false
+    },
+    {
+      "width": 639,
+      "table": false
+    },
+    {
+      "width": 640,
+      "table": false
+    },
+    {
+      "width": 767,
+      "table": false
+    },
+    {
+      "width": 768,
+      "table": true,
+      "wrapperOverflowX": "auto",
+      "wrapperClientWidth": 520,
+      "wrapperScrollWidth": 520,
+      "tableWidth": 520,
+      "tableRight": 744,
+      "viewport": 768
+    },
+    {
+      "width": 1023,
+      "table": true,
+      "wrapperOverflowX": "auto",
+      "wrapperClientWidth": 775,
+      "wrapperScrollWidth": 775,
+      "tableWidth": 775,
+      "tableRight": 999,
+      "viewport": 1023
+    },
+    {
+      "width": 1024,
+      "table": true,
+      "wrapperOverflowX": "auto",
+      "wrapperClientWidth": 776,
+      "wrapperScrollWidth": 776,
+      "tableWidth": 776,
+      "tableRight": 1000,
+      "viewport": 1024
+    },
+    {
+      "width": 1279,
+      "table": true,
+      "wrapperOverflowX": "auto",
+      "wrapperClientWidth": 1031,
+      "wrapperScrollWidth": 1031,
+      "tableWidth": 1031,
+      "tableRight": 1255,
+      "viewport": 1279
+    },
+    {
+      "width": 1280,
+      "table": true,
+      "wrapperOverflowX": "auto",
+      "wrapperClientWidth": 972,
+      "wrapperScrollWidth": 972,
+      "tableWidth": 972,
+      "tableRight": 1256,
+      "viewport": 1280
+    },
+    {
+      "width": 1440,
+      "table": true,
+      "wrapperOverflowX": "auto",
+      "wrapperClientWidth": 1132,
+      "wrapperScrollWidth": 1132,
+      "tableWidth": 1132,
+      "tableRight": 1416,
+      "viewport": 1440
+    }
+  ],
+  "palettes": [
+    {
+      "width": 375,
+      "box": {
+        "x": 0,
+        "y": 242,
+        "width": 375,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 375,
+      "clientWidth": 375
+    },
+    {
+      "width": 639,
+      "box": {
+        "x": 0,
+        "y": 242,
+        "width": 639,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 639,
+      "clientWidth": 639
+    },
+    {
+      "width": 640,
+      "box": {
+        "x": 0,
+        "y": 242,
+        "width": 640,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 640,
+      "clientWidth": 640
+    },
+    {
+      "width": 767,
+      "box": {
+        "x": 48,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 767,
+      "clientWidth": 767
+    },
+    {
+      "width": 768,
+      "box": {
+        "x": 48,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 768,
+      "clientWidth": 768
+    },
+    {
+      "width": 1023,
+      "box": {
+        "x": 176,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 1023,
+      "clientWidth": 1023
+    },
+    {
+      "width": 1024,
+      "box": {
+        "x": 176,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 1024,
+      "clientWidth": 1024
+    },
+    {
+      "width": 1279,
+      "box": {
+        "x": 304,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 1279,
+      "clientWidth": 1279
+    },
+    {
+      "width": 1280,
+      "box": {
+        "x": 304,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "width": 1440,
+      "box": {
+        "x": 384,
+        "y": 242,
+        "width": 672,
+        "height": 416
+      },
+      "offenders": [],
+      "scrollWidth": 1440,
+      "clientWidth": 1440
+    }
+  ],
+  "before": {
+    "note": "the same instrument on the pre-fix tree (D1). Only the fields that changed are kept.",
+    "sidebarWidthByWidth": {
+      "375": null,
+      "639": null,
+      "640": null,
+      "767": null,
+      "768": 260,
+      "1023": 260,
+      "1024": 260,
+      "1279": 260,
+      "1280": 260,
+      "1440": 260
+    },
+    "jsonPanelWidthByWidth": {
+      "375": null,
+      "639": null,
+      "640": null,
+      "767": null,
+      "768": 400,
+      "1023": 400,
+      "1024": 400,
+      "1279": 400,
+      "1280": 400,
+      "1440": 400
+    },
+    "overflowingRoutes": {
+      "/quests/DS-ACAD-C01-001@375": 149,
+      "/quests/DS-ACAD-C01-001@768": 16,
+      "/drop-tables@768": 70,
+      "/npc-inventories@768": 97,
+      "/npc-spell-inventories@768": 131,
+      "/creature-spellbooks@768": 125,
+      "/npc-drop-tables@768": 102,
+      "/treasure-card-inventories@768": 157,
+      "/zone-transfers@768": 90
+    }
+  },
+  "probe768": {
+    "found": true,
+    "out": [
+      "<div class=\"flex flex-col gap-2 sm:flex-row sm:items-center\" x=224 w=423 display=flex position=static flex=0 1 auto minWidth=auto transform=none>",
+      "<div class=\"flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between\" x=224 w=520 display=flex position=static flex=0 1 auto minWidth=auto transform=none>",
+      "<div class=\"flex flex-col gap-4\" x=224 w=520 display=flex position=static flex=0 1 auto minWidth=0px transform=none>",
+      "<main class=\"p-6\" x=200 w=568 display=block position=static flex=0 1 auto minWidth=0px transform=none>",
+      "<div class=\"md:pl-[200px] xl:pl-[260px]\" x=0 w=768 display=block position=static flex=0 1 auto minWidth=0px transform=none>",
+      "<div class=\"min-h-screen bg-zinc-950\" x=0 w=768 display=block position=static flex=0 1 auto minWidth=0px transform=none>",
+      "<div class=\"\" x=0 w=768 display=block position=static flex=0 1 auto minWidth=0px transform=none>",
+      "<body class=\"bg-zinc-950 text-zinc-100\" x=0 w=768 display=block position=static flex=0 1 auto minWidth=0px transform=none>"
+    ],
+    "mainChildren": [
+      "<div class=\"flex flex-col gap-4\" x=224 w=520>"
+    ]
+  }
+}

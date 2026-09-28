@@ -19,6 +19,7 @@ import {
   readSettings,
   resolveDbFile,
   resolveRepoRoot,
+  resolveSyncDbFile,
   seedSettings,
   testSpiraldbPath,
   type Db,
@@ -415,6 +416,20 @@ describe('database-file resolution (decision D44)', () => {
     expect(resolveDbFile({ [DB_FILE_ENV_VAR]: '' })).toBe(defaultDbFile());
     expect(resolveDbFile({})).toBe(defaultDbFile());
     expect(defaultDbFile()).toBe(path.join(resolveRepoRoot(), 'data', 'spiraldb-ui.db'));
+  });
+
+  /**
+   * Found by p5-08 and fixed by p5-09: `scripts/sync-names.ts` passed only
+   * `args.dbFile`, so `SPIRALDB_UI_DB` was ignored and an intended isolation ran
+   * against the developer's live database. The ladder is pinned here so the hole
+   * cannot reopen, and the flag/env arm `parseSyncArgs` applies comes first.
+   */
+  it('resolveSyncDbFile honours --db/SPIRALDB_SYNC_DB, then SPIRALDB_UI_DB, then the default', () => {
+    const both = { [DB_FILE_ENV_VAR]: '/tmp/app-wide.db' };
+    expect(resolveSyncDbFile({ dbFile: '/tmp/flag.db' }, both)).toBe('/tmp/flag.db');
+    expect(resolveSyncDbFile({}, both)).toBe('/tmp/app-wide.db');
+    expect(resolveSyncDbFile({}, {})).toBe(defaultDbFile());
+    expect(resolveSyncDbFile({ dbFile: '' }, {})).toBe(defaultDbFile());
   });
 
   it('getDb opens the override file and seeds it for tests (clone, not the owner fork)', () => {

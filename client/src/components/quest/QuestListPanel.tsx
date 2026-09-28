@@ -32,7 +32,7 @@ export default function QuestListPanel({
 }: QuestListPanelProps): JSX.Element {
   if (quests.length === 0) {
     return (
-      <p className={cn('p-4 text-sm text-zinc-500', className)}>
+      <p className={cn('p-4 text-sm text-zinc-400', className)}>
         No quests were found in this packet capture.
       </p>
     );
@@ -56,7 +56,7 @@ export default function QuestListPanel({
               aria-selected={selected}
               onClick={() => onSelect(index)}
               className={cn(
-                'flex w-full flex-col gap-1.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                'flex w-full flex-col gap-1.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                 selected && 'bg-blue-600/10',
               )}
             >

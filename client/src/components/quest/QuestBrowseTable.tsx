@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, ChevronsUpDown, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
-import type { QuestListRow, StatusValue } from '../../lib/api';
+import type { QuestListRow } from '../../lib/api';
 import { relativeTime } from '../../lib/display';
 import {
   DEFAULT_QUEST_SORT,
@@ -24,7 +24,7 @@ import {
 } from '../../lib/quests';
 import type { TransitionTarget } from '../../lib/status-transition';
 import { cn } from '../../lib/utils';
-import { STATUS_META } from '../StatusBadge';
+import StatusBadge from '../StatusBadge';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -73,16 +73,18 @@ function widthStyle(id: QuestColumnId): { width: number } | undefined {
   return width === null || width === undefined ? undefined : { width };
 }
 
-/** The colour dot the Status column shows (spec L256: "Color dot only"). */
-function StatusDot({ status }: { status: StatusValue }): JSX.Element {
-  const meta = STATUS_META[status];
-  return (
-    <span className="inline-flex items-center" title={meta.label}>
-      <span className={cn('h-2.5 w-2.5 rounded-full', meta.dotClass)} aria-hidden="true" />
-      <span className="sr-only">Status: {meta.label}</span>
-    </span>
-  );
-}
+/**
+ * The Status column shows the shared `StatusBadge` — colour **and** the status word.
+ *
+ * The spec contradicts itself here and the lead ruled on it (p5-05, 2026-09-26):
+ * `docs/spec-ui-design.md` L249-260 pins this column at 40px "Color dot only", while
+ * L545 requires "Status conveyed by both color AND text/icon (not color alone)". WCAG
+ * 1.4.1 (use of colour) is a real requirement, axe-core has **no** rule for it, and the
+ * same row already renders `StatusBadge` in the mobile card list (`QuestCardList`), so
+ * the two views disagreed about identical data. The 40px pin is superseded by
+ * measurement — the badge's own text is the non-colour channel. Width: `QUEST_COLUMNS`'
+ * `status` entry.
+ */
 
 /** The header's sort affordance: unsorted / ascending / descending. */
 function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }): JSX.Element {
@@ -92,7 +94,7 @@ function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }): JSX.Ele
   if (direction === 'desc') {
     return <ChevronDown className="h-3 w-3" aria-hidden="true" />;
   }
-  return <ChevronsUpDown className="h-3 w-3 text-zinc-600" aria-hidden="true" />;
+  return <ChevronsUpDown className="h-3 w-3 text-zinc-400" aria-hidden="true" />;
 }
 
 export default function QuestBrowseTable({
@@ -115,7 +117,7 @@ export default function QuestBrowseTable({
         id: 'status',
         header: QUEST_COLUMNS[0].header,
         accessorFn: (row) => questStatus(row),
-        cell: ({ row }) => <StatusDot status={questStatus(row.original)} />,
+        cell: ({ row }) => <StatusBadge status={questStatus(row.original)} />,
       },
       {
         id: 'quest_name',
@@ -228,7 +230,7 @@ export default function QuestBrowseTable({
                       type="button"
                       onClick={header.column.getToggleSortingHandler()}
                       className={cn(
-                        'inline-flex items-center gap-1 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                        'inline-flex items-center gap-1 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                         sorted === false ? 'text-zinc-400' : 'text-zinc-100',
                       )}
                     >

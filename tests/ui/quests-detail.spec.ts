@@ -67,7 +67,7 @@ test.describe('header', () => {
     await expect(back).toHaveAttribute('href', '/quests');
 
     // Spec L284: `text-xl font-mono font-semibold`.
-    const name = main.getByRole('heading', { level: 1, name: 'DS-ACAD1-C01-001' });
+    const name = main.getByRole('heading', { level: 2, name: 'DS-ACAD1-C01-001' });
     await expect(name).toBeVisible();
     await expect(name).toHaveClass(/text-xl/);
     await expect(name).toHaveClass(/font-mono/);
@@ -288,7 +288,7 @@ test.describe('loading, failure and not found', () => {
 
     release();
     await expect(
-      page_(page).getByRole('heading', { level: 1, name: 'DS-ACAD1-C01-001' }),
+      page_(page).getByRole('heading', { level: 2, name: 'DS-ACAD1-C01-001' }),
     ).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   });
@@ -338,7 +338,7 @@ test.describe('loading, failure and not found', () => {
     await expect(main.getByText('SpiralDB path is not configured.')).toBeVisible();
 
     await main.getByRole('button', { name: 'Try again' }).click();
-    await expect(main.getByRole('heading', { level: 1, name: 'DS-ACAD1-C01-001' })).toBeVisible();
+    await expect(main.getByRole('heading', { level: 2, name: 'DS-ACAD1-C01-001' })).toBeVisible();
     await expect(main.getByRole('tab', { name: 'Info' })).toBeVisible();
   });
 });

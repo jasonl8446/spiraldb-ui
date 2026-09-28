@@ -1,0 +1,38 @@
+##### p5-06 D3 — the two carried failures, attributed by measurement (D77(d)/D85(c))
+
+The first attempt at this gate captured rc with 'cmd 2>&1 | tail -N; echo [rc=$?]', which reports
+tail's rc, not the command's, so it read as seven rc=0 while npm run test:ui had failed an arm.
+The corrected capture ('cmd >> f 2>&1; echo [rc=$?]') is docs/evidence/phase-5/p5-06-gate.txt.
+
+===== full-suite run 1: npm run test:ui (no --config) =====
+  1) [chromium] › tests/ui/extraction.spec.ts:810:3 › results phase › Save Selected saves only the selected quest 
+
+    Test timeout of 60000ms exceeded.
+  -> 1 failed, 375 passed (1.7m)
+
+run 1's failure: extraction.spec.ts:815 'Save Selected saves only the selected quest' —
+  a sonner <li data-sonner-toast> subtree intercepting pointer events at the click target,
+  i.e. the toast/pointer-overlap family D69(h)/D77(d) already carry by name.
+
+  attribution: the same arm, repeated 3x on this tree in isolation:
+    repeat 1: rc=0  1 passed  ((2.9s))
+    repeat 2: rc=0  1 passed  ((3.0s))
+    repeat 3: rc=0  1 passed  ((2.9s))
+
+===== full-suite run 2: npm run test:ui (no --config) =====
+  1) [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter 
+
+    Test timeout of 60000ms exceeded.
+  -> 1 failed, 375 passed (1.9m)  [41/41 responsive.spec.ts arms passed in both runs]
+
+run 2's failure: a11y-keyboard.spec.ts:221 'extract -> save: the dropzone button opens the
+  file chooser with Enter' — waitForEvent('filechooser') timed out.
+
+  attribution: the same arm, repeated 3x on this tree in isolation:
+    repeat 1: rc=0  1 passed  ((5.5s))
+    repeat 2: rc=0  1 passed  ((4.4s))
+    repeat 3: rc=0  1 passed  ((4.2s))
+
+Both failures are intermittent, in files this story does not touch, and their failure modes
+(a toast overlapping a click target; a 60 s wait for a file-chooser event) are unrelated to
+viewport widths. Neither was patched, no timeout relaxed, no arm skipped.

@@ -113,7 +113,7 @@ export default function GlobalRegistryForm({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {rows.length === 0 ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-400">
               {hasWrapper
                 ? 'This registry holds no values yet — add a row below.'
                 : `This registry has no ${GLOBAL_REGISTRY_WRAPPER_KEY} object yet — the first row creates it.`}
@@ -183,7 +183,7 @@ export default function GlobalRegistryForm({
                 Add row
               </Button>
               {newKeyProblem === null ? null : (
-                <p data-add-problem="true" className="text-xs text-zinc-500">
+                <p data-add-problem="true" className="text-xs text-zinc-400">
                   {newKeyProblem}
                 </p>
               )}
@@ -306,7 +306,7 @@ function ConsolidationNotice({
   const replaced = [GLOBAL_REGISTRY_FILE_NAME, ...plan.remove];
   if (plan.remove.length === 0) {
     return (
-      <p data-consolidation="none" className="text-xs text-zinc-500">
+      <p data-consolidation="none" className="text-xs text-zinc-400">
         {`Saving writes ${GLOBAL_REGISTRY_FILE_NAME} — the directory already holds exactly that one file.`}
       </p>
     );

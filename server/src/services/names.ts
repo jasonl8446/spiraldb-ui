@@ -184,8 +184,12 @@ export function parseListNamesQuery(query: Record<string, unknown> = {}): ListNa
 /**
  * Escapes the LIKE metacharacters so `?q=` is a *literal* substring match:
  * `?q=%25` searches for a percent sign instead of matching every row.
+ *
+ * Exported because cross-type search (`services/search.ts`, task 5.2) needs exactly this
+ * rule over three more tables — one implementation, two callers, so `?q=%` cannot be a
+ * literal on `/api/names` and a wildcard on `/api/search`.
  */
-function escapeLike(value: string): string {
+export function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 

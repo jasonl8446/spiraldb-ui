@@ -18,7 +18,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    // The port a HUMAN gets by default; the Playwright harness overrides it with VITE_PORT so a
+    // sibling project holding 5173 cannot stop the tier-1 suite from booting (it did, repeatedly).
+    port: Number(process.env.VITE_PORT ?? 5173),
     strictPort: true,
     proxy: {
       '/api': {

@@ -31,6 +31,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
 import {
+  ACTIVITY_QUERY_KEY,
+  DASHBOARD_QUERY_KEY,
   patchStatus,
   STATUS_HISTORY_QUERY_KEY,
   type StatusEntry,
@@ -143,6 +145,13 @@ export function useStatusTransition(
       await client.invalidateQueries({ queryKey: scope.listQueryKey });
       await client.invalidateQueries({ queryKey: ['status'] });
       await client.invalidateQueries({ queryKey: STATUS_HISTORY_QUERY_KEY });
+      // Story p5-01 extends the same settle invalidation by the dashboard's two reads
+      // (plan §5.1 AC2, the p4-08 pattern rather than a second mechanism): every status
+      // change must reach the four cards, the per-type bars and the activity feed without
+      // a page reload. Both are prefix keys — `['activity']` matches the feed's
+      // `['activity', 10]` — so no query key is restated here.
+      await client.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+      await client.invalidateQueries({ queryKey: ACTIVITY_QUERY_KEY });
     },
   });
 

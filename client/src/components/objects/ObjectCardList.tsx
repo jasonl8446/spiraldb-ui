@@ -42,12 +42,12 @@ export default function ObjectCardList({
         <li key={row.key}>
           <Link
             to={href(row)}
-            className="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
             <span className="truncate font-mono text-sm text-zinc-100">{title(row)}</span>
             <span className="flex flex-wrap items-center gap-2">
               {status(row)}
-              <span className="text-xs text-zinc-500">{modified(row)}</span>
+              <span className="text-xs text-zinc-400">{modified(row)}</span>
             </span>
           </Link>
         </li>

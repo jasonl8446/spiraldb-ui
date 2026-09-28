@@ -8,7 +8,6 @@ import {
   JSON_COPY_LABEL,
   JSON_PANEL_GLYPH,
   JSON_PANEL_TITLE,
-  JSON_PANEL_WIDTH_PX,
   JSON_WRAP_LABEL,
   JSON_WRAP_OFF_TOOLTIP,
   JSON_WRAP_ON_TOOLTIP,
@@ -31,8 +30,8 @@ import 'react-json-view-lite/dist/index.css';
  * viewer. It is the **fetch-free** view of the quest object the detail page
  * already has, exactly like `QuestPreview`, so it takes the object as a prop.
  *
- * - {@link QuestJsonPanel} is the 400px desktop `<aside>` (spec L326), sliding in
- *   from the right;
+ * - {@link QuestJsonPanel} is the side `<aside>` — **300px on tablet (768–1279px), 400px on
+ *   desktop (≥1280px)** (spec L518-520, story p5-06) — sliding in from the right;
  * - {@link QuestJsonOverlay} is the same content as a **full-screen dialog** below
  *   `md` (spec L340) instead of a squeezed side panel.
  *
@@ -83,12 +82,37 @@ async function copyQuestJson(quest: QuestJsonData): Promise<void> {
   }
 }
 
+/**
+ * The two Solarized syntax colours that fail WCAG AA on **this panel's** `zinc-950` well, and
+ * their measured replacements (story p5-07's automated scan, `tests/ui/a11y.spec.ts`).
+ *
+ * `darkStyles` is tuned for the library's own container background `rgb(0, 43, 54)`; the app
+ * swaps that for `zinc-950` (`#09090b`, `jsonContainerClass` above), which darkens the
+ * background and drops two of the seven syntax colours under the 4.5:1 text floor:
+ *
+ * | syntax colour | library value | on `#09090b` | replacement | on `#09090b` |
+ * |---|---|---|---|---|
+ * | string value | `rgb(203, 75, 22)` | **4.32:1** ✗ | `orange-300` `#fdba74` | 11.79:1 ✓ |
+ * | number value | `rgb(211, 54, 130)` | **4.38:1** ✗ | `pink-300` `#f9a8d4` | 10.97:1 ✓ |
+ *
+ * The other five (label/punctuation `18.44`, null `8.66`, boolean `7.00`, other `5.41`) pass
+ * and stay the library's. Each entry **replaces** the library class rather than appending to it,
+ * so there is no stylesheet-order question about which colour wins — and a Tailwind bump that
+ * failed to emit these two utilities could only fall back to the container's light `foreground`,
+ * never silently back to the failing Solarized values.
+ */
+const SYNTAX_OVERRIDES: NonNullable<JsonViewProps['style']> = {
+  stringValue: 'text-orange-300',
+  numberValue: 'text-pink-300',
+};
+
 /** The syntax-highlighted tree: top level expanded, nested nodes collapsed. */
 function QuestJsonTree({ quest, wrap }: { quest: QuestJsonData; wrap: boolean }): JSX.Element {
   // The library's own `data` type is a JSON union; `unknown` is the honest input
   // here because the document has not been validated by this component.
   const style: NonNullable<JsonViewProps['style']> = {
     ...darkStyles,
+    ...SYNTAX_OVERRIDES,
     container: jsonContainerClass(wrap),
   };
   return (
@@ -114,7 +138,7 @@ function QuestJsonToolbar({
 }): JSX.Element {
   return (
     <div className={cn('flex items-center justify-between gap-2', className)}>
-      <span className="font-mono text-xs text-zinc-500" aria-hidden="true">
+      <span className="font-mono text-xs text-zinc-400" aria-hidden="true">
         {JSON_PANEL_GLYPH}
       </span>
       <div className="flex items-center gap-2">
@@ -164,15 +188,23 @@ export interface QuestJsonPanelProps {
   title?: string;
 }
 
-/** The desktop side panel: exactly {@link JSON_PANEL_WIDTH_PX} wide, slides in. */
+/**
+ * The desktop side panel: **300px on tablet (768–1279px), 400px on desktop (≥1280px)** —
+ * `docs/spec-ui-design.md` L518-520.
+ *
+ * Story p5-06 replaced the single inline `width: JSON_PANEL_WIDTH_PX` (400 at every width above
+ * `md`) with these two classes, because the width is a breakpoint rule and Tailwind's `xl` is
+ * exactly the spec's 1280px desktop line. The two numbers' home of record is
+ * `lib/quests.ts`'s `JSON_PANEL_TABLET_WIDTH_PX` / `JSON_PANEL_WIDTH_PX`, and
+ * `tests/ui/responsive.spec.ts` asserts the rendered box against both at both tiers.
+ */
 export function QuestJsonPanel({ quest, className, title }: QuestJsonPanelProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
   return (
     <aside
       aria-label={title ?? JSON_PANEL_TITLE}
-      style={{ width: JSON_PANEL_WIDTH_PX }}
       className={cn(
-        'flex shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right',
+        'flex w-[300px] shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right xl:w-[400px]',
         className,
       )}
     >

@@ -2,11 +2,13 @@ import { Router } from 'express';
 
 import { mountPathFor, OBJECT_TYPES } from '../../../shared/objectTypes.js';
 import { getDb } from '../db.js';
+import { createActivityRouter } from './activity.js';
 import { createDashboardRouter } from './dashboard.js';
 import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
 import { createObjectRouter } from './objects.js';
 import { createQuestsRouter } from './quests.js';
+import { createSearchRouter } from './search.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
@@ -92,6 +94,35 @@ let dashboardRouter: Router | undefined;
 apiRouter.use('/dashboard', (req, res, next) => {
   dashboardRouter ??= createDashboardRouter({ db: getDb() });
   dashboardRouter(req, res, next);
+});
+
+/**
+ * Activity (task 5.1, story p5-01) — `GET /api/activity?limit=10`, the dashboard
+ * feed's `status_history` × `entry_status` join (decision D27).
+ *
+ * Lazily mounted like the five routers above, and for the same reason: the first
+ * request is the first moment the process needs `data/spiraldb-ui.db` (D32).
+ */
+let activityRouter: Router | undefined;
+
+apiRouter.use('/activity', (req, res, next) => {
+  activityRouter ??= createActivityRouter({ db: getDb() });
+  activityRouter(req, res, next);
+});
+
+/**
+ * Cross-type search (task 5.2, story p5-02) — `GET /api/search?q=&limit=20`, the ⌘K
+ * palette's read (decision D27).
+ *
+ * Lazily mounted like the six routers above, and for the same reason: the first request
+ * is the first moment the process needs `data/spiraldb-ui.db` (D32). A blank `?q=` is
+ * answered without touching that connection at all.
+ */
+let searchRouter: Router | undefined;
+
+apiRouter.use('/search', (req, res, next) => {
+  searchRouter ??= createSearchRouter({ db: getDb() });
+  searchRouter(req, res, next);
 });
 
 /**

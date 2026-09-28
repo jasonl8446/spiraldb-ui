@@ -124,7 +124,7 @@ export default function StatusHistoryPanel({
         ) : state === 'empty' ? (
           <div className="flex flex-col gap-1">
             <p className="text-sm text-zinc-200">{EMPTY_HISTORY_MESSAGE}</p>
-            <p className="text-sm text-zinc-500">{EMPTY_HISTORY_HINT}</p>
+            <p className="text-sm text-zinc-400">{EMPTY_HISTORY_HINT}</p>
           </div>
         ) : (
           <Timeline objectKey={objectKey} entries={newestFirst(history.data ?? [])} />
@@ -166,12 +166,12 @@ function Timeline({
                 <span className="font-mono text-zinc-100">{objectKey}</span>{' '}
                 <span>{historyActionText(entry)}</span>
               </p>
-              <span className="shrink-0 text-xs text-zinc-500">
+              <span className="shrink-0 text-xs text-zinc-400">
                 {relativeTime(entry.changed_at)}
               </span>
             </div>
             {entry.changed_by === null || entry.changed_by === '' ? null : (
-              <p className="text-xs text-zinc-500">by {entry.changed_by}</p>
+              <p className="text-xs text-zinc-400">by {entry.changed_by}</p>
             )}
             {hasHistoryNotes(entry) ? (
               <p className="text-sm italic text-zinc-400">{entry.notes}</p>

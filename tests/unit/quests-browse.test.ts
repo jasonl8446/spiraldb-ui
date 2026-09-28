@@ -3,6 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { ApiError, type QuestListRow } from '../../client/src/lib/api';
 import { RELATIVE_TIME_FALLBACK, relativeTime } from '../../client/src/lib/display';
 import {
+  DEFAULT_OBJECT_FILTER,
+  OBJECT_FILTERS,
+  OBJECT_FILTER_PARAM,
+  objectFilterParam,
+  parseObjectFilter,
+  type ObjectFilter,
+} from '../../client/src/lib/object-list';
+import {
   DEFAULT_QUEST_SORT,
   deriveQuests,
   EDIT_DISABLED_TOOLTIP,
@@ -95,9 +103,16 @@ describe('relativeTime', () => {
 });
 
 describe('the column spec', () => {
-  it('is the spec table verbatim — seven columns, widths, sortability (L254-262)', () => {
+  it("is the spec table — seven columns, widths, sortability (L254-262), with p5-05's measured exception", () => {
+    // Everything but `status` is the spec table verbatim. `status` is **104px, not the spec's
+    // 40px**: story p5-05 replaced the colour-only dot with the shared `StatusBadge` (colour
+    // *and* the status word) because `docs/spec-ui-design.md` L545 requires "colour AND
+    // text/icon", WCAG 1.4.1 has no axe rule to catch a colour-only mark, and the same row
+    // already rendered a text badge in the mobile card list (`QuestCardList`). The 40px pin at
+    // L256 is a layout detail the wider badge supersedes; recorded as a deliberate deviation by
+    // measurement (D86), not as spec drift.
     expect(QUEST_COLUMNS).toEqual([
-      { id: 'status', header: 'Status', widthPx: 40, sortable: true },
+      { id: 'status', header: 'Status', widthPx: 104, sortable: true },
       { id: 'quest_name', header: 'Quest Name', widthPx: null, sortable: true },
       { id: 'level', header: 'Level', widthPx: 60, sortable: true },
       { id: 'goal_count', header: 'Goals', widthPx: 60, sortable: true },
@@ -157,6 +172,52 @@ describe('filter tabs', () => {
     expect(questStatus(row({ quest_name: 'A', status: 'reviewed' }))).toBe('reviewed');
     expect(questStatus(undefined)).toBe('extracted');
     expect(questStatus({ status: 'nonsense' as QuestListRow['status'] })).toBe('extracted');
+  });
+});
+
+describe('the filter URL param (story p5-03)', () => {
+  it('names one param, and defaults to All', () => {
+    expect(OBJECT_FILTER_PARAM).toBe('filter');
+    expect(DEFAULT_OBJECT_FILTER).toBe('All');
+  });
+
+  it('renders the default as no param at all, and every other tab canonically', () => {
+    expect(objectFilterParam('All')).toBeNull();
+    expect(objectFilterParam('Extracted')).toBe('Extracted');
+    expect(objectFilterParam('Reviewed')).toBe('Reviewed');
+    expect(objectFilterParam('Verified')).toBe('Verified');
+  });
+
+  it('reads an absent, empty or unknown value as the default', () => {
+    expect(parseObjectFilter(null)).toBe('All');
+    expect(parseObjectFilter(undefined)).toBe('All');
+    expect(parseObjectFilter('')).toBe('All');
+    expect(parseObjectFilter('verifiedish')).toBe('All');
+    expect(parseObjectFilter('all')).toBe('All');
+  });
+
+  it('accepts a hand-typed lower-case value and canonicalises on the way out', () => {
+    expect(parseObjectFilter('extracted')).toBe('Extracted');
+    expect(parseObjectFilter('reviewed')).toBe('Reviewed');
+    expect(parseObjectFilter('verified')).toBe('Verified');
+  });
+
+  it('round-trips every tab: write the param, parse it back', () => {
+    for (const filter of OBJECT_FILTERS) {
+      expect(parseObjectFilter(objectFilterParam(filter))).toBe(filter);
+    }
+  });
+
+  it('leaves a default page URL bare — the pinned path set plus nothing', () => {
+    // `tests/ui/shell.spec.ts:526` pins `new URL(page.url()).pathname` against the
+    // spec's path list, and a `?filter=` suffix does not change a pathname.
+    const url = (filter: ObjectFilter): string => {
+      const value = objectFilterParam(filter);
+      return value === null ? '/quests' : `/quests?${OBJECT_FILTER_PARAM}=${value}`;
+    };
+    expect(url('All')).toBe('/quests');
+    expect(url('Verified')).toBe('/quests?filter=Verified');
+    expect(new URL(`http://x${url('Verified')}`).pathname).toBe('/quests');
   });
 });
 

@@ -1,0 +1,935 @@
+##### p5-06 D3 gate (corrected rc capture) — every command and its own rc
+2026-09-27T19:38:55-04:00
+
+=== npm test
+
+> spiraldb-ui@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — the fidelity walk detects the failures the sweep exists to catch > fails on a dropped explicit null, by path
+[p4-09 ac4 falsification] dropped null detected: <root>.Nested: key sets differ (missing on the left: [], missing on the right: [b])
+
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — the fidelity walk detects the failures the sweep exists to catch > fails on a reordered key set that deep equality alone does not see
+[p4-09 ac4 falsification] reordered keys detected: <root>: key order differs (left: [Name, Nested, List, Absent] vs right: [Nested, Name, List, Absent])
+
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — round-trip over the committed object fixtures (always runs, CI included) > round-trips every committed object fixture and preserves key order, nulls and absences
+[p4-09 ac4] committed fixtures swept=4 failures=0
+
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 ac1 — round-trip fidelity over the committed fixtures (always runs, CI included) > round-trips every committed quest fixture and preserves order, explicit nulls and absences
+[p3-02 ac1] committed fixtures: 4 files round-tripped (explicit-null fixtures=1, absent-key fixtures=3)
+[p3-02 ac1] quest_DS-ACAD-C01-003.json             keys=36 nulls=30 absentModelledKeys= 0  real corpus quest, JSON5 (21 of the 328 corpus files need JSON5 — the merge reformatted the corpus; 306 of 322 needed it before, D79), 36 keys with explicit nulls
+[p3-02 ac1] quest_trailing_comma_synthetic.json    keys= 3 nulls= 0 absentModelledKeys=33  synthetic trailing commas (JSON5)
+[p3-02 ac1] quest_hex_title_synthetic.json         keys= 5 nulls= 0 absentModelledKeys=31  minimal strict JSON — 5 of the 36 modelled keys (absent-key shape)
+[p3-02 ac1] quest_null_stripped_pipeline.json      keys=18 nulls= 0 absentModelledKeys=18  this tool's own NullValueHandling.Ignore write — 18 keys, every null-valued key omitted (byte copy of data/test-spiraldb, md5 20e9ec054bd15300f502c1d33fc0b89c)
+
+ ✓ tests/unit/settings.test.ts (27 tests) 418ms
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — round-trip over the six-family corpus on disk (owner run) > round-trips every file of every family and prints per-type counts vs `ls | wc -l`
+[p4-09 ac4] droptable dir=/home/jason/Documents/git-projects/spiraldb/DropTables [authoritative]
+[p4-09 ac4]   files discovered=317 ls|wc -l=317 round-tripped=317 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=317 unclassified=0
+[p4-09 ac4]   top-level key order: 281×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_ds-acad-c01-001.json, droptables_ds-acad-c01-002.json, droptables_ds-acad-c01-003.json, droptables_ds-acad-c01-004.json) 31×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,GrantsPotionSlot] (droptables_wc-commons-main-002-storm.json, droptables_wc-commons-main-003.json, droptables_wc-commons-main-004.json, droptables_wc-commons-main-005.json) 3×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,GrantsPotionSlot,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_wc-unicorn-main-002.json, droptables_wc-unicorn-main-007.json, droptables_wc-unicorn-main-008.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,TrainingPoints,GrantsPotionSlot,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,MinGold,MaxGold,ExperienceAmount,Items] (droptables_wc-unicorn-main-004-mount.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items] (droptables_wc-unicorn-side-001.json)
+[p4-09 ac4] npcinventory dir=/home/jason/Documents/git-projects/spiraldb/NpcInventory [authoritative]
+[p4-09 ac4]   files discovered=215 ls|wc -l=215 round-tripped=215 failures=0
+[p4-09 ac4]   bytes: identical=215 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 215×[TemplateID,Inventory] (NPCInventories_1-A.json, NPCInventories_1025-A.json, NPCInventories_1026-A.json, NPCInventories_1027-A.json)
+[p4-09 ac4] npcspellinventory dir=/home/jason/Documents/git-projects/spiraldb/NpcSpellInventory [authoritative]
+[p4-09 ac4]   files discovered=77 ls|wc -l=77 round-tripped=77 failures=0
+[p4-09 ac4]   bytes: identical=77 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 77×[TemplateID,Spells] (7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json, NPCSpellInventories_1025-A.json, NPCSpellInventories_1057-A.json, NPCSpellInventories_1089-A.json)
+[p4-09 ac4] creaturespellbook dir=/home/jason/Documents/git-projects/spiraldb/CreatureSpellbook [authoritative]
+[p4-09 ac4]   files discovered=134 ls|wc -l=134 round-tripped=134 failures=0
+[p4-09 ac4]   bytes: identical=134 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 134×[DeckName,SpellTemplateIds] (CreatureSpellbooks_1-A.json, CreatureSpellbooks_129-A.json, CreatureSpellbooks_161-A.json, CreatureSpellbooks_162-A.json)
+[p4-09 ac4] treasurecardinventory dir=/home/jason/Documents/git-projects/spiraldb/TreasureCardInventory [authoritative]
+[p4-09 ac4]   files discovered=1 ls|wc -l=1 round-tripped=1 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=1 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[TemplateID,TreasureCards] (NpcTreasureCards_2019-A.json)
+[p4-09 ac4] zonetransfer dir=/home/jason/Documents/git-projects/spiraldb/ZoneTransfer [authoritative]
+[p4-09 ac4]   files discovered=1207 ls|wc -l=1207 round-tripped=1207 failures=0
+[p4-09 ac4]   bytes: identical=1206 trailing-whitespace-only=1 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[ZoneName,Teleports,Events] (WizardZoneDatas_1-A.json) 1206×[ZoneName,Events,Teleports] (WizardZoneDatas_10017-A.json, WizardZoneDatas_10049-A.json, WizardZoneDatas_10050-A.json, WizardZoneDatas_10051-A.json)
+[p4-09 ac4] droptable dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/DropTables [clone]
+[p4-09 ac4]   files discovered=317 ls|wc -l=317 round-tripped=317 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=317 unclassified=0
+[p4-09 ac4]   top-level key order: 281×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_ds-acad-c01-001.json, droptables_ds-acad-c01-002.json, droptables_ds-acad-c01-003.json, droptables_ds-acad-c01-004.json) 31×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,GrantsPotionSlot] (droptables_wc-commons-main-002-storm.json, droptables_wc-commons-main-003.json, droptables_wc-commons-main-004.json, droptables_wc-commons-main-005.json) 3×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,GrantsPotionSlot,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_wc-unicorn-main-002.json, droptables_wc-unicorn-main-007.json, droptables_wc-unicorn-main-008.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,TrainingPoints,GrantsPotionSlot,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,MinGold,MaxGold,ExperienceAmount,Items] (droptables_wc-unicorn-main-004-mount.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items] (droptables_wc-unicorn-side-001.json)
+[p4-09 ac4] npcinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcInventory [clone]
+[p4-09 ac4]   files discovered=215 ls|wc -l=215 round-tripped=215 failures=0
+[p4-09 ac4]   bytes: identical=215 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 215×[TemplateID,Inventory] (NPCInventories_1-A.json, NPCInventories_1025-A.json, NPCInventories_1026-A.json, NPCInventories_1027-A.json)
+[p4-09 ac4] npcspellinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcSpellInventory [clone]
+[p4-09 ac4]   files discovered=77 ls|wc -l=77 round-tripped=77 failures=0
+[p4-09 ac4]   bytes: identical=77 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 77×[TemplateID,Spells] (7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json, NPCSpellInventories_1025-A.json, NPCSpellInventories_1057-A.json, NPCSpellInventories_1089-A.json)
+[p4-09 ac4] creaturespellbook dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/CreatureSpellbook [clone]
+[p4-09 ac4]   files discovered=134 ls|wc -l=134 round-tripped=134 failures=0
+[p4-09 ac4]   bytes: identical=134 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 134×[DeckName,SpellTemplateIds] (CreatureSpellbooks_1-A.json, CreatureSpellbooks_129-A.json, CreatureSpellbooks_161-A.json, CreatureSpellbooks_162-A.json)
+[p4-09 ac4] treasurecardinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/TreasureCardInventory [clone]
+[p4-09 ac4]   files discovered=1 ls|wc -l=1 round-tripped=1 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=1 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[TemplateID,TreasureCards] (NpcTreasureCards_2019-A.json)
+[p4-09 ac4] zonetransfer dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/ZoneTransfer [clone]
+[p4-09 ac4]   files discovered=1207 ls|wc -l=1207 round-tripped=1207 failures=0
+[p4-09 ac4]   bytes: identical=1206 trailing-whitespace-only=1 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[ZoneName,Teleports,Events] (WizardZoneDatas_1-A.json) 1206×[ZoneName,Events,Teleports] (WizardZoneDatas_10017-A.json, WizardZoneDatas_10049-A.json, WizardZoneDatas_10050-A.json, WizardZoneDatas_10051-A.json)
+[p4-09 ac4] summary vs the AC: droptable=317 npcinventory=215 npcspellinventory=77 creaturespellbook=134 treasurecardinventory=1 zonetransfer=1207
+
+stdout | tests/unit/quest-schemas.test.ts > the live corpus (owner run) > accepts all 328 corpus quests and loses nothing on parse
+[p3-01 schemas] corpus 328: accepted=328, rejected=0, parse-output-changed=0
+
+ ✓ tests/unit/quest-schemas.test.ts (21 tests) 847ms
+   ✓ the live corpus (owner run) > accepts all 328 corpus quests and loses nothing on parse  761ms
+ ✓ tests/unit/simple-objects-model.test.ts (32 tests) 874ms
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — round-trip over the six-family corpus on disk (owner run) > preserves the measured key-order splits, the duplicate list values and the unprefixed file
+[p4-09 ac4] ZoneTransfer top-level order: majority=1206 minority=1 (WizardZoneDatas_1-A.json)
+[p4-09 ac4] ZoneTransfer nested Teleport order: serializer=2355 spec=13 (of 2368 entries)
+[p4-09 ac4] ZoneTransfer duplicate ZoneName pairs: [["WizardCity/Tutorial_Exterior",2],["WizardCity/Tutorial_Interior",2]]
+[p4-09 ac4] named normalisation: WizardZoneDatas_Tutorial_Interior-A.json raw ends in \n\n, the writer emits one — whitespace-only, values identical
+[p4-09 ac4] npcinventory.Inventory: files with a duplicate element=14
+[p4-09 ac4] npcspellinventory.Spells: files with a duplicate element=0
+[p4-09 ac4] creaturespellbook.SpellTemplateIds: files with a duplicate element=4
+[p4-09 ac4] NpcSpellInventory unprefixed file 7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json (TemplateID=38226) round-tripped and is key-resolved by content, not name
+
+ ✓ tests/unit/object-corpus-roundtrip.test.ts (9 tests) 1174ms
+   ✓ p4-09 ac4 — round-trip over the six-family corpus on disk (owner run) > round-trips every file of every family and prints per-type counts vs `ls | wc -l`  963ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:69:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/names.test.ts (66 tests) 1157ms
+   ✓ lazy mount (decision D32) > does not open the real database when the registry and app are merely imported  483ms
+stdout | tests/unit/drop-table-model.test.ts > the live 317-file corpus sweep > every real file passes every rule (all four negatives are fixture-only)
+[p4-02 corpus] files=317 findings=0 (0 — every rule is fixture-only, as measured)
+
+ ✓ tests/unit/extract-api.test.ts (12 tests) 348ms
+ ✓ tests/unit/treasure-card-inventory-model.test.ts (27 tests) 1057ms
+   ✓ the document-preservation contract on the real file (D57/D58) > saves the unmodified real document back to its legacy path, keeping the key set (D19)  360ms
+stdout | tests/unit/drop-table-model.test.ts > the live string↔number resolution (64 of 72) > resolves 64 of 72 distinct ItemIds numerically — and 0 as raw strings
+[p4-02 corpus] distinctItemIds=72 resolve numerically=64 raw-string matches=0 misses=8
+
+ ✓ tests/unit/drop-table-model.test.ts (37 tests) 384ms
+stderr | tests/unit/api-error-envelope.test.ts > API error envelope audit (AC2 / D37) > answers a thrown dependency error with a 500 { error } envelope and no stack
+[spiraldb-ui] unhandled error: TypeError: The database connection is not open
+    at Database.prepare (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Module.readSettings (/home/jason/Documents/git-projects/spiraldb-ui/server/src/db.ts:149:19)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/settings.ts:137:14
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+
+ ✓ tests/unit/api-error-envelope.test.ts (7 tests) 1568ms
+stdout | tests/unit/quest-validation.test.ts
+[p3-09 corpus] corpus=/home/jason/Documents/git-projects/spiraldb/QuestTemplates files=328 | zones=1241 npcs=23033 spells=18173 drop_tables=317 quests=328
+
+ ✓ tests/unit/zone-transfer-model.test.ts (19 tests) 1316ms
+   ✓ AC1 + AC2 — the live corpus (1207 files) > has exactly the three measured top-level keys, Events present and empty in every file, and 2368 teleport entries  805ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1139:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:84:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1139:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:95:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/status.test.ts (83 tests) 1572ms
+   ✓ lazy mount (decision D32) > does not open the real database when the registry and app are merely imported  389ms
+   ✓ lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount  393ms
+ ✓ tests/unit/sync-execute.test.ts (12 tests) 166ms
+ ✓ tests/unit/git-service.test.ts (18 tests) 2027ms
+   ✓ committing one saved object (D13, docs/spec-data-model.md L216-232) > produces N sequential commits for N saves (D13)  319ms
+stdout | tests/unit/object-list-counts.test.ts > p4-09 ac1 — the list service counts the real corpus > answers the AC’s count for every family, in both units where they differ
+[p4-09 ac1] droptable path=/home/jason/Documents/git-projects/spiraldb listRows=317 acFiles=317 acListRows=317 summary.total=317 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] npcinventory path=/home/jason/Documents/git-projects/spiraldb listRows=215 acFiles=215 acListRows=215 summary.total=215 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] npcspellinventory path=/home/jason/Documents/git-projects/spiraldb listRows=77 acFiles=77 acListRows=77 summary.total=77 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] creaturespellbook path=/home/jason/Documents/git-projects/spiraldb listRows=134 acFiles=134 acListRows=134 summary.total=134 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] treasurecardinventory path=/home/jason/Documents/git-projects/spiraldb listRows=1 acFiles=1 acListRows=1 summary.total=1 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] zonetransfer path=/home/jason/Documents/git-projects/spiraldb listRows=1205 acFiles=1207 acListRows=1205 summary.total=1205 skipped=0 duplicate_keys=2 missing_directory=false
+
+ ✓ tests/unit/npc-drop-table-model.test.ts (23 tests) 1712ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > lists an absent directory as an empty list instead of failing  324ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > writes an update back to the created file — for this family the created name IS the convention (D19)  410ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > round-trips an unmodified reload byte-identically (no save adds a key)  405ms
+ ✓ tests/unit/search.test.ts (43 tests) 230ms
+stdout | tests/unit/object-list-counts.test.ts > p4-09 ac1 — the list service counts the real corpus > ZoneTransfer names the two collapsed key pairs rather than dropping a row silently
+[p4-09 ac1] ZoneTransfer duplicate_keys=["ZoneTransfer/WizardCity/Tutorial_Exterior","ZoneTransfer/WizardCity/Tutorial_Interior"]
+
+stdout | tests/unit/object-list-counts.test.ts > p4-09 ac1 — the list service counts the real corpus > NpcDropTable answers the absent-directory empty list, not an error (D72a)
+[p4-09 ac1] npcdroptable path=/home/jason/Documents/git-projects/spiraldb objects=0 missing_directory=true summary={"total":0,"extracted":0,"reviewed":0,"verified":0}
+
+ ✓ tests/unit/object-list-counts.test.ts (4 tests) 122ms
+ ✓ tests/unit/activity.test.ts (19 tests) 101ms
+stdout | tests/unit/quest-validation.test.ts > p3-09 — the engine over the real corpus (owner run) > prints the measured summary line (the evidence record)
+[p3-09 corpus] files=328 errors=0 warnings=119 (zone=94, unreachable=25, reference=0) | 6 zero-instance rules = 0
+
+ ✓ tests/unit/quest-validation.test.ts (27 tests) 499ms
+(node:3560428) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3560428) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:3560428) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+(node:3560428) Warning: [extract] CLI stdout exceeded the 50 MB buffer for /tmp/big.json; retrying with --output file mode
+stdout | tests/unit/quest-type-constants.test.ts > the live corpus (owner run, real SpiralDB checkout) > re-runs the plan's grep and asserts the measured $type set ⊆ the constant table
+[p3-01 ac1] grep -rho '"$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates
+[p3-01 ac1] measured: 29 distinct $type strings, 8746 occurrences over 328 quest files (the recorded baseline)
+  4175 "Imcodec.ObjectProperty.TypeCache.MadlibArgT_ByteString, Imcodec.ObjectProperty"
+  1882 "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty"
+   797 "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty"
+   429 "Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty"
+   323 "Imcodec.ObjectProperty.TypeCache.ResDropTable, Imcodec.ObjectProperty"
+   313 "Imcodec.ObjectProperty.TypeCache.RequirementList, Imcodec.ObjectProperty"
+   277 "Imcodec.ObjectProperty.TypeCache.ReqHasQuest, Imcodec.ObjectProperty"
+   198 "Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty"
+   107 "Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty"
+    52 "Imcodec.ObjectProperty.TypeCache.ReqHasEntry, Imcodec.ObjectProperty"
+    36 "Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty"
+    34 "Imcodec.ObjectProperty.TypeCache.ResAddDynaMod, Imcodec.ObjectProperty"
+    26 "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty"
+    21 "Imcodec.ObjectProperty.TypeCache.ReqSchoolOfFocus, Imcodec.ObjectProperty"
+    21 "Imcodec.ObjectProperty.TypeCache.ResLearnSpell, Imcodec.ObjectProperty"
+    10 "Imcodec.ObjectProperty.TypeCache.ResGiveSpell, Imcodec.ObjectProperty"
+     8 "Imcodec.ObjectProperty.TypeCache.ResDrawHand, Imcodec.ObjectProperty"
+     8 "Imcodec.ObjectProperty.TypeCache.ResTeleport, Imcodec.ObjectProperty"
+     7 "Imcodec.ObjectProperty.TypeCache.ReqIsSchool, Imcodec.ObjectProperty"
+     5 "Imcodec.ObjectProperty.TypeCache.ActorDialog, Imcodec.ObjectProperty"
+     5 "Imcodec.ObjectProperty.TypeCache.ResActorDialog, Imcodec.ObjectProperty"
+     3 "Imcodec.ObjectProperty.TypeCache.ResPostEvent, Imcodec.ObjectProperty"
+     2 "Imcodec.ObjectProperty.TypeCache.ResAddSpell, Imcodec.ObjectProperty"
+     2 "Imcodec.ObjectProperty.TypeCache.ResPlaySound, Imcodec.ObjectProperty"
+     1 "Imcodec.ObjectProperty.TypeCache.ResAddHealth, Imcodec.ObjectProperty"
+     1 "Imcodec.ObjectProperty.TypeCache.ResAddMana, Imcodec.ObjectProperty"
+     1 "Imcodec.ObjectProperty.TypeCache.ResDespawn, Imcodec.ObjectProperty"
+     1 "Imcodec.ObjectProperty.TypeCache.ResModifyEntry, Imcodec.ObjectProperty"
+     1 "Imcodec.ObjectProperty.TypeCache.ResWait, Imcodec.ObjectProperty"
+
+ ✓ tests/unit/quest-type-constants.test.ts (5 tests) 171ms
+ ✓ tests/unit/drop-table-save.test.ts (12 tests) 1924ms
+ ✓ tests/unit/extraction-service.test.ts (29 tests) 76ms
+ ✓ tests/unit/db.test.ts (22 tests) 442ms
+ ✓ tests/unit/import.test.ts (33 tests) 120ms
+ ✓ tests/unit/corpus.test.ts (10 tests) 93ms
+ ✓ tests/unit/quest-goal-logic.test.ts (40 tests) 136ms
+ ✓ tests/unit/templates.test.ts (23 tests) 94ms
+ ✓ tests/unit/quest-goals.test.ts (34 tests) 35ms
+ ✓ tests/unit/naming.test.ts (54 tests) 38ms
+ ✓ tests/unit/sync-api.test.ts (8 tests) 126ms
+ ✓ tests/unit/lang.test.ts (28 tests) 36ms
+ ✓ tests/unit/dashboard.test.ts (21 tests) 41ms
+ ✓ tests/unit/quest-edit.test.ts (13 tests) 62ms
+ ✓ tests/unit/unpack.test.ts (10 tests) 95ms
+ ✓ tests/unit/spiraldb-index.test.ts (18 tests) 35ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 19ms
+ ✓ tests/unit/extract-ui.test.ts (26 tests) 40ms
+ ✓ tests/unit/sync-cli.test.ts (12 tests) 60ms
+ ✓ tests/unit/object-create.test.ts (15 tests) 15ms
+ ✓ tests/unit/ui-shell.test.ts (65 tests) 70ms
+ ✓ tests/unit/a11y-contrast.test.ts (5 tests) 51ms
+ ✓ tests/unit/server.test.ts (4 tests) 95ms
+ ✓ tests/unit/ulong.test.ts (9 tests) 56ms
+ ✓ tests/unit/api-client.test.ts (22 tests) 77ms
+ ✓ tests/unit/revision.test.ts (14 tests) 24ms
+ ✓ tests/unit/quest-info.test.ts (17 tests) 32ms
+ ✓ tests/unit/quests-browse.test.ts (32 tests) 58ms
+ ✓ tests/unit/a11y-icon-labels.test.ts (2 tests) 5ms
+ ✓ tests/unit/global-registry-model.test.ts (18 tests) 54ms
+ ✓ tests/unit/sync-lookup.test.ts (8 tests) 47ms
+ ✓ tests/unit/search-ui.test.ts (16 tests) 21ms
+ ✓ tests/unit/manifest.test.ts (12 tests) 34ms
+ ✓ tests/unit/status-transition.test.ts (17 tests) 29ms
+ ✓ tests/unit/validation-summary.test.ts (6 tests) 8ms
+stdout | tests/unit/requirement-tree.test.ts > the real corpus of requirement wrappers > re-sets every existing key in place, byte-for-byte, over every corpus file
+[p3-06 corpus] 1284 files, 790 requirement wrappers (809 leaves, 171 of them untyped wrappers) re-set byte-identically across /home/jason/Documents/git-projects/spiraldb/QuestTemplates, /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates, /home/jason/Documents/git-projects/spiraldb/DropTables, /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/DropTables
+
+ ✓ tests/unit/a11y-units.test.ts (9 tests) 10ms
+ ✓ tests/unit/user-name-gate.test.ts (13 tests) 22ms
+ ✓ tests/unit/requirement-tree.test.ts (28 tests) 3847ms
+   ✓ the real corpus of requirement wrappers > re-sets every existing key in place, byte-for-byte, over every corpus file  3826ms
+ ✓ tests/unit/object-save-body.test.ts (6 tests) 10ms
+ ✓ tests/unit/object-status.test.ts (12 tests) 17ms
+ ✓ tests/unit/connection.test.ts (11 tests) 15ms
+ ✓ tests/unit/object-status-pipeline.test.ts (8 tests) 3757ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > drop_table: POST → extracted + the note, then an edit moves nothing  687ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > npc_inventory: POST → extracted + the note, then an edit moves nothing  487ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > npc_spell_inventory: POST → extracted + the note, then an edit moves nothing  487ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > creature_spellbook: POST → extracted + the note, then an edit moves nothing  397ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > npc_drop_table: POST → extracted + the note, then an edit moves nothing  411ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > treasure_card_inventory: POST → extracted + the note, then an edit moves nothing  469ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > zone_transfer: POST → extracted + the note, then an edit moves nothing  520ms
+stdout | tests/unit/quest-results.test.ts > the real corpus of result nodes > matches the measured key order for every node, and re-sets every field byte-for-byte
+[p3-07 corpus] 650 files, 4497 wrappers (0 tagged), 780 result nodes (421 in the real checkout, all 15 types present, ResActorDialog 5), ResDropTable 323, ResLearnSpell 21, 3 router sub-objects — key order and bytes identical to both corpora
+
+ ✓ tests/unit/quest-results.test.ts (32 tests) 4186ms
+   ✓ the real corpus of result nodes > matches the measured key order for every node, and re-sets every field byte-for-byte  4161ms
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 ac1 — round-trip fidelity over the corpus on disk (owner run) > round-trips every quest file in every corpus and prints the count
+[p3-02 ac1] corpus path=/home/jason/Documents/git-projects/spiraldb/QuestTemplates
+[p3-02 ac1] files discovered=328 round-tripped=328 failures=0 files with explicit nulls=328 files with absent modelled keys=0
+[p3-02 ac1] corpus path=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+[p3-02 ac1] files discovered=322 round-tripped=322 failures=0 files with explicit nulls=320 files with absent modelled keys=2
+
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 ac2 — edit-simulation: one mutation per corpus-measured type, everything else deep-equal > covers every goal, requirement, result and dialog type the corpus recording lists
+[p3-02 ac2] MadlibArgT_ByteString    set    m_dialogList.m_dialogs[0].m_madlibs[0].m_madlibBlock.m_madlibs[0].m_madlibToken changed=✓ everything-else=✓
+[p3-02 ac2] NPCDialogEntry           set    m_startResults.m_results[14].m_dialog.m_dialogEntries[0].m_dialog changed=✓ everything-else=✓
+[p3-02 ac2] ActorDialogList          insert m_dialogList.m_dialogs[1]                      changed=✓ everything-else=✓
+[p3-02 ac2] PersonaGoalTemplate      set    m_goals[1].m_personaName                       changed=✓ everything-else=✓
+[p3-02 ac2] ResDropTable             set    m_startResults.m_results[0].m_tableName        changed=✓ everything-else=✓
+[p3-02 ac2] RequirementList          set    m_requirements.m_operator                      changed=✓ everything-else=✓
+[p3-02 ac2] ReqHasQuest              set    m_requirements.m_requirements[0].m_questName   changed=✓ everything-else=✓
+[p3-02 ac2] WaypointGoalTemplate     set    m_goals[0].m_zoneTag                           changed=✓ everything-else=✓
+[p3-02 ac2] BountyGoalTemplate       set    m_goals[2].m_bountyTotal                       changed=✓ everything-else=✓
+[p3-02 ac2] ReqHasEntry              set    m_requirements.m_requirements[1].m_entryName   changed=✓ everything-else=✓
+[p3-02 ac2] ScavengeGoalTemplate     set    m_goals[3].m_itemTotal                         changed=✓ everything-else=✓
+[p3-02 ac2] ResAddDynaMod            set    m_startResults.m_results[2].m_dynaModClientTag changed=✓ everything-else=✓
+[p3-02 ac2] AchieveRankGoalTemplate  set    m_goals[4].m_rank                              changed=✓ everything-else=✓
+[p3-02 ac2] ReqSchoolOfFocus         set    m_requirements.m_requirements[2].m_magicSchool changed=✓ everything-else=✓
+[p3-02 ac2] ResLearnSpell            set    m_startResults.m_results[3].m_templateID       changed=✓ everything-else=✓
+[p3-02 ac2] ResGiveSpell             set    m_startResults.m_results[10].m_spellID         changed=✓ everything-else=✓
+[p3-02 ac2] ResDrawHand              set    m_startResults.m_results[9].m_templateID       changed=✓ everything-else=✓
+[p3-02 ac2] ResTeleport              set    m_startResults.m_results[12].m_destinationLoc  changed=✓ everything-else=✓
+[p3-02 ac2] ReqIsSchool              set    m_requirements.m_requirements[3].m_magicSchoolName changed=✓ everything-else=✓
+[p3-02 ac2] ActorDialog              set    m_startResults.m_results[14].m_dialog.m_dialogTag changed=✓ everything-else=✓
+[p3-02 ac2] ResActorDialog           set    m_startResults.m_results[14].m_dialog          changed=✓ everything-else=✓
+[p3-02 ac2] ResPostEvent             set    m_startResults.m_results[4].m_eventName        changed=✓ everything-else=✓
+[p3-02 ac2] ResAddSpell              set    m_startResults.m_results[7].m_templateID       changed=✓ everything-else=✓
+[p3-02 ac2] ResPlaySound             set    m_startResults.m_results[11].m_soundName       changed=✓ everything-else=✓
+[p3-02 ac2] ResAddHealth             insert m_startResults.m_results[15]                   changed=✓ everything-else=✓
+[p3-02 ac2] ResAddMana               insert m_startResults.m_results[15]                   changed=✓ everything-else=✓
+[p3-02 ac2] ResDespawn               set    m_startResults.m_results[8].m_spawnID          changed=✓ everything-else=✓
+[p3-02 ac2] ResModifyEntry           set    m_startResults.m_results[1].m_value            changed=✓ everything-else=✓
+[p3-02 ac2] ResWait                  set    m_startResults.m_results[13].m_secondsToWait   changed=✓ everything-else=✓
+[p3-02 ac2] sample quest: covered=29/29 recorded $type strings (goals=5, results=15, requirements=4, dialog=4)
+
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:1036:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:151:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (60 tests) 4072ms
+   ✓ POST /api/quests — save pipeline (ac3) > round-trips GET → POST unmodified with no field loss (explicit nulls preserved)  335ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > leaves an already-tracked entry alone: no new row, no reset, notes untouched  351ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank  585ms
+ ✓ tests/unit/quest-edit-isolation.test.ts (1 test) 4186ms
+   ✓ AC1 — real-quest edit isolation in the D17 clone > saves exactly the two edited fields, refreshes only the metadata stamps, and keeps the verified status  4184ms
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 ac2 — the same mutations inside real corpus files (owner run) > mutates one real node per corpus-measured type and moves nothing else
+[p3-02 ac2 real] MadlibArgT_ByteString    set    m_goals[4].m_dialogList.m_dialogs[0].m_madlibs[0].m_madlibBlock.m_madlibs[0].m_madlibToken changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] NPCDialogEntry           set    m_goals[4].m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] ActorDialogList          insert m_goals[4].m_dialogList.m_dialogs[1]           changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] PersonaGoalTemplate      set    m_goals[4].m_personaName                       changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] ResDropTable             set    m_endResults.m_results[0].m_tableName          changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] RequirementList          set    m_requirements.m_operator                      changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] ReqHasQuest              set    m_requirements.m_requirements[0].m_questName   changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] WaypointGoalTemplate     set    m_goals[0].m_zoneTag                           changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-001.json]
+[p3-02 ac2 real] BountyGoalTemplate       set    m_goals[2].m_bountyTotal                       changed=✓ everything-else=✓ [questtemplates_DS-ACAD-C01-005.json]
+[p3-02 ac2 real] ReqHasEntry              set    m_requirements.m_requirements[0].m_entryName   changed=✓ everything-else=✓ [questtemplates_WC-COMMONS-MAIN-002-BALANCE.json]
+[p3-02 ac2 real] ScavengeGoalTemplate     set    m_goals[0].m_goalName                          changed=✓ everything-else=✓ [questtemplates_DS-ACAD1-C04-001.json] (the type's signature field m_itemTotal is absent on this node → probed m_goalName)
+[p3-02 ac2 real] ResAddDynaMod            set    m_startResults.m_results[0].m_dynaModClientTag changed=✓ everything-else=✓ [questtemplates_WC-COMMONS-MAIN-001.json]
+[p3-02 ac2 real] AchieveRankGoalTemplate  set    m_goals[0].m_rank                              changed=✓ everything-else=✓ [questtemplates_Tutorial_Intro.json]
+[p3-02 ac2 real] ReqSchoolOfFocus         set    m_goals[0].m_completeResults.m_results[2].m_requirements.m_requirements[0].m_magicSchool changed=✓ everything-else=✓ [questtemplates_Tutorial_Intro.json]
+[p3-02 ac2 real] ResLearnSpell            set    m_goals[0].m_completeResults.m_results[2].m_templateID changed=✓ everything-else=✓ [questtemplates_Tutorial_Intro.json]
+[p3-02 ac2 real] ResGiveSpell             set    m_goals[0].m_completeResults.m_results[2].m_spellID changed=✓ everything-else=✓ [questtemplates_WC-TUT-C03-001.json]
+[p3-02 ac2 real] ResDrawHand              set    m_goals[0].m_completeResults.m_results[4].m_templateID changed=✓ everything-else=✓ [questtemplates_WC-TUT-C03-001.json]
+[p3-02 ac2 real] ResTeleport              set    m_goals[0].m_activateResults.m_results[0].m_destinationLoc changed=✓ everything-else=✓ [questtemplates_WC-COMMONS-MAIN-001.json]
+[p3-02 ac2 real] ReqIsSchool              set    m_requirements.m_requirements[1].m_magicSchoolName changed=✓ everything-else=✓ [questtemplates_WC-COMMONS-MAIN-002-BALANCE.json]
+[p3-02 ac2 real] ActorDialog              set    m_goals[3].m_completeResults.m_results[0].m_dialog.m_dialogTag changed=✓ everything-else=✓ [questtemplates_WC-TRITON-MAIN-005.json]
+[p3-02 ac2 real] ResActorDialog           set    m_goals[3].m_completeResults.m_results[0].m_dialog changed=✓ everything-else=✓ [questtemplates_WC-TRITON-MAIN-005.json]
+[p3-02 ac2 real] ResPostEvent             set    m_goals[4].m_completeResults.m_results[0].m_eventName changed=✓ everything-else=✓ [questtemplates_WC-TUT-C05-001.json]
+[p3-02 ac2 real] ResAddSpell              set    m_goals[0].m_completeResults.m_results[0].m_templateID changed=✓ everything-else=✓ [questtemplates_WC-TUT-C03-001.json]
+[p3-02 ac2 real] ResPlaySound             set    m_goals[4].m_completeResults.m_results[0].m_soundName changed=✓ everything-else=✓ [questtemplates_WC-TRITON-MAIN-005.json]
+[p3-02 ac2 real] ResAddHealth             insert m_goals[0].m_completeResults.m_results[9]      changed=✓ everything-else=✓ [questtemplates_Tutorial_Intro.json]
+[p3-02 ac2 real] ResAddMana               insert m_goals[0].m_completeResults.m_results[9]      changed=✓ everything-else=✓ [questtemplates_Tutorial_Intro.json]
+[p3-02 ac2 real] ResDespawn               set    m_goals[1].m_completeResults.m_results[0].m_spawnID changed=✓ everything-else=✓ [questtemplates_WC-TUT-C05-001.json]
+[p3-02 ac2 real] ResModifyEntry           set    m_startResults.m_results[3].m_value            changed=✓ everything-else=✓ [questtemplates_WC-COMMONS-MAIN-001.json]
+[p3-02 ac2 real] ResWait                  set    m_goals[4].m_completeResults.m_results[1].m_secondsToWait changed=✓ everything-else=✓ [questtemplates_WC-TUT-C05-001.json]
+[p3-02 ac2 real] corpus /home/jason/Documents/git-projects/spiraldb/QuestTemplates: scanned 317 of 328 files to locate all 29 recorded $type strings; every mutation is in memory (the harness has no write path).
+
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 — the harness detects the failures it exists to catch > reports a mutation that touches an unintended sibling, by path
+[p3-02 falsification] sibling touch detected: everything-else check found <root>.m_goals[2].m_goalName: string ("SAMPLE-BountyGoalTemplate") !== string ("P3-02-TOUCHED-SIBLING") outside the mutated path m_goals[2].m_bountyTotal
+
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 — the harness detects the failures it exists to catch > reports a dropped explicit null, by path
+[p3-02 falsification] dropped null detected: <root>: key sets differ (missing on the left: [], missing on the right: [m_questInfo, m_questPrep, m_questUnderway, m_questComplete, m_prepRequirements, m_pruneRequirements, m_clientTags, m_missionDoors, m_dynaMods, m_defaultDialogAnimation, m_questEffectInfoList, m_behaviors])
+
+stdout | tests/unit/quest-roundtrip.test.ts > p3-02 — the harness detects the failures it exists to catch > reports a reordered key set that deep equality alone does not see
+[p3-02 falsification] reordered keys detected: <root>: key order differs (left: [m_questName, m_questNameID, m_questTitle, m_questInfo, m_questPrep, m_questUnderway, m_questComplete, m_startGoals, m_goals, m_startResults, m_endResults, m_requirements, m_prepRequirements, m_pruneRequirements, m_prepAlways, m_clientTags, m_goalLogic, m_questLevel, m_questRepeat, m_onStartQuestScript, m_onEndQuestScript, m_dialogList, m_missionDoors, m_dynaMods, m_isHidden, m_outdated, m_noQuestHelper, m_mainline, m_defaultDialogAnimation, m_skipQHAutoSelect, m_questEffectInfoList, m_forceInteraction, m_checkInventoryForCrafting, m_playAsYourPetNPC, m_activityType, m_behaviors] vs right: [m_activityType, m_behaviors, m_checkInventoryForCrafting, m_clientTags, m_defaultDialogAnimation, m_dialogList, m_dynaMods, m_endResults, m_forceInteraction, m_goalLogic, m_goals, m_isHidden, m_mainline, m_missionDoors, m_noQuestHelper, m_onEndQuestScript, m_onStartQuestScript, m_outdated, m_playAsYourPetNPC, m_prepAlways, m_prepRequirements, m_pruneRequirements, m_questComplete, m_questEffectInfoList, m_questInfo, m_questLevel, m_questName, m_questNameID, m_questPrep, m_questRepeat, m_questTitle, m_questUnderway, m_requirements, m_skipQHAutoSelect, m_startGoals, m_startResults])
+
+ ✓ tests/unit/quest-roundtrip.test.ts (12 tests) 5168ms
+   ✓ p3-02 ac1 — round-trip fidelity over the corpus on disk (owner run) > round-trips every quest file in every corpus and prints the count  3975ms
+   ✓ p3-02 ac2 — the same mutations inside real corpus files (owner run) > mutates one real node per corpus-measured type and moves nothing else  1110ms
+ ✓ tests/unit/save-pipeline.test.ts (23 tests) 5368ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  624ms
+   ✓ Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)  451ms
+   ✓ verification status (ac4, D37) > does not re-append history when the same status is saved again  343ms
+   ✓ verification status (ac4, D37) > appends a transition row when the caller requests a new status  384ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  583ms
+   ✓ verification status (ac4, D37) > applies a create-only note on the first save and drops it on an update (gap B)  427ms
+   ✓ verification status (ac4, D37) > reports statusCreated false and writes nothing for an already-tracked entry  347ms
+   ✓ the unkeyed GlobalRegistry family > writes the single file and updates it in place on the next save  306ms
+stdout | tests/unit/quest-dialog.test.ts > the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field
+[p3-08 corpus] 328 real + 322 clone files, 797 real dialog lists / 1558 total (769 real tag groups / 1508 total), 1876 real entries in five corpus shapes (full 1860 / no-m_dialogEvent 65-key 7 / 60-key 1 / 45-key 6 / no-$type 58-key 2), plus the clone's 65-key null-omitted shape (35); the 5 typed ActorDialog blocks (8 entries) are covered by the results sweep; real tags Completion 442 / Prep 322 / "" 5 / Hyperlink 0 (typed ActorDialog blocks only — not list-mounted), 1286 string-list elements round-tripped, byte-identical in both corpora
+
+ ✓ tests/unit/quest-dialog.test.ts (29 tests) 5545ms
+   ✓ the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field  5525ms
+ ✓ tests/unit/objects-api.test.ts (38 tests) 7656ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  469ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  1036ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  591ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  563ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  512ms
+
+ Test Files  67 passed (67)
+      Tests  1460 passed (1460)
+   Start at  19:38:56
+   Duration  8.60s (transform 6.37s, setup 0ms, collect 23.37s, tests 63.75s, environment 17ms, prepare 7.68s)
+
+[rc=0]
+=== npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+[rc=0]
+=== npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+[rc=0]
+=== npx tsc -p server/tsconfig.json --noEmit
+[rc=0]
+=== npx tsc -p client/tsconfig.json --noEmit
+[rc=0]
+=== npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 1 server asset(s) to server/dist/server/migrations: 0001_init.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2338 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-iTN_dWAW.css                  35.79 kB │ gzip:   7.47 kB
+dist/assets/QuestGoalLogicEditor-C-aKwzQN.js   293.69 kB │ gzip:  97.73 kB
+dist/assets/index-Cvf6wpqx.js                  770.33 kB │ gzip: 227.08 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.90s
+[rc=0]
+=== npm run test:ui (no --config)
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:3570800) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] [WebServer] (node:3570830) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:3570847) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:3570829) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 253 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://localhost:3001
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 376 tests using 12 workers
+
+(node:3570881) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570877) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570883) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570882) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570907) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570950) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570879) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570878) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570902) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570889) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3570900) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓    1 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /drop-tables — 317 rows (2.6s)
+  ✓    4 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:287:3 › AC1 — the absent-directory empty state › renders the server’s missing-directory notice, not a bare table (3.0s)
+  ✓    2 [chromium] › tests/ui/a11y-keyboard.spec.ts:126:3 › AC#8 — the four flows, keyboard only › dashboard navigation: Tab reaches the feed link and Enter follows it (3.2s)
+  ✓    6 [chromium] › tests/ui/extraction.spec.ts:497:3 › upload phase › states the supported format verbatim and browses through a hidden .json input (3.2s)
+  ✓    3 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:172:3 › reduced motion — computed styles, with the counterfactual › the sidebar transition is off under reduce and on without it (3.5s)
+  ✓   12 [chromium] › tests/ui/dashboard.spec.ts:688:3 › AC1 — the four stat cards › every number equals GET /api/dashboard overall, to one decimal for the percentages (3.4s)
+  ✓    5 [chromium] › tests/ui/object-editors.spec.ts:378:3 › AC#14 — DropTable: the list → detail → edit → save chain, and the items repeater › the chain saves and shows the success toast with the StatusBadge unchanged (3.6s)
+  ✓    8 [chromium] › tests/ui/object-list.spec.ts:241:3 › the generic object list (NpcInventory) › tabs count the rows, the table sorts and paginates, search filters client-side (3.7s)
+  ✓   13 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /npc-inventories — 215 rows (1.5s)
+  ✓   10 [chromium] › tests/ui/drop-table-editor.spec.ts:120:3 › the loaded document › renders the four spec sections with the file’s own values, and no invented key (3.7s)
+  ✓    9 [chromium] › tests/ui/global-registry-editor.spec.ts:248:3 › AC1 — the merged key→float table › renders the merged view case-sensitively, integers included (4.1s)
+  ✓   14 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:307:3 › AC1 — the absent-directory empty state › with a row, the table renders and the notice is gone (1.6s)
+  ✓   16 [chromium] › tests/ui/extraction.spec.ts:547:3 › upload phase › shows the file card, an indeterminate spinner with "Extracting quests..." and Cancel (1.3s)
+  ✓   11 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › Drop Tables (/drop-tables) (4.9s)
+  ✓   22 [chromium] › tests/ui/drop-table-editor.spec.ts:163:3 › the loaded document › a 404 renders the not-found state with the back link intact (1.5s)
+  ✓   15 [chromium] › tests/ui/a11y-keyboard.spec.ts:151:3 › AC#8 — the four flows, keyboard only › mark reviewed: menu → notes dialog → PATCH (2.3s)
+  ✓   21 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /npc-spell-inventories — 77 rows (1.6s)
+  ✓   20 [chromium] › tests/ui/object-list.spec.ts:280:3 › the generic object list (NpcInventory) › renders the corpus-empty and per-filter empty states, including the missing directory (1.7s)
+  ✓   18 [chromium] › tests/ui/dashboard.spec.ts:724:3 › AC1 — the per-type progress bars › each bar’s fraction is that type’s own summary, and GlobalRegistry is absent (2.2s)
+  ✓   17 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:200:3 › reduced motion — computed styles, with the counterfactual › the whole rendered DOM obeys the invariant, except the deliberate spinner (2.6s)
+  ✓   24 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:321:3 › AC1 — the NpcDropTable editor › shows the NPC dropdown and chips over drop_tables names, leaving an unreachable name raw (1.7s)
+  ✓   25 [chromium] › tests/ui/extraction.spec.ts:584:3 › upload phase › an error surfaces the server message and returns to the upload phase (1.7s)
+  ✓   23 [chromium] › tests/ui/global-registry-editor.spec.ts:268:3 › AC1 — the merged key→float table › adds a row, creating the wrapper when it is absent (2.1s)
+  ✓   19 [chromium] › tests/ui/object-editors.spec.ts:397:3 › AC#14 — DropTable: the list → detail → edit → save chain, and the items repeater › the items repeater adds a filled row and removes the first row by index (2.8s)
+  ✓    7 [chromium] › tests/ui/p5-04-error-surfaces.spec.ts:205:3 › p5-04 — the offline banner (AC1) › appears within one failed request cycle, without a reload, and clears with fresh data (6.4s)
+  ✓   29 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /creature-spellbooks — 134 rows (1.5s)
+  ✓   27 [chromium] › tests/ui/drop-table-editor.spec.ts:174:3 › the ItemId → ItemName autofill › a STRING ItemId resolves through the synced integer gid (canonicalised, no lookup) (1.9s)
+  ✓   28 [chromium] › tests/ui/a11y-keyboard.spec.ts:181:3 › AC#8 — the four flows, keyboard only › edit a DropTable item: Edit → combobox → remove → Save (1.9s)
+  ✓   30 [chromium] › tests/ui/object-list.spec.ts:293:3 › the generic object list (NpcInventory) › a per-filter empty state names the filter that is empty (1.9s)
+  ✓   32 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:247:3 › reduced motion — computed styles, with the counterfactual › a spinner is the one animation left, and it is slowed rather than stopped (1.5s)
+  ✓   31 [chromium] › tests/ui/dashboard.spec.ts:778:3 › AC2 — the activity feed › asks for 10 rows, shows the ten most recent, with relative times, notes and action text (1.8s)
+  ✓   26 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › NPC Inventories (/npc-inventories) (2.7s)
+  ✓   34 [chromium] › tests/ui/extraction.spec.ts:607:3 › upload phase › a 500 from an unbuilt CLI is surfaced verbatim (1.5s)
+  ✓   36 [chromium] › tests/ui/object-editors.spec.ts:448:3 › AC#14 — NpcInventory: the chain, and the multi-select chips add/remove › the chain saves and shows the success toast with the StatusBadge unchanged (1.8s)
+  ✓   38 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /npc-drop-tables — 0 rows (1.2s)
+  ✓   35 [chromium] › tests/ui/global-registry-editor.spec.ts:284:3 › AC1 — the merged key→float table › edits a value verbatim, leaves an untouched integer an integer (2.0s)
+  ✓   41 [chromium] › tests/ui/object-list.spec.ts:304:3 › the generic object list (NpcInventory) › below md the rows are cards with a status badge, not a table (1.3s)
+  ✓   33 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:342:3 › AC1 — the NpcDropTable editor › adds a name through the searchable multi-select over the synced names (2.5s)
+  ✓   39 [chromium] › tests/ui/drop-table-editor.spec.ts:193:3 › the ItemId → ItemName autofill › selecting an item writes the chosen id and auto-fills the read-only ItemName (1.8s)
+  ✓   37 [chromium] › tests/ui/p5-04-error-surfaces.spec.ts:248:3 › p5-04 — the offline banner (AC1) › a validation 400 alone never raises it — a rejected request is not an outage (2.7s)
+  ✓   47 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /treasure-card-inventories — 1 rows (1.1s)
+  ✓   45 [chromium] › tests/ui/extraction.spec.ts:625:3 › upload phase › Cancel aborts the fetch, returns to upload, and a late response cannot resurrect it (1.5s)
+  ✓   43 [chromium] › tests/ui/dashboard.spec.ts:833:3 › AC2 — the activity feed › every resolved row links to its own detail route — including the slash-bearing key (1.8s)
+  ✓   49 [chromium] › tests/ui/object-list.spec.ts:318:3 › the generic object detail (NpcInventory) › renders the header, the status badge and the read-only form (1.2s)
+  ✓   46 [chromium] › tests/ui/object-editors.spec.ts:468:3 › AC#14 — NpcInventory: the chain, and the multi-select chips add/remove › the multi-select chips add (pick and raw) and remove by index (1.9s)
+  ✓   48 [chromium] › tests/ui/global-registry-editor.spec.ts:298:3 › AC1 — the merged key→float table › removes the row the user clicked, not every row with that value (1.8s)
+  ✓   50 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:373:3 › AC1 — the NpcDropTable editor › removes exactly the clicked chip and saves the list whole with two keys (1.4s)
+  ✓   42 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:275:3 › reduced motion — the panel animation, sampled per frame › the palette panel is already settled while the un-reduced panel is animating (2.7s)
+  ✓   44 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › NPC Spell Inventories (/npc-spell-inventories) (2.4s)
+  ✓   53 [chromium] › tests/ui/object-create-and-counts.spec.ts:288:5 › p4-09 ac1 — every list page shows its verified corpus count › /zone-transfers — 1205 rows (1.2s)
+  ✓   51 [chromium] › tests/ui/drop-table-editor.spec.ts:228:3 › the ItemId → ItemName autofill › an id whose synced name is NULL leaves the stored ItemName untouched (miss-safe) (1.7s)
+  ✓   54 [chromium] › tests/ui/extraction.spec.ts:699:3 › results phase › renders the split layout: a 320px list and a read-only tabbed preview (2.0s)
+  ✓   55 [chromium] › tests/ui/dashboard.spec.ts:869:3 › AC2 — the activity feed › the feed updates after a new status change, without a full reload (2.0s)
+  ✓   56 [chromium] › tests/ui/object-list.spec.ts:341:3 › the generic object detail (NpcInventory) › Edit → form → Save posts the live document, and the JSON panel follows it (1.5s)
+  ✓   57 [chromium] › tests/ui/object-editors.spec.ts:504:3 › AC#14 — NpcInventory: the chain, and the multi-select chips add/remove › removal is index-addressed: the surviving duplicate of a repeated id stays (1.4s)
+  ✓   52 [chromium] › tests/ui/p5-04-error-surfaces.spec.ts:269:3 › p5-04 — the API-error toast with a retry action (AC3) › offers Retry, and Retry re-runs the failed request rather than replaying an answer (2.6s)
+  ✓   58 [chromium] › tests/ui/global-registry-editor.spec.ts:312:3 › AC1 — the merged key→float table › renames a row on blur, preserving its value, and appends it at the end (1.6s)
+  ✓   63 [chromium] › tests/ui/drop-table-editor.spec.ts:251:3 › the ItemId → ItemName autofill › the measured miss 1000 keeps its raw id, its stored name and needs no lookup (1.2s)
+  ✓   59 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:393:3 › AC1 — the NpcDropTable editor › puts back a name the table does not hold through the raw-name box, and refuses a blank (1.9s)
+  ✓   62 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New drop table posts the client's own body and lands on the new entry (1.8s)
+  ✓   60 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:319:3 › reduced motion — React Flow, sampled per frame › fitView jumps under reduce and animates without it (2.4s)
+  ✓   64 [chromium] › tests/ui/extraction.spec.ts:759:3 › results phase › an empty extraction shows the empty state and Discard returns to upload (1.3s)
+  ✓   61 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › Creature Spellbooks (/creature-spellbooks) (2.6s)
+  ✓   66 [chromium] › tests/ui/object-list.spec.ts:378:3 › the generic object detail (NpcInventory) › a 404 renders the not-found state with the back link intact (1.4s)
+  ✓   65 [chromium] › tests/ui/dashboard.spec.ts:918:3 › AC2 — the activity feed › shows the empty state when status_history is empty — and only then (1.6s)
+  ✓   69 [chromium] › tests/ui/global-registry-editor.spec.ts:333:3 › AC1 — the merged key→float table › refuses a blank or duplicate new key, saying why (1.6s)
+  ✓   68 [chromium] › tests/ui/p5-04-error-surfaces.spec.ts:299:3 › p5-04 — the validation summary atop a multi-error form (AC3) › a 400 field map is summarised at the top of the form, naming every field (2.0s)
+  ✓   67 [chromium] › tests/ui/quest-editor.spec.ts:256:3 › AC#13 chain 1 — a goal field edit reaches the JSON panel › editing m_proximityTag on the start goal card shows up in the panel document (2.2s)
+  ✓   70 [chromium] › tests/ui/drop-table-editor.spec.ts:271:3 › the four blocking rules: inline error + disabled Save › an empty Name (1.9s)
+  ✓   72 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New NPC inventory posts the client's own body and lands on the new entry (1.9s)
+  ✓   73 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:360:3 › reduced motion — React Flow, sampled per frame › React Flow's `dashdraw` is off by rule, proven against React Flow's own markup (2.1s)
+  ✓   71 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:420:3 › AC1 — the NpcDropTable editor › renders an empty array as its empty state and saves [] after the last chip goes (2.7s)
+  ✓   76 [chromium] › tests/ui/quests-browse.spec.ts:93:3 › columns › renders the seven spec columns at their exact widths (2.0s)
+  ✓   79 [chromium] › tests/ui/quests-detail.spec.ts:58:3 › header › shows the back link, the mono name, the status badge and the disabled Edit (1.6s)
+  ✓   75 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › NPC Drop Tables (/npc-drop-tables) (2.7s)
+  ✓   81 [chromium] › tests/ui/drop-table-editor.spec.ts:281:3 › the four blocking rules: inline error + disabled Save › a duplicate Name (checked against the corpus the list route serves) (1.7s)
+  ✓   78 [chromium] › tests/ui/global-registry-editor.spec.ts:350:3 › AC1 — the merged key→float table › an emptied value box is no edit at all, and a non-number is kept as stored (2.3s)
+  ✓   82 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New NPC spell inventory posts the client's own body and lands on the new entry (1.8s)
+  ✓   77 [chromium] › tests/ui/dashboard.spec.ts:938:3 › AC2 — the activity feed › a failed activity read is an error, never the empty state (3.0s)
+  ✓   80 [chromium] › tests/ui/quest-editor.spec.ts:296:3 › AC#13 chain 2 — deleting a referenced start goal blocks the save › shows the inline error and banner, disables Save, and the panel shows the dangling name (2.4s)
+  ✓   85 [chromium] › tests/ui/quests-browse.spec.ts:116:3 › columns › every column but Actions sorts, and the header reports the direction (1.4s)
+  ✓   86 [chromium] › tests/ui/quests-detail.spec.ts:91:3 › header › carries the two lifecycle actions next to the badge (story p2-09) (1.1s)
+  ✓   83 [chromium] › tests/ui/npc-drop-table-editor.spec.ts:445:3 › AC1 — the NpcDropTable editor › removes the clicked chip when a name repeats — index-addressed, never value-based (1.6s)
+  ✓   84 [chromium] › tests/ui/quests-dialog-editor.spec.ts:418:3 › AC1 — a corpus quest with m_dialogList › renders every entry of both tags at the quest and the goal level (1.7s)
+  ✓   89 [chromium] › tests/ui/global-registry-editor.spec.ts:375:3 › AC2 — the consolidation, disclosed before it happens › names every file the save replaces, before the save (970ms)
+  ✓   88 [chromium] › tests/ui/drop-table-editor.spec.ts:291:3 › the four blocking rules: inline error + disabled Save › the entry’s own name is not a duplicate of itself (an unmodified save passes) (1.3s)
+  ✓   91 [chromium] › tests/ui/quests-edit-mode.spec.ts:138:3 › view/edit mode › edit mode is the load state and Edit swaps in the read-only bodies (1.3s)
+  ✓   90 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New creature spellbook posts the client's own body and lands on the new entry (1.6s)
+  ✓   87 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › Treasure Card Inventories (/treasure-card-inventories) (2.2s)
+  ✓   97 [chromium] › tests/ui/global-registry-editor.spec.ts:393:3 › AC2 — the consolidation, disclosed before it happens › the one real file today is disclosed as the file being replaced (879ms)
+  ✓   92 [chromium] › tests/ui/quest-editor.spec.ts:354:3 › AC#13 chain 3 — adding a requirement leaf serializes into the panel › one Add Condition click writes the wrapper + ReqHasQuest leaf the panel reports (1.7s)
+  ✓   98 [chromium] › tests/ui/drop-table-editor.spec.ts:302:3 › the four blocking rules: inline error + disabled Save › RollChance 1.5 (1.1s)
+  ✓   93 [chromium] › tests/ui/quests-browse.spec.ts:137:3 › filter tabs › the four tabs carry the summary count badges and the active styling (1.6s)
+  ✓   95 [chromium] › tests/ui/quests-goal-logic.spec.ts:210:3 › the flowchart canvas › draws one node per goal plus the Complete node (1.7s)
+  ✓   94 [chromium] › tests/ui/quests-detail.spec.ts:108:3 › tabs › renders the six tabs through QuestPreview, all six live editors (1.9s)
+  ✓   96 [chromium] › tests/ui/quests-dialog-editor.spec.ts:438:3 › AC1 — a corpus quest with m_dialogList › gives every card the 5 accordions with Basic open and the other four collapsed (1.9s)
+  ✓   99 [chromium] › tests/ui/quests-edit-mode.spec.ts:172:3 › the JSON side panel (AC2) › reflects a form edit with no manual refresh (1.2s)
+  ✓  102 [chromium] › tests/ui/global-registry-editor.spec.ts:402:3 › AC2 — the consolidation, disclosed before it happens › a directory already holding only the target says so instead (1.0s)
+  ✓  100 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New NPC drop table posts the client's own body and lands on the new entry (1.2s)
+  ✓  104 [chromium] › tests/ui/drop-table-editor.spec.ts:311:3 › the four blocking rules: inline error + disabled Save › NoneChance -0.1 (1.2s)
+  ✓  106 [chromium] › tests/ui/quests-goal-logic.spec.ts:225:3 › the flowchart canvas › draws solid AND edges, dashed OR edges and the completing edge into Complete (1.3s)
+  ✓  101 [chromium] › tests/ui/object-mobile.spec.ts:551:5 › AC#13: every keyed family’s list page is a card list at 375 and 767, a table at 768 › Zone Transfers (/zone-transfers) (1.9s)
+  ✓  105 [chromium] › tests/ui/quests-browse.spec.ts:171:3 › search › filters the rows client-side without another request (1.5s)
+  ✓  110 [chromium] › tests/ui/global-registry-editor.spec.ts:411:3 › AC2 — the consolidation, disclosed before it happens › a file the list could not read is named as left in place (968ms)
+  ✓  103 [chromium] › tests/ui/quest-editor.spec.ts:407:3 › AC#13 chain 4 — a GoalLogicEntry from the toolbar reaches the panel › the toolbar appends the corpus five-key entry and the panel carries it (2.1s)
+  ✓  108 [chromium] › tests/ui/quests-dialog-editor.spec.ts:463:3 › AC1 — a corpus quest with m_dialogList › reaches all seven domain field groups through the five accordions (1.7s)
+  ✓  107 [chromium] › tests/ui/quests-detail.spec.ts:200:3 › json side panel › the { } toggle opens exactly 400px of syntax-highlighted JSON (1.7s)
+  ✓  111 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New treasure card inventory posts the client's own body and lands on the new entry (1.4s)
+  ✓  109 [chromium] › tests/ui/quests-edit-mode.spec.ts:188:3 › the JSON side panel (AC2) › carries both [Copy] and [Wrap], and Wrap really changes the rendering (1.5s)
+  ✓  112 [chromium] › tests/ui/drop-table-editor.spec.ts:319:3 › the four blocking rules: inline error + disabled Save › MinGold 100 + MaxGold 10 (1.1s)
+  ✓   74 [chromium] › tests/ui/extraction.spec.ts:777:3 › results phase › Save All asks for confirmation with the exact copy, and only then POSTs — one toast per quest (7.9s)
+  ✓  116 [chromium] › tests/ui/global-registry-editor.spec.ts:423:3 › AC2 — the consolidation, disclosed before it happens › saves the whole merged document as one POST and reports the commit (1.1s)
+  ✓  113 [chromium] › tests/ui/quests-goal-logic.spec.ts:249:3 › the flowchart canvas › lays the graph out left to right, in ranks, without overlaps (1.5s)
+  ✓  115 [chromium] › tests/ui/quests-browse.spec.ts:204:3 › sorting › the Quest Name header toggles ascending → descending → default (1.7s)
+  ✓  117 [chromium] › tests/ui/quests-goals-editor.spec.ts:296:3 › the goal cards › render the name, the type badge and the spec summary lines (1.3s)
+  ✓  114 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › Drop Tables (/drop-tables/DS-ACAD1-C01-001) (1.8s)
+  ✓  118 [chromium] › tests/ui/quests-dialog-editor.spec.ts:500:3 › AC1 — a corpus quest with m_dialogList › the entry actions are Duplicate, Delete, Add Dialog Entry and Add Dialog Tag (1.4s)
+  ✓  120 [chromium] › tests/ui/object-create-and-counts.spec.ts:333:5 › p4-09 ac3 — create an entry from the family list page › New zone transfer posts the client's own body and lands on the new entry (1.5s)
+  ✓  121 [chromium] › tests/ui/quests-edit-mode.spec.ts:216:3 › the JSON side panel (AC2) › the mobile full-screen overlay carries the same toolbar and a working Wrap (1.5s)
+  ✓  122 [chromium] › tests/ui/drop-table-editor.spec.ts:331:3 › the four blocking rules: inline error + disabled Save › a valid edit leaves no message and enables Save again (1.5s)
+  ✓  119 [chromium] › tests/ui/quests-detail.spec.ts:239:3 › json panel on mobile › below 768px the panel is a full-screen overlay, not a side panel (1.7s)
+  ✓  124 [chromium] › tests/ui/global-registry-editor.spec.ts:449:3 › AC2 — the consolidation, disclosed before it happens › Save is disabled until the document is dirty (a no-op save is impossible) (1.1s)
+  ✓  126 [chromium] › tests/ui/quests-browse.spec.ts:225:3 › sorting › the Level header sorts numerically, and the level shows as a badge (1.5s)
+  ✓  125 [chromium] › tests/ui/quests-goal-logic.spec.ts:291:3 › the flowchart canvas › Auto-layout puts a dragged node back on its rank (1.9s)
+  ✓  133 [chromium] › tests/ui/quests-detail.spec.ts:272:3 › loading, failure and not found › the detail skeleton is announced while the quest is loading (1.1s)
+  ✓  131 [chromium] › tests/ui/quests-edit-mode.spec.ts:239:3 › the unsaved-changes guard (AC3) › stays off on a clean document: the back link navigates straight away (1.3s)
+  ✓  127 [chromium] › tests/ui/quests-goals-editor.spec.ts:346:3 › the goal cards › Edit expands the card inline into its type fields and the shared base section (1.6s)
+  ✓  134 [chromium] › tests/ui/global-registry-editor.spec.ts:466:3 › AC3 — the type is editor-only (Q1) › renders no status badge and asks no status route (1.1s)
+  ✓  130 [chromium] › tests/ui/object-create-and-counts.spec.ts:370:3 › p4-09 ac3 — create an entry from the family list page › a key the server rejects stays in the dialog with the server’s own message (1.5s)
+  ✓  128 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › NPC Inventories (/npc-inventories/1025) (2.1s)
+  ✓  129 [chromium] › tests/ui/quests-dialog-editor.spec.ts:528:3 › the entry actions › Duplicate copies the entry verbatim, after the original (2.0s)
+  ✓  139 [chromium] › tests/ui/quests-goals-editor.spec.ts:380:3 › the goal cards › the drag handle is a labelled button, not the card (1.3s)
+  ✓  137 [chromium] › tests/ui/quests-detail.spec.ts:296:3 › loading, failure and not found › a 404 renders the not-found state with the server message (1.4s)
+  ✓  140 [chromium] › tests/ui/quests-info-editor.spec.ts:81:3 › the two-column form › renders every field of spec L296-298 with its kind (1.3s)
+  ✓  141 [chromium] › tests/ui/object-create-and-counts.spec.ts:412:3 › p4-09 ac3 — create an entry from the family list page › an unusable key disables Create and says why, before any request (1.2s)
+  ✓  138 [chromium] › tests/ui/quests-edit-mode.spec.ts:249:3 › the unsaved-changes guard (AC3) › blocks an in-app navigation while dirty, and Stay keeps the edit (1.6s)
+  ✓  136 [chromium] › tests/ui/quests-goal-logic.spec.ts:313:3 › the toolbar › adds a corpus-shaped GoalLogicEntry to the live m_goalLogic (1.7s)
+  ✓  146 [chromium] › tests/ui/quests-info-editor.spec.ts:140:3 › the two-column form › the two columns are laid out side by side above md (1.0s)
+  ✓  145 [chromium] › tests/ui/quests-detail.spec.ts:318:3 › loading, failure and not found › a failed detail read shows the server message and retries (1.1s)
+  ✓  132 [chromium] › tests/ui/drop-table-editor.spec.ts:345:3 › AC2: an item row’s requirement tree › adds ReqHasQuest{NOT} through the inline editor, posts the polymorphic shape, and re-renders it after a reload (3.7s)
+  ✓  135 [chromium] › tests/ui/quests-browse.spec.ts:241:3 › pagination › shows the spec string and disables the buttons at both boundaries (2.7s)
+  ✓  142 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › NPC Spell Inventories (/npc-spell-inventories/1057) (2.0s)
+  ✓  147 [chromium] › tests/ui/quests-requirements-editor.spec.ts:380:3 › the leaf type selector › offers exactly the 4 allowed classes, and neither ReqHasGoal nor ReqEntryValue (1.3s)
+  ✓  143 [chromium] › tests/ui/quests-dialog-editor.spec.ts:561:3 › the entry actions › Delete removes exactly one entry, and Add Dialog Entry writes the corpus’s 66 keys (2.2s)
+  ✓  148 [chromium] › tests/ui/quests-edit-mode.spec.ts:269:3 › the unsaved-changes guard (AC3) › Discard changes leaves for the destination (1.7s)
+  ✓  153 [chromium] › tests/ui/quests-browse.spec.ts:268:3 › pagination › an empty corpus reads Showing 0-0 of 0 with both buttons disabled (1.1s)
+  ✓  144 [chromium] › tests/ui/quests-goals-editor.spec.ts:392:3 › adding goals › each of the 5 types lands with the right $type and its own fields (2.4s)
+  ✓  152 [chromium] › tests/ui/quests-results-editor.spec.ts:453:3 › the result type selector › offers exactly the 14 creatable classes, and never the corpus-only ResActorDialog (1.2s)
+  ✓  150 [chromium] › tests/ui/quests-info-editor.spec.ts:157:3 › the Advanced section › is collapsed by default and holds the twelve remaining scalars, editable (1.4s)
+  ✓  149 [chromium] › tests/ui/quests-goal-logic.spec.ts:350:3 › the toolbar › edits an entry field through the inspector (2.2s)
+  ✓  123 [chromium] › tests/ui/extraction.spec.ts:810:3 › results phase › Save Selected saves only the selected quest (6.3s)
+  ✓  154 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › Creature Spellbooks (/creature-spellbooks/deck-a) (1.8s)
+  ✓  157 [chromium] › tests/ui/quests-edit-mode.spec.ts:280:3 › the unsaved-changes guard (AC3) › the header Discard restores the loaded document exactly (1.3s)
+  ✓  155 [chromium] › tests/ui/quests-requirements-editor.spec.ts:402:3 › the leaf type selector › replaces the node when the class changes, and writes the new class’s shape (1.9s)
+  ✓  156 [chromium] › tests/ui/quests-dialog-editor.spec.ts:591:3 › the entry actions › Add Dialog Tag appends a 6-key group with one entry and the chosen tag (2.0s)
+  ✓  151 [chromium] › tests/ui/drop-table-editor.spec.ts:404:3 › AC2 continued: an existing untyped wrapper is not normalised › adding a condition to a real `Requirements` wrapper adds no $type (D57) (2.5s)
+  ✓  163 [chromium] › tests/ui/extraction.spec.ts:828:3 › results phase › a failed save surfaces the server message (the D14 dirty tree, 409) (1.5s)
+  ✓  158 [chromium] › tests/ui/quests-browse.spec.ts:281:3 › empty states › every filter has its own empty state (1.9s)
+  ✓  161 [chromium] › tests/ui/quests-info-editor.spec.ts:196:3 › the Advanced section › does not inject a key merely by opening the section (2.1s)
+  ✓  162 [chromium] › tests/ui/quests-goal-logic.spec.ts:376:3 › the node context menu › offers Edit Goal, Delete and Set as Start Goal, and Edit Goal opens the Goals tab (2.1s)
+  ✓  165 [chromium] › tests/ui/quests-edit-mode.spec.ts:303:3 › the unsaved-changes guard (AC3) › beforeunload is prevented only while the document is dirty (1.6s)
+  ✓  159 [chromium] › tests/ui/quests-goals-editor.spec.ts:467:3 › reordering › the keyboard sensor moves a goal and changes m_goals order (2.8s)
+  ✓  168 [chromium] › tests/ui/drop-table-editor.spec.ts:451:3 › a save writes only what the user touched › editing one item Notes leaves every other key, and every audit value, byte-identical (1.9s)
+  ✓  166 [chromium] › tests/ui/quests-requirements-editor.spec.ts:428:3 › the corpus’s own shapes › never gives an untyped wrapper a $type, and keeps its key order (2.4s)
+  ✓  164 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › NPC Drop Tables (/npc-drop-tables/12345) (2.7s)
+  ✓  171 [chromium] › tests/ui/quests-info-editor.spec.ts:213:3 › the string-table title lookup › a hit renders the resolved string beside the raw key (1.5s)
+  ✓  167 [chromium] › tests/ui/quests-dialog-editor.spec.ts:617:3 › AC2 — an edit preserves the entry’s shape › keeps the $type, the 66-key order and every sibling when one field is edited (2.8s)
+  ✓  170 [chromium] › tests/ui/quests-browse.spec.ts:307:3 › navigation › clicking a row opens that quest, and so does its name link (2.1s)
+  ✓  173 [chromium] › tests/ui/quests-edit-mode.spec.ts:330:3 › the save pipeline (AC4) › posts the live document, toasts exactly once and leaves the status alone (1.9s)
+  ✓  160 [chromium] › tests/ui/quests-results-editor.spec.ts:476:3 › AC1 — every one of the 14 offered types › is addable with its exact field set, its key order and its character-for-character $type (4.5s)
+  ✓  172 [chromium] › tests/ui/quests-goal-logic.spec.ts:397:3 › the node context menu › Set as Start Goal toggles m_startGoals, and the item follows the membership (2.7s)
+  ✓  178 [chromium] › tests/ui/quests-info-editor.spec.ts:228:3 › the string-table title lookup › a miss renders the raw key verbatim, with no warning (1.3s)
+  ✓  174 [chromium] › tests/ui/quests-goals-editor.spec.ts:511:3 › reordering › a pointer drag with the mouse moves a goal too (2.2s)
+  ✓  175 [chromium] › tests/ui/quests-status.spec.ts:95:3 › the browse table status menu › offers both actions and disables the row`s own status (2.0s)
+  ✓  176 [chromium] › tests/ui/quests-requirements-editor.spec.ts:456:3 › the corpus’s own shapes › leaves m_prepRequirements null until the user acts (2.0s)
+  ✓  177 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › Treasure Card Inventories (/treasure-card-inventories/2019) (2.1s)
+  ✓  181 [chromium] › tests/ui/quests-edit-mode.spec.ts:366:3 › the save pipeline (AC4) › a blocked document never posts (the gate is the validator, not the button) (1.0s)
+  ✓  180 [chromium] › tests/ui/quests-browse.spec.ts:326:3 › navigation › the disabled Edit action never navigates, and the status menu is the real one (1.6s)
+  ✓  179 [chromium] › tests/ui/quests-dialog-editor.spec.ts:641:3 › AC2 — an edit preserves the entry’s shape › keeps a legacy key intact and discloses it read-only (1.9s)
+  ✓  184 [chromium] › tests/ui/quests-info-editor.spec.ts:249:3 › the string-table title lookup › the empty key is never looked up (1.2s)
+  ✓  182 [chromium] › tests/ui/quests-results-editor.spec.ts:518:3 › AC1 — every one of the 14 offered types › keeps the wrapper untagged and its single key, and never reorders it (1.7s)
+  ✓  186 [chromium] › tests/ui/quests-status.spec.ts:125:3 › the browse table status menu › no longer renders the p2-08 placeholder (1.4s)
+  ✓  190 [chromium] › tests/ui/quests-browse.spec.ts:372:3 › mobile › below 768px the table is a card list with the four spec fields (1.2s)
+  ✓  185 [chromium] › tests/ui/quests-goals-editor.spec.ts:559:3 › start membership › the Start toggle adds and removes the name in m_startGoals (1.9s)
+  ✓  189 [chromium] › tests/ui/quests-edit-mode.spec.ts:382:3 › the save pipeline (AC4) › a failed save reports the server message and keeps the guard armed (1.5s)
+  ✓  183 [chromium] › tests/ui/quests-goal-logic.spec.ts:420:3 › the node context menu › Delete on a spine goal strands its dependants and raises the warning banner (2.1s)
+  ✓  187 [chromium] › tests/ui/quests-requirements-editor.spec.ts:478:3 › the corpus’s own shapes › mounts a tree per goal for m_goalRequirements and writes only into that goal (1.9s)
+  ✓  188 [chromium] › tests/ui/object-mobile.spec.ts:612:5 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › Zone Transfers (/zone-transfers/WizardCity%2FWC_Hub) (2.1s)
+  ✓  192 [chromium] › tests/ui/quests-info-editor.spec.ts:264:3 › edits and the JSON panel › a number edit shows up in the panel with no refresh, and nothing else moves (1.7s)
+  ✓  191 [chromium] › tests/ui/quests-dialog-editor.spec.ts:665:3 › AC2 — an edit preserves the entry’s shape › leaves a 45-key sparse entry sparse when a field it does have is edited (2.1s)
+  ✓  195 [chromium] › tests/ui/quests-browse.spec.ts:401:3 › loading and failure › the list skeleton is announced while the request is in flight (1.4s)
+  ✓  193 [chromium] › tests/ui/quests-results-editor.spec.ts:532:3 › AC1 — every one of the 14 offered types › gives the two fieldless classes $type and nothing else (2.0s)
+  ✓  169 [chromium] › tests/ui/extraction.spec.ts:847:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast (6.8s)
+  ✓  197 [chromium] › tests/ui/quests-validation.spec.ts:179:3 › a quest with no validation findings › renders no banner, no inline message and an enabled Save (1.4s)
+  ✓  200 [chromium] › tests/ui/object-mobile.spec.ts:643:3 › AC#13: every keyed family’s detail form is usable and its JSON panel is a full overlay at 375 › at 768 the panel is the spec’s 300px tablet side pane, not an overlay (the boundary, pinned) (1.6s)
+  ✓  196 [chromium] › tests/ui/quests-goals-editor.spec.ts:583:3 › preservation (D5/D57) › an unmodelled key survives byte-identical and shows in the raw disclosure (2.5s)
+  ✓  199 [chromium] › tests/ui/quests-requirements-editor.spec.ts:505:3 › a control reaches the document › the NOT checkbox and the operator toggle both write (2.3s)
+  ✓  198 [chromium] › tests/ui/quests-goal-logic.spec.ts:455:1 › selecting a dashed edge and pressing Delete rewrites the entry’s OR list (2.7s)
+  ✓  194 [chromium] › tests/ui/quests-status.spec.ts:142:3 › the transition flow › menu → dialog → PATCH with the typed notes, a success toast and the optimistic dot (3.4s)
+  ✓  201 [chromium] › tests/ui/quests-info-editor.spec.ts:284:3 › edits and the JSON panel › a checkbox edit writes a boolean and leaves the other keys alone (2.4s)
+  ✓  206 [chromium] › tests/ui/quests-validation.spec.ts:194:3 › AC1 — a dangling m_startGoals reference blocks the save › deleting a referenced start goal shows an inline error, the banner and a disabled Save (2.0s)
+  ✓  204 [chromium] › tests/ui/quests-results-editor.spec.ts:547:3 › an existing corpus node › keeps its own key order, its empty reference and its unknown keys when a field is edited (2.3s)
+  ✓  202 [chromium] › tests/ui/quests-dialog-editor.spec.ts:682:3 › AC2 — an edit preserves the entry’s shape › never writes a missing key into the empty-tag group’s own shape (2.9s)
+  ✓  208 [chromium] › tests/ui/quests-goals-editor.spec.ts:613:3 › preservation (D5/D57) › a sparse goal stays sparse through an edit (1.6s)
+  ✓  207 [chromium] › tests/ui/object-mobile.spec.ts:667:3 › AC#13: GlobalRegistry — no list page (D75a), its editor is usable and its panel an overlay › the merged dictionary editor at 375: unclipped controls, a real drive, a full overlay (1.9s)
+  ✓  203 [chromium] › tests/ui/quests-browse.spec.ts:422:3 › loading and failure › a failed list shows the server message and recovers on Try again (3.3s)
+  ✓  209 [chromium] › tests/ui/quests-requirements-editor.spec.ts:532:3 › a control reaches the document › the quest dropdown stores the raw quest name (2.0s)
+  ✓  212 [chromium] › tests/ui/quests-info-editor.spec.ts:297:3 › edits and the JSON panel › a tag edit writes an array, and clearing it deletes the key (1.5s)
+  ✓  211 [chromium] › tests/ui/quests-status.spec.ts:188:3 › the transition flow › a blank notes field omits the key from the PATCH body entirely (1.9s)
+  ✓  213 [chromium] › tests/ui/quests-validation.spec.ts:238:3 › AC1 — a dangling m_startGoals reference blocks the save › the same fault typed into a goal name surfaces inline on that field (1.6s)
+  ✓  215 [chromium] › tests/ui/quests-dialog-editor.spec.ts:703:3 › the empty and absent states › renders the empty m_dialogs array as an empty state, never padded (1.7s)
+  ✓  216 [chromium] › tests/ui/quests-goals-editor.spec.ts:631:3 › preservation (D5/D57) › an unlisted zone path keeps displaying itself and survives an unrelated edit (1.6s)
+  ✓  220 [chromium] › tests/ui/quests-info-editor.spec.ts:312:3 › edits and the JSON panel › clearing a string field deletes it, and clearing an absent one is a no-op (1.5s)
+  ✓  217 [chromium] › tests/ui/search-palette.spec.ts:340:3 › p5-02 the global search palette › the header trigger opens it from the dashboard and from another route (2.1s)
+  ✓  214 [chromium] › tests/ui/quests-results-editor.spec.ts:594:3 › an existing corpus node › reloads a saved document and re-serializes it to the same bytes (2.9s)
+  ✓  222 [chromium] › tests/ui/quests-validation.spec.ts:270:3 › AC1 — an unknown reference warns and never blocks › an unlisted zone path and an unknown result id warn, and Save stays enabled (1.4s)
+  ✓  219 [chromium] › tests/ui/quests-requirements-editor.spec.ts:548:3 › a control reaches the document › delete removes exactly one node (2.0s)
+  ✓  224 [chromium] › tests/ui/quests-goals-editor.spec.ts:655:3 › string-table lookups on m_goalTitle › a hit resolves, a miss shows the raw key, and the empty key is never requested (1.4s)
+  ✓  226 [chromium] › tests/ui/search-palette.spec.ts:364:3 › p5-02 the global search palette › Ctrl+K opens it, and typing returns both example results grouped by type with their dots (978ms)
+  ✓  228 [chromium] › tests/ui/simple-object-editors.spec.ts:360:3 › AC1 — NpcInventory › renders the NPC dropdown and chips over item names, leaving a miss raw (1.1s)
+  ✓  221 [chromium] › tests/ui/quests-status.spec.ts:208:3 › the optimistic badge (D51(e)) › the detail StatusBadge flips while the PATCH is still in flight, then the toast lands (2.8s)
+  ✓  225 [chromium] › tests/ui/quests-info-editor.spec.ts:335:3 › edits and the JSON panel › the activity select offers the enum values and keeps an unlisted one (1.7s)
+  ✓  227 [chromium] › tests/ui/quests-results-editor.spec.ts:623:3 › the m_router sub-object › renders the measured shape for a new node, keeps the order and gains no $type (1.8s)
+  ✓  223 [chromium] › tests/ui/quests-dialog-editor.spec.ts:716:3 › the empty and absent states › renders an absent and a null list with its own sentence, and still offers Add (2.7s)
+  ✓  205 [chromium] › tests/ui/extraction.spec.ts:883:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (7.1s)
+  ✓  231 [chromium] › tests/ui/search-palette.spec.ts:408:3 › p5-02 the global search palette › sends limit=20 with every query (1.3s)
+  ✓  218 [chromium] › tests/ui/shell.spec.ts:537:3 › sidebar navigation › every route is reachable, renders a real page, and highlights its item (4.1s)
+  ✓  233 [chromium] › tests/ui/quests-status.spec.ts:237:3 › the optimistic badge (D51(e)) › the header disables the entry`s own status action (1.0s)
+  ✓  230 [chromium] › tests/ui/quests-goals-editor.spec.ts:691:3 › the ID-referencing controls › selecting a zone writes its zone_path (1.9s)
+  ✓  229 [chromium] › tests/ui/quests-requirements-editor.spec.ts:567:3 › AC1 — the fixture-only AND(ReqHasQuest{NOT}, OR(...)) tree › builds the hand-written expectation through the UI (2.8s)
+  ✓  234 [chromium] › tests/ui/quests-info-editor.spec.ts:366:3 › the detail page’s tabs are all live editors › mounts every editor, and the one tab whose controls are conditional renders none until used (1.6s)
+  ✓  232 [chromium] › tests/ui/simple-object-editors.spec.ts:378:3 › AC1 — NpcInventory › adds an item through the searchable multi-select (2.1s)
+  ✓  237 [chromium] › tests/ui/extraction.spec.ts:927:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (1.5s)
+  ✓  235 [chromium] › tests/ui/quests-results-editor.spec.ts:663:3 › the m_router sub-object › writes the whole measured router on the first edit when m_router is absent (1.8s)
+  ✓  239 [chromium] › tests/ui/shell.spec.ts:726:3 › sidebar navigation › collapsing a group hides its items and flips aria-expanded (1.6s)
+  ✓  236 [chromium] › tests/ui/quests-dialog-editor.spec.ts:733:3 › the empty and absent states › a goal whose m_dialogList is null is still mounted and can be filled (2.1s)
+  ✓  240 [chromium] › tests/ui/quests-status.spec.ts:261:3 › failure paths › a failed PATCH rolls the badge back and shows the error in the dialog (1.8s)
+  ✓  243 [chromium] › tests/ui/quests-info-editor.spec.ts:412:3 › the detail page’s tabs are all live editors › the header Edit button is the real view/edit toggle (story p3-10) (1.4s)
+  ✓  238 [chromium] › tests/ui/search-palette.spec.ts:428:3 › p5-02 the global search palette › selecting a result lands on its detail page, and the palette closes (2.3s)
+  ✓  241 [chromium] › tests/ui/quests-goals-editor.spec.ts:711:3 › the ID-referencing controls › the persona control keeps an unlisted name and suggests npc names (2.3s)
+  ✓  244 [chromium] › tests/ui/simple-object-editors.spec.ts:404:3 › AC1 — NpcInventory › removes exactly the clicked chip and saves Inventory whole (1.6s)
+  ✓  246 [chromium] › tests/ui/quests-results-editor.spec.ts:696:3 › the m_router sub-object › keeps a corpus router’s own order when one sub-field is edited (1.9s)
+  ✓  247 [chromium] › tests/ui/shell.spec.ts:751:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (1.9s)
+  ✓  251 [chromium] › tests/ui/search-palette.spec.ts:466:3 › p5-02 the global search palette › a friendly-name hit says it is not linked, and the count is printed (1.4s)
+  ✓  249 [chromium] › tests/ui/quests-status.spec.ts:284:3 › failure paths › the D51(f) untracked 404 becomes an actionable message, for the dialog and the panel (1.6s)
+  ✓  248 [chromium] › tests/ui/quests-dialog-editor.spec.ts:760:3 › the reference and string-key fields › the NPC dropdown shows the resolved name, stores the raw id, and a 0 stays a value (2.0s)
+  ✓  250 [chromium] › tests/ui/status-filter-url.spec.ts:179:3 › the status filter as a URL param — the NPC inventory list › four tabs count the list payload, a filter selects a subset, and the URL carries it across a reload (2.1s)
+  ✓  253 [chromium] › tests/ui/status-integration.spec.ts:433:3 › AC1: Mark Reviewed with notes on a DropTable moves the entry, its history and its list › the dialog, the PATCH body, the history note, the row dot and the tab counts (1.7s)
+  ✓  252 [chromium] › tests/ui/simple-object-editors.spec.ts:422:3 › AC1 — NpcInventory › renders an empty array as its empty state and saves [] after the last chip goes (1.8s)
+  ✓  242 [chromium] › tests/ui/quests-requirements-editor.spec.ts:583:3 › AC1 — the fixture-only AND(ReqHasQuest{NOT}, OR(...)) tree › reloads the saved document in the tree editor and diffs it again (4.4s)
+  ✓  254 [chromium] › tests/ui/quests-results-editor.spec.ts:747:3 › ResLearnSpell’s requirement slot › mounts the shared tree over the corpus’s untyped wrapper and edits inside it (1.9s)
+  ✓  255 [chromium] › tests/ui/shell.spec.ts:790:3 › sidebar navigation › a non-root deep link is served the SPA shell, and an unknown path is the SPA 404 (1.7s)
+  ✓  259 [chromium] › tests/ui/status-filter-url.spec.ts:243:3 › the status filter as a URL param — the NPC inventory list › a per-filter empty state names the filter that is empty (981ms)
+  ✓  257 [chromium] › tests/ui/quests-status.spec.ts:314:3 › the identity gate fires first (D38/D43) › a blank user_name opens the identity modal first and the transition resumes after it (1.9s)
+  ✓  261 [chromium] › tests/ui/simple-object-editors.spec.ts:452:3 › AC2 — NpcSpellInventory › renders the repeater, labels a stored 0 "none (0)", and never looks up spell 0 (1.2s)
+  ✓  258 [chromium] › tests/ui/quests-dialog-editor.spec.ts:791:3 › the reference and string-key fields › an unlisted zone path stays displayed and selected, and an empty one issues no lookup (2.0s)
+  ✓  260 [chromium] › tests/ui/status-integration.spec.ts:522:3 › AC1: Mark Reviewed with notes on a DropTable moves the entry, its history and its list › a family whose detail page never reads its list still refetches it on return (1.6s)
+  ✓  262 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:273:3 › AC1 — the TreasureCards repeater › renders the NPC dropdown and one row per entry, each with its own two controls (1.0s)
+  ✓  256 [chromium] › tests/ui/search-palette.spec.ts:498:3 › p5-02 the global search palette › the no-results state renders, and a failure is not mistaken for it (2.7s)
+  ✓  264 [chromium] › tests/ui/shell.spec.ts:815:3 › header sync › the Sync button spins while the request is in flight, then toasts the counts (1.1s)
+  ✓  266 [chromium] › tests/ui/quests-status.spec.ts:353:3 › the identity gate fires first (D38/D43) › dismissing the identity dialog aborts the transition entirely (1.1s)
+  ✓  269 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Drop Tables (/droptable) (1.0s)
+  ✓  272 [chromium] › tests/ui/shell.spec.ts:856:3 › settings › renders the settings values, the last sync and the history (970ms)
+  ✓  268 [chromium] › tests/ui/quests-dialog-editor.spec.ts:835:3 › the reference and string-key fields › a string-table key shows its resolved text, and an empty key issues no lookup (1.7s)
+  ✓  263 [chromium] › tests/ui/quests-results-editor.spec.ts:811:3 › friendly-name dropdowns › show the resolved name, store the raw id, and delete the key when cleared (2.4s)
+  ✓  273 [chromium] › tests/ui/quests-status.spec.ts:369:3 › the history timeline › renders the entries newest first with the spec`s anatomy (981ms)
+  ✓  274 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › NPC Inventories (/npcinventory) (834ms)
+  ✓  271 [chromium] › tests/ui/search-palette.spec.ts:523:3 › p5-02 the global search palette › closing forgets the query, and the keyboard shortcut is ⌘K/Ctrl+K only (1.9s)
+  ✓  275 [chromium] › tests/ui/shell.spec.ts:874:3 › settings › shows git_branch as a read-only information row (story p2-09, D42) (851ms)
+  ✓  265 [chromium] › tests/ui/status-filter-url.spec.ts:268:3 › the status filter as a URL param — the quest list › four tabs count the list payload, a filter selects a subset, and the URL carries it across a reload (3.0s)
+  ✓  267 [chromium] › tests/ui/simple-object-editors.spec.ts:486:3 › AC2 — NpcSpellInventory › picking none (0) stores 0 for the row it belongs to (2.6s)
+  ✓  270 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:299:3 › AC1 — the TreasureCards repeater › appends a typed name as a new entry object, and refuses a blank add (2.3s)
+  ✓  277 [chromium] › tests/ui/quests-results-editor.spec.ts:841:3 › friendly-name dropdowns › shows a zone’s display name and a miss stays displayed and selected (975ms)
+  ✓  245 [chromium] › tests/ui/extraction.spec.ts:948:3 › overwrite confirmation (gap A) › Save Selected on an existing quest asks first, listing that name (7.3s)
+  ✓  278 [chromium] › tests/ui/quests-status.spec.ts:398:3 › the history timeline › an entry with no history says so explicitly (950ms)
+  ✓  279 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › NPC Spell Inventories (/npcspellinventory) (829ms)
+  ✓  276 [chromium] › tests/ui/quests-dialog-editor.spec.ts:861:3 › the reference and string-key fields › the numeric m_cameraHidePlayers select keeps an unlisted value selected (1.8s)
+  ✓  281 [chromium] › tests/ui/shell.spec.ts:907:1 › the dev stack answers a real API request through the Vite proxy (1.0s)
+  ✓  280 [chromium] › tests/ui/zone-transfer-editor.spec.ts:297:3 › AC1 — the ZoneName key and its humanized dropdown › shows the zones names type’s own label, not a second humanizer (1.2s)
+  ✓  282 [chromium] › tests/ui/status-filter-url.spec.ts:326:3 › the status filter as a URL param — the quest list › a per-filter empty state names the filter that is empty (1.2s)
+  ✓  284 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:331:3 › AC1 — the TreasureCards repeater › removes the clicked row by index, so a repeated name survives (1.4s)
+  ✓  286 [chromium] › tests/ui/extraction.spec.ts:979:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (1.3s)
+  ✓  288 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Creature Spellbooks (/creaturespellbook) (1.3s)
+  ✓  290 [chromium] › tests/ui/shell.spec.ts:919:3 › harness self-check › the console-error guard itself is live (876ms)
+  ✓  285 [chromium] › tests/ui/quests-results-editor.spec.ts:874:3 › friendly-name dropdowns › issues no lookup for an empty or null reference (the D59(c) hazard) (1.7s)
+  ✓  287 [chromium] › tests/ui/quests-status.spec.ts:411:3 › the history timeline › the history panel shows the transition it just made (1.9s)
+  ✓  283 [chromium] › tests/ui/simple-object-editors.spec.ts:508:3 › AC2 — NpcSpellInventory › accepts Level 0 and writes it verbatim (2.3s)
+  ✓  294 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › NPC Drop Tables (/npcdroptable) (721ms)
+  ✓  293 [chromium] › tests/ui/extraction.spec.ts:995:3 › overwrite confirmation (gap A) › a failed list read blocks Save Selected and says nothing was saved (847ms)
+  ✓  292 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:366:3 › AC1 — the Price 0 hint › shows the m_baseCost hint on a 0 row and on that row only (877ms)
+  ✓  289 [chromium] › tests/ui/quests-dialog-editor.spec.ts:884:3 › the reference and string-key fields › the string lists round-trip one encoded element per line (1.7s)
+  ✓  297 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Treasure Card Inventories (/treasurecardinventory) (698ms)
+  ✓  295 [chromium] › tests/ui/quests-results-editor.spec.ts:919:3 › ResDrawHand’s split template id › resolves through whichever table knows the value, and never rewrites an unknown one (1.3s)
+  ✓  291 [chromium] › tests/ui/zone-transfer-editor.spec.ts:312:3 › AC1 — the ZoneName key and its humanized dropdown › writes the chosen zone_path verbatim, slashes and all (2.4s)
+  ✓  298 [chromium] › tests/ui/extraction.spec.ts:1014:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (1.1s)
+  ✓  301 [chromium] › tests/ui/status-integration.spec.ts:559:5 › AC1: every tracked detail page has the badge, the mark actions and the history panel › Zone Transfers (/zonetransfer) (574ms)
+  ✓  300 [chromium] › tests/ui/quests-dialog-editor.spec.ts:919:3 › the m_requirements slot › mounts the shared tree and is labelled fixture-only (1.4s)
+  ✓  303 [chromium] › tests/ui/zone-transfer-editor.spec.ts:336:3 › AC1 — the Teleports repeater and the nested Teleport fields › renders one row per entry with the trigger name and all six nested fields (758ms)
+  ✓  305 [chromium] › tests/ui/status-integration.spec.ts:577:3 › AC1: every tracked detail page has the badge, the mark actions and the history panel › global_registry: no badge, no mark actions, no history panel, no status request (550ms)
+  ✓  299 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:387:3 › AC1 — the Price 0 hint › appears when a price is set to 0 and disappears when it is not (1.9s)
+  ✓  296 [chromium] › tests/ui/simple-object-editors.spec.ts:526:3 › AC2 — NpcSpellInventory › appends a corpus-shaped entry when a spell is picked, and removes by row (2.2s)
+  ✓  302 [chromium] › tests/ui/quests-results-editor.spec.ts:991:3 › delete and the five mounted homes › delete removes exactly one card (1.3s)
+  ✓  304 [chromium] › tests/ui/extraction.spec.ts:1041:3 › mobile (375px) › the list is full width and tapping a quest opens the preview as an overlay (1.0s)
+  ✓  307 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:421:3 › AC1 — a name no synced spell carries warns, and does not block › warns on the offending row and only there (684ms)
+  ✓  308 [chromium] › tests/ui/simple-object-editors.spec.ts:558:3 › AC2 — NpcSpellInventory › saves exactly two document keys and three entry keys (814ms)
+  ✓  310 [chromium] › tests/ui/extraction.spec.ts:1072:3 › identity gate (D38/D43) › a blank user_name opens the dialog, the name is saved, and the pending save resumes (850ms)
+  ✓  309 [chromium] › tests/ui/quests-results-editor.spec.ts:1008:3 › delete and the five mounted homes › mounts start, end and both per-goal wrappers, and the tally slot only where a counter exists (1.1s)
+  ✓  311 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:448:3 › AC1 — a name no synced spell carries warns, and does not block › the Save button stays enabled with the warning present, and the save succeeds (814ms)
+  ✓  312 [chromium] › tests/ui/simple-object-editors.spec.ts:581:3 › AC3 — CreatureSpellbook › renders DeckName as the key and leaves the one miss raw (586ms)
+  ✓  306 [chromium] › tests/ui/zone-transfer-editor.spec.ts:377:3 › AC1 — the Teleports repeater and the nested Teleport fields › appends a nested entry object in the corpus order and refuses a blank add (1.8s)
+  ✓  314 [chromium] › tests/ui/quests-results-editor.spec.ts:1042:3 › delete and the five mounted homes › adds into an absent wrapper as the corpus’s untagged shape (977ms)
+  ✓  315 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:479:3 › AC1 — a name no synced spell carries warns, and does not block › a matching name shows no warning at all, and the save still lands (748ms)
+  ✓  313 [chromium] › tests/ui/extraction.spec.ts:1098:3 › identity gate (D38/D43) › dismissing the dialog performs no save and claims no success (1.2s)
+  ✓  318 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:505:3 › AC1 — a name no synced spell carries warns, and does not block › says so when the synced spells table is not available, instead of showing a clean pass (536ms)
+  ✓  316 [chromium] › tests/ui/simple-object-editors.spec.ts:594:3 › AC3 — CreatureSpellbook › reorders the list, changing the array order (1.8s)
+  ✓  317 [chromium] › tests/ui/zone-transfer-editor.spec.ts:417:3 › AC1 — the Teleports repeater and the nested Teleport fields › removes exactly the clicked row, so a repeated trigger name survives (1.7s)
+  ✓  320 [chromium] › tests/ui/treasure-card-inventory-editor.spec.ts:562:3 › AC1 — the save payload › carries exactly two top-level keys and each row’s two keys (631ms)
+  ✓  319 [chromium] › tests/ui/extraction.spec.ts:1141:3 › save → browse, the P2 AC#13 chain › a D28 capture → 1 result → Save All + confirm → toast → the browse list grows by 1 (1.3s)
+  ✓  323 [chromium] › tests/ui/extraction.spec.ts:1239:3 › save → browse, the P2 AC#13 chain › a multi-quest extraction grows the browse list by its own N (mocked N = 2) (1.3s)
+  ✓  322 [chromium] › tests/ui/zone-transfer-editor.spec.ts:464:3 › AC1 — the m_destinationLoc format check › flags a malformed 4-component string with an inline warning, and never blocks Save (1.7s)
+  ✓  321 [chromium] › tests/ui/simple-object-editors.spec.ts:614:3 › AC3 — CreatureSpellbook › removes a row and re-adds the miss by its raw id (1.8s)
+  ✓  325 [chromium] › tests/ui/simple-object-editors.spec.ts:629:3 › AC3 — CreatureSpellbook › renders an empty list as its empty state and saves [] after the last one goes (859ms)
+  ✓  326 [chromium] › tests/ui/simple-object-editors.spec.ts:654:3 › AC3 — CreatureSpellbook › saves exactly two document keys, with the reordered array (528ms)
+  ✓  324 [chromium] › tests/ui/zone-transfer-editor.spec.ts:494:3 › AC1 — the m_destinationLoc format check › accepts a scientific-notation value — no message, and Save stays usable (1.6s)
+  ✓  327 [chromium] › tests/ui/zone-transfer-editor.spec.ts:516:3 › AC1 — the m_destinationLoc format check › a malformed value still saves verbatim — the warning never blocks (D80a) (562ms)
+  ✓  328 [chromium] › tests/ui/zone-transfer-editor.spec.ts:564:3 › AC1 — the m_teleportType control › offers the one measured member (455ms)
+  ✓  329 [chromium] › tests/ui/zone-transfer-editor.spec.ts:578:3 › AC1 — the m_teleportType control › preserves a stored value the model does not know, verbatim, through a save (548ms)
+  ✓  330 [chromium] › tests/ui/zone-transfer-editor.spec.ts:619:3 › AC2 — the Events drift guard and the raw-fields disclosure › shows Events read-only in the disclosure, with the measurement in its own words (510ms)
+  ✓  331 [chromium] › tests/ui/zone-transfer-editor.spec.ts:645:3 › AC2 — the Events drift guard and the raw-fields disclosure › carries Events through the save byte-identically, with the file’s key order (531ms)
+  ✓  332 [chromium] › tests/ui/zone-transfer-editor.spec.ts:681:3 › AC2 — the Events drift guard and the raw-fields disclosure › a document with nothing unmodelled shows no disclosure at all (515ms)
+  ✘   40 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (1.0m)
+(node:3578900) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  333 [chromium] › tests/ui/a11y-keyboard.spec.ts:390:3 › AC#8 — every focus stop shows the spec ring › quest list: 20 stops, each with ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950 (715ms)
+  ✓  334 [chromium] › tests/ui/a11y-keyboard.spec.ts:411:3 › AC#8 — every focus stop shows the spec ring › DropTable detail (edit mode): the walk stays on the spec ring (513ms)
+  ✓  335 [chromium] › tests/ui/a11y-keyboard.spec.ts:429:3 › AC#8 — every focus stop shows the spec ring › the flowchart’s focused node gets the spec ring, and an edge is distinguishable without colour (561ms)
+  ✓  336 [chromium] › tests/ui/a11y-keyboard.spec.ts:589:3 › AC#10 — the rendered surfaces expose a name for every control › quest list, quest detail (edit mode), DropTable detail and the dashboard (1.3s)
+  ✓  210 [chromium] › tests/ui/responsive.spec.ts:522:3 › §1 AC#12: every route at every breakpoint has no horizontal overflow › 20 routes × 8 widths (375/640/767/768/1024/1279/1280/1440) (52.4s)
+  ✓  337 [chromium] › tests/ui/responsive.spec.ts:546:5 › §2 AC#12: the shell rules, stated in numbers › mobile 375: rail hidden, hamburger visible, overlay covers the height, swipe closes it (850ms)
+  ✓  338 [chromium] › tests/ui/responsive.spec.ts:546:5 › §2 AC#12: the shell rules, stated in numbers › mobile 640: rail hidden, hamburger visible, overlay covers the height, swipe closes it (835ms)
+  ✓  339 [chromium] › tests/ui/responsive.spec.ts:546:5 › §2 AC#12: the shell rules, stated in numbers › mobile 767: rail hidden, hamburger visible, overlay covers the height, swipe closes it (863ms)
+  ✓  340 [chromium] › tests/ui/responsive.spec.ts:577:5 › §2 AC#12: the shell rules, stated in numbers › tablet 768: the rail is visible and exactly 200px, and there is no hamburger (560ms)
+  ✓  341 [chromium] › tests/ui/responsive.spec.ts:577:5 › §2 AC#12: the shell rules, stated in numbers › tablet 1024: the rail is visible and exactly 200px, and there is no hamburger (516ms)
+  ✓  342 [chromium] › tests/ui/responsive.spec.ts:577:5 › §2 AC#12: the shell rules, stated in numbers › tablet 1279: the rail is visible and exactly 200px, and there is no hamburger (527ms)
+  ✓  343 [chromium] › tests/ui/responsive.spec.ts:594:5 › §2 AC#12: the shell rules, stated in numbers › desktop 1280: the rail is visible and exactly 260px, and there is no hamburger (524ms)
+  ✓  344 [chromium] › tests/ui/responsive.spec.ts:594:5 › §2 AC#12: the shell rules, stated in numbers › desktop 1440: the rail is visible and exactly 260px, and there is no hamburger (501ms)
+  ✓  345 [chromium] › tests/ui/responsive.spec.ts:609:3 › §2 AC#12: the shell rules, stated in numbers › the 767/768 boundary: the rail mounts at exactly 768, not at 767 (345ms)
+  ✓  346 [chromium] › tests/ui/responsive.spec.ts:622:3 › §2 AC#12: the shell rules, stated in numbers › the 1279/1280 boundary: the rail widens to 260px at exactly 1280, not at 1279 (596ms)
+  ✓  347 [chromium] › tests/ui/responsive.spec.ts:640:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › mobile 375: the panel is a full-viewport overlay and no <aside> is mounted (673ms)
+  ✓  348 [chromium] › tests/ui/responsive.spec.ts:640:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › mobile 640: the panel is a full-viewport overlay and no <aside> is mounted (740ms)
+  ✓  349 [chromium] › tests/ui/responsive.spec.ts:640:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › mobile 767: the panel is a full-viewport overlay and no <aside> is mounted (714ms)
+  ✓  350 [chromium] › tests/ui/responsive.spec.ts:665:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › tablet 768: the panel is the spec’s 300px <aside>, not an overlay (804ms)
+  ✓  351 [chromium] › tests/ui/responsive.spec.ts:665:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › tablet 1024: the panel is the spec’s 300px <aside>, not an overlay (844ms)
+  ✓  352 [chromium] › tests/ui/responsive.spec.ts:665:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › tablet 1279: the panel is the spec’s 300px <aside>, not an overlay (882ms)
+  ✓  353 [chromium] › tests/ui/responsive.spec.ts:683:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › desktop 1280: the panel is the spec’s 400px <aside> (822ms)
+  ✓  354 [chromium] › tests/ui/responsive.spec.ts:683:5 › §3 AC#12: the JSON panel is a full overlay below md, 300px at tablet, 400px at desktop › desktop 1440: the panel is the spec’s 400px <aside> (806ms)
+  ✓  355 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /quests: cards below md, table from md (594ms)
+  ✓  356 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /drop-tables: cards below md, table from md (567ms)
+  ✓  357 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-inventories: cards below md, table from md (551ms)
+  ✓  358 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-spell-inventories: cards below md, table from md (584ms)
+  ✓  359 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /creature-spellbooks: cards below md, table from md (588ms)
+  ✓  360 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-drop-tables: cards below md, table from md (587ms)
+  ✓  361 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /treasure-card-inventories: cards below md, table from md (550ms)
+  ✓  362 [chromium] › tests/ui/responsive.spec.ts:704:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /zone-transfers: cards below md, table from md (545ms)
+  ✓  363 [chromium] › tests/ui/responsive.spec.ts:733:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 768: the object table’s wrapper is the horizontal scroll container (389ms)
+  ✓  364 [chromium] › tests/ui/responsive.spec.ts:733:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1024: the object table’s wrapper is the horizontal scroll container (343ms)
+  ✓  365 [chromium] › tests/ui/responsive.spec.ts:733:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1279: the object table’s wrapper is the horizontal scroll container (348ms)
+  ✓  366 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 375px: the four stat cards occupy 1 column(s) (312ms)
+  ✓  367 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 640px: the four stat cards occupy 1 column(s) (362ms)
+  ✓  368 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 767px: the four stat cards occupy 1 column(s) (351ms)
+  ✓  369 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 768px: the four stat cards occupy 2 column(s) (392ms)
+  ✓  370 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1024px: the four stat cards occupy 2 column(s) (362ms)
+  ✓  371 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1279px: the four stat cards occupy 2 column(s) (347ms)
+  ✓  372 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1280px: the four stat cards occupy 4 column(s) (359ms)
+  ✓  373 [chromium] › tests/ui/responsive.spec.ts:776:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1440px: the four stat cards occupy 4 column(s) (361ms)
+  ✓  374 [chromium] › tests/ui/responsive.spec.ts:800:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 375px: the palette is centred and inside the viewport (651ms)
+  ✓  375 [chromium] › tests/ui/responsive.spec.ts:800:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 768px: the palette is centred and inside the viewport (650ms)
+  ✓  376 [chromium] › tests/ui/responsive.spec.ts:800:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (650ms)
+
+
+  1) [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForEvent: Test timeout of 60000ms exceeded.
+    =========================== logs ===========================
+    waiting for event "filechooser"
+    ============================================================
+
+      296 |     // The keyboard opens the real file chooser; Playwright intercepts the native dialog.
+      297 |     const [chooser] = await Promise.all([
+    > 298 |       page.waitForEvent('filechooser'),
+          |            ^
+      299 |       page.keyboard.press('Enter'),
+      300 |     ]);
+      301 |     await chooser.setFiles({
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/a11y-keyboard.spec.ts:298:12
+
+    Error Context: test-results/a11y-keyboard-AC-8-—-the-f-a86e4-the-file-chooser-with-Enter-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter 
+  375 passed (1.9m)
+[rc=1]

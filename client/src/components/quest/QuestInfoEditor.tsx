@@ -90,7 +90,7 @@ export default function QuestInfoEditor({ state, modifiedAt }: QuestInfoEditorPr
         needs, and it needs no state of its own.
       */}
       <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
-        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
           Advanced
         </summary>
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 border-t border-zinc-800 p-3 md:grid-cols-2">
@@ -140,7 +140,7 @@ function FieldEditor({
       {field.key === 'm_questTitle' ? <TitleResolution value={value} /> : null}
       <FieldMessages messages={messages} id={messagesId} />
       {field.help === '' ? null : (
-        <p id={helpId} className="text-xs text-zinc-500">
+        <p id={helpId} className="text-xs text-zinc-400">
           {field.help}
         </p>
       )}
@@ -168,7 +168,7 @@ function FieldControl({
   state: QuestDocumentState;
 }): JSX.Element {
   const inputClass = withValidationBorder(
-    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+    'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
     messages,
   );
   const describedBy = fieldDescribedBy(
@@ -193,7 +193,7 @@ function FieldControl({
           readOnly
           value={scalarText(value)}
           className={withValidationBorder(
-            'min-w-0 cursor-default rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-sm text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+            'min-w-0 cursor-default rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-sm text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
             messages,
           )}
         />
@@ -206,7 +206,7 @@ function FieldControl({
           aria-invalid={ariaInvalid}
           type="checkbox"
           checked={value === true}
-          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           onChange={(event) => edit(booleanFieldEdit(field.key, event.target.checked))}
         />
       );
@@ -297,7 +297,7 @@ function TimestampField({ modifiedAt }: { modifiedAt?: string | null }): JSX.Ele
     <div className="flex min-w-0 flex-col gap-1">
       <span className="font-mono text-xs text-zinc-400">{QUEST_TIMESTAMP_LABEL}</span>
       <p
-        className={cn('text-sm', modifiedAt ? 'text-zinc-300' : 'text-zinc-600')}
+        className={cn('text-sm', modifiedAt ? 'text-zinc-300' : 'text-zinc-400')}
         title={modifiedAt ?? undefined}
       >
         {modifiedAt ? relativeTime(modifiedAt) : '—'}

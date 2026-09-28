@@ -12,12 +12,19 @@
  * reserved for values both halves genuinely share.
  */
 
+import { reportRequestFailure, reportRequestSuccess } from './connection';
 import type { NameRow, NameRowMap, NamesType } from './display';
 import type { SyncCounts } from './toast';
 
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
 interface ApiErrorBody {
   error?: string;
+  /**
+   * The per-field map a **400** may carry beside its message (decisions D64/D65) — `Name`,
+   * `RollChance`, … → the blocking sentence(s). It is the multi-error payload that
+   * `components/shared/ValidationSummary.tsx` renders at the top of a form.
+   */
+  fields?: Record<string, string[]>;
 }
 
 /**
@@ -27,15 +34,41 @@ interface ApiErrorBody {
 export class ApiError extends Error {
   readonly status: number;
 
-  constructor(status: number, message: string) {
+  /** The 400 field map when the server sent one, `undefined` otherwise (D64). */
+  readonly fields?: Record<string, string[]>;
+
+  constructor(status: number, message: string, fields?: Record<string, string[]>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    if (fields !== undefined) {
+      this.fields = fields;
+    }
   }
 }
 
 /** REQUEST helper: the `Accept` header every call sends. */
 const JSON_HEADERS = { Accept: 'application/json' } as const;
+
+/**
+ * `true` when retrying a failed request could plausibly give a different answer: a transport
+ * failure (the `fetch` rejected, so there is no status at all) or a **5xx**.
+ *
+ * A 4xx is final — it is the request working correctly (a validation error, or the 404 the
+ * detail pages render as their "not found" state), so the retry action of the API-error toast
+ * (`lib/notify.ts`) is not offered for one (story p5-04, AC3).
+ *
+ * It lives here, beside {@link ApiError}, rather than in the hook that uses it: this module has no
+ * React entry point, so the predicate is unit-testable in plain node.
+ */
+export function isRetryableApiError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return error.status >= 500;
+  }
+  // A non-`ApiError` from `apiFetch` is either a rejected fetch (no HTTP answer) or an
+  // unparsable success body — both are worth another try, and neither is a validation verdict.
+  return true;
+}
 
 /**
  * `true` for a body the browser encodes itself — `FormData` (multipart boundary),
@@ -58,30 +91,53 @@ function isSelfTypedBody(body: BodyInit | null | undefined): boolean {
   return typeof Blob !== 'undefined' && body instanceof Blob;
 }
 
+/** The parsed pieces of a failed response: the message, and the field map if there is one. */
+interface ErrorBody {
+  message: string;
+  fields?: Record<string, string[]>;
+}
+
+/** `true` for the D64 field map: a plain object whose values are string arrays. */
+function isFieldMap(value: unknown): value is Record<string, string[]> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value).every(
+    (messages) => Array.isArray(messages) && messages.every((one) => typeof one === 'string'),
+  );
+}
+
 /** Reads the plain-text body of a failed response before throwing. */
-async function readError(response: Response): Promise<string> {
+async function readError(response: Response): Promise<ErrorBody> {
   let text: string;
   try {
     text = await response.text();
   } catch {
-    return `Request failed with status ${response.status}`;
+    return { message: `Request failed with status ${response.status}` };
   }
 
   if (text.trim() !== '') {
     try {
       const body = JSON.parse(text) as ApiErrorBody;
       if (typeof body?.error === 'string' && body.error !== '') {
-        return body.error;
+        // The field map rides along only when it has the documented shape; anything else
+        // stays out of `ApiError` rather than being rendered as if it were validation.
+        return isFieldMap(body.fields)
+          ? { message: body.error, fields: body.fields }
+          : { message: body.error };
       }
     } catch {
       // Not JSON — fall through to the status text.
     }
-    return text;
+    return { message: text };
   }
 
-  return response.statusText !== ''
-    ? response.statusText
-    : `Request failed with status ${response.status}`;
+  return {
+    message:
+      response.statusText !== ''
+        ? response.statusText
+        : `Request failed with status ${response.status}`,
+  };
 }
 
 /**
@@ -92,6 +148,12 @@ async function readError(response: Response): Promise<string> {
  * `Blob` — see {@link isSelfTypedBody}). An empty success body (e.g. 204) resolves
  * to `undefined`, and any other unparsable success body throws rather than
  * resolving to garbage.
+ *
+ * Every outcome is also reported to the connection store (`lib/connection.ts`), which is how
+ * the offline banner learns that a request failed without any page knowing the banner exists.
+ * The report is deliberately asymmetric: a **4xx is a success** as far as the transport is
+ * concerned (the server answered: a validation error is not an outage), while only a rejected
+ * `fetch` or a **5xx** marks the connection suspect.
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -102,11 +164,26 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(path, { ...init, headers });
+  let response: Response;
+  try {
+    response = await fetch(path, { ...init, headers });
+  } catch (error) {
+    // No HTTP answer at all: the connection itself is what failed.
+    reportRequestFailure();
+    throw error;
+  }
 
   if (!response.ok) {
-    throw new ApiError(response.status, await readError(response));
+    if (response.status >= 500) {
+      reportRequestFailure();
+    } else {
+      reportRequestSuccess();
+    }
+    const { message, fields } = await readError(response);
+    throw new ApiError(response.status, message, fields);
   }
+
+  reportRequestSuccess();
 
   const text = await response.text();
   if (text.trim() === '') {
@@ -291,6 +368,197 @@ export async function getStatusHistory(
     `/api/status/${type}/${encodeURIComponent(key)}/history`,
   );
   return body.history;
+}
+
+/* ----------------------------------------------------------------- dashboard */
+
+/**
+ * Per-type verification counts — one `types[<object_type>]` bucket
+ * (docs/spec-api.md L144-164, decision D37).
+ *
+ * The three buckets always add up to `total` on the wire, and every one of the
+ * eight tracked types is present **with zeros included**, which is what lets the
+ * dashboard render a stable table on a fresh database.
+ */
+export interface VerificationBucket {
+  total: number;
+  extracted: number;
+  reviewed: number;
+  verified: number;
+}
+
+/** The dashboard's `overall` bucket: the four counts plus the server's own percentage. */
+export interface DashboardOverall extends VerificationBucket {
+  /** `verified / total * 100` to one decimal, `0` when `total` is 0 (D37). */
+  percent_verified: number;
+}
+
+/**
+ * `GET /api/dashboard` response.
+ *
+ * `types` is keyed by the D4 **singular** `object_type` and holds exactly the eight
+ * tracked types — GlobalRegistry is absent by Q1 (it has no `object_type`, no route
+ * and no lifecycle), so it can never be a card or a bar.
+ */
+export interface DashboardResult {
+  types: Record<StatusObjectType, VerificationBucket>;
+  overall: DashboardOverall;
+}
+
+/** TanStack Query key for the dashboard aggregate read. */
+export const DASHBOARD_QUERY_KEY = ['dashboard'] as const;
+
+/**
+ * `GET /api/dashboard` — the aggregate the four stat cards and the per-type bars
+ * read. One request feeds both, so the cards and the bars cannot disagree.
+ */
+export function getDashboard(): Promise<DashboardResult> {
+  return apiFetch<DashboardResult>('/api/dashboard');
+}
+
+/* ------------------------------------------------------------------ activity */
+
+/**
+ * The feed length `GET /api/activity` defaults to — the spec's "last 10 status
+ * changes" (docs/spec-ui-design.md L162-177). The server's own default lives in
+ * `server/src/services/status.ts`; this constant is the client's request value, so
+ * the two are one decision written once per half (the api.ts convention).
+ */
+export const ACTIVITY_DEFAULT_LIMIT = 10;
+
+/**
+ * One `activity[]` row of `GET /api/activity` (decision D27) — a `status_history`
+ * row joined to its entry.
+ *
+ * `id` is the `status_history` primary key: `changed_at` can repeat, so it is the
+ * only safe React key.
+ *
+ * **`object_type` is `string | null`, not {@link StatusObjectType} | null**, and
+ * deliberately so: `null` means the join found no parent, and a value outside the
+ * eight tracked types is also possible (nothing prevents a hand-written row).
+ * Both cases are unlinkable and the feed must render them without a link rather
+ * than assume the union (`lib/dashboard.ts` owns that mapping).
+ */
+export interface ActivityEntry {
+  id: number;
+  object_type: string | null;
+  object_key: string | null;
+  old_status: StatusValue | null;
+  /** The status the entry moved to; `null`-free because the column is NOT NULL. */
+  new_status: StatusValue;
+  notes: string | null;
+  changed_by: string | null;
+  changed_at: string | null;
+}
+
+/** `GET /api/activity` response envelope (the `{ history }` shape of D37). */
+export interface ActivityFeed {
+  activity: ActivityEntry[];
+  /** Rows in this feed the join could not tie to a live, tracked entry. */
+  unresolved: number;
+}
+
+/** TanStack Query key prefix for every activity read — invalidation targets this. */
+export const ACTIVITY_QUERY_KEY = ['activity'] as const;
+
+/** TanStack Query key for one feed length. */
+export function activityQueryKey(limit = ACTIVITY_DEFAULT_LIMIT): readonly [string, number] {
+  return ['activity', limit] as const;
+}
+
+/**
+ * `GET /api/activity?limit=` — the newest status changes, newest first.
+ *
+ * The envelope is kept whole (unlike `getStatusHistory`): `unresolved` is part of
+ * the answer the feed must show, not metadata a caller can drop.
+ */
+export function getActivity(limit = ACTIVITY_DEFAULT_LIMIT): Promise<ActivityFeed> {
+  return apiFetch<ActivityFeed>(`/api/activity?limit=${String(limit)}`);
+}
+
+/* -------------------------------------------------------------------- search */
+
+/**
+ * The `?limit=` the ⌘K palette sends to `GET /api/search` — the length the acceptance
+ * criterion names (plan task 5.2 / P5 AC#4). The server's own default lives in
+ * `server/src/services/search.ts`; the two are one decision written once per half, the
+ * api.ts convention `ACTIVITY_DEFAULT_LIMIT` already follows.
+ *
+ * It is a **per-group** cap: at most `limit` results in each `groups[]` element, so one
+ * substring that matches both a quest key and a DropTable key returns both groups rather
+ * than letting the first consume the whole budget. Recorded on the endpoint's own D1 sheet.
+ */
+export const SEARCH_DEFAULT_LIMIT = 20;
+
+/**
+ * One `results[]` row of `GET /api/search` (decision D27).
+ *
+ * **`object_type` and `object_key` are `string | null`, not the D4 union** — the same
+ * deliberate looseness {@link ActivityEntry} documents: they are non-null exactly when the
+ * row has a detail route, and the wire could in principle carry a type outside the tracked
+ * eight. The palette resolves them through the existing D4 mapping and renders `null` as
+ * "no link" rather than assuming the union.
+ */
+export interface SearchResultRow {
+  object_type: string | null;
+  object_key: string | null;
+  /** Primary text: the object key, or the friendly name of a routeless row. */
+  label: string;
+  /** The friendly name known for the row (a quest's title), or `null`. */
+  name: string | null;
+  /** The friendly table row's own id as text; `null` for an object row. */
+  source_id: string | null;
+  /** `null` for a routeless row — which is exactly when the dot is absent. */
+  status: StatusValue | null;
+  matched_on: 'key' | 'name';
+}
+
+/** One `groups[]` element: a type, the heading to render, and its rows. */
+export interface SearchGroup {
+  /** The group key — a D4 singular type, or `item` / `spell` / `npc`. */
+  type: string;
+  /** The heading the server decided, so the client needs no second label table. */
+  label: string;
+  results: SearchResultRow[];
+}
+
+/** `GET /api/search` response envelope (the endpoint's own D1 record). */
+export interface SearchResponse {
+  /** The trimmed query actually searched; `''` for the blank (just-opened) state. */
+  query: string;
+  /** The per-group cap that was applied. */
+  limit: number;
+  /** Rows in this response — the sum of every group's `results.length`. */
+  total: number;
+  /** `true` when at least one group matched more rows than the cap allowed. */
+  truncated: boolean;
+  /** Rows with no detail route (the items/spells/npcs name hits). */
+  unresolved: number;
+  groups: SearchGroup[];
+}
+
+/** TanStack Query key prefix for every search read. */
+export const SEARCH_QUERY_KEY = ['search'] as const;
+
+/** TanStack Query key for one query text. */
+export function searchQueryKey(
+  q: string,
+  limit = SEARCH_DEFAULT_LIMIT,
+): readonly [string, string, number] {
+  return ['search', q, limit] as const;
+}
+
+/**
+ * The request path for one search. The query is percent-encoded, so a key containing `&`
+ * or `?` cannot change the request's shape.
+ */
+export function searchPath(q: string, limit = SEARCH_DEFAULT_LIMIT): string {
+  return `/api/search?q=${encodeURIComponent(q)}&limit=${String(limit)}`;
+}
+
+/** `GET /api/search?q=&limit=` — the palette's read. */
+export function searchObjects(q: string, limit = SEARCH_DEFAULT_LIMIT): Promise<SearchResponse> {
+  return apiFetch<SearchResponse>(searchPath(q, limit));
 }
 
 /* --------------------------------------------------------------------- names */

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ObjectTypeConfig } from '@shared/objectTypes';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useStatusFilter } from '../../hooks/useStatusFilter';
 import { relativeTime } from '../../lib/display';
 import { serverMessage } from '../../lib/extract';
 import {
@@ -23,7 +24,6 @@ import {
   sortRows,
   filterByStatus,
   searchRows,
-  type ObjectFilter,
   type ObjectSort,
   type ObjectStatusSummary,
 } from '../../lib/object-list';
@@ -35,6 +35,8 @@ import {
   type ObjectListRow,
 } from '../../lib/objects';
 import { cn } from '../../lib/utils';
+import { useApiErrorToast } from '../../hooks/useApiErrorToast';
+import { nextTabIndex } from '../../lib/tablist';
 import NewObjectControl from './NewObjectControl';
 import ObjectCardList from './ObjectCardList';
 import ObjectTable, { type ObjectListColumn } from './ObjectTable';
@@ -59,6 +61,12 @@ import { Skeleton } from '../ui/skeleton';
  * and everything else is client-side, so typing a search never issues a request. The
  * tab counts come from the response's own `summary` (D49), so a tab counts exactly
  * what the table holds.
+ *
+ * **Story p5-03 moved the active filter into the URL** (`?filter=Verified`, through the one
+ * `useStatusFilter` hook the quest page shares), so it survives a hard reload and the browser's
+ * Back/Forward; the default `All` renders no param, so a default page's path is unchanged and
+ * `tests/ui/shell.spec.ts`'s pinned route set is untouched. Search, sort and page stay local —
+ * the AC asks the filter to survive, not the whole view state.
  *
  * Story p4-09 adds the one create affordance this page was missing (`NewObjectControl`): a
  * `New <type>` button beside the search box that opens the shared create dialog for every tracked
@@ -101,7 +109,11 @@ export default function ObjectListPage({
   const isMobile = useIsMobile();
   const idPrefix = config.fileType;
 
-  const [filter, setFilter] = useState<ObjectFilter>('All');
+  // Story p5-03: the filter lives in the URL (`?filter=Verified`), shared with the
+  // quest page through the one hook, so it survives a hard reload and Back/Forward
+  // and the default `All` stays out of the URL. The tab vocabulary stays
+  // `lib/object-list.ts`'s; this is only its storage.
+  const [filter, setFilter] = useStatusFilter();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<ObjectSort>(DEFAULT_OBJECT_SORT);
   const [page, setPage] = useState(1);
@@ -151,15 +163,30 @@ export default function ObjectListPage({
   const loading = objectLoadingLabel(nounPlural);
   const loadError = objectLoadError(nounPlural);
 
+  // The API-error toast with a retry action (AC3, spec L533): the inline error card below stays
+  // the page's state, and the toast's Retry re-runs this list's own read.
+  useApiErrorToast(query, loadError);
+
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      {/*
+        `flex-wrap` is story p5-06's tablet fix. From `md` this row becomes
+        `flex-row justify-between`, forcing the status-tab strip and the search + create row
+        side by side — and `md` is exactly where the 260px sidebar also appears, so the content
+        column is at its narrowest the moment the row becomes a row. Measured at a 768px
+        viewport: the search + create row sits at `x=415 w=423` inside a 460px column
+        (`415 + 423 = 838 of 768`), i.e. the page scrolled 70px sideways on every object list
+        route (up to 157px on the longest create-button label). Wrapping lets the search row
+        drop to its own line at tablet widths; from `lg` the column is wide enough that both
+        children share the row again, so the desktop layout is unchanged.
+      */}
+      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between">
         <div
           role="tablist"
           aria-label={objectFilterLabel(nounPlural)}
           className="flex flex-wrap gap-1 border-b border-zinc-800"
         >
-          {tabs.map((tab) => {
+          {tabs.map((tab, index) => {
             const active = tab.filter === filter;
             return (
               <button
@@ -170,8 +197,23 @@ export default function ObjectListPage({
                 aria-selected={active}
                 aria-controls={`${idPrefix}-results`}
                 onClick={() => setFilter(tab.filter)}
+                // The APG tablist keys (ArrowLeft/ArrowRight/Home/End), moving focus and
+                // selecting in one press — the same `setFilter` a click uses. Without this
+                // the role was claimed but the keyboard model was not implemented
+                // (docs/evidence/phase-5/p5-05-d1-audit.md §7.4); the pure rule lives in
+                // `lib/tablist.ts`.
+                onKeyDown={(event) => {
+                  const next = nextTabIndex(event.key, index, tabs.length);
+                  if (next === null) {
+                    return;
+                  }
+                  event.preventDefault();
+                  const target = tabs[next];
+                  setFilter(target.filter);
+                  document.getElementById(`${idPrefix}-filter-${target.filter}`)?.focus();
+                }}
                 className={cn(
-                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                   active
                     ? 'border-blue-500 text-white'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200',
@@ -187,7 +229,7 @@ export default function ObjectListPage({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative md:w-64">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
               aria-hidden="true"
             />
             <Input
@@ -208,6 +250,13 @@ export default function ObjectListPage({
       {query.isPending ? (
         <div aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">{loading}</span>
+          {/*
+            The loaded results are a table on desktop (`ObjectTable`: a header row plus one
+            40px row per entry) and a card per entry on mobile (`ObjectCardList`) — so the
+            skeleton shows the same header band at the same breakpoint, and the rows below.
+            Story p5-04's layout audit: the row height already matched; the header band did not.
+          */}
+          {isMobile ? null : <Skeleton className="h-9 w-full" />}
           {Array.from({ length: SKELETON_ROWS }, (_, index) => (
             <Skeleton key={index} className="h-10 w-full" />
           ))}
@@ -219,7 +268,7 @@ export default function ObjectListPage({
             <p role="alert" className="text-sm text-zinc-200">
               {loadError}
             </p>
-            <p className="text-sm text-zinc-500">{serverMessage(query.error, loadError)}</p>
+            <p className="text-sm text-zinc-400">{serverMessage(query.error, loadError)}</p>
             <Button
               variant="outline"
               onClick={() => {
@@ -245,7 +294,7 @@ export default function ObjectListPage({
                 <p className="text-sm text-zinc-200">
                   {objectEmptyStateMessage(filter, nounPlural)}
                 </p>
-                <p className="text-sm text-zinc-500">{OBJECT_EMPTY_STATE_HINT}</p>
+                <p className="text-sm text-zinc-400">{OBJECT_EMPTY_STATE_HINT}</p>
               </CardContent>
             </Card>
           ) : isMobile ? (

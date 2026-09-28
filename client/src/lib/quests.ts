@@ -57,7 +57,7 @@ export interface QuestColumnSpec {
  * relative time / Actions 80px **not** sortable.
  */
 export const QUEST_COLUMNS: readonly QuestColumnSpec[] = [
-  { id: 'status', header: 'Status', widthPx: 40, sortable: true },
+  { id: 'status', header: 'Status', widthPx: 104, sortable: true },
   { id: 'quest_name', header: 'Quest Name', widthPx: null, sortable: true },
   { id: 'level', header: 'Level', widthPx: 60, sortable: true },
   { id: 'goal_count', header: 'Goals', widthPx: 60, sortable: true },
@@ -325,8 +325,20 @@ export const JSON_PANEL_GLYPH = '{ }';
 /** The JSON panel's accessible name (the desktop `<aside>` and the mobile dialog). */
 export const JSON_PANEL_TITLE = 'Quest JSON';
 
-/** The panel's width on desktop — `docs/spec-ui-design.md` L326. */
+/**
+ * The panel's width on **desktop** (≥1280px) — `docs/spec-ui-design.md` L326/L520.
+ *
+ * The width is a breakpoint rule, not one number, so `QuestJsonPanel` applies it the way this
+ * codebase applies every other breakpoint (`Sidebar`'s `w-[200px] xl:w-[260px]`): Tailwind
+ * classes. These two constants are the numbers' home of record and
+ * `tests/ui/responsive.spec.ts` asserts the rendered `<aside>` against them at both tiers, so a
+ * class edited away from its constant fails a test rather than drifting silently.
+ */
 export const JSON_PANEL_WIDTH_PX = 400;
+
+/** The panel's width on **tablet** (768–1279px) — `docs/spec-ui-design.md` L518. Story p5-06:
+ * it was 400px at every width above `md` before, so the spec's tablet width did not exist. */
+export const JSON_PANEL_TABLET_WIDTH_PX = 300;
 
 /** The JSON panel's copy button (spec L336's `[Copy]`). */
 export const JSON_COPY_LABEL = 'Copy';

@@ -14,7 +14,7 @@ import { relativeTime } from '../../lib/display';
 import type { ObjectListRow } from '../../lib/objects';
 import { DEFAULT_OBJECT_SORT, isObjectSortKey, type ObjectSort } from '../../lib/object-list';
 import { cn } from '../../lib/utils';
-import { STATUS_META } from '../StatusBadge';
+import StatusBadge, { STATUS_META } from '../StatusBadge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 /**
@@ -41,7 +41,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
  */
 const NO_EXTRA_COLUMNS: readonly ObjectListColumn[] = [];
 
-/** The colour dot the Status column shows (spec L256: "Color dot only"). */
+/**
+ * The colour dot the search palette's result rows show (spec L256's "Color dot only").
+ *
+ * **No longer the list tables' Status cell** (p5-05): the tables render `StatusBadge`
+ * (colour **and** the status word) because spec L545 requires status to be conveyed by
+ * colour *and* text/icon, WCAG 1.4.1 has no axe rule to catch a colour-only mark, and the
+ * same row already showed a text badge in the mobile card list. The palette keeps the dot
+ * because each of its rows carries the status word in its own accessible name
+ * (`SearchPalette`'s row label) — the dot is a redundant visual cue there, not the only one.
+ */
 export function StatusDot({ status }: { status: StatusValue }): JSX.Element {
   const meta = STATUS_META[status];
   return (
@@ -77,7 +86,7 @@ export interface ObjectTableProps {
 }
 
 /** Fixed px widths for the standard columns (the key column absorbs the remainder). */
-const STATUS_WIDTH_PX = 40;
+const STATUS_WIDTH_PX = 104;
 const MODIFIED_WIDTH_PX = 120;
 const ACTIONS_WIDTH_PX = 80;
 
@@ -89,7 +98,7 @@ function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }): JSX.Ele
   if (direction === 'desc') {
     return <ChevronDown className="h-3 w-3" aria-hidden="true" />;
   }
-  return <ChevronsUpDown className="h-3 w-3 text-zinc-600" aria-hidden="true" />;
+  return <ChevronsUpDown className="h-3 w-3 text-zinc-400" aria-hidden="true" />;
 }
 
 export default function ObjectTable({
@@ -127,7 +136,7 @@ export default function ObjectTable({
         header: 'Status',
         accessorFn: (row) => row.status,
         cell: ({ row }) =>
-          row.original.status === null ? null : <StatusDot status={row.original.status} />,
+          row.original.status === null ? null : <StatusBadge status={row.original.status} />,
       },
       {
         id: 'key',
@@ -228,7 +237,7 @@ export default function ObjectTable({
                       type="button"
                       onClick={header.column.getToggleSortingHandler()}
                       className={cn(
-                        'inline-flex items-center gap-1 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                        'inline-flex items-center gap-1 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                         sorted === false ? 'text-zinc-400' : 'text-zinc-100',
                       )}
                     >

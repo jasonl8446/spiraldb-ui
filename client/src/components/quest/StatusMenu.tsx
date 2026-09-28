@@ -95,14 +95,14 @@ export default function StatusMenu({
                 disabled={current}
                 onClick={() => choose(transition.status)}
                 className={cn(
-                  'flex items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  'flex items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                   current
-                    ? 'cursor-not-allowed text-zinc-500'
+                    ? 'cursor-not-allowed text-zinc-400'
                     : 'text-zinc-200 hover:bg-zinc-800 hover:text-zinc-50',
                 )}
               >
                 {transition.label}
-                {current ? <span className="text-xs text-zinc-500">Current</span> : null}
+                {current ? <span className="text-xs text-zinc-400">Current</span> : null}
               </button>
             );
           })}

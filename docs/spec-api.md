@@ -163,6 +163,64 @@ Aggregated verification progress across all object types.
 }
 ```
 
+### GET /api/activity
+
+The most recent verification-status changes, for the dashboard's activity feed.
+
+**Query Parameters:**
+- `limit` (optional): how many rows to return. Default `10`, ceiling `100`.
+
+**Request:**
+```http
+GET /api/activity?limit=10
+```
+
+**Response:**
+```json
+{
+  "activity": [
+    {
+      "id": 3,
+      "object_type": "quest",
+      "object_key": "DS-ACAD-C01-001",
+      "old_status": "extracted",
+      "new_status": "reviewed",
+      "notes": "Gate-1 acceptance re-run: reviewed at the Phase 1 boundary",
+      "changed_by": "Jason",
+      "changed_at": "2026-09-26T06:26:25.798Z"
+    }
+  ],
+  "unresolved": 0
+}
+```
+
+One row per `status_history` row, newest first, ordered by `changed_at DESC, id DESC` — `id` is
+the tiebreak because `changed_at` may repeat (two transitions inside one second, and SQLite's
+`CURRENT_TIMESTAMP` is second-resolution), so "the 10 most recent" is a total order and two runs
+over one database cannot disagree about it. `object_type`/`object_key` are the frontend route's
+type and key ([spec-data-model.md](./spec-data-model.md) L32–37).
+
+**The join from `status_history` to `entry_status` is a LEFT join, and an unresolvable row is
+returned rather than dropped.** The endpoint answers "the N most recent `status_history` rows", so
+a row whose parent entry is missing — or whose type is outside the eight in this section, or whose
+key is blank — is still an element of `activity`; `object_type` and `object_key` are `null` for it
+and `unresolved` counts it. An inner join would silently answer nine rows while claiming ten.
+`unresolved` and the feed's "no link" rendering read the same predicate, so they cannot disagree
+about a row. A history row can only become unresolvable through a writer that ignored the
+`status_history.entry_status_id` foreign key (the app's own connection has `PRAGMA foreign_keys = ON`).
+
+`notes` may be `null`, and `changed_by` is the `settings.user_name` resolved at the time of the
+change — the column is nullable and may also be `""` (a change recorded before the identity gate
+was answered); the feed renders either as no author.
+
+**Errors:** a malformed `?limit=` is a `400`, never a silent clamp — `""`, `"0"`, `"abc"`, `"1.5"`,
+a repeated parameter (`?limit=1&limit=2`) and a value above the ceiling all answer
+`{"error": "Invalid limit \"<value>\": …"}`. This is the same ladder `?status=` follows. The route
+has no `:param`, so no request reaches a `404`.
+
+**Added by story p5-01** (plan task 5.1, endpoint decision D27): the dashboard feed's read, which
+the original endpoint list did not name.
+
 ---
 
 ## Object CRUD
@@ -445,6 +503,169 @@ Content-Type: application/json
   "user_name": "jason"
 }
 ```
+
+---
+
+## Search
+
+### GET /api/search
+
+Cross-type search for the ⌘K command palette: a **case-insensitive literal substring** (ASCII case
+folding, `LIKE` metacharacters escaped so `?q=%` matches a percent sign rather than everything),
+returned **grouped by type**.
+
+**Query Parameters:**
+- `q` (optional): the text to match, trimmed. Absent or blank is not an error — see below.
+- `limit` (optional): the row cap **per group**. Default `20`, ceiling `50`.
+
+**Request:**
+```http
+GET /api/search?q=DS-ACAD-C01-00&limit=20
+```
+
+**Response** (the corpus's quest drop tables are named after their quest, so one substring
+legitimately matches two families):
+```json
+{
+  "query": "DS-ACAD-C01-00",
+  "limit": 20,
+  "total": 10,
+  "truncated": false,
+  "unresolved": 0,
+  "groups": [
+    {
+      "type": "quest",
+      "label": "Quests",
+      "results": [
+        {
+          "object_type": "quest",
+          "object_key": "DS-ACAD-C01-001",
+          "label": "DS-ACAD-C01-001",
+          "name": "Wizard Tours",
+          "source_id": null,
+          "status": "reviewed",
+          "matched_on": "key"
+        }
+        // … 4 more quests, same shape
+      ]
+    },
+    {
+      "type": "drop_table",
+      "label": "Drop Tables",
+      "results": [
+        {
+          "object_type": "drop_table",
+          "object_key": "DS-ACAD-C01-001",
+          "label": "DS-ACAD-C01-001",
+          "name": null,
+          "source_id": null,
+          "status": "extracted",
+          "matched_on": "key"
+        }
+        // … 4 more drop tables
+      ]
+    }
+  ]
+}
+```
+
+**The two arms of the search, and which of them can be linked:**
+
+- **Object keys** — `entry_status.object_key`, across all eight types of [Verification
+  Status](#verification-status). These rows carry `object_type`, `object_key` and `status`: exactly
+  what the palette's status dot and its link need. The link is the existing per-type detail route in
+  [URL Routes](#url-routes-frontend), not a second mapping.
+- **Friendly names** — `items.name`, `spells.name`, `npcs.name`, and `quests.title` joined to its own
+  route key. The first three have **no detail route in this application**, so a hit there is
+  **informational and not navigable**: `object_type`, `object_key` and `status` are `null`, the row
+  carries `source_id` (the friendly table's own primary key — a name is not unique, so the name
+  alone cannot identify a row), and it is counted in `unresolved`. A quest title hit **is**
+  navigable, because `quests.quest_name` is the `entry_status.object_key` the quest detail route
+  already takes; it comes back as a normal quest row with `matched_on: "name"`.
+
+`zones` and `drop_tables` are deliberately not searched by name: `drop_tables.name` repeats the
+`drop_table` object key verbatim, so a name arm over it could only duplicate the key arm.
+
+`label` is the row's primary text — the object key for a navigable row, the friendly name for an
+informational one — and `name` is whichever friendly name is known for the row (a quest matched on
+its key still reports its title, or `null` when the `quests` table has none). `matched_on` is
+`"key"` or `"name"` and says which column matched.
+
+**`limit` is a per-group cap, not a response-wide one.** No group carries more than `limit`
+results; `total` is what the response actually carries (the sum over `groups`); and `truncated` is
+`true` when at least one group matched more rows than the cap allowed — detected by reading each
+group with `limit + 1` rows, so an overflow is observed rather than assumed. A single shared cap
+would let the first group consume every row and hide a type that matched, which is exactly the case
+this endpoint's criterion names. The informational arm makes the two counters visible:
+
+```http
+GET /api/search?q=necklace&limit=2
+```
+```json
+{
+  "query": "necklace",
+  "limit": 2,
+  "total": 2,
+  "truncated": true,
+  "unresolved": 2,
+  "groups": [
+    {
+      "type": "item",
+      "label": "Items",
+      "results": [
+        {
+          "object_type": null,
+          "object_key": null,
+          "label": "Necklace of Eerem Palace",
+          "name": "Necklace of Eerem Palace",
+          "source_id": "1405388",
+          "status": null,
+          "matched_on": "name"
+        },
+        {
+          "object_type": null,
+          "object_key": null,
+          "label": "Necklace of Lost Ancestors",
+          "name": "Necklace of Lost Ancestors",
+          "source_id": "730193",
+          "status": null,
+          "matched_on": "name"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Ordering** is by match rank — exact match, then prefix, then substring, over the matched column
+(case-folded) — and then by the row's own identity ascending: `object_key` for an object group
+(unique within a type, so the order is total) and `name, id` for a name group (a name is not
+unique). `limit` in the response echoes the cap that was applied, so a client never has to guess it.
+
+**Groups** appear in this order — `quest`, the seven generic families in the order
+[Verification Status](#verification-status) uses, then `item`, `spell`, `npc` — and only groups that
+matched appear at all.
+
+**A blank `q` is a `200` with an empty envelope and no database work.** It is the state the palette
+is in the moment it opens, so it is not an error:
+
+```http
+GET /api/search?q=
+```
+```json
+{ "query": "", "limit": 20, "total": 0, "truncated": false, "unresolved": 0, "groups": [] }
+```
+
+`query` echoes the **trimmed** string that was actually matched (`?q=%20acad%20` searches and
+reports `acad`).
+
+**Errors:** a repeated `?q=a&q=b` is a `400` (`Query parameter "q" must be a single string value`),
+and a malformed `?limit=` is a `400` by the same ladder as `GET /api/activity`
+(`Invalid limit "<value>": …`), never a silent clamp. The route has no `:param`, so no request
+reaches a `404`.
+
+**Added by story p5-02** (plan task 5.2, endpoint decision D27): the ⌘K palette's read, which the
+original endpoint list did not name.
 
 ---
 

@@ -54,20 +54,102 @@
   body {
     @apply bg-background font-sans text-foreground antialiased;
   }
+
+  /**
+   * The spec's focus ring, once, for every focus-visible stop
+   * (docs/spec-ui-design.md L542: `ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950`).
+   *
+   * Written as a base rule so a component **cannot** ship without one: the p5-05 audit
+   * (docs/evidence/phase-5/p5-05-d1-audit.md §3) measured 40 of 47 focus sites carrying
+   * only the first half of the spec's treatment, two carrying `outline-none` with no
+   * replacement at all, and React Flow's focusable nodes/edges carrying neither. The
+   * components that also spell the utilities out keep their own copy for readability;
+   * Tailwind's utility layer is later, so on identical declarations the utility wins and
+   * nothing is drawn twice.
+   */
+  :focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950;
+  }
+
+  /**
+   * React Flow removes the UA outline from its focusable nodes **and** edges
+   * (`@xyflow/react/dist/style.css:452`: `.react-flow__node.selectable:focus-visible
+   * { outline: none }`) and substitutes `--xy-node-boxshadow-selected`, whose default
+   * `#1a192b` is invisible on `zinc-950`. A node is an HTML div, so it takes the spec's
+   * exact ring back. An edge is an SVG `<path>`: a box-shadow renders nothing there, so
+   * an edge gets a 3px `blue-500` stroke (5.41:1 against `zinc-950`, well over the 3:1
+   * non-text floor) — stated as the SVG-appropriate replacement, never claimed to be the
+   * spec's exact ring. Both selectors outrank xyflow's `(0,3,0)` rules with `(0,4,0)`.
+   *
+   * `!important` on the edge is load-bearing and measured: `toFlowEdges` puts the edge's
+   * own colour on the path as an **inline** `style` (`stroke`, `strokeWidth`), and an
+   * inline declaration beats any normal stylesheet rule. Without it, a keyboard-focused
+   * edge kept its own colour (a complete-node edge stayed `emerald-500`) — which is a
+   * colour-only change and exactly the failure the rule exists to prevent.
+   */
+  .react-flow .react-flow__node.selectable:focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950;
+  }
 }
 
 /**
- * Reduced motion (docs/spec-ui-design.md L549). Spinners still have to say
- * "working", so they are slowed rather than stopped; the rule is scoped to the
- * two utilities the app animates so it can never mask an unexpected animation.
+ * The focused React Flow **edge** (the node's ring is with the other base-layer rules above).
+ *
+ * It lives here, unlayered, for two measured reasons: a `<path>` cannot carry the spec's
+ * `box-shadow` ring, and `toFlowEdges` writes the edge's own colour as an **inline** `style`
+ * on the path — only an `!important` declaration beats an inline one, and an unlayered
+ * `!important` is the highest-priority author declaration there is. (Inside `@layer base`
+ * this rule was silently dropped by the Tailwind build: the built CSS contained the node
+ * rule and not this one, and the browser kept the inline `emerald-500` on a focused edge.)
+ * The stroke is `blue-500`: 5.41:1 against `zinc-950`, over the 3:1 non-text floor, and a
+ * 2px → 3px width change, so the indicator is not hue-only.
+ */
+.react-flow .react-flow__edge:focus-visible .react-flow__edge-path {
+  stroke: #3b82f6 !important; /* blue-500 */
+  stroke-width: 3 !important;
+}
+
+/**
+ * Reduced motion (docs/spec-ui-design.md L546: "respect `prefers-reduced-motion` for
+ * transitions/animations", plan task 5.5 AC#11).
+ *
+ * The version this replaced covered only `.animate-spin`, `.animate-in` and `.animate-out`;
+ * the p5-05 audit (docs/evidence/phase-5/p5-05-d1-audit.md §5) measured what that missed —
+ * all ~65 `transition-*` utilities, React Flow's `dashdraw 0.5s linear infinite`, and (not
+ * reachable by any stylesheet) React Flow's `fitView({duration: 200})`. Each block below
+ * names the surface it gates, so the coverage can be checked rule-by-rule:
+ *
+ *  - `transition: none` on everything → the sidebar/panel and every hover/focus colour
+ *    transition. `!important` is load-bearing: it is the only way to beat an **inline**
+ *    declaration, which is exactly what dnd-kit's `useSortable` writes
+ *    (`style={{ transition }}` in QuestGoalsEditor's `GoalCard`), and `transitionend` is
+ *    fired by no code in this client (`grep -rn transitionend client/src` → 0).
+ *  - `animation: none` on everything → Radix/sonner enter-exit (`animate-in`/`animate-out`),
+ *    `animate-pulse`, and React Flow's `dashdraw` on animated edges. Radix's `Presence`
+ *    unmounts immediately when the computed `animation-name` is `none`, which is what
+ *    makes the dialog/popover close instant rather than animated.
+ *  - `.animate-spin` is the one deliberate exception: a spinner still has to say "working"
+ *    (the rule it replaces said the same). It is **slowed**, not stopped, and it is the
+ *    only animation left; its own `@keyframes` are defined here so the rule cannot break if
+ *    Tailwind renames `spin`.
+ *  - `scroll-behavior: auto` → smooth scrolling.
  */
 @media (prefers-reduced-motion: reduce) {
-  .animate-spin {
-    animation-duration: 2.4s;
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
   }
 
-  .animate-in,
-  .animate-out {
-    animation-duration: 0.001s;
+  @keyframes p5-05-spinner {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: p5-05-spinner 2.4s linear infinite !important;
   }
 }

@@ -1,0 +1,38 @@
+# p5-03 D1 cross-check — list payload summary vs GET /api/status/<type> summary
+# command: npx tsx /tmp/p503-crosscheck.mts   (in-process; read-only copy of data/spiraldb-ui.db)
+# date: 2026-09-27T15:50:22-04:00
+
+spiraldb_path = /home/jason/Documents/git-projects/spiraldb
+db copy        = /tmp/p503-audit-3076098.db
+
+type                       | list summary (total/ex/rev/ver) | status summary (total/ex/rev/ver) | agree
+--------------------------------------------------------------------------------------------------------
+quests                     |                     328/327/1/0 |                       322/321/1/0 | NO
+drop_tables                |                     317/317/0/0 |                       317/317/0/0 | yes
+npc_inventories            |                     215/215/0/0 |                       215/215/0/0 | yes
+npc_spell_inventories      |                       77/77/0/0 |                         77/77/0/0 | yes
+creature_spellbooks        |                     134/134/0/0 |                       134/134/0/0 | yes
+npc_drop_tables            |                         0/0/0/0 |                           0/0/0/0 | yes
+treasure_card_inventories  |                         1/1/0/0 |                           1/1/0/0 | yes
+zone_transfers             |                   1205/1205/0/0 |                     1205/1205/0/0 | yes
+
+--- the six D82 quest keys, as each derivation sees them ---
+  WC-COMMONS-MAIN-002-BALANCE  in list payload: yes (status=extracted, title=To Ravenwood!)
+  WC-COMMONS-MAIN-002-DEATH    in list payload: yes (status=extracted, title=To Ravenwood!)
+  WC-COMMONS-MAIN-002-FIRE     in list payload: yes (status=extracted, title=To Ravenwood!)
+  WC-COMMONS-MAIN-002-ICE      in list payload: yes (status=extracted, title=To Ravenwood!)
+  WC-COMMONS-MAIN-002-LIFE     in list payload: yes (status=extracted, title=To Ravenwood!)
+  WC-COMMONS-MAIN-002-MYTH     in list payload: yes (status=extracted, title=To Ravenwood!)
+  quests list payload rows: 328
+  quests list skipped[]:    0
+
+# fork HEAD: d57d891 docs: correct verification findings across the creation guide
+# fork file counts:
+#   QuestTemplates               328
+#   DropTables                   317
+#   NpcInventory                 215
+#   NpcSpellInventory            77
+#   CreatureSpellbook            134
+#   NpcDropTable                 0
+#   TreasureCardInventory        1
+#   ZoneTransfer                 1207

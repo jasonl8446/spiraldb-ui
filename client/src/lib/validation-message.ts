@@ -53,3 +53,63 @@ export function indexFieldMessages(
 export function pathKey(path: DocPath): string {
   return formatDocPath(path);
 }
+
+/**
+ * The `kind` every server-supplied finding carries (story p5-04's validation summary).
+ *
+ * The client's own findings have host kinds (`duplicate-name`, `roll-chance-out-of-range`, …);
+ * a field-map finding has no engine behind it, so it gets its own kind rather than borrowing
+ * one it would then lie about. A host may branch on it — `data-kind` is on every `<li>`.
+ */
+export const SERVER_FINDING_KIND = 'server';
+
+/**
+ * The server's **400 field map** (decisions D64/D65) rendered in the shared message vocabulary,
+ * so the form-level validation summary can show it without a second renderer.
+ *
+ * The keys of that map are already rendered paths — `Name`, `RollChance`, `m_startGoals[0]` —
+ * produced by the shared engine's own copy table. They are therefore carried as a **single
+ * whole segment**: `formatDocPath(['Name'])` is `Name` and `formatDocPath(['m_startGoals[0]'])`
+ * is `m_startGoals[0]`, so a message's lookup key is byte-identical to the server's key and an
+ * inline control asking for its own path finds it — without this module re-implementing the
+ * path grammar that the server half already decided.
+ */
+export function fieldMapMessages(
+  fields: Readonly<Record<string, readonly string[]>>,
+): FieldValidationMessage[] {
+  const messages: FieldValidationMessage[] = [];
+  for (const [field, texts] of Object.entries(fields)) {
+    for (const text of texts) {
+      messages.push({
+        severity: 'error',
+        kind: SERVER_FINDING_KIND,
+        path: [field],
+        field,
+        text,
+      });
+    }
+  }
+  return messages;
+}
+
+/**
+ * The validation summary's copy and anchors (story p5-04, AC3).
+ *
+ * Declared here rather than in `components/shared/ValidationSummary.tsx` so they are
+ * unit-testable in plain node: the tests' tsconfig has no `--jsx`, so importing a `.tsx` module
+ * into a node test does not typecheck (and rendering one is what `tests/ui/` is for).
+ */
+export const VALIDATION_SUMMARY_LABEL = 'Validation summary';
+export const VALIDATION_SUMMARY_TESTID = 'validation-summary';
+
+/** `1 validation error must be fixed before saving.` / `3 validation errors must be …`. */
+export function validationSummaryHeadline(count: number): string {
+  return `${String(count)} validation ${count === 1 ? 'error must' : 'errors must'} be fixed before saving.`;
+}
+
+/** `true` when a server field map carries at least one message (and so is worth rendering). */
+export function hasFieldMapMessages(
+  fields: Readonly<Record<string, readonly string[]>> | undefined,
+): fields is Record<string, string[]> {
+  return fields !== undefined && Object.keys(fields).length > 0;
+}

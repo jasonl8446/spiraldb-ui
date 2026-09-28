@@ -100,10 +100,10 @@ export default function QuestResultsEditor({ state }: QuestResultsEditorProps): 
           <h2 className="font-mono text-xs text-zinc-400">
             {`m_goals[].${COMPLETE_RESULTS_PATH} / m_goals[].${ACTIVATE_RESULTS_PATH}`}
           </h2>
-          <p className="text-xs text-zinc-500">{GOAL_RESULTS_NOTE}</p>
+          <p className="text-xs text-zinc-400">{GOAL_RESULTS_NOTE}</p>
         </div>
         {goals.length === 0 ? (
-          <p className="text-sm text-zinc-500">{NO_GOALS_TEXT}</p>
+          <p className="text-sm text-zinc-400">{NO_GOALS_TEXT}</p>
         ) : (
           <ul className="flex min-w-0 flex-col gap-6">
             {goals.map((goal, index) => {
@@ -125,7 +125,7 @@ export default function QuestResultsEditor({ state }: QuestResultsEditorProps): 
                   />
                   {hasTallyCounter ? (
                     <div className="flex min-w-0 flex-col gap-2">
-                      <p className="text-xs text-zinc-500">{TALLY_RESULTS_NOTE}</p>
+                      <p className="text-xs text-zinc-400">{TALLY_RESULTS_NOTE}</p>
                       <ResultListEditor
                         state={state}
                         path={['m_goals', index, TALLY_COUNTER_PATH, TALLY_RESULTS_PATH]}
@@ -133,7 +133,7 @@ export default function QuestResultsEditor({ state }: QuestResultsEditorProps): 
                       />
                     </div>
                   ) : (
-                    <p className="text-xs text-zinc-500">{NO_TALLY_COUNTER_NOTE}</p>
+                    <p className="text-xs text-zinc-400">{NO_TALLY_COUNTER_NOTE}</p>
                   )}
                 </li>
               );
@@ -163,7 +163,7 @@ function Slot({
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
         <h2 className="font-mono text-xs text-zinc-400">{fieldKey}</h2>
-        <p className="text-xs text-zinc-500">{note}</p>
+        <p className="text-xs text-zinc-400">{note}</p>
       </div>
       <ResultListEditor state={state} path={path} label={label} />
     </div>

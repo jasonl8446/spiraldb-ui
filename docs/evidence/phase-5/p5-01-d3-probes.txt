@@ -1,0 +1,33 @@
+# p5-01 D3 — raw probe captures (production server, browser-side)
+
+D3b: scratch DB /tmp/p5-01/scratch.db (entry_status 0 rows, status_history 0 rows), prod server on :5199
+
+command: BASE_URL=http://localhost:5199 SHOT=... LABEL=d3b-scratch-empty PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers node --input-type=module -e "$(cat /tmp/p5-01/check.mjs)"
+(the probe fetches /api/dashboard and /api/activity from inside the page and reads the rendered DOM)
+
+headings   ["Verification Progress by Type","Recent Activity"]
+cards      {"total":"0","extracted":"0","reviewed":"0","verified":"0"}
+percents   {"extracted":"0.0%","reviewed":"0.0%","verified":"0.0%"}
+types      [["quest","0/0 (0.0%)"],["drop_table","0/0 (0.0%)"],["npc_inventory","0/0 (0.0%)"],["npc_spell_inventory","0/0 (0.0%)"],["creature_spellbook","0/0 (0.0%)"],["npc_drop_table","0/0 (0.0%)"],["treasure_card_inventory","0/0 (0.0%)"],["zone_transfer","0/0 (0.0%)"]]
+feed rows  0
+emptyState true
+unresolved notice null
+consoleErrors []
+api /api/dashboard {"total":0,"extracted":0,"reviewed":0,"verified":0,"percent_verified":0}
+api /api/activity  {"activity":[],"unresolved":0}
+
+D3c: live DB data/spiraldb-ui.db, prod server on :5199
+
+headings   ["Verification Progress by Type","Recent Activity"]
+cards      {"total":"2271","extracted":"2270","reviewed":"1","verified":"0"}
+percents   {"extracted":"100.0%","reviewed":"0.0%","verified":"0.0%"}
+types      [["quest","0/322 (0.0%)"],["drop_table","0/317 (0.0%)"],["npc_inventory","0/215 (0.0%)"],["npc_spell_inventory","0/77 (0.0%)"],["creature_spellbook","0/134 (0.0%)"],["npc_drop_table","0/0 (0.0%)"],["treasure_card_inventory","0/1 (0.0%)"],["zone_transfer","0/1205 (0.0%)"]]
+api overall {"total":2271,"extracted":2270,"reviewed":1,"verified":0,"percent_verified":0}
+api types   {"quest":{"total":322,"extracted":321,"reviewed":1,"verified":0},"drop_table":{"total":317,"extracted":317,"reviewed":0,"verified":0},"npc_inventory":{"total":215,"extracted":215,"reviewed":0,"verified":0},"npc_spell_inventory":{"total":77,"extracted":77,"reviewed":0,"verified":0},"creature_spellbook":{"total":134,"extracted":134,"reviewed":0,"verified":0},"npc_drop_table":{"total":0,"extracted":0,"reviewed":0,"verified":0},"treasure_card_inventory":{"total":1,"extracted":1,"reviewed":0,"verified":0},"zone_transfer":{"total":1205,"extracted":1205,"reviewed":0,"verified":0}}
+api activity rows 3 unresolved 0
+feed 3 linked=true href=/quests/DS-ACAD-C01-001 text="DS-ACAD-C01-001 marked reviewed | 1 day ago |  | by Jason |  | Gate-1 acceptance re-run: reviewed at the Phase 1 boundary"
+feed 2 linked=true href=/quests/DS-ACAD-C01-001 text="DS-ACAD-C01-001 marked extracted | 1 day ago |  | by Jason |  | gate-1: backwards transition to re-run the forward path"
+feed 1 linked=true href=/quests/DS-ACAD-C01-001 text="DS-ACAD-C01-001 marked reviewed | 1 day ago |  | gate-1 attempt before identity"
+consoleErrors []
+
+Screenshots: p5-01-d3b-scratch-empty.png and p5-01-d3c-live-dashboard.png (1440x1200, whole page).

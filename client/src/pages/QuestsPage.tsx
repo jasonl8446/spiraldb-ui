@@ -12,6 +12,8 @@ import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useApiErrorToast } from '../hooks/useApiErrorToast';
+import { useStatusFilter } from '../hooks/useStatusFilter';
 import { useStatusTransition } from '../hooks/useStatusTransition';
 import { listQuests, QUESTS_QUERY_KEY, type QuestListRow } from '../lib/api';
 import { serverMessage } from '../lib/extract';
@@ -27,7 +29,6 @@ import {
   QUESTS_SEARCH_LABEL,
   QUESTS_SEARCH_PLACEHOLDER,
   questFilterTabs,
-  type QuestFilter,
   type QuestSort,
   type QuestSummary,
 } from '../lib/quests';
@@ -52,6 +53,11 @@ const SKELETON_ROWS = 8;
  * The filter tabs' count badges come from the response's own `summary` (D49), so a
  * tab counts exactly what the table holds.
  *
+ * **The filter is the one piece of page state that is not local (story p5-03).** It
+ * lives in the URL (`?filter=Extracted`) through the shared `useStatusFilter` hook —
+ * the same mechanism the seven object list views use — so a hard reload and the
+ * browser's Back/Forward both keep it, and the default `All` writes no param at all.
+ *
  * Below `md` the table is replaced by the card list and the whole page — tabs,
  * search and pagination included — stays usable (spec L270).
  *
@@ -66,7 +72,7 @@ export default function QuestsPage(): JSX.Element {
   const isMobile = useIsMobile();
   const transition = useStatusTransition('quests');
 
-  const [filter, setFilter] = useState<QuestFilter>('All');
+  const [filter, setFilter] = useStatusFilter();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<QuestSort>(DEFAULT_QUEST_SORT);
   const [page, setPage] = useState(1);
@@ -83,6 +89,9 @@ export default function QuestsPage(): JSX.Element {
     queryFn: listQuests,
     staleTime: Infinity,
   });
+
+  // The API-error toast with a retry action (AC3, spec L533), retrying this list's own read.
+  useApiErrorToast(quests, QUESTS_LOAD_ERROR);
 
   const rows = quests.data?.quests ?? NO_ROWS;
   const tabs = questFilterTabs(quests.data?.summary ?? NO_SUMMARY);
@@ -116,7 +125,7 @@ export default function QuestsPage(): JSX.Element {
                 aria-controls="quests-results"
                 onClick={() => setFilter(tab.filter)}
                 className={cn(
-                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
                   active
                     ? 'border-blue-500 text-white'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200',
@@ -132,7 +141,7 @@ export default function QuestsPage(): JSX.Element {
 
         <div className="relative md:w-64">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
             aria-hidden="true"
           />
           <Input
@@ -149,6 +158,10 @@ export default function QuestsPage(): JSX.Element {
       {quests.isPending ? (
         <div aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">{QUESTS_LOADING}</span>
+          {/* The loaded results are `QuestBrowseTable` (a header row plus 40px rows) on desktop
+              and `QuestCardList` on mobile — the same header band, at the same breakpoint
+              (story p5-04's skeleton layout audit). */}
+          {isMobile ? null : <Skeleton className="h-9 w-full" />}
           {Array.from({ length: SKELETON_ROWS }, (_, index) => (
             <Skeleton key={index} className="h-10 w-full" />
           ))}
@@ -160,7 +173,7 @@ export default function QuestsPage(): JSX.Element {
             <p role="alert" className="text-sm text-zinc-200">
               {QUESTS_LOAD_ERROR}
             </p>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-zinc-400">
               {serverMessage(quests.error, QUESTS_LOAD_ERROR)}
             </p>
             <Button
@@ -184,7 +197,7 @@ export default function QuestsPage(): JSX.Element {
             <Card>
               <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
                 <p className="text-sm text-zinc-200">{emptyStateMessage(filter)}</p>
-                <p className="text-sm text-zinc-500">{EMPTY_STATE_HINT}</p>
+                <p className="text-sm text-zinc-400">{EMPTY_STATE_HINT}</p>
               </CardContent>
             </Card>
           ) : isMobile ? (

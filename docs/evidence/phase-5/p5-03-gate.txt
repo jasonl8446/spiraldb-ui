@@ -1,0 +1,77 @@
+# p5-03 gate — lead-run on 9b6c7cb + the story tree
+# started 2026-09-27T17:42:57-04:00
+=== 1. npm test
+$ npm test
+   ✓ POST /: the save path > leaves a file the merge could not account for in place, and says so  310ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  540ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  889ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  596ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  481ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  476ms
+
+ Test Files  64 passed (64)
+      Tests  1444 passed (1444)
+   Start at  17:42:57
+   Duration  9.11s (transform 7.50s, setup 0ms, collect 26.22s, tests 70.42s, environment 18ms, prepare 8.17s)
+
+--- rc=0
+
+=== 2. npm run test:ui
+$ npm run test:ui
+    > 858 |     await page.getByRole('button', { name: 'Save Selected', exact: true }).click();
+          |                                                                            ^
+      859 |
+      860 |     await expect(page.locator('li[data-sonner-toast][data-type="warning"]')).toContainText(
+      861 |       'QuestMetadatas/ holds 2 files',
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/extraction.spec.ts:858:76
+
+    Error Context: test-results/extraction-results-phase-a-4ae2f-surfaced-as-a-warning-toast-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/ui/extraction.spec.ts:844:3 › results phase › a D48(d) duplicate-metadata warning is surfaced as a warning toast 
+  320 passed (1.9m)
+--- rc=1
+
+=== 3. npm run lint
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+--- rc=0
+
+=== 4. npm run typecheck:tests
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+--- rc=0
+
+=== 5a. tsc server
+$ npx tsc -p server/tsconfig.json --noEmit
+--- rc=0
+
+=== 5b. tsc client
+$ npx tsc -p client/tsconfig.json --noEmit
+--- rc=0
+
+=== 6. npm run build
+$ npm run build
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-CaimEaiL.css                  35.35 kB │ gzip:   7.39 kB
+dist/assets/QuestGoalLogicEditor-CUE-n7np.js   293.44 kB │ gzip:  97.70 kB
+dist/assets/index-Bd5OgYsU.js                  767.11 kB │ gzip: 226.87 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.27s
+--- rc=0
+
+# finished 2026-09-27T17:45:24-04:00

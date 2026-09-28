@@ -1,0 +1,60 @@
+# p5-04 executor gate — the seven commands (story p5-04 / plan task 5.4)
+
+Tree: branch phase-5-dashboard-polish, HEAD 9b6c7cb (no commits made by this story — the lead commits).
+The tree was not being edited by anyone else while these ran (D85); this worker's last edit is the
+two spec adaptations recorded in D3 §4, after which all seven commands below ran in order.
+
+## 1. npm test  →  rc=0
+          Tests  1444 passed (1444)
+       Start at  17:31:17
+       Duration  9.67s (transform 7.74s, setup 0ms, collect 28.50s, tests 74.44s, environment 21ms, prepare 8.73s)
+    
+     ✓ tests/unit/api-error-envelope.test.ts (7 tests) 1933ms
+     ✓ tests/unit/connection.test.ts (11 tests) 39ms
+     ✓ tests/unit/validation-summary.test.ts (6 tests) 8ms
+
+## 2. npm run lint  →  rc=0
+    
+    Checking formatting...
+    All matched files use Prettier code style!
+
+## 3. npm run typecheck:tests  →  rc=0
+    > tsc -p tests/tsconfig.json --noEmit
+    
+
+## 4. npx tsc -p server/tsconfig.json --noEmit  →  rc=0 (no output)
+## 5. npx tsc -p client/tsconfig.json --noEmit  →  rc=0 (no output)
+
+## 6. npm run build  →  rc=0
+    dist/assets/QuestGoalLogicEditor-CUE-n7np.js   293.44 kB │ gzip:  97.70 kB
+    dist/assets/index-Bd5OgYsU.js                  767.11 kB │ gzip: 226.87 kB
+    
+    (!) Some chunks are larger than 500 kB after minification. Consider:
+    - Using dynamic import() to code-split the application
+    - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+    - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+    ✓ built in 3.85s
+
+## 7. npm run test:ui   (NO --config; the official command boots its own stack on VITE_PORT=5181)
+### run 1 (full): rc=1 — 319 passed / 2 failed, BOTH caused by this story's new surfaces:
+    - quests-browse.spec.ts:416 — the new API-error toast repeats the server sentence, so an
+      unscoped getByText resolved to 2 elements (strict-mode violation).
+    - search-palette.spec.ts:513 — the new health probe hit an unmocked /api/health and landed in
+      that spec's 'nothing unmocked' guard (the spec deliberately fails a request).
+### run 2 (full, after adapting those two specs): rc=1 — 320 passed / 1 failed:
+    - extraction.spec.ts:1069 (identity gate) — the pre-existing extraction INFO toast stayed over
+      the 'Save Selected' button and intercepted the pointer for 60 s. Passes 3/3 in isolation
+      (3.9 s / 4.1 s / 4.4 s) — attributed to the D69(h)/D77(d) carried extraction flake family.
+### run 3 (full, unchanged tree): rc=0 — 321 passed
+    
+      321 passed (1.0m)
+    TEST-UI-FULL2 rc=0
+
+## 8. The full-UI-run PNG side effect
+    object-mobile.spec.ts rewrote 4 of the committed phase-4 PNGs this round (not 15; the count
+    varies per run). Restored and verified two ways:
+      git status --porcelain docs/evidence/phase-4/  -> 0 lines
+      md5(all 22 PNGs) vs git show HEAD:<path>      -> 22 checked, 0 mismatches
+
+## Carried, not fixed
+    extraction.spec.ts's overlap/flake family (D69(h), named arm in D77(d)) — see D3 §4.

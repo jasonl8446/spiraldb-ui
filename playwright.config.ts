@@ -50,7 +50,7 @@ export default defineConfig({
 
   use: {
     // Vite binds [::1] (D38) — `localhost` resolves there, `127.0.0.1` does not.
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5181',
     headless: true,
     trace: 'on-first-retry',
   },
@@ -59,8 +59,8 @@ export default defineConfig({
 
   webServer: {
     command:
-      'rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 npm run dev',
-    url: 'http://localhost:5173/api/status/_import',
+      'rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 VITE_PORT=5181 npm run dev',
+    url: 'http://localhost:5181/api/status/_import',
     // Never reuse a running stack: the server this harness must talk to is the
     // isolated one booted above. A developer's own `npm run dev` holds the live
     // database (and the owner fork behind its settings), and reusing it would

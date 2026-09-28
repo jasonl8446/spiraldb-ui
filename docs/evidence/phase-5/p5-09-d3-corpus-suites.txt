@@ -1,0 +1,479 @@
+########## npm run verify:captures
+
+> spiraldb-ui@0.1.0 verify:captures
+> node scripts/verify-captures.mjs
+
+
+=== MB-YARD1-C01-001.json  (sha256 339bd29245af25a041e99592028c73c3eed320d23da90d03925cd1628c04ca87)
+  field                                 corpus                             read back
+  quest name                            MB-YARD1-C01-001                   MB-YARD1-C01-001  ok
+  title                                 QuestTitle_9B62                    QuestTitle_9B62  ok
+  level                                 1                                  1  ok
+  mainline                              true                               true  ok
+  goal count                            15                                 15  ok
+  goal names (in order)                 [1_WizardQuestGoals_Explore, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_Explore, 6_WizardQuestGoals_TalkNPC, 7_WizardQuestGoals_Explore, 8_WizardQuestGoals_TalkNPC, 9_WizardQuestGoals_Explore, 10_WizardQuestGoals_Kill, 11_WizardQuestGoals_Explore, 12_WizardQuestGoals_TalkNPC, 13_WizardQuestGoals_Explore, 14_WizardQuestGoals_Kill, 15_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_Explore, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_Explore, 6_WizardQuestGoals_TalkNPC, 7_WizardQuestGoals_Explore, 8_WizardQuestGoals_TalkNPC, 9_WizardQuestGoals_Explore, 10_WizardQuestGoals_Kill, 11_WizardQuestGoals_Explore, 12_WizardQuestGoals_TalkNPC, 13_WizardQuestGoals_Explore, 14_WizardQuestGoals_Kill, 15_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA] [GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA]  ok
+  dialog blocks (ActorDialog count)     7                                  7  ok
+  dialog entries (NPCDialogEntry count) 9                                  9  ok
+  dialog entries per container          {12_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 15_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 8_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), quest/Prep(blocks=1, entries=1)} {12_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 15_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 8_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), quest/Prep(blocks=1, entries=1)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-CYCLOPS-MAIN-002.json  (sha256 e2c9137b20abd621a2520104e71cc6ce2402efb31a78be30e0bf56c77bee4941)
+  field                                 corpus                             read back
+  quest name                            WC-CYCLOPS-MAIN-002                WC-CYCLOPS-MAIN-002  ok
+  title                                 QuestTitle_17318F                  QuestTitle_17318F  ok
+  level                                 1                                  1  ok
+  mainline                              true                               true  ok
+  goal count                            6                                  6  ok
+  goal names (in order)                 [1_WizardQuestGoals_TalkNPC, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_TalkNPC, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_TalkNPC, 6_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_TalkNPC, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_TalkNPC, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_TalkNPC, 6_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_PERSONA x6]             [GOAL_TYPE_PERSONA x6]  ok
+  dialog blocks (ActorDialog count)     7                                  7  ok
+  dialog entries (NPCDialogEntry count) 27                                 27  ok
+  dialog entries per container          {1_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 3_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=7), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=5)} {1_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 3_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=7), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=5)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-FIRECAT-MAIN-004.json  (sha256 efaf06ab46504ea482e3e5d7b0e9978287cc1d52f78746649f00ff1d43c48d4b)
+  field                                 corpus                             read back
+  quest name                            WC-FIRECAT-MAIN-004                WC-FIRECAT-MAIN-004  ok
+  title                                 QuestTitle_173599                  QuestTitle_173599  ok
+  level                                 1                                  1  ok
+  mainline                              true                               true  ok
+  goal count                            5                                  5  ok
+  goal names (in order)                 [1_WizardQuestGoals_KillCollect, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_Kill, 5_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_KillCollect, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_Kill, 5_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_SCAVENGE, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA] [GOAL_TYPE_SCAVENGE, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA]  ok
+  dialog blocks (ActorDialog count)     3                                  3  ok
+  dialog entries (NPCDialogEntry count) 13                                 13  ok
+  dialog entries per container          {2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), quest/Prep(blocks=1, entries=6)} {2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), quest/Prep(blocks=1, entries=6)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-UNICORN-MAIN-004.json  (sha256 a2eae4202bc9ee0a67fe00138066c5fac2c03a387882d98f8ffa0ce8b15fd047)
+  field                                 corpus                             read back
+  quest name                            WC-UNICORN-MAIN-004                WC-UNICORN-MAIN-004  ok
+  title                                 QuestTitle_1625CA                  QuestTitle_1625CA  ok
+  level                                 0                                  0  ok
+  mainline                              true                               true  ok
+  goal count                            7                                  7  ok
+  goal names (in order)                 [1_WizardQuestGoals_00000015, 2_WizardQuestGoals_00000015, 3_WizardQuestGoals_00000015, 4_WizardQuestGoals_00000015, 5_WizardQuestGoals_KillCollect, 6_WizardQuestGoals_Explore, 7_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_00000015, 2_WizardQuestGoals_00000015, 3_WizardQuestGoals_00000015, 4_WizardQuestGoals_00000015, 5_WizardQuestGoals_KillCollect, 6_WizardQuestGoals_Explore, 7_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_USAGE x4, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA] [GOAL_TYPE_USAGE x4, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA]  ok
+  dialog blocks (ActorDialog count)     3                                  3  ok
+  dialog entries (NPCDialogEntry count) 8                                  8  ok
+  dialog entries per container          {7_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=2), quest/Completion(blocks=1, entries=2), quest/Prep(blocks=1, entries=4)} {7_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=2), quest/Completion(blocks=1, entries=2), quest/Prep(blocks=1, entries=4)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-UNICORN-MAIN-007.json  (sha256 69af8326966595ba96abd6b097cd4efdf6319979f32cc72b08d137a11ef75b9e)
+  field                                 corpus                             read back
+  quest name                            WC-UNICORN-MAIN-007                WC-UNICORN-MAIN-007  ok
+  title                                 QuestTitle_1625CF                  QuestTitle_1625CF  ok
+  level                                 0                                  0  ok
+  mainline                              true                               true  ok
+  goal count                            4                                  4  ok
+  goal names (in order)                 [1_WizardQuestGoals_00000253, 2_WizardQuestGoals_Kill, 3_WizardQuestGoals_00000146, 4_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_00000253, 2_WizardQuestGoals_Kill, 3_WizardQuestGoals_00000146, 4_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTY, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA] [GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTY, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA]  ok
+  dialog blocks (ActorDialog count)     5                                  5  ok
+  dialog entries (NPCDialogEntry count) 8                                  8  ok
+  dialog entries per container          {2_WizardQuestGoals_Kill/Completion(blocks=1, entries=2), 2_WizardQuestGoals_Kill/Prep(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=3)} {2_WizardQuestGoals_Kill/Completion(blocks=1, entries=2), 2_WizardQuestGoals_Kill/Prep(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=3)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+PASS: 5 fixture(s), 50 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).
+
+real	0m2.589s
+user	0m2.116s
+sys	0m0.316s
+verify:captures rc=0
+
+########## npm run audit:corpus
+
+> spiraldb-ui@0.1.0 audit:corpus
+> node scripts/audit-corpus-roundtrip.mjs
+
+  … 75/322 quests, 0 failing, 32s
+  … 100/322 quests, 0 failing, 41s
+  … 150/322 quests, 0 failing, 59s
+  … 200/322 quests, 0 failing, 76s
+  … 225/322 quests, 0 failing, 88s
+  … 275/322 quests, 0 failing, 108s
+  … 300/322 quests, 0 failing, 117s
+
+corpus:    /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+quests:    322 real corpus quest(s) attempted
+verified:  181/322 round-trip identically through the real reader (1810 field check(s), 0 mismatch(es), 0 known-defect row(s))
+not covered: 141 refused by the generator (a synthetic-harness coverage limit, measured in docs/evidence/phase-2/story-p2-03-diversity.txt — only a recorded live capture can cover these)
+   122  goal-level dialog on a compilation goal
+    11  quest has no goals
+     4  quest-level dialog tag not Prep/Completion
+     4  m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+
+PASS: 181/322 verified, 141 not covered by the synthetic harness, 0 failure(s) (122.4s).
+
+real	2m2.576s
+user	1m39.127s
+sys	0m14.154s
+audit:corpus rc=0
+
+########## npx tsx scripts/sync-spotcheck.ts --tree /tmp/wad-spike --db /tmp/p5-09/dryrun.db
+=== SpiralDB UI — sync spot-check (p1-06 AC#2) ===
+  db file          : /tmp/p5-09/dryrun.db
+  tree             : /tmp/wad-spike
+  spiraldb corpus  : /tmp/p5-09/corpus
+  sample / seed    : 5 rows per table / seed 20260926
+  string_table rows: 216991
+
+[manifest] TemplateManifest_deser.json — the authoritative id space (D35)
+  file             : /tmp/wad-spike/TemplateManifest_deser.json
+  entries          : 137,423 → 137,423 ids / 137,423 files
+  rejected/dupes   : rejected 0; duplicate ids 0, duplicate files 0
+
+[items / npcs / spells] re-read the source _deser.json for each sampled row
+  scanned 123,042 template files; items=79,835 spells=18,173 npcs=23,033
+  manifest ids used: 121,041 / fallback 0 / missing 0 / mismatches 0
+
+[items] 5 random rows
+  - items id=1524346  db name="Akhtang WormCrawl"
+     source      : /tmp/wad-spike/ObjectData/Housing/HouseGuests/G14-DM-Draconian_Boss_deser.json
+     manifest    : ObjectData/Housing/HouseGuests/G14-DM-Draconian_Boss.xml → m_id 1524346 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1524346  m_displayName="WizardMobs_00002053"  m_objectName="Guest_G14-DM-Draconian_Boss"
+     ladder      : m_displayName → string_table (WizardMobs_00002053)
+     OK   id equals the manifest m_id (1524346)
+     OK   embedded m_templateID agrees (1524346)
+     OK   name matches the source-derived name "Akhtang WormCrawl" (db "Akhtang WormCrawl")
+  - items id=1405248  db name="Sand Sea Dagger of Mischief"
+     source      : /tmp/wad-spike/ObjectData/MR Equipment/Athames/Athame-MR-L116-Myth-01_deser.json
+     manifest    : ObjectData/MR Equipment/Athames/Athame-MR-L116-Myth-01.xml → m_id 1405248 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1405248  m_displayName="Items_00018909"  m_objectName="Athame-MR-L116-Myth-01"
+     ladder      : m_displayName → string_table (Items_00018909)
+     OK   id equals the manifest m_id (1405248)
+     OK   embedded m_templateID agrees (1405248)
+     OK   name matches the source-derived name "Sand Sea Dagger of Mischief" (db "Sand Sea Dagger of Mischief")
+  - items id=1762047  db name="Sky Sorcerer Hakama"
+     source      : /tmp/wad-spike/ObjectData/SpecialSets/Robes/MS2-Robe-Tier17_deser.json
+     manifest    : ObjectData/SpecialSets/Robes/MS2-Robe-Tier17.xml → m_id 1762047 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1762047  m_displayName="Items_00021594"  m_objectName="MS2-Robe-Tier17"
+     ladder      : m_displayName → string_table (Items_00021594)
+     OK   id equals the manifest m_id (1762047)
+     OK   embedded m_templateID agrees (1762047)
+     OK   name matches the source-derived name "Sky Sorcerer Hakama" (db "Sky Sorcerer Hakama")
+  - items id=1696409  db name="Board of Gorgon's Gaze"
+     source      : /tmp/wad-spike/ObjectData/CrownItems/Series63/Decks/Crowns-S63-Deck-L50-FS-012-01_deser.json
+     manifest    : ObjectData/CrownItems/Series63/Decks/Crowns-S63-Deck-L50-FS-012-01.xml → m_id 1696409 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1696409  m_displayName="Items_00030154"  m_objectName="Crowns-S63-Deck-L50-FS-012-01"
+     ladder      : m_displayName → string_table (Items_00030154)
+     OK   id equals the manifest m_id (1696409)
+     OK   embedded m_templateID agrees (1696409)
+     OK   name matches the source-derived name "Board of Gorgon's Gaze" (db "Board of Gorgon's Gaze")
+  - items id=1602221  db name="Wild Skyfarer's Athame"
+     source      : /tmp/wad-spike/ObjectData/CrownItems/Series53/Athames/Crowns-S53-Athames-L150-SS-016-01_deser.json
+     manifest    : ObjectData/CrownItems/Series53/Athames/Crowns-S53-Athames-L150-SS-016-01.xml → m_id 1602221 (D35 id source)
+     _className  : WizItemTemplate (family item)  m_templateID=1602221  m_displayName="Items_00026662"  m_objectName="Crowns-S53-Athames-L150-SS-016-01"
+     ladder      : m_displayName → string_table (Items_00026662)
+     OK   id equals the manifest m_id (1602221)
+     OK   embedded m_templateID agrees (1602221)
+     OK   name matches the source-derived name "Wild Skyfarer's Athame" (db "Wild Skyfarer's Athame")
+
+[spells] 10 random rows: template_id → manifest file → _deser.json → name
+  - spells id=506468322  db name="Cursed Colossus"
+     manifest    : Spells/Tiered Spells/FUSE - Colossus Mantis - Shadow - T01 - TEMP.xml
+     source      : /tmp/wad-spike/Spells/Tiered Spells/FUSE - Colossus Mantis - Shadow - T01 - TEMP_deser.json
+     _className  : TieredSpellTemplate
+     ladder      : m_displayName → string_table (Spells_00005453)
+     triple      : 506468322 -> Spells/Tiered Spells/FUSE - Colossus Mantis - Shadow - T01 - TEMP.xml -> "Cursed Colossus"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Cursed Colossus"
+  - spells id=432324119  db name="Ether Shield"
+     manifest    : Spells/Ether Shield.xml
+     source      : /tmp/wad-spike/Spells/Ether Shield_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000198)
+     triple      : 432324119 -> Spells/Ether Shield.xml -> "Ether Shield"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Ether Shield"
+  - spells id=1995954677  db name="Spinysaur"
+     manifest    : Spells/Spinysaur - Unbeatable - MOB ONLY.xml
+     source      : /tmp/wad-spike/Spells/Spinysaur - Unbeatable - MOB ONLY_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001174)
+     triple      : 1995954677 -> Spells/Spinysaur - Unbeatable - MOB ONLY.xml -> "Spinysaur"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Spinysaur"
+  - spells id=1135912742  db name="Monster Magic Summon"
+     manifest    : Spells/MonsterMagicTC/SummonVampireNurseTC1698869.xml
+     source      : /tmp/wad-spike/Spells/MonsterMagicTC/SummonVampireNurseTC1698869_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001576)
+     triple      : 1135912742 -> Spells/MonsterMagicTC/SummonVampireNurseTC1698869.xml -> "Monster Magic Summon"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Monster Magic Summon"
+  - spells id=527838134  db name="Sirens"
+     manifest    : Spells/KH-Gauntlet-Spells/KH Sirens.xml
+     source      : /tmp/wad-spike/Spells/KH-Gauntlet-Spells/KH Sirens_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spell_00001856)
+     triple      : 527838134 -> Spells/KH-Gauntlet-Spells/KH Sirens.xml -> "Sirens"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Sirens"
+  - spells id=501597771  db name="Choke"
+     manifest    : Spells/Mobs/End Force Pass Self.xml
+     source      : /tmp/wad-spike/Spells/Mobs/End Force Pass Self_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000212)
+     triple      : 501597771 -> Spells/Mobs/End Force Pass Self.xml -> "Choke"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Choke"
+  - spells id=2129571384  db name="Summon Minions"
+     manifest    : Spells/Fight Specific/SKBs/General Lightbane/Minion - Damage Shrike 100.xml
+     source      : /tmp/wad-spike/Spells/Fight Specific/SKBs/General Lightbane/Minion - Damage Shrike 100_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001573)
+     triple      : 2129571384 -> Spells/Fight Specific/SKBs/General Lightbane/Minion - Damage Shrike 100.xml -> "Summon Minions"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Summon Minions"
+  - spells id=80058898  db name="Legion Shield 2"
+     manifest    : Spells/Cantrips/CantripSigilTC_Ice_01B.xml
+     source      : /tmp/wad-spike/Spells/Cantrips/CantripSigilTC_Ice_01B_deser.json
+     _className  : CantripsSpellTemplate
+     ladder      : m_displayName → string_table (Cantrips_00000147)
+     triple      : 80058898 -> Spells/Cantrips/CantripSigilTC_Ice_01B.xml -> "Legion Shield 2"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Legion Shield 2"
+  - spells id=2029287812  db name="Accurate"
+     manifest    : Spells/Accurate.xml
+     source      : /tmp/wad-spike/Spells/Accurate_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00000388)
+     triple      : 2029287812 -> Spells/Accurate.xml -> "Accurate"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Accurate"
+  - spells id=347074929  db name="Monster Magic Defeat"
+     manifest    : Spells/MonsterMagicTC/KillMandorianGuardTC1530799.xml
+     source      : /tmp/wad-spike/Spells/MonsterMagicTC/KillMandorianGuardTC1530799_deser.json
+     _className  : SpellTemplate
+     ladder      : m_displayName → string_table (Spells_00001582)
+     triple      : 347074929 -> Spells/MonsterMagicTC/KillMandorianGuardTC1530799.xml -> "Monster Magic Defeat"
+     OK   the manifest path is under Spells/
+     OK   the manifest target file exists on disk
+     OK   SpellTemplate carries no m_templateID (the id can only come from the manifest)
+     OK   resolved name matches the db name "Monster Magic Defeat"
+
+[npcs] 5 random rows
+  - npcs id=785095  db name="MS_PageEvent_Gate"
+     source      : /tmp/wad-spike/ObjectData/MooShu/MS_PageEvent_Gate_deser.json
+     manifest    : ObjectData/MooShu/MS_PageEvent_Gate.xml → m_id 785095 (D35 id source)
+     _className  : GameObjectTemplate (family npc)  m_templateID=785095  m_displayName=""  m_objectName="MS_PageEvent_Gate"
+     ladder      : m_objectName (m_displayName empty)
+     OK   id equals the manifest m_id (785095)
+     OK   embedded m_templateID agrees (785095)
+     OK   name matches the source-derived name "MS_PageEvent_Gate" (db "MS_PageEvent_Gate")
+  - npcs id=1621661  db name="Robin Hoodwinker"
+     source      : /tmp/wad-spike/ObjectData/Battlegrounds/BG_Polymorph_Player_RatThief_Life_05_deser.json
+     manifest    : ObjectData/Battlegrounds/BG_Polymorph_Player_RatThief_Life_05.xml → m_id 1621661 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=1621661  m_displayName="WizardMobs_00004514"  m_objectName="BG_Polymorph_Player_RatThief_Life_05"
+     ladder      : m_displayName → string_table (WizardMobs_00004514)
+     OK   id equals the manifest m_id (1621661)
+     OK   embedded m_templateID agrees (1621661)
+     OK   name matches the source-derived name "Robin Hoodwinker" (db "Robin Hoodwinker")
+  - npcs id=1594109  db name="Ned Collie"
+     source      : /tmp/wad-spike/ObjectData/WL/WL-WOBB-NPC04-B_deser.json
+     manifest    : ObjectData/WL/WL-WOBB-NPC04-B.xml → m_id 1594109 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=1594109  m_displayName="NPCs_01749382"  m_objectName="WL-WOBB-NPC04-B"
+     ladder      : m_displayName → string_table (NPCs_01749382)
+     OK   id equals the manifest m_id (1594109)
+     OK   embedded m_templateID agrees (1594109)
+     OK   name matches the source-derived name "Ned Collie" (db "Ned Collie")
+  - npcs id=1675144  db name="NPC_KT_ShopkeeperZigZag_BasketWalk01"
+     source      : /tmp/wad-spike/ObjectData/KT/NPC_KT_ShopkeeperZigZag_BasketWalk01_deser.json
+     manifest    : ObjectData/KT/NPC_KT_ShopkeeperZigZag_BasketWalk01.xml → m_id 1675144 (D35 id source)
+     _className  : WizGameObjectTemplate (family npc)  m_templateID=1675144  m_displayName=""  m_objectName="NPC_KT_ShopkeeperZigZag_BasketWalk01"
+     ladder      : m_objectName (m_displayName empty)
+     OK   id equals the manifest m_id (1675144)
+     OK   embedded m_templateID agrees (1675144)
+     OK   name matches the source-derived name "NPC_KT_ShopkeeperZigZag_BasketWalk01" (db "NPC_KT_ShopkeeperZigZag_BasketWalk01")
+  - npcs id=1675582  db name="Teleporter Arch"
+     source      : /tmp/wad-spike/ObjectData/Shared-TeleporterArchEffects_deser.json
+     manifest    : ObjectData/Shared-TeleporterArchEffects.xml → m_id 1675582 (D35 id source)
+     _className  : GameObjectTemplate (family npc)  m_templateID=1675582  m_displayName="WizardGameObjects_00000510"  m_objectName="Shared-TeleporterArchEffects"
+     ladder      : m_displayName → string_table (WizardGameObjects_00000510)
+     OK   id equals the manifest m_id (1675582)
+     OK   embedded m_templateID agrees (1675582)
+     OK   name matches the source-derived name "Teleporter Arch" (db "Teleporter Arch")
+
+[corpus spell coverage] spell ids referenced by /tmp/p5-09/corpus (p1-06b-ac2)
+  NpcSpellInventory   : +584 new id(s)
+  CreatureSpellbook   : +201 new id(s)
+  QuestTemplates      : +10 new id(s)
+  referenced ids     : 795
+  in the manifest    : 792 (716 point at Spells/*.xml)
+  resolved in spells : 716/795 (90.1%) — was 0 before D35, expect ≥700
+  triple             : 78544 -> Spells/Pwn.xml -> "Pwn" (referenced by NpcSpellInventory/NPCSpellInventories_257-A.json)
+  triple             : 84361 -> Spells/Tiered Spells/Imp.xml -> "Imp" (referenced by NpcSpellInventory/NPCSpellInventories_129-A.json)
+  triple             : 92296 -> Spells/Hex.xml -> "Hex" (referenced by NpcSpellInventory/NPCSpellInventories_609-A.json)
+  triple             : 1174487 -> Spells/Tiered Spells/Mashup_Storm_KrakenShark.xml -> "Catch of the Day" (referenced by CreatureSpellbook/CreatureSpellbooks_227-A.json)
+  triple             : 2141733 -> Spells/Epic.xml -> "Epic" (referenced by NpcSpellInventory/NPCSpellInventories_1089-A.json)
+  triple             : 2306189 -> Spells/Mend.xml -> "Mend" (referenced by NpcSpellInventory/NPCSpellInventories_1089-A.json)
+  triple             : 2404620 -> Spells/Link.xml -> "Link" (referenced by CreatureSpellbook/CreatureSpellbooks_291-A.json)
+  triple             : 2514611 -> Spells/Stun.xml -> "Stun" (referenced by NpcSpellInventory/NPCSpellInventories_481-A.json)
+  triple             : 2537945 -> Spells/Yolo.xml -> "Ultra Dark" (referenced by NpcSpellInventory/NPCSpellInventories_257-A.json)
+  triple             : 2563718 -> Spells/Fuel.xml -> "Fuel" (referenced by NpcSpellInventory/NPCSpellInventories_610-A.json)
+  triple             : 2603011 -> Spells/Calm.xml -> "Calm" (referenced by NpcSpellInventory/NPCSpellInventories_961-A.json)
+  triple             : 2832525 -> Spells/Melt.xml -> "Melt" (referenced by NpcSpellInventory/NPCSpellInventories_195-A.json)
+     OK   the corpus references at least one spell id
+     OK   ≥700 of the referenced spell ids resolve to a name through the database (716/795)
+     OK   every referenced id that points at a Spells/ file resolves (716 vs 716)
+
+[quests] 5 random rows against /tmp/p5-09/corpus/QuestTemplates/*.json
+  - quest KT-SPH2-C01-002  db title="Search for the Seal" level=19
+     source      : /tmp/p5-09/corpus/QuestTemplates/questtemplates_KT-SPH2-C01-002.json
+     corpus      : m_questTitle="QuestTitle_9989" m_questLevel=19 m_mainline=true
+     string_table: lookupString("QuestTitle_9989") = "Search for the Seal"
+     OK   title resolves through string_table ("Search for the Seal")
+     OK   level matches (19)
+  - quest WC-OLDE-MAIN-002B  db title="Putting Out the Fire!" level=1
+     source      : /tmp/p5-09/corpus/QuestTemplates/questtemplates_WC-OLDE-MAIN-002B.json
+     corpus      : m_questTitle="QuestTitle_17358F" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_17358F") = "Putting Out the Fire!"
+     OK   title resolves through string_table ("Putting Out the Fire!")
+     OK   level matches (1)
+  - quest MS-PLAG2-C01-004  db title="A Good Guardian" level=1
+     source      : /tmp/p5-09/corpus/QuestTemplates/questtemplates_MS-PLAG2-C01-004.json
+     corpus      : m_questTitle="QuestTitle_9C47" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_9C47") = "A Good Guardian"
+     OK   title resolves through string_table ("A Good Guardian")
+     OK   level matches (1)
+  - quest DS-NEC2-C01-002  db title="A Brief History" level=1
+     source      : /tmp/p5-09/corpus/QuestTemplates/questtemplates_DS-NEC2-C01-002.json
+     corpus      : m_questTitle="QuestTitle_1ED3A" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_1ED3A") = "A Brief History"
+     OK   title resolves through string_table ("A Brief History")
+     OK   level matches (1)
+  - quest MS-WAR1-C01-004  db title="Never Again" level=1
+     source      : /tmp/p5-09/corpus/QuestTemplates/questtemplates_MS-WAR1-C01-004.json
+     corpus      : m_questTitle="QuestTitle_12DF0" m_questLevel=1 m_mainline=true
+     string_table: lookupString("QuestTitle_12DF0") = "Never Again"
+     OK   title resolves through string_table ("Never Again")
+     OK   level matches (1)
+
+[quests] the hex/decimal collision quest (AC#2 example)
+  corpus quest with a hex-form title key: DS-ACAD-C01-001
+  source : /tmp/p5-09/corpus/QuestTemplates/questtemplates_DS-ACAD-C01-001.json
+  key    : QuestTitle_298DE
+  raw SQL: {"value":"Wizard Tours "}
+  helper : "Wizard Tours "
+  db row : {"quest_name":"DS-ACAD-C01-001","title":"Wizard Tours ","level":1}
+     OK   the quest title key resolves to a human-readable value, not the raw key
+     OK   the synced quests.title equals the resolved string_table value
+
+[zones] 5 random rows against /tmp/p5-09/corpus/ZoneTransfer/*.json
+  - zone Novus/Interiors/NV_Z01_DuelingTent  db display_name="Novus / Interiors / NV Z01 Dueling Tent"
+     source      : /tmp/p5-09/corpus/ZoneTransfer/WizardZoneDatas_4129-A.json (m_destinationZone)
+     raw         : "Novus/Interiors/NV_Z01_DuelingTent"
+     humanize    : "Novus / Interiors / NV Z01 Dueling Tent"
+     OK   display_name matches humanizeZonePath ("Novus / Interiors / NV Z01 Dueling Tent")
+  - zone Mirage/Interiors/MR_Z04_CalixcoNursery  db display_name="Mirage / Interiors / MR Z04 Calixco Nursery"
+     source      : /tmp/p5-09/corpus/ZoneTransfer/WizardZoneDatas_8676-A.json (m_destinationZone)
+     raw         : "Mirage/Interiors/MR_Z04_CalixcoNursery"
+     humanize    : "Mirage / Interiors / MR Z04 Calixco Nursery"
+     OK   display_name matches humanizeZonePath ("Mirage / Interiors / MR Z04 Calixco Nursery")
+  - zone WizardCity/WC_Streets/WC_Drains/Z04_OldeTownDrains  db display_name="Wizard City / WC Streets / WC Drains / Z04 Olde Town Drains"
+     source      : /tmp/p5-09/corpus/ZoneTransfer/WizardZoneDatas_11809-A.json (m_destinationZone)
+     raw         : "WizardCity/WC_Streets/WC_Drains/Z04_OldeTownDrains"
+     humanize    : "Wizard City / WC Streets / WC Drains / Z04 Olde Town Drains"
+     OK   display_name matches humanizeZonePath ("Wizard City / WC Streets / WC Drains / Z04 Olde Town Drains")
+  - zone Celestia/Interiors/CL_Z12i2_Test_Of_The_Spheres  db display_name="Celestia / Interiors / CL Z12i2 Test Of The Spheres"
+     source      : /tmp/p5-09/corpus/ZoneTransfer/WizardZoneDatas_10850-A.json (m_destinationZone)
+     raw         : "Celestia/Interiors/CL_Z12i2_Test_Of_The_Spheres"
+     humanize    : "Celestia / Interiors / CL Z12i2 Test Of The Spheres"
+     OK   display_name matches humanizeZonePath ("Celestia / Interiors / CL Z12i2 Test Of The Spheres")
+  - zone MooShu/MS_Plague/Interiors/MS_Plague3_T2  db display_name="Moo Shu / MS Plague / Interiors / MS Plague3 T2"
+     source      : /tmp/p5-09/corpus/ZoneTransfer/WizardZoneDatas_5665-A.json (m_destinationZone)
+     raw         : "MooShu/MS_Plague/Interiors/MS_Plague3_T2"
+     humanize    : "Moo Shu / MS Plague / Interiors / MS Plague3 T2"
+     OK   display_name matches humanizeZonePath ("Moo Shu / MS Plague / Interiors / MS Plague3 T2")
+
+[drop_tables] 5 random rows against /tmp/p5-09/corpus/DropTables/*.json
+  - drop_table KT-PYMHub-C01-004  db description=null
+     source      : /tmp/p5-09/corpus/DropTables/droptables_kt-pymhub-c01-004.json
+     raw         : Name="KT-PYMHub-C01-004" Description=""
+     OK   Name matches ("KT-PYMHub-C01-004")
+     OK   Description matches
+  - drop_table WC-UNICORN-MAIN-002  db description=null
+     source      : /tmp/p5-09/corpus/DropTables/droptables_wc-unicorn-main-002.json
+     raw         : Name="WC-UNICORN-MAIN-002" Description=""
+     OK   Name matches ("WC-UNICORN-MAIN-002")
+     OK   Description matches
+  - drop_table MS-WAR2-C01-006  db description=null
+     source      : /tmp/p5-09/corpus/DropTables/droptables_ms-war2-c01-006.json
+     raw         : Name="MS-WAR2-C01-006" Description=""
+     OK   Name matches ("MS-WAR2-C01-006")
+     OK   Description matches
+  - drop_table DS-LIB-C01-004  db description=null
+     source      : /tmp/p5-09/corpus/DropTables/droptables_ds-lib-c01-004.json
+     raw         : Name="DS-LIB-C01-004" Description=""
+     OK   Name matches ("DS-LIB-C01-004")
+     OK   Description matches
+  - drop_table KT-PYM2-C01-002  db description=null
+     source      : /tmp/p5-09/corpus/DropTables/droptables_kt-pym2-c01-002.json
+     raw         : Name="KT-PYM2-C01-002" Description=""
+     OK   Name matches ("KT-PYM2-C01-002")
+     OK   Description matches
+
+[string_table] re-read the exact token from the real .lang files
+  parsed 5,132 .lang files
+  string_table rows: 216,991
+  - Battlegrounds_SigilOwnerBlue  db value="Blue Team"
+     source      : /tmp/wad-spike/Locale/en-US/Battlegrounds.lang
+     raw token   : "SigilOwnerBlue" → "Blue Team"
+     OK   value matches the .lang file byte-for-byte
+  - WizardPets_00000610  db value="Babydactyl"
+     source      : /tmp/wad-spike/Locale/en-US/WizardPets.lang
+     raw token   : "00000610" → "Babydactyl"
+     OK   value matches the .lang file byte-for-byte
+  - WizQst161891_00000024  db value="the Scholars"
+     source      : /tmp/wad-spike/Locale/en-US/WizQst161891.lang
+     raw token   : "00000024" → "the Scholars"
+     OK   value matches the .lang file byte-for-byte
+  - WizQst1627CC_00000004  db value="If you happen to find any of these Books, bring 'em back my way, kid. I'll condense them into one crackerjack article on the History of Magic."
+     source      : /tmp/wad-spike/Locale/en-US/WizQst1627CC.lang
+     raw token   : "00000004" → "If you happen to find any of these Books, bring 'em back my way, kid. I'll condense them into one crackerjack article on the History of Magic."
+     OK   value matches the .lang file byte-for-byte
+  - CombatMessages_00003668  db value="$Ward_image$: -65% $StormSchoolIcon$$Damage_image$"
+     source      : /tmp/wad-spike/Locale/en-US/CombatMessages.lang
+     raw token   : "00003668" → "$Ward_image$: -65% $StormSchoolIcon$$Damage_image$"
+     OK   value matches the .lang file byte-for-byte
+
+[string_table] hex-key queries (AC#2 — both forms, one numeric index)
+  QuestTitle_1ED8A
+     raw SQL : {"key":"QuestTitle_1ED8A","value":"Forged in Fire","category":"QuestTitle"}
+     helper  : "Forged in Fire"
+     OK   raw SQL and helper agree
+  QuestTitle_1ED8D
+     raw SQL : {"key":"QuestTitle_1ED8D","value":"Quest for Perfection","category":"QuestTitle"}
+     helper  : "Quest for Perfection"
+     OK   raw SQL and helper agree
+  QuestTitle_126346
+     raw SQL : {"key":"QuestTitle_126346","value":"Letters of Light","category":"QuestTitle"}
+     helper  : "Letters of Light"
+     OK   raw SQL and helper agree
+
+summary
+  checks: 108  failures: 0  seed: 20260926
+
+real	0m20.767s
+user	0m13.996s
+sys	0m6.132s
+sync:spotcheck rc=0

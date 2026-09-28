@@ -24,7 +24,9 @@ export const SYNC_USAGE = `Usage: npm run sync [-- options]
   -h, --help         print this help
 
 Environment: SPIRALDB_SYNC_TREE, SPIRALDB_SYNC_AURORIUM, SPIRALDB_SYNC_SPIRALDB,
-SPIRALDB_SYNC_IMCODEC, SPIRALDB_SYNC_DB (flags win).`;
+SPIRALDB_SYNC_IMCODEC, SPIRALDB_SYNC_DB (flags win), and SPIRALDB_UI_DB — the
+app-wide database override (decision D44), used when neither --db nor
+SPIRALDB_SYNC_DB names a file.`;
 
 /** Parsed command line. Missing values fall back to environment then settings. */
 export interface SyncCliArgs {

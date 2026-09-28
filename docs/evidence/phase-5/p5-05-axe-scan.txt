@@ -1,0 +1,15 @@
+# p5-05 AC#9 — axe-core scan (lead-run, D23)
+
+Engine: axe-core 4.13.0 (D87, devDependency).
+Stack: the app on an isolated port we own (Vite 5291, Express 3001) over a COPY of the database at /tmp/p505/scan.db (read-only use; the owner's [::1]:5173 was never touched).
+Surfaces: the four AC#9 names.
+Verdict: none.
+
+=== Dashboard (/) — critical/serious: 0, other: 0, consoleErrors: 0
+
+=== Quest list (/quests) — critical/serious: 0, other: 0, consoleErrors: 0
+  (edit mode as loaded: hook=1)
+
+=== Quest detail (edit mode) (/quests/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 2
+
+=== DropTable detail (/drop-tables/DS-ACAD-C01-001) — critical/serious: 0, other: 0, consoleErrors: 1

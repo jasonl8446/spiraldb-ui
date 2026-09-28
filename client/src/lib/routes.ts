@@ -98,9 +98,10 @@ export interface AppRoute {
   /** Header page title for a match. */
   title: string;
   /**
-   * Phase that builds the page. Routes whose page exists render it (chosen by
-   * path in `App.tsx`: `/settings` from p1-08, `/quests/extract` from p2-07);
-   * every other route renders the "Arrives in Phase N" stub (decision D39 item 7).
+   * Phase that built the page. **Historically the stub announcement** (decision D39
+   * item 7): every route now has a real page — chosen by path in `App.tsx`, whose last
+   * stub branch story p5-08 deleted — so this value is provenance, not a rendering
+   * switch, and `tests/unit/ui-shell.test.ts` is what pins it.
    */
   phase: number;
 }
@@ -110,9 +111,9 @@ export interface AppRoute {
  * precede the dynamic patterns that could shadow them (`/quests/extract` before
  * `/quests/:questName`).
  *
- * Phase mapping (lead decision 7): Dashboard → 5; quests → 2 (the detail route is
- * also readable in Phase 2; editing arrives in Phase 3, and the stub says 2);
- * the eight other object editors → 4; Settings → 1, fully built here.
+ * Phase mapping (lead decision 7): Dashboard → 5; quests → 2 (the browse list and the
+ * detail route were both built in Phase 2 — the editors Phase 3 added inside the detail
+ * page do not re-stamp its owner phase); the eight other object editors → 4; Settings → 1.
  */
 export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/', title: 'Dashboard', phase: 5 },

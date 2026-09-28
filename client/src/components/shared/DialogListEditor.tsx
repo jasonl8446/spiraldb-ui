@@ -163,9 +163,9 @@ export default function DialogListEditor({
   return (
     <section aria-label={label} className={cn('flex min-w-0 flex-col gap-3', className)}>
       {!view.readable ? (
-        <p className="text-sm text-zinc-500">{NO_DIALOG_LIST_TEXT}</p>
+        <p className="text-sm text-zinc-400">{NO_DIALOG_LIST_TEXT}</p>
       ) : view.groups.length === 0 ? (
-        <p className="text-sm text-zinc-500">{NO_DIALOG_TAGS_TEXT}</p>
+        <p className="text-sm text-zinc-400">{NO_DIALOG_TAGS_TEXT}</p>
       ) : (
         <ul className="flex min-w-0 flex-col gap-4">
           {view.groups.map((group) => (
@@ -199,11 +199,11 @@ function DialogTagSection({
         className="min-w-0 rounded-md border border-zinc-800 border-l-4 border-l-blue-500 bg-zinc-900/30 p-3"
       >
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-zinc-500">{view.index + 1}</span>
+          <span className="font-mono text-xs text-zinc-400">{view.index + 1}</span>
           <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-200">
             {view.tagLabel}
           </span>
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-zinc-400">
             {view.entries.length === 1 ? '1 entry' : `${view.entries.length} entries`}
           </span>
         </header>
@@ -221,7 +221,7 @@ function DialogTagSection({
               state.edit(setDialogTagEdit(view.listPath, view.index, event.target.value))
             }
           />
-          <p className="text-xs text-zinc-500">{TAG_NOTE}</p>
+          <p className="text-xs text-zinc-400">{TAG_NOTE}</p>
         </div>
 
         {!view.readable ? (
@@ -232,7 +232,7 @@ function DialogTagSection({
             </pre>
           </div>
         ) : view.entries.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">{NO_DIALOG_ENTRIES_TEXT}</p>
+          <p className="mt-3 text-sm text-zinc-400">{NO_DIALOG_ENTRIES_TEXT}</p>
         ) : (
           <ul className="mt-3 flex min-w-0 flex-col gap-3">
             {view.entries.map((entry) => (
@@ -280,11 +280,11 @@ function GroupFieldsDisclosure({ view }: { view: DialogGroupView }): JSX.Element
   };
   return (
     <details className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40">
-      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
         {`Group fields (${view.unmodelledKeys.length} unmodelled)`}
       </summary>
       <div className="border-t border-zinc-800 p-3">
-        <p className="mb-2 text-xs text-zinc-500">
+        <p className="mb-2 text-xs text-zinc-400">
           Read-only — this editor never writes m_madlibs, m_dialogEvents, the two aggro flags or a
           key it does not know.
         </p>
@@ -311,7 +311,7 @@ function DialogEntryCard({
         className="min-w-0 rounded-md border border-zinc-800 bg-zinc-900/40 p-3"
       >
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-zinc-500">{view.ordinal}</span>
+          <span className="font-mono text-xs text-zinc-400">{view.ordinal}</span>
           <span className="font-mono text-sm text-zinc-100">
             {view.personaName ?? 'NPCDialogEntry'}
           </span>
@@ -405,7 +405,7 @@ function EntryAccordion({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       >
         <span aria-hidden="true">{open ? '▾' : '▸'}</span>
         {accordion.label}
@@ -496,7 +496,7 @@ function DialogFieldControl({
           path={path}
           label={`Requirements for ${view.address}`}
         />
-        <p id={describedBy} className="text-xs text-zinc-500">
+        <p id={describedBy} className="text-xs text-zinc-400">
           {REQUIREMENTS_FIXTURE_NOTE}
         </p>
       </div>
@@ -510,7 +510,7 @@ function DialogFieldControl({
         <pre className="max-h-40 overflow-auto rounded-md border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-300">
           {fieldView.present ? JSON.stringify(fieldView.value, null, 2) : 'absent'}
         </pre>
-        <p id={describedBy} className="text-xs text-zinc-500">
+        <p id={describedBy} className="text-xs text-zinc-400">
           {field.help}
         </p>
       </div>
@@ -542,7 +542,7 @@ function DialogFieldControl({
             )
           }
         />
-        <p id={describedBy} className="text-xs text-zinc-500">
+        <p id={describedBy} className="text-xs text-zinc-400">
           {`${field.help} ${STRING_LIST_NOTE}`}
         </p>
       </div>
@@ -577,7 +577,7 @@ function DialogFieldControl({
           aria-invalid={ariaInvalid}
           type="checkbox"
           checked={fieldView.value === true}
-          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="h-4 w-4 accent-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           onChange={(event) =>
             state.edit(
               setEntryBooleanFieldEdit(
@@ -734,7 +734,7 @@ function StringKeyField({
           {stringKeyDisplay(key, lookup.data)}
         </p>
       ) : null}
-      <p id={describedBy} className="text-xs text-zinc-500">
+      <p id={describedBy} className="text-xs text-zinc-400">
         {field.help}
       </p>
     </div>
@@ -753,7 +753,7 @@ function RawFieldsDisclosure({ view }: { view: DialogEntryView }): JSX.Element |
   }
   return (
     <details className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40">
-      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
         {`${RAW_FIELDS_LABEL} (${view.unmodelledKeys.length} unmodelled)`}
       </summary>
       <div className="border-t border-zinc-800 p-3">
@@ -839,7 +839,7 @@ function Labelled({
       </label>
       {children}
       {help === undefined || help === '' ? null : (
-        <p id={helpId} className="text-xs text-zinc-500">
+        <p id={helpId} className="text-xs text-zinc-400">
           {help}
         </p>
       )}
@@ -850,4 +850,4 @@ function Labelled({
 
 /** The shared input/select styling (the same classes the other live panels use). */
 const CONTROL_CLASS =
-  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950';

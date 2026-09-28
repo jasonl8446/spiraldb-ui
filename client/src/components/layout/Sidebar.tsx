@@ -30,10 +30,10 @@ import { cn } from '../../lib/utils';
 /**
  * Sidebar navigation (docs/spec-ui-design.md L60-97).
  *
- * 260px fixed, full viewport height, `zinc-900` on a `zinc-800` right border, with
- * four collapsible groups (OVERVIEW / QUESTS / DATA / SETTINGS) whose items carry
- * 18px Lucide icons. The active item gets `blue-600/10` + `blue-400` text; hover
- * is `zinc-800` (spec L85-89).
+ * **200px on tablet (768–1279px), 260px on desktop (≥1280px)** (spec L516-522), full viewport
+ * height, `zinc-900` on a `zinc-800` right border, with four collapsible groups (OVERVIEW /
+ * QUESTS / DATA / SETTINGS) whose items carry 18px Lucide icons. The active item gets
+ * `blue-600/10` + `blue-400` text; hover is `zinc-800` (spec L85-89).
  *
  * Which item is active comes from `activeNavPath(pathname)` — a single path or
  * `null` — and never from `NavLink`'s own `isActive`, which prefix-matches and so
@@ -173,10 +173,17 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
 
   return (
     <>
-      {/* Desktop rail — 260px, fixed, full height. */}
+      {/*
+        The rail: **200px on tablet (768–1279px), 260px on desktop (≥1280px)** — the two numbers
+        `docs/spec-ui-design.md` L516-522 states. Story p5-06 added the tablet tier: before it,
+        the rail used `md:` (768) for the 260px layout and never `xl:` (1280), so it measured
+        260px at 768/1023/1024/1279 — the spec's 200px tablet width did not exist anywhere in the
+        shell, on any route. `xl` is Tailwind's 1280px boundary, i.e. exactly the spec's desktop
+        line (the dashboard's stat-card grid already uses it for the same reason).
+      */}
       <aside
         aria-label="Sidebar"
-        className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-zinc-800 bg-zinc-900 md:flex"
+        className="fixed inset-y-0 left-0 z-40 hidden w-[200px] flex-col border-r border-zinc-800 bg-zinc-900 md:flex xl:w-[260px]"
       >
         <Brand />
         <NavContent />

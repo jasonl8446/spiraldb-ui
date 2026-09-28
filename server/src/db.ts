@@ -284,6 +284,27 @@ export function resolveDbFile(
   return env[DB_FILE_ENV_VAR] || defaultDbFile(repoRoot);
 }
 
+/**
+ * The database file `npm run sync` opens (found by p5-08, fixed by p5-09).
+ *
+ * The whole ladder, in order:
+ *
+ * 1. `--db <path>` / `SPIRALDB_SYNC_DB` — the sync CLI's own input, already applied
+ *    by `parseSyncArgs` into `args.dbFile` (flags win over that env var).
+ * 2. `SPIRALDB_UI_DB` (D44) — the app-wide override `getDb()` honours, so a caller who
+ *    set it can never have the script silently write to `data/spiraldb-ui.db` instead.
+ *    Until p5-09 the script passed only `args.dbFile`, so this step did not exist and an
+ *    intended isolation silently failed against the developer's live database.
+ * 3. `data/spiraldb-ui.db` — the spec default.
+ */
+export function resolveSyncDbFile(
+  args: { dbFile?: string },
+  env: NodeJS.ProcessEnv = process.env,
+  repoRoot: string = resolveRepoRoot(),
+): string {
+  return args.dbFile || resolveDbFile(env, repoRoot);
+}
+
 /** Process-wide connection (synchronous, single-user tool — no pooling). */
 let connection: Db | undefined;
 

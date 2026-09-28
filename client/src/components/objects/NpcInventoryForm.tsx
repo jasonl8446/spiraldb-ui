@@ -89,7 +89,7 @@ export default function NpcInventoryForm({
               <span className="font-mono text-sm text-zinc-100">
                 {templateId === undefined || templateId === null ? '—' : String(templateId)}
               </span>
-              <span className="text-xs text-zinc-500">TemplateID (the key of this file)</span>
+              <span className="text-xs text-zinc-400">TemplateID (the key of this file)</span>
             </>
           )}
         </CardContent>

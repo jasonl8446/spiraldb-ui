@@ -103,7 +103,7 @@ export interface DropTableFormProps {
 
 /** The control style the Info/Dialog editors use, reused so the two forms look alike. */
 const CONTROL_CLASS =
-  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60';
+  'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-60';
 
 /** A scalar as the text a control shows: `''` for absent/`null`, JSON for structured values. */
 function scalarText(value: unknown): string {
@@ -290,9 +290,9 @@ function ScalarField({
         />
       )}
 
-      {field.help === undefined ? null : <p className="text-xs text-zinc-500">{field.help}</p>}
+      {field.help === undefined ? null : <p className="text-xs text-zinc-400">{field.help}</p>}
       {field.presenceSensitive ? (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-400">
           {Object.prototype.hasOwnProperty.call(document, field.key)
             ? 'Present in this file; it is written only if you change it.'
             : `Absent in this file (present in ${field.corpusPresence} of 317 corpus files); it stays absent unless you change it.`}
@@ -335,7 +335,7 @@ function GoldRange({
           const id = `droptable-${key}-${generated}`;
           return (
             <div key={key} className="flex min-w-0 flex-1 items-center gap-2">
-              <label htmlFor={id} className="w-8 text-xs text-zinc-500">
+              <label htmlFor={id} className="w-8 text-xs text-zinc-400">
                 {key === 'MinGold' ? 'Min' : 'Max'}
               </label>
               <Input
@@ -413,7 +413,7 @@ function ItemsSection({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {items.length === 0 ? (
-            <p className="text-xs text-zinc-500">This drop table has no item rows.</p>
+            <p className="text-xs text-zinc-400">This drop table has no item rows.</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {items.map((row, index) => (
@@ -489,7 +489,7 @@ function ItemRow({
               aria-label={`Item ${index + 1} item id`}
               placeholder="Select an item…"
             />
-            <span className="font-mono text-xs text-zinc-500">
+            <span className="font-mono text-xs text-zinc-400">
               stored as {JSON.stringify(row[itemIdField.key] ?? null)}
             </span>
           </div>
@@ -505,7 +505,7 @@ function ItemRow({
               aria-label={`Item ${index + 1} item name`}
               className={CONTROL_CLASS}
             />
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-400">
               Filled from the synced items table; an unresolved id keeps this value as it is.
             </span>
           </div>
@@ -622,7 +622,7 @@ function AuditSection({ document }: { document: Record<string, unknown> }): JSX.
           <CardTitle className="text-sm">Audit</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-zinc-400">
             Embedded audit fields. This editor shows them and never writes them, so a save leaves
             them exactly as the file had them.
           </p>

@@ -105,7 +105,7 @@ export default function RawIdAddControl(props: RawIdAddControlProps): JSX.Elemen
         </Button>
       </div>
 
-      {help === undefined ? null : <p className="text-xs text-zinc-500">{help}</p>}
+      {help === undefined ? null : <p className="text-xs text-zinc-400">{help}</p>}
     </div>
   );
 }
