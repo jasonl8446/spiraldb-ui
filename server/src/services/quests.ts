@@ -12,6 +12,7 @@ import {
   collectionSpec,
   objectKeyFromData,
   readSpiraldbJson,
+  relativeTo,
   SpiraldbFileError,
 } from './spiraldbFiles.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
@@ -158,12 +159,6 @@ export interface ListQuestsOptions {
   db: Db;
   /** SpiralDB repository root (`settings.spiraldb_path`). */
   spiraldbPath: string;
-}
-
-/** `file` relative to `root`, or `file` itself when it is outside/equal to root. */
-function relativeTo(root: string, file: string): string {
-  const relative = path.relative(root, file);
-  return relative === '' ? file : relative;
 }
 
 /**

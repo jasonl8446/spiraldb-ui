@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../Imview/src/Imview.PacketReader/Imview.PacketReader.csproj" />
+    <!-- The Imview root is a property, not a relative literal: see the root
+         `Directory.Build.props` (F1, final-deslop). Defaults to the owner's sibling layout. -->
+    <ProjectReference Include="$(ImviewRoot)/src/Imview.PacketReader/Imview.PacketReader.csproj" />
   </ItemGroup>
 
   <ItemGroup>

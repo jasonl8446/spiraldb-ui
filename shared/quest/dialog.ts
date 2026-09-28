@@ -168,9 +168,6 @@ export const ActorDialogBlockSchema = passthroughObject({
   m_noAggroNoDelay: z.boolean().nullish(),
 });
 
-/** A dialog block. */
-export type ActorDialogBlock = z.infer<typeof ActorDialogBlockSchema>;
-
 /**
  * The **typed** dialog block — `ResActorDialog.m_dialog` on the owner's `f9a1055` baseline
  * (5 occurrences, 3 quests).

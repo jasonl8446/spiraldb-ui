@@ -20,12 +20,7 @@
  */
 
 import { formatDocPath } from '../document.js';
-import type { QuestFinding, QuestFindingKind, ValidationSeverity } from './validation.js';
-
-/** How a severity reads in the UI's own vocabulary. */
-export function severityLabel(severity: ValidationSeverity): 'Error' | 'Warning' {
-  return severity === 'error' ? 'Error' : 'Warning';
-}
+import type { QuestFinding, QuestFindingKind } from './validation.js';
 
 /** The human name of each finding kind — the banner's summary vocabulary. */
 export function kindLabel(kind: QuestFindingKind): string {

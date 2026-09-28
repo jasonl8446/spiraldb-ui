@@ -153,11 +153,6 @@ const COLLECTION_BY_TYPE = new Map<ObjectFileType, SpiraldbCollectionSpec>(
   SPIRALDB_COLLECTIONS.map((spec) => [spec.fileType, spec]),
 );
 
-/** Spec families the save pipeline may write. */
-export const SAVEABLE_COLLECTIONS: readonly SpiraldbCollectionSpec[] = SPIRALDB_COLLECTIONS.filter(
-  (spec) => spec.saveable,
-);
-
 /** A spec row whose `keyField` is known — everything the content-keyed index can scan. */
 export interface IndexedCollectionSpec extends SpiraldbCollectionSpec {
   keyField: string;
@@ -325,6 +320,19 @@ export function writeSpiraldbJson(filePath: string, data: unknown): void {
 export function createTargetPath(root: string, spec: SpiraldbCollectionSpec, key: string): string {
   const name = spec.keyField === null ? UNKEYED_FILE_NAME : fileNameFor(spec.fileType, key);
   return path.join(root, spec.directory, name);
+}
+
+/**
+ * `file` relative to `root`, or `file` itself when it is outside/equal to root — the
+ * form the API reports a committed path in.
+ *
+ * The body sat byte-for-byte in both `objects.ts` and `quests.ts` (final-deslop); it
+ * lives in the file layer because that is what a SpiralDB-root-relative path is, and
+ * both services already import this module.
+ */
+export function relativeTo(root: string, file: string): string {
+  const relative = path.relative(root, file);
+  return relative === '' ? file : relative;
 }
 
 /**

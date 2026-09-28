@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { shouldAnnounceImport, type ImportReport } from '../../client/src/lib/api';
 import {
   activeNavGroupId,
   activeNavPath,
@@ -668,6 +669,33 @@ describe('toast policy (docs/spec-ui-design.md L111-123)', () => {
 
   it('words the first-startup import toast like the plan', () => {
     expect(importSummaryMessage(2271)).toBe('Imported 2,271 existing entries from SpiralDB');
+  });
+
+  /**
+   * The F2 regression lock (final-deslop). The shell used to guard this toast with a
+   * module-level `let importToastShown`, which (a) is state the query layer should own and
+   * (b) permanently swallowed a *second* import in the same process. The mark now rides on
+   * the cached report, so these four arms are the whole decision.
+   */
+  it('announces an import report exactly once, and only when there is one to announce', () => {
+    const report = (extra: Partial<ImportReport> = {}): ImportReport => ({
+      ran: true,
+      imported: 2271,
+      imported_at: '2026-09-26T11:44:32.227Z',
+      ...extra,
+    });
+
+    // The one arm that announces.
+    expect(shouldAnnounceImport(report())).toBe(true);
+    // Already announced — the mark the shell writes back into the query cache.
+    expect(shouldAnnounceImport(report({ announced: true }))).toBe(false);
+    // Nothing was imported, and no report at all (the query is still pending).
+    expect(shouldAnnounceImport(report({ ran: false, imported: 0 }))).toBe(false);
+    expect(shouldAnnounceImport(report({ imported: 0 }))).toBe(false);
+    expect(shouldAnnounceImport(undefined)).toBe(false);
+    // A *new* report (a second import in the same process) is announced again, which the
+    // module-level boolean could never do: a fresh payload has no mark on it.
+    expect(shouldAnnounceImport(report({ imported_at: '2026-10-01T00:00:00.000Z' }))).toBe(true);
   });
 });
 

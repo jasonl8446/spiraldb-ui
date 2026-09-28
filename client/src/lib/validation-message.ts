@@ -33,6 +33,22 @@ export function fieldHasError(messages: readonly FieldValidationMessage[]): bool
   return messages.some((message) => message.severity === 'error');
 }
 
+/**
+ * `A, B and C` — an English list of the distinct kinds, in finding order.
+ *
+ * The banner headlines of both hosts use this (`quest-validation.ts`'s
+ * `questBannerModel` and `drop-table-validation.ts`'s `dropTableBannerModel`), and
+ * final-deslop found the body sitting in both files byte-for-byte. It lives here, in
+ * the module this file's header already declares as the shared plumbing for exactly
+ * those two mappers, so the sentence shape has one home.
+ */
+export function joinKinds(kinds: readonly string[]): string {
+  if (kinds.length === 1) {
+    return kinds[0];
+  }
+  return `${kinds.slice(0, -1).join(', ')} and ${kinds[kinds.length - 1]}`;
+}
+
 /** Groups messages by their rendered path (the shared `formatDocPath`) — the lookup controls use. */
 export function indexFieldMessages(
   messages: readonly FieldValidationMessage[],

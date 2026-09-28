@@ -6,6 +6,7 @@ import {
 } from '@shared/dropTable/validation-messages';
 
 import type { FieldValidationMessage } from './validation-message';
+import { joinKinds } from './validation-message';
 
 /**
  * The client-side view model of a DropTable validation pass — plan task 4.2's presentation
@@ -58,14 +59,6 @@ export interface DropTableBannerModel {
   errorCount: number;
   warningCount: number;
   errorKinds: string[];
-}
-
-/** `A, B and C` — an English list of the distinct kinds, in finding order. */
-function joinKinds(kinds: readonly string[]): string {
-  if (kinds.length === 1) {
-    return kinds[0];
-  }
-  return `${kinds.slice(0, -1).join(', ')} and ${kinds[kinds.length - 1]}`;
 }
 
 /** The banner's headline — counts and kinds, never the per-field copy (that is the inline list's job). */

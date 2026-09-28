@@ -105,11 +105,6 @@ export function FieldValidationProvider({
   );
 }
 
-/** The provider's own value — what a host (or a banner) can read without re-deriving it. */
-export function useFieldValidation(): FieldValidationValue {
-  return useContext(FieldValidationContext);
-}
-
 /** The messages at exactly {@link path}. */
 export function useFieldMessages(path: DocPath): readonly FieldValidationMessage[] {
   return useContext(FieldValidationContext).at(path);

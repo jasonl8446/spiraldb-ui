@@ -333,8 +333,3 @@ export function closeDb(): void {
     connection = undefined;
   }
 }
-
-/** Test escape hatch: closes the shared connection so the next `getDb()` reopens it. */
-export function resetDbForTests(): void {
-  closeDb();
-}

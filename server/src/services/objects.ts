@@ -16,6 +16,7 @@ import {
   createTargetPath,
   objectKeyFromData,
   readSpiraldbJson,
+  relativeTo,
   SpiraldbFileError,
 } from './spiraldbFiles.js';
 import {
@@ -131,12 +132,6 @@ export interface ListObjectsOptions {
   config: ObjectTypeConfig;
   /** SpiralDB repository root (`settings.spiraldb_path`). */
   spiraldbPath: string;
-}
-
-/** `file` relative to `root`, or `file` itself when it is outside/equal to root. */
-function relativeTo(root: string, file: string): string {
-  const relative = path.relative(root, file);
-  return relative === '' ? file : relative;
 }
 
 function describeError(error: unknown): string {

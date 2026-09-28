@@ -1,0 +1,24 @@
+  Determining projects to restore...
+  Skipping project "/tmp/final-deslop/no-such-imview/src/Imview.PacketReader/Imview.PacketReader.csproj" because it was not found.
+  Skipping project "/tmp/final-deslop/no-such-imview/src/Imview.PacketReader/Imview.PacketReader.csproj" because it was not found.
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+  Restored /home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj (in 1.71 sec).
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/sdk/9.0.318/Microsoft.Common.CurrentVersion.targets(2189,5): warning MSB9008: The referenced project /tmp/final-deslop/no-such-imview/src/Imview.PacketReader/Imview.PacketReader.csproj does not exist. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/Program.cs(3,7): error CS0246: The type or namespace name 'Imcodec' could not be found (are you missing a using directive or an assembly reference?) [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/Program.cs(4,7): error CS0246: The type or namespace name 'Imview' could not be found (are you missing a using directive or an assembly reference?) [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/Program.cs(204,47): error CS0246: The type or namespace name 'QuestTemplate' could not be found (are you missing a using directive or an assembly reference?) [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+
+Build FAILED.
+
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj : warning NU1900: Error occurred while getting package vulnerability data: Access to the path '/home/jason/.local/share/NuGet/http-cache/670c1461c29885f9aa22c281d8b7da90845b38e4$ps:_api.nuget.org_v3_index.json/vuln_index.dat-new' is denied.
+/nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet/sdk/9.0.318/Microsoft.Common.CurrentVersion.targets(2189,5): warning MSB9008: The referenced project /tmp/final-deslop/no-such-imview/src/Imview.PacketReader/Imview.PacketReader.csproj does not exist. [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/Program.cs(3,7): error CS0246: The type or namespace name 'Imcodec' could not be found (are you missing a using directive or an assembly reference?) [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/Program.cs(4,7): error CS0246: The type or namespace name 'Imview' could not be found (are you missing a using directive or an assembly reference?) [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/Program.cs(204,47): error CS0246: The type or namespace name 'QuestTemplate' could not be found (are you missing a using directive or an assembly reference?) [/home/jason/Documents/git-projects/spiraldb-ui/tools/PacketReaderCli/PacketReaderCli.csproj]
+    3 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:02.61
+negative-control rc=1

@@ -538,8 +538,16 @@ test.describe('reordering', () => {
     await page.mouse.up();
     // Await the drop's effect before reading the document: the panel is fed by the same
     // live document, so copying immediately can still capture the pre-drop order.
+    //
+    // **Budget raised deliberately (final-deslop, D77(a)).** The global
+    // `expect: { timeout: 10_000 }` (playwright.config.ts) governed this poll while the real
+    // 20-step dnd-kit pointer drag was measured at **13.7 s** at peak load — so the arm was
+    // carried as a flake (D77(d)'s family, "a 10 s poll for a 13.7 s operation"). This is
+    // patience, not a weaker claim: the assertion is unchanged, and the budget is raised
+    // *here* rather than on the global `expect.timeout`, which would hide real failures
+    // across all 33 specs.
     await expect
-      .poll(() => cardOrder(page))
+      .poll(() => cardOrder(page), { timeout: 30_000 })
       .toStrictEqual([
         '2_WizardQuestGoals_00000067',
         '1_WizardQuestGoals_00000058',

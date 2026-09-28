@@ -1,0 +1,250 @@
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/api-client.test.ts (22 tests) 56ms
+ ✓ tests/unit/extract-ui.test.ts (26 tests) 21ms
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — the fidelity walk detects the failures the sweep exists to catch > fails on a dropped explicit null, by path
+[p4-09 ac4 falsification] dropped null detected: <root>.Nested: key sets differ (missing on the left: [], missing on the right: [b])
+
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — the fidelity walk detects the failures the sweep exists to catch > fails on a reordered key set that deep equality alone does not see
+[p4-09 ac4 falsification] reordered keys detected: <root>: key order differs (left: [Name, Nested, List, Absent] vs right: [Nested, Name, List, Absent])
+
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — round-trip over the committed object fixtures (always runs, CI included) > round-trips every committed object fixture and preserves key order, nulls and absences
+[p4-09 ac4] committed fixtures swept=4 failures=0
+
+ ✓ tests/unit/quest-goal-logic.test.ts (40 tests) 167ms
+ ✓ tests/unit/ui-shell.test.ts (66 tests) 122ms
+ ✓ tests/unit/ulong.test.ts (9 tests) 52ms
+stdout | tests/unit/object-list-counts.test.ts > p4-09 ac1 — the list service counts the real corpus > answers the AC’s count for every family, in both units where they differ
+[p4-09 ac1] droptable path=/home/jason/Documents/git-projects/spiraldb listRows=317 acFiles=317 acListRows=317 summary.total=317 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] npcinventory path=/home/jason/Documents/git-projects/spiraldb listRows=215 acFiles=215 acListRows=215 summary.total=215 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] npcspellinventory path=/home/jason/Documents/git-projects/spiraldb listRows=77 acFiles=77 acListRows=77 summary.total=77 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] creaturespellbook path=/home/jason/Documents/git-projects/spiraldb listRows=134 acFiles=134 acListRows=134 summary.total=134 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] treasurecardinventory path=/home/jason/Documents/git-projects/spiraldb listRows=1 acFiles=1 acListRows=1 summary.total=1 skipped=0 duplicate_keys=0 missing_directory=false
+[p4-09 ac1] zonetransfer path=/home/jason/Documents/git-projects/spiraldb listRows=1205 acFiles=1207 acListRows=1205 summary.total=1205 skipped=0 duplicate_keys=2 missing_directory=false
+
+ ✓ tests/unit/search-ui.test.ts (16 tests) 11ms
+stdout | tests/unit/object-list-counts.test.ts > p4-09 ac1 — the list service counts the real corpus > ZoneTransfer names the two collapsed key pairs rather than dropping a row silently
+[p4-09 ac1] ZoneTransfer duplicate_keys=["ZoneTransfer/WizardCity/Tutorial_Exterior","ZoneTransfer/WizardCity/Tutorial_Interior"]
+
+stdout | tests/unit/object-list-counts.test.ts > p4-09 ac1 — the list service counts the real corpus > NpcDropTable answers the absent-directory empty list, not an error (D72a)
+[p4-09 ac1] npcdroptable path=/home/jason/Documents/git-projects/spiraldb objects=0 missing_directory=true summary={"total":0,"extracted":0,"reviewed":0,"verified":0}
+
+ ✓ tests/unit/object-list-counts.test.ts (4 tests) 179ms
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — round-trip over the six-family corpus on disk (owner run) > round-trips every file of every family and prints per-type counts vs `ls | wc -l`
+[p4-09 ac4] droptable dir=/home/jason/Documents/git-projects/spiraldb/DropTables [authoritative]
+[p4-09 ac4]   files discovered=317 ls|wc -l=317 round-tripped=317 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=317 unclassified=0
+[p4-09 ac4]   top-level key order: 281×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_ds-acad-c01-001.json, droptables_ds-acad-c01-002.json, droptables_ds-acad-c01-003.json, droptables_ds-acad-c01-004.json) 31×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,GrantsPotionSlot] (droptables_wc-commons-main-002-storm.json, droptables_wc-commons-main-003.json, droptables_wc-commons-main-004.json, droptables_wc-commons-main-005.json) 3×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,GrantsPotionSlot,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_wc-unicorn-main-002.json, droptables_wc-unicorn-main-007.json, droptables_wc-unicorn-main-008.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,TrainingPoints,GrantsPotionSlot,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,MinGold,MaxGold,ExperienceAmount,Items] (droptables_wc-unicorn-main-004-mount.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items] (droptables_wc-unicorn-side-001.json)
+[p4-09 ac4] npcinventory dir=/home/jason/Documents/git-projects/spiraldb/NpcInventory [authoritative]
+[p4-09 ac4]   files discovered=215 ls|wc -l=215 round-tripped=215 failures=0
+[p4-09 ac4]   bytes: identical=215 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 215×[TemplateID,Inventory] (NPCInventories_1-A.json, NPCInventories_1025-A.json, NPCInventories_1026-A.json, NPCInventories_1027-A.json)
+[p4-09 ac4] npcspellinventory dir=/home/jason/Documents/git-projects/spiraldb/NpcSpellInventory [authoritative]
+[p4-09 ac4]   files discovered=77 ls|wc -l=77 round-tripped=77 failures=0
+[p4-09 ac4]   bytes: identical=77 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 77×[TemplateID,Spells] (7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json, NPCSpellInventories_1025-A.json, NPCSpellInventories_1057-A.json, NPCSpellInventories_1089-A.json)
+[p4-09 ac4] creaturespellbook dir=/home/jason/Documents/git-projects/spiraldb/CreatureSpellbook [authoritative]
+[p4-09 ac4]   files discovered=134 ls|wc -l=134 round-tripped=134 failures=0
+[p4-09 ac4]   bytes: identical=134 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 134×[DeckName,SpellTemplateIds] (CreatureSpellbooks_1-A.json, CreatureSpellbooks_129-A.json, CreatureSpellbooks_161-A.json, CreatureSpellbooks_162-A.json)
+[p4-09 ac4] treasurecardinventory dir=/home/jason/Documents/git-projects/spiraldb/TreasureCardInventory [authoritative]
+[p4-09 ac4]   files discovered=1 ls|wc -l=1 round-tripped=1 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=1 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[TemplateID,TreasureCards] (NpcTreasureCards_2019-A.json)
+[p4-09 ac4] zonetransfer dir=/home/jason/Documents/git-projects/spiraldb/ZoneTransfer [authoritative]
+[p4-09 ac4]   files discovered=1207 ls|wc -l=1207 round-tripped=1207 failures=0
+[p4-09 ac4]   bytes: identical=1206 trailing-whitespace-only=1 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[ZoneName,Teleports,Events] (WizardZoneDatas_1-A.json) 1206×[ZoneName,Events,Teleports] (WizardZoneDatas_10017-A.json, WizardZoneDatas_10049-A.json, WizardZoneDatas_10050-A.json, WizardZoneDatas_10051-A.json)
+[p4-09 ac4] droptable dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/DropTables [clone]
+[p4-09 ac4]   files discovered=317 ls|wc -l=317 round-tripped=317 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=317 unclassified=0
+[p4-09 ac4]   top-level key order: 281×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_ds-acad-c01-001.json, droptables_ds-acad-c01-002.json, droptables_ds-acad-c01-003.json, droptables_ds-acad-c01-004.json) 31×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,GrantsPotionSlot] (droptables_wc-commons-main-002-storm.json, droptables_wc-commons-main-003.json, droptables_wc-commons-main-004.json, droptables_wc-commons-main-005.json) 3×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,GrantsPotionSlot,Items,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy] (droptables_wc-unicorn-main-002.json, droptables_wc-unicorn-main-007.json, droptables_wc-unicorn-main-008.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,TrainingPoints,GrantsPotionSlot,CreatedAt,ModifiedAt,CreatedBy,ModifiedBy,MinGold,MaxGold,ExperienceAmount,Items] (droptables_wc-unicorn-main-004-mount.json) 1×[Name,Description,RollChance,Weight,NoneChance,PityCounter,MinGold,MaxGold,ExperienceAmount,TrainingPoints,Items] (droptables_wc-unicorn-side-001.json)
+[p4-09 ac4] npcinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcInventory [clone]
+[p4-09 ac4]   files discovered=215 ls|wc -l=215 round-tripped=215 failures=0
+[p4-09 ac4]   bytes: identical=215 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 215×[TemplateID,Inventory] (NPCInventories_1-A.json, NPCInventories_1025-A.json, NPCInventories_1026-A.json, NPCInventories_1027-A.json)
+[p4-09 ac4] npcspellinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcSpellInventory [clone]
+[p4-09 ac4]   files discovered=77 ls|wc -l=77 round-tripped=77 failures=0
+[p4-09 ac4]   bytes: identical=77 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 77×[TemplateID,Spells] (7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json, NPCSpellInventories_1025-A.json, NPCSpellInventories_1057-A.json, NPCSpellInventories_1089-A.json)
+[p4-09 ac4] creaturespellbook dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/CreatureSpellbook [clone]
+[p4-09 ac4]   files discovered=134 ls|wc -l=134 round-tripped=134 failures=0
+[p4-09 ac4]   bytes: identical=134 trailing-whitespace-only=0 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 134×[DeckName,SpellTemplateIds] (CreatureSpellbooks_1-A.json, CreatureSpellbooks_129-A.json, CreatureSpellbooks_161-A.json, CreatureSpellbooks_162-A.json)
+[p4-09 ac4] treasurecardinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/TreasureCardInventory [clone]
+[p4-09 ac4]   files discovered=1 ls|wc -l=1 round-tripped=1 failures=0
+[p4-09 ac4]   bytes: identical=0 trailing-whitespace-only=0 legacy-json5-reshape=1 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[TemplateID,TreasureCards] (NpcTreasureCards_2019-A.json)
+[p4-09 ac4] zonetransfer dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/ZoneTransfer [clone]
+[p4-09 ac4]   files discovered=1207 ls|wc -l=1207 round-tripped=1207 failures=0
+[p4-09 ac4]   bytes: identical=1206 trailing-whitespace-only=1 legacy-json5-reshape=0 unclassified=0
+[p4-09 ac4]   top-level key order: 1×[ZoneName,Teleports,Events] (WizardZoneDatas_1-A.json) 1206×[ZoneName,Events,Teleports] (WizardZoneDatas_10017-A.json, WizardZoneDatas_10049-A.json, WizardZoneDatas_10050-A.json, WizardZoneDatas_10051-A.json)
+[p4-09 ac4] summary vs the AC: droptable=317 npcinventory=215 npcspellinventory=77 creaturespellbook=134 treasurecardinventory=1 zonetransfer=1207
+
+stdout | tests/unit/object-corpus-roundtrip.test.ts > p4-09 ac4 — round-trip over the six-family corpus on disk (owner run) > preserves the measured key-order splits, the duplicate list values and the unprefixed file
+[p4-09 ac4] ZoneTransfer top-level order: majority=1206 minority=1 (WizardZoneDatas_1-A.json)
+[p4-09 ac4] ZoneTransfer nested Teleport order: serializer=2355 spec=13 (of 2368 entries)
+[p4-09 ac4] ZoneTransfer duplicate ZoneName pairs: [["WizardCity/Tutorial_Exterior",2],["WizardCity/Tutorial_Interior",2]]
+[p4-09 ac4] named normalisation: WizardZoneDatas_Tutorial_Interior-A.json raw ends in \n\n, the writer emits one — whitespace-only, values identical
+[p4-09 ac4] npcinventory.Inventory: files with a duplicate element=14
+[p4-09 ac4] npcspellinventory.Spells: files with a duplicate element=0
+[p4-09 ac4] creaturespellbook.SpellTemplateIds: files with a duplicate element=4
+[p4-09 ac4] NpcSpellInventory unprefixed file 7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json (TemplateID=38226) round-tripped and is key-resolved by content, not name
+
+ ✓ tests/unit/object-corpus-roundtrip.test.ts (9 tests) 1138ms
+   ✓ p4-09 ac4 — round-trip over the six-family corpus on disk (owner run) > round-trips every file of every family and prints per-type counts vs `ls | wc -l`  900ms
+ ✓ tests/unit/dashboard.test.ts (21 tests) 53ms
+ ✓ tests/unit/quests-browse.test.ts (32 tests) 31ms
+ ✓ tests/unit/spiraldb-files.test.ts (32 tests) 33ms
+ ✓ tests/unit/quest-goals.test.ts (34 tests) 38ms
+ ✓ tests/unit/object-status.test.ts (12 tests) 28ms
+stderr | tests/unit/names.test.ts > lazy mount (decision D32) > control: a names request really does go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/names.test.ts:556:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:69:43
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/names.test.ts (66 tests) 1481ms
+   ✓ lazy mount (decision D32) > does not open the real database when the registry and app are merely imported  747ms
+ ✓ tests/unit/zone-transfer-model.test.ts (19 tests) 1175ms
+   ✓ AC1 + AC2 — the live corpus (1207 files) > has exactly the three measured top-level keys, Events present and empty in every file, and 2368 teleport entries  748ms
+stdout | tests/unit/quest-validation.test.ts
+[p3-09 corpus] corpus=/home/jason/Documents/git-projects/spiraldb/QuestTemplates files=328 | zones=1241 npcs=23033 spells=18173 drop_tables=317 quests=328
+
+ ✓ tests/unit/status-transition.test.ts (17 tests) 12ms
+ ✓ tests/unit/extract-api.test.ts (12 tests) 376ms
+ ✓ tests/unit/treasure-card-inventory-model.test.ts (27 tests) 1202ms
+   ✓ the document-preservation contract on the real file (D57/D58) > saves the unmodified real document back to its legacy path, keeping the key set (D19)  355ms
+   ✓ the save path: a fixture document with an unmatched name > creates the entry and writes exactly the document’s two keys and each row’s two  384ms
+ ✓ tests/unit/connection.test.ts (11 tests) 26ms
+ ✓ tests/unit/object-create.test.ts (15 tests) 27ms
+ ✓ tests/unit/validation-summary.test.ts (6 tests) 9ms
+ ✓ tests/unit/object-save-body.test.ts (6 tests) 10ms
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1139:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:84:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+stderr | tests/unit/status.test.ts > lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/status.test.ts:1139:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:95:51
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/status.test.ts (83 tests) 1792ms
+   ✓ lazy mount (decision D32) > does not open the real database when the registry and app are merely imported  495ms
+   ✓ lazy mount (decision D32) > control: a status request and a dashboard request really do go through the lazy mount  306ms
+stderr | tests/unit/api-error-envelope.test.ts > API error envelope audit (AC2 / D37) > answers a thrown dependency error with a 500 { error } envelope and no stack
+[spiraldb-ui] unhandled error: TypeError: The database connection is not open
+    at Database.prepare (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Module.readSettings (/home/jason/Documents/git-projects/spiraldb-ui/server/src/db.ts:149:19)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/settings.ts:137:14
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+
+ ✓ tests/unit/api-error-envelope.test.ts (7 tests) 2003ms
+stdout | tests/unit/quest-validation.test.ts > p3-09 — the engine over the real corpus (owner run) > prints the measured summary line (the evidence record)
+[p3-09 corpus] files=328 errors=0 warnings=119 (zone=94, unreachable=25, reference=0) | 6 zero-instance rules = 0
+
+ ✓ tests/unit/quest-validation.test.ts (27 tests) 581ms
+ ✓ tests/unit/npc-drop-table-model.test.ts (23 tests) 1939ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > lists an absent directory as an empty list instead of failing  343ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > creates NpcDropTable/npcdroptable_<TemplateID>.json with exactly the schema’s two keys  329ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > writes an update back to the created file — for this family the created name IS the convention (D19)  515ms
+   ✓ POST /api/npc-drop-tables: the create that bootstraps the directory > round-trips an unmodified reload byte-identically (no save adds a key)  392ms
+ ✓ tests/unit/drop-table-save.test.ts (12 tests) 2108ms
+   ✓ POST /api/drop-tables: what must NOT be a 400 > an unmodified save of an existing entry passes — the entry is forgiven its own name  328ms
+   ✓ POST /api/drop-tables: what must NOT be a 400 > a create with a brand-new name passes and lands on the convention filename (singular droptable_)  366ms
+   ✓ POST /api/drop-tables: what must NOT be a 400 > the 8-measured-miss shape (an ItemId the names table does not carry) does not block a save  315ms
+stdout | tests/unit/requirement-tree.test.ts > the real corpus of requirement wrappers > re-sets every existing key in place, byte-for-byte, over every corpus file
+[p3-06 corpus] 1284 files, 790 requirement wrappers (809 leaves, 171 of them untyped wrappers) re-set byte-identically across /home/jason/Documents/git-projects/spiraldb/QuestTemplates, /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates, /home/jason/Documents/git-projects/spiraldb/DropTables, /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/DropTables
+
+ ✓ tests/unit/requirement-tree.test.ts (28 tests) 2819ms
+   ✓ the real corpus of requirement wrappers > re-sets every existing key in place, byte-for-byte, over every corpus file  2799ms
+stdout | tests/unit/quest-results.test.ts > the real corpus of result nodes > matches the measured key order for every node, and re-sets every field byte-for-byte
+[p3-07 corpus] 650 files, 4497 wrappers (0 tagged), 780 result nodes (421 in the real checkout, all 15 types present, ResActorDialog 5), ResDropTable 323, ResLearnSpell 21, 3 router sub-objects — key order and bytes identical to both corpora
+
+ ✓ tests/unit/quest-results.test.ts (32 tests) 3541ms
+   ✓ the real corpus of result nodes > matches the measured key order for every node, and re-sets every field byte-for-byte  3495ms
+ ✓ tests/unit/object-status-pipeline.test.ts (8 tests) 3386ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > drop_table: POST → extracted + the note, then an edit moves nothing  740ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > npc_inventory: POST → extracted + the note, then an edit moves nothing  598ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > npc_spell_inventory: POST → extracted + the note, then an edit moves nothing  516ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > creature_spellbook: POST → extracted + the note, then an edit moves nothing  393ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > npc_drop_table: POST → extracted + the note, then an edit moves nothing  327ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > treasure_card_inventory: POST → extracted + the note, then an edit moves nothing  309ms
+   ✓ AC2: a create tracks the entry as extracted with the "Created via UI" note > zone_transfer: POST → extracted + the note, then an edit moves nothing  322ms
+ ✓ tests/unit/quest-edit-isolation.test.ts (1 test) 2956ms
+   ✓ AC1 — real-quest edit isolation in the D17 clone > saves exactly the two edited fields, refreshes only the metadata stamps, and keeps the verified status  2953ms
+stderr | tests/unit/quests-api.test.ts > lazy mount (decision D32) > control: a quests request really goes through the lazy mount
+[spiraldb-ui] unhandled error: Error: getDb reached
+    at Module.<anonymous> (/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/quests-api.test.ts:1036:13)
+    at Module.mockCall (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/@vitest/spy/dist/index.js:96:15)
+    at Module.getDb (file:///home/jason/Documents/git-projects/spiraldb-ui/node_modules/tinyspy/dist/index.js:47:80)
+    at /home/jason/Documents/git-projects/spiraldb-ui/server/src/routes/index.ts:151:45
+    at Layer.handle [as handle_request] (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:328:13)
+    at /home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:286:9
+    at router.process_params (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/express/lib/router/index.js:175:3)
+
+ ✓ tests/unit/quests-api.test.ts (60 tests) 3355ms
+   ✓ POST /api/quests — save pipeline (ac3) > creates the file, the metadata, the commit and the extracted row (real pipeline)  369ms
+   ✓ POST /api/quests — save pipeline (ac3) > round-trips GET → POST unmodified with no field loss (explicit nulls preserved)  448ms
+   ✓ capture source note — gap B of p2-07 (plan §2.4) > behaves exactly as before when source is absent, null or blank  429ms
+stdout | tests/unit/quest-dialog.test.ts > the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field
+[p3-08 corpus] 328 real + 322 clone files, 797 real dialog lists / 1558 total (769 real tag groups / 1508 total), 1876 real entries in five corpus shapes (full 1860 / no-m_dialogEvent 65-key 7 / 60-key 1 / 45-key 6 / no-$type 58-key 2), plus the clone's 65-key null-omitted shape (35); the 5 typed ActorDialog blocks (8 entries) are covered by the results sweep; real tags Completion 442 / Prep 322 / "" 5 / Hyperlink 0 (typed ActorDialog blocks only — not list-mounted), 1286 string-list elements round-tripped, byte-identical in both corpora
+
+ ✓ tests/unit/quest-dialog.test.ts (29 tests) 4291ms
+   ✓ the real corpus of dialog lists > keeps every entry’s own shape, order and bytes across a benign re-set of every field  4274ms
+ ✓ tests/unit/save-pipeline.test.ts (23 tests) 4937ms
+   ✓ Save All of N extracted quests (ac1) > writes N files, N metadata files and N commits on content/{today}  782ms
+   ✓ Save All of N extracted quests (ac1) > records one extracted entry and one history row per quest (ac4)  465ms
+   ✓ updating an existing quest (ac5, server half) > updates the file in place, commits action update and confines the diff (D45(1))  425ms
+   ✓ updating an existing quest (ac5, server half) > normalises a legacy file to clean JSON on update without losing a field  304ms
+   ✓ verification status (ac4, D37) > never resets a verified entry when an editor saves without a status  407ms
+ ✓ tests/unit/objects-api.test.ts (38 tests) 6666ms
+   ✓ POST /: the save path > creates with the spec convention name and bootstraps the missing directory  318ms
+   ✓ POST /: the save path > creates a drop table as singular droptable_, never the legacy plural prefix  305ms
+   ✓ POST /: the save path > updates the file where it lives, keeping its legacy name and untouched keys  307ms
+   ✓ the router: the spec mount paths and their HTTP contract > saves through POST, creating the convention file and the directory  307ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcinventory: every real TemplateID resolves by its text key  658ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcspellinventory: every real TemplateID resolves by its text key  508ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > npcdroptable: every real TemplateID resolves by its text key  434ms
+   ✓ the D17 clone's ulong entries (live, one family at a time) > treasurecardinventory: every real TemplateID resolves by its text key  461ms
+
+ Test Files  35 passed (35)
+      Tests  873 passed (873)
+   Start at  22:55:30
+   Duration  7.82s (transform 6.39s, setup 0ms, collect 22.65s, tests 46.62s, environment 10ms, prepare 4.24s)
+
+touched-unit-batch rc=0

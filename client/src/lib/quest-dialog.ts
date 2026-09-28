@@ -210,15 +210,6 @@ export function dialogEntryFieldPath(
   return [...dialogEntryPath(listPath, groupIndex, entryIndex), key];
 }
 
-/** An entry's `m_requirements` slot — what the shared tree is mounted at. */
-export function dialogEntryRequirementsPath(
-  listPath: DocPath,
-  groupIndex: number,
-  entryIndex: number,
-): DocPath {
-  return [...dialogEntryPath(listPath, groupIndex, entryIndex), REQUIREMENTS_KEY];
-}
-
 /* ------------------------------------------------------------------ UI copy */
 
 /** The editor's default accessible name (a host overrides it per slot). */
@@ -854,11 +845,6 @@ export const DIALOG_ENTRY_FIELD_SPECS: readonly DialogFieldSpec[] = [
 
 /** The entry's own tag — the one key that is not an editable field. */
 export const ENTRY_TYPE_KEY = '$type';
-
-/** `true` when {@link key} is the entry tag. */
-export function isEntryTypeKey(key: string): boolean {
-  return key === ENTRY_TYPE_KEY;
-}
 
 /** The 65 corpus value keys, in corpus order (declaration order is insertion order). */
 export function dialogEntryValueKeys(): string[] {

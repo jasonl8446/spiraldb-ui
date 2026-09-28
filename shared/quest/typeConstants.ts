@@ -46,17 +46,6 @@
  * (`grep ⊆ constants`), and the table carries exactly the 29 measured strings.
  */
 
-/** The `$type` prefix every corpus `$type` string carries. */
-export const TYPE_CACHE_PREFIX = 'Imcodec.ObjectProperty.TypeCache.';
-
-/** The assembly-qualified suffix every corpus `$type` string carries. */
-export const TYPE_ASSEMBLY_SUFFIX = ', Imcodec.ObjectProperty';
-
-/** Builds the assembly-qualified spelling for a short Imcodec type name. */
-export function assemblyQualifiedType(shortName: string): string {
-  return `${TYPE_CACHE_PREFIX}${shortName}${TYPE_ASSEMBLY_SUFFIX}`;
-}
-
 /**
  * The 29 `$type` strings measured in the corpus, keyed by short type name.
  *
@@ -283,9 +272,6 @@ export type RequirementOperator = (typeof REQUIREMENT_OPERATORS)[number];
 /** The 7 magic schools ([spec-domain-reference.md] L430) — all 7 measured, 3× each (21 nodes);
  * plus 1 more each as `ReqIsSchool.m_magicSchoolName` on the owner's baseline. */
 export const MAGIC_SCHOOLS = ['Fire', 'Ice', 'Storm', 'Balance', 'Life', 'Death', 'Myth'] as const;
-
-/** `m_magicSchool` value. */
-export type MagicSchool = (typeof MAGIC_SCHOOLS)[number];
 
 /**
  * The distinct `m_dialogTag` values measured across 774 dialog blocks at `f9a1055`:
