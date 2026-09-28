@@ -134,6 +134,82 @@ CREATE TABLE string_table (
 );
 ```
 
+### Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)
+
+Migration `0002_quest_catalog.sql`. The game files hold **no quest definitions** (D96: 183,676
+objects censused, zero `QuestTemplate`), so the quest *catalog* is a derived table set: which quests
+the world names, which ids the client holds text for, and what references each one. It is derived
+from the WADs by the sync and is **never hand-maintained**.
+
+`quests` gains four columns; its `quest_name` primary key is unchanged, and the table now holds
+**two row kinds** — corpus rows (a `QuestTemplates/` file exists → `has_definition = 1`) and
+catalog-only rows (the world names it, no file yet → `has_definition = 0`). **This amends D21**
+(P6-4): the `quests` table is no longer a corpus mirror; it is the catalog, and the corpus is the
+subset of it that has definitions.
+
+```sql
+-- quests: the catalog. `quest_name` is the operational key (the world gates quests by name).
+ALTER TABLE quests ADD COLUMN has_definition INTEGER NOT NULL DEFAULT 0;  -- 1 = a QuestTemplates/ file exists
+ALTER TABLE quests ADD COLUMN link_kind TEXT;      -- 'direct' | 'inferred' | 'none' (how the title/id link was established)
+ALTER TABLE quests ADD COLUMN title_source TEXT;   -- 'direct' | 'inferred' | 'none' (P6-11 provenance of that link)
+ALTER TABLE quests ADD COLUMN reference_count INTEGER NOT NULL DEFAULT 0;  -- referencing {wad, entry} pairs
+
+-- World evidence per quest: what referenced it, where, and the goal gate it carries.
+CREATE TABLE IF NOT EXISTS quest_catalog_refs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quest_name TEXT NOT NULL REFERENCES quests(quest_name),
+  wad TEXT NOT NULL,             -- WAD file path (repo-relative)
+  entry TEXT NOT NULL,           -- entry name inside the WAD
+  class TEXT NOT NULL,           -- the referencing object's class (e.g. 'ReqHasQuest', 'ReqHasEntry')
+  goal_name TEXT,                -- the goal gate's name, when the reference carries one
+  required_status TEXT,          -- that gate's m_requiredStatus, when present
+  UNIQUE(quest_name, wad, entry, class, goal_name)
+);
+CREATE INDEX IF NOT EXISTS idx_quest_catalog_refs_quest ON quest_catalog_refs(quest_name);
+CREATE INDEX IF NOT EXISTS idx_quest_catalog_refs_wad ON quest_catalog_refs(wad, entry);
+
+-- The second tier (P6-3): the ~4,830-quest id space the client holds text for. Never a work item.
+CREATE TABLE IF NOT EXISTS quest_ids (
+  quest_id INTEGER PRIMARY KEY,  -- the numeric id in QuestTitle_<id> / WizQst<id>_*
+  title_key TEXT,                -- 'QuestTitle_1ED8D' when a key exists
+  title TEXT,                    -- resolved title text
+  text_rows INTEGER NOT NULL DEFAULT 0,  -- rows in the quest's own WizQst<id>_* tables
+  matched_quest_name TEXT,       -- the catalog name this id belongs to, when linked
+  link_kind TEXT                 -- 'direct' | 'inferred' | 'none'
+);
+CREATE INDEX IF NOT EXISTS idx_quest_ids_matched ON quest_ids(matched_quest_name);
+
+-- One definition of "how much of the catalog is built", so the UI never hard-codes a number.
+CREATE VIEW IF NOT EXISTS coverage AS
+SELECT
+  (SELECT count(*) FROM quests)                          AS nameable,   -- catalog tier (>= 1,447 world-named)
+  (SELECT count(*) FROM quest_ids)                       AS id_space,   -- second tier (~4,830 ids with text)
+  (SELECT count(*) FROM quests WHERE has_definition = 1) AS defined,    -- corpus rows in the corpus under test
+  (SELECT count(*) FROM quests WHERE has_definition = 0) AS missing,
+  (SELECT count(*) FROM quest_catalog_refs)              AS references;
+```
+
+**Reading the `coverage` view.** `nameable` and `id_space` are the two honest denominators (P6-15/
+D110): "`defined` of `nameable` nameable of `id_space` quests the client holds text for". `defined`
+reads **322** against the D17 clone and **328** against the owner's fork — the corpus is always named
+with its number, never one quoted for the other. `nameable` is `count(*)` on `quests`, so it is
+**≥ 1,447** (a corpus quest the world does not name is still a row); the UI reads it from the view.
+
+**Name collision, stated so no reader conflates them.** The `quests.title_source` *column* is the
+catalog link's provenance (`direct` | `inferred` | `none`, P6-11). The quests **list** endpoint's
+`title_source` *field* (see [spec-api.md](./spec-api.md)) is the per-file title resolution
+(`resolved` | `rawKey` | `missing`) and is unchanged by Phase 6; the evidence endpoint's
+`title_source` is the column. Same name, two meanings, two homes — a reader who assumes one will
+mis-read the other.
+
+**Sync staging (inside the existing transaction, P6-4 keeps the transactional replace).** Corpus
+rows are written first (the D19 scan the sync already performs), then catalog rows are merged, then
+`quest_catalog_refs` and `quest_ids` are replaced, then `has_definition`/`link_kind`/`title_source`/
+`reference_count` are recomputed from what was merged. The stage is **additive** and idempotent:
+after the first sync, later syncs merge the same rows. If `tools/bin/wad-scan` is absent the stage is
+recorded as `skipped` with a message and the sync still succeeds (D55's CI has no .NET SDK), leaving
+the corpus rows' `has_definition` correct.
+
 ### Sync Metadata
 
 ```sql

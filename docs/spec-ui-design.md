@@ -42,6 +42,41 @@ This document defines the visual design, layout, component patterns, and interac
 - **Element gaps**: 12px (gap-3) within forms
 - **Border radius**: rounded-lg (8px) for cards, rounded-md (6px) for inputs/buttons
 
+### Names: the friendly/technical pair (D105 / P6-16)
+
+**One rule, one home.** Every row, header, picker option and search result that shows a name renders
+it through `formatNameRow` (`client/src/lib/display.ts`), which already owns "how a row renders" for
+the dropdown, the spell-name hook, the quest dialog/info readers and the zone-transfer shape. Phase 6
+extends it; it does **not** add a second formatter. The convention is the one already in the file —
+`Name (ID)`, as `npcDisplayName` writes it.
+
+**Friendly + technical are shown paired** wherever a friendly source exists, and **every search
+matches either** value (spec-api.md's widened `?q=`). Per family:
+
+| Family | Technical | Friendly source | Pair |
+|---|---|---|---|
+| QuestTemplate | `m_questName` | `quests.title` (title key) | yes |
+| NpcInventory, NpcSpellInventory, NpcDropTable, TreasureCardInventory | `TemplateID` | `npcs.name` | **only when the template is an NPC** |
+| ZoneTransfer | `ZoneName` | `zones.display_name` / humanizer | yes |
+| CreatureSpellbook | `DeckName` | `decks.name` (task 6.9) | yes, once `decks` is populated |
+| DropTable | `Name` | none — `description` is NULL in 316 of 317 rows; the key *is* the name | **no** |
+| GlobalRegistry | dictionary key | none | **no** |
+
+**A family with no friendly source renders the technical value alone and says why** — it never gets a
+humaniser, because a humanised key reads as a name that does not exist.
+
+**`npcs` is not a roster.** Its 23,033 rows are client *object templates* with no type classification
+(D33): the low ids are engine objects (`Player Object`, `PetObject`, `GenericCinematicActor`,
+`AcousticsTemplate`) and the NPC ids hold real names (`Merle Ambrose`, `Zarek Pickmaster`). So the
+four TemplateID families pair **only when the template is an NPC**; a row whose template is an engine
+object renders the technical value alone. The server emits data and never formats: `ObjectListRow`
+gains `friendly_name: string | null`, resolved per family from `npcs`/`zones`/`decks`, and the client
+does the pairing.
+
+**Where the pair appears**: the key cell of `ObjectTable`, every detail header, `FriendlyNameDropdown`'s
+trigger and options, the `SearchPalette` rows, `NewObjectControl`, and **every section of the quest
+editor** — Info, Goals, Requirements, Results, Dialog — wherever a value is a reference.
+
 ---
 
 ## Global Layout
@@ -77,6 +112,7 @@ Fixed left panel, full viewport height, `zinc-900` background, `zinc-800` right 
 ⚔️ QUESTS
    Extract Quests
    Browse Quests
+   Catalog
 
 📦 DATA
    Drop Tables
@@ -339,6 +375,56 @@ Toggleable right panel (400px wide). Syntax-highlighted JSON using `@monaco-edit
 
 Panel slides in/out with transition. On mobile: full-screen overlay instead of side panel.
 
+#### Evidence Panel (Phase 6 — P6-7…P6-10, D102–D105)
+
+The per-quest evidence surface, **beside the editor in the same view** (P6-7) — not a separate tool,
+report or dialog. It appears in **both view and edit modes**, and is reachable from a catalog entry.
+
+**One right rail, two tabs.** The JSON side panel above already owns the 400px right rail, and the
+form plus two rails does not fit at the 1280px desktop breakpoint, so the rail carries **two tabs —
+`Evidence` and `JSON`** — rather than two panels competing for the same space. The header's `{ }`
+toggle opens the rail on the JSON tab; the evidence affordance opens it on the `Evidence` tab. On
+mobile the rail is a full-screen overlay, as the JSON panel already is.
+
+```
+┌  Form / Tabbed Content          ┬  Evidence │ JSON   ┐
+│                                 │  Title: DM-HOWL-MAIN-001 (…)  │
+│                                 │  ── Used by this file ──      │
+│                                 │   ✓ WizQst…_Goal1Text  [insert]│
+│                                 │  ── Available ──              │
+│                                 │   ○ WizQst…_Goal2Text  [insert]│
+│                                 │  ── Dialogue ──               │
+│                                 │   Cyrus Drake: "…"   [insert]  │
+│                                 │  ── World gates ──            │
+│                                 │   …_Complete · Completed      │
+└─────────────────────────────────┴────────────────────────────────┘
+```
+
+- **Grouped by field.** Every row belongs to the field it would fill — dialogue into the focused
+  `m_dialog`, goal text into the focused goal, location name into `m_locationName`.
+- **Own text, split.** Every row of the quest's own table, partitioned **"Used by this file"** /
+  **"Available"** (P6-8). Available rows are the authoring material; the split is computed, not
+  guessed.
+- **One-click insert per row, into the field it belongs to** (P6-9). **Nothing is applied
+  automatically**: an insert sets exactly one field, so the saved file's `git diff` shows only that
+  field. The panel itself **never writes to the file** — the save pipeline is still the only writer.
+- **Friendly names** for every field `REFERENCE_FIELDS` (`shared/quest/validation.ts`) declares as a
+  reference (P6-10), resolved through the synced tables and rendered through the single display rule
+  above. That table stays the single home for "which field references what" — no second list.
+- **An inferred title is visibly marked inferred.** `title_source: 'inferred'` renders a labelled badge
+  (D106): inference is shown, never silently trusted, and nothing inferred is ever written into a
+  loadable file (P6-6).
+- **A warning that cannot block Save applies exactly as elsewhere** (D72): the panel may raise one, and
+  Save stays enabled.
+- Missing personas/dialogue resolve to the raw string and are **counted, never dropped**; an empty
+  section states it is empty rather than disappearing.
+
+#### The header pair
+
+The detail header renders the friendly/technical pair (see §Names): the quest name in
+`text-xl font-mono font-semibold` with its title beside it, and — for the four TemplateID families —
+the template's NPC name when the template is an NPC.
+
 ---
 
 ### 5. Goal Logic Flowchart
@@ -510,6 +596,72 @@ Follow same pattern: key field dropdown + value fields appropriate to type. All 
 ```
 
 Sync button shows loading state during sync. Success/error toast on completion.
+
+---
+
+### 10. Quest Catalog (Phase 6 — P6-15, D99/D110)
+
+Route **`/quests/catalog`** (nav: QUESTS → Catalog). The worklist view over the quest catalog: what
+the world names, what has been built, and what is missing.
+
+```
+┌─ Quest Catalog ─────────────────────────────────────────────────────────────┐
+│  12 defined of 1,447 nameable of ~4,830 quests the client holds text for     │
+│  ▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0.8%                                   │
+│                                                                    [ ] missing only │
+├─────────────────────────┬──────────────────┬──────────┬────────┬────────────┤
+│ Name                    │ Title            │ Defined  │ Refs   │            │
+├─────────────────────────┼──────────────────┼──────────┼────────┼────────────┤
+│ DM-HOWL-MAIN-001        │ Howling…         │ ✓        │ 6      │ [Evidence] │
+│ WC-CYCLOPS-MAIN-002     │ (inferred)       │ ✗        │ 3      │ [Scaffold] │
+└─────────────────────────┴──────────────────┴──────────┴────────┴────────────┘
+```
+
+- **Coverage header.** Reads the `coverage` view through `GET /api/quests/coverage` — never a
+  hard-coded 1,447. The same header also appears on the Quests list page. **The numbers are text, not
+  colour-only** (D85, WCAG 1.4.1).
+- **One row per catalog quest**, the name paired with its title through §Names, an inferred title
+  carrying the labelled badge (D106), `has_definition` as a check/cross **with text**, and the
+  reference count.
+- **Missing-only filter** narrows to `has_definition = 0`.
+- **Each row links into the evidence panel or the scaffold action** — this is the entry point that
+  makes the catalog a worklist rather than a report.
+- **Scaffold** (P6-5/P6-6, D100/D101): for a `has_definition = 0` row, **Create quest** writes a real
+  `QuestTemplates/` file through the existing save pipeline (template + companion metadata + commit,
+  status `extracted`) containing the 36 keys in corpus order with explicit nulls, the name, the linked
+  title **only when the link is direct**, and empty goals/results/dialog. Nothing inferred is ever
+  written. It then opens the existing editor on the new file with the evidence panel beside it. There
+  is **no draft lifecycle** — a scaffold is a real quest file from the moment it is written.
+- **Empty state**: when the catalog tier is empty (no sync yet), the page says the catalog needs a
+  sync and offers the same Sync action as the settings page — never a bare zero.
+
+---
+
+### 11. NPC View (Phase 6 — D112 / P6-17)
+
+Route **`/npcs/:npcId`**. Reached from a paired name in any list row, from a `SearchPalette` result, or
+from a dialog speaker. There is **no nav item**: an NPC is a detail surface, not a roster.
+
+```
+┌─ Gretta Darkkettle (WC-NPCs_00000003) ──────────────────────────────────────┐
+│  Aliases: Gretta Darkkettle · Gretta                                        │
+├─ Personas ──────────────┬─ Dialogs ──────────────┬─ Quests ────────────────┤
+│  Gretta / Darkkettle    │  WC-CYCLOPS-MAIN-002   │  WC-CYCLOPS-MAIN-002    │
+├─ Inventories ───────────────────────────────────────────────────────────────┤
+│  NPC Inventories (0) · Spell Inventories (0) · Drop Tables (0)              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **The header shows the pair**: the friendly name with its technical key, following §Names.
+- **Aliases are listed as aliases.** One NPC legitimately carries several name strings at different
+  granularities (`Gretta Darkkettle`, `Gretta`) and they are **one NPC**, not four rows; searching
+  either finds this one entry.
+- **Personas, dialogs, quests and NPC-keyed inventories** are each a section, and each section's
+  **count equals a direct query** for that NPC — the counts are shown as text so the claim is visible.
+- A family with no rows renders its heading with a `(0)`, so an empty section is visibly empty rather
+  than missing.
+- **Speaker names in dialog** render through the client's own precedence (override → composed →
+  template name) and a composed entry shows the **composition** rather than a raw string-table key.
 
 ---
 

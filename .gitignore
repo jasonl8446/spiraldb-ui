@@ -21,6 +21,12 @@ tools/.nuget/
 
 # Playwright browsers (workspace-local per plan decision D23)
 tools/.playwright-browsers/
+
+# Phase 6 live-load harness run directories (D114). The Imlight build copy alone is
+# ~866 MB, and D83 records a falsification break that `git add -A` committed.
+tools/.imlight-run/
+tools/.aurorium-run/
+ImlightEmbeddedDatabase/
 test-results/
 playwright-report/
 
