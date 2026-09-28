@@ -22,6 +22,7 @@
     "sync": "tsx scripts/sync-names.ts",
     "sync:dry-run": "tsx scripts/sync-dry-run.ts",
     "sync:spotcheck": "tsx scripts/sync-spotcheck.ts",
+    "report:quest-refs": "tsx scripts/quest-refs-report.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:reset-clone": "rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb",

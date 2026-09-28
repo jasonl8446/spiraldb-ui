@@ -171,6 +171,19 @@ name→id path found, covering **286 of 1,447 names (20%)**. Two alternative pat
 outliers that also pollute their anchors, which is why the accept rule in the plan requires the candidate id to have
 both a `QuestTitle_*` key and a non-empty `WizQst` table.
 
+> **Correction, added by story p6-04 (2026-09-28): the protocol is recovered, and two of the numbers above do not
+> reproduce under it.** The hold-out protocol was never written down, so p6-04 recovered it — *group* = the name's
+> prefix before its last `-<digits>` suffix; *held out* = every element with a preceding **and** a following sibling
+> (ordered by name); *interpolate* = midpoint `floor((before + after) / 2)`; *hit* = exact id equality. Two
+> independently-written implementations (the module, and the lead's own probe) reproduce this paragraph's three
+> structural counts **exactly** — **59 groups, 51 ascending, 38 contiguous** — and reproduce the **37 misses
+> exactly**, on both corpora. The headline **78.0%** therefore stands: 131 hit / 37 miss of **168** cases, identical
+> on the owner fork's 321 pairs and the D17 clone's 315 (which is why the figure must still be reported with its
+> corpus named). **But "128 hit" and "165" do not reproduce under that protocol** — it yields 168 cases and 131 hits,
+> and no restriction tried (including requiring both anchors to have a non-empty `WizQst` table, which gives 165
+> cases but 34 misses) produces 128/37 together. The residual is 3 cases and is recorded rather than tuned.
+> Evidence: [phase-6/p6-04.md](./phase-6/p6-04.md).
+
 ## Measurement 4 — the client's quest material
 
 The client ships the quest text corpus, and the local database already imports it:
