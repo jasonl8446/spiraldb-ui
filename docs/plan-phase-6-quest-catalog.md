@@ -441,8 +441,14 @@ which; `npm test` passes with the harness absent.
 ## Verification steps
 
 1. `node scripts/wad-census.mjs --gamedata <dir> --classes <ClientDump.json>` → totals match the baseline.
-2. `tools/bin/wad-scan extract --select gamedata.bin,triggers.xml,ObjectData/**,TutorialTips/**,Maps/**` → 6,733 rows,
-   timed.
+2. `tools/bin/wad-scan extract --select gamedata.bin,triggers.xml` → **6,733 rows**, timed. (Amended by p6-03:
+   this step previously listed `ObjectData/**,TutorialTips/**,Maps/**` and still expected 6,733 rows, which is
+   **internally inconsistent** — measured against the real tree, that five-glob list selects **125,587** entries
+   (`ObjectData/**` alone matches 117,677, `Maps/**` 613, `TutorialTips/**` 564), because entry names are matched
+   case-sensitively against the **full stored name**. The 6,733 figure belongs to `gamedata.bin` + `triggers.xml`
+   alone — 3,356 + 3,377, 48,765,076 B — which is what task 6.2's acceptance and the ledger's criterion both say.
+   The wider families are **not** a broad glob: they are the per-file fallback tier over the 1,177 flagged files
+   (P6-12/D107).)
 3. `npm run sync` → `sync_history` counts; `GET /api/quests/coverage` → both denominators.
 4. `GET /api/quests/WC-CYCLOPS-MAIN-002/evidence` → title, text split, dialogue with named speaker.
 5. Names walkthrough per family: the list key cell shows the pair; typing an id and typing a friendly name both find

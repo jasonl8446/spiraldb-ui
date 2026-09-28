@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>wad-scan</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>WadScan</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Task 6.2: the batch reader consumes Imcodec's own WAD index and object-property
+         serializers, never a second parser. $(ImviewRoot) is the property `tools/Directory.Build.props`
+         defines (default: the sibling checkout); the Imview tree stays read-only — every build
+         output goes to `tools/.artifacts` under the D18 flags. -->
+    <ProjectReference Include="$(ImviewRoot)/submodule/Imcodec/src/Imcodec.Wad/Imcodec.Wad.csproj" />
+    <ProjectReference Include="$(ImviewRoot)/submodule/Imcodec/src/Imcodec.ObjectProperty/Imcodec.ObjectProperty.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- NDJSON rows are written with the same serializer settings `imcodec op file` uses
+         (`StringEnumConverter`), compact instead of indented. Newtonsoft is NOT transitively
+         available from Imcodec.ObjectProperty, so it is pinned here — house-wide 13.0.3 (D45).
+         Ionic.Zlib (the inflater Imcodec.Wad itself uses) arrives transitively from Imcodec.Wad. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>
