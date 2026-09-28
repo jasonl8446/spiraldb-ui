@@ -223,6 +223,25 @@ export interface SyncTimings {
   writeMs: number;
 }
 
+/**
+ * A `--spiraldb` / `SPIRALDB_PATH` override changes which corpus the **tables** are built
+ * from, but not the persisted `settings.spiraldb_path` that the app's own reads (the quests
+ * list, the evidence endpoints) use. The two can then name different corpora, and joining
+ * across them is **silent**: measured during p6-07, a first live run reported 26 used / 4
+ * available instead of the true 22 / 8 because the tables came from the D17 clone while the
+ * quest file came from the owner fork. Warn — never mutate the setting, because an override
+ * is the caller's stated intent and persisting it would be a surprise.
+ */
+export function describeCorpusOverride(
+  effective: string,
+  setting: string | undefined,
+): string | null {
+  if (effective === '' || setting === undefined || setting === '' || setting === effective) {
+    return null;
+  }
+  return `corpus override: the tables are built from ${effective}, but settings.spiraldb_path is ${setting} — the app's own reads use the setting, so a request can join two corpora. Set the same path in Settings before trusting a live result.`;
+}
+
 export interface RunSyncResult {
   status: SyncStatus;
   /** Resolved revision, or `null` when resolution itself failed. */
@@ -243,6 +262,12 @@ export interface RunSyncResult {
   timings: SyncTimings;
   /** The catalog stage's outcome, counts and sync-time hold-out (task 6.4). Always present. */
   catalog: QuestCatalogReport;
+  /**
+   * Set when this run's corpus override differs from `settings.spiraldb_path`, so the
+   * summary can say the tables and the app's reads name different corpora
+   * ({@link describeCorpusOverride}). Optional, so result fixtures need not carry it.
+   */
+  corpusOverrideWarning?: string | null;
   errorMessage?: string;
 }
 
@@ -456,6 +481,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
   let deduplicated: SyncDedupe = { ...ZERO_SYNC_DEDUPE };
   let manifestReport: ManifestIdReport = ZERO_MANIFEST_REPORT;
   let catalog: QuestCatalogReport | null = null;
+  let corpusOverrideWarning: string | null = null;
 
   try {
     // Inside the try: a missing `settings` table (an un-migrated database) must
@@ -464,6 +490,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     const auroriumPath = options.overrides?.auroriumPath ?? settings.aurorium_path ?? '';
     const imcodecPath = options.overrides?.imcodecPath ?? settings.imcodec_path ?? '';
     const spiraldbPath = options.overrides?.spiraldbPath ?? settings.spiraldb_path ?? '';
+    corpusOverrideWarning = describeCorpusOverride(spiraldbPath, settings.spiraldb_path);
 
     if (auroriumPath === '') {
       throw new Error(
@@ -601,6 +628,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       treeDir,
       timings,
       catalog,
+      corpusOverrideWarning,
     };
   } catch (error) {
     // An unpack that failed after creating its tree leaves it behind
@@ -626,6 +654,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       catalog:
         catalog ??
         notRunQuestCatalogReport('not-run', `the sync failed before the catalog stage: ${message}`),
+      corpusOverrideWarning,
       errorMessage: message,
     };
   } finally {

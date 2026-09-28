@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { formatSyncSummary, parseSyncArgs, runSyncCli } from '@server/services/sync/cli';
 import type { RunSyncOptions, RunSyncResult } from '@server/services/sync/execute';
+import { describeCorpusOverride } from '@server/services/sync/execute';
 import {
   ZERO_QUEST_CATALOG_COUNTS,
   type QuestCatalogReport,
@@ -367,5 +368,42 @@ describe('runSyncCli', () => {
     expect(code).toBe(0);
     expect(calls).toBe(0);
     expect(io.lines.join('\n')).toContain('Usage: npm run sync');
+  });
+});
+
+/**
+ * The corpus-override warning added after p6-07: `--spiraldb`/`SPIRALDB_PATH` changes which corpus the
+ * **tables** are built from but not the persisted `settings.spiraldb_path` the app's reads use, so the
+ * two can silently name different corpora — measured during p6-07, where a first live run reported
+ * 26 used / 4 available instead of the true 22 / 8 for exactly that reason.
+ */
+describe('describeCorpusOverride', () => {
+  it('says nothing when the override is the setting, or when there is no setting', () => {
+    expect(describeCorpusOverride('/corpus', '/corpus')).toBeNull();
+    expect(describeCorpusOverride('/corpus', undefined)).toBeNull();
+    expect(describeCorpusOverride('/corpus', '')).toBeNull();
+    expect(describeCorpusOverride('', '/corpus')).toBeNull();
+  });
+
+  it('names BOTH paths when they differ, and says which one a request will join', () => {
+    const warning = describeCorpusOverride('/tmp/clone-with-322', '/owner/fork-with-328');
+
+    expect(warning).toContain('/tmp/clone-with-322');
+    expect(warning).toContain('/owner/fork-with-328');
+    expect(warning).toContain('settings.spiraldb_path');
+    expect(warning).toContain('two corpora');
+  });
+
+  it('is printed by the summary when present, and absent when not (the SUCCESS fixture has none)', () => {
+    expect(formatSyncSummary(SUCCESS).join('\n')).not.toContain('WARNING —');
+
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      corpusOverrideWarning: describeCorpusOverride('/a', '/b'),
+    }).join('\n');
+
+    expect(text).toContain('WARNING — corpus override:');
+    expect(text).toContain('/a');
+    expect(text).toContain('/b');
   });
 });

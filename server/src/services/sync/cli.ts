@@ -225,6 +225,10 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
     ),
   ];
 
+  if (result.corpusOverrideWarning != null) {
+    lines.push('', `  WARNING — ${result.corpusOverrideWarning}`, '');
+  }
+
   if (result.status === 'success') {
     lines.push(
       field('items', n(result.counts.items)),
