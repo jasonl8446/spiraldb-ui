@@ -1,0 +1,70 @@
+##### p5-07 D3 — the three carried families, each attributed by measurement (D69(h)/D77(d)/D85(c))
+
+No arm was patched, no timeout relaxed, no arm skipped — the treatment p5-06 set for the same
+three families. Each failure below is named with the arm, the mechanism and the isolation rate.
+
+===== family 1: extraction.spec.ts:828 'a failed save surfaces the server message (the D14 dirty tree, 409)' =====
+mechanism: a sonner <li data-sonner-toast> subtree intercepts pointer events at the click target,
+so the click retries for the full 60 s test budget. Verbatim from run A:
+        - <li tabindex="0" data-index="0" data-type="info" data-front="true" data-styled="true" data-mounted="true" data-swiped="false" data-visible="true" data-sonner-toast="" data-promise="false" data-removed="false" data-swiping="false" data-expanded="false" data-swipe-out="false" data-x-position="right" data-dismissible="true" data-y-position="bottom" class="border-l-4 border-l-blue-500">…</li> from <section tabindex="-1" aria-live="polite" aria-atomic="false" aria-relevant="additions text" aria-label="Notifications alt+T">…</section> subtree intercepts pointer events
+      - retrying click action
+        - waiting for element to be visible, enabled and stable
+isolation, 3 repeats on this tree:
+extraction:828 repeat 1: rc=0  1 passed (4.3s)
+extraction:828 repeat 2: rc=0  1 passed (2.9s)
+extraction:828 repeat 3: rc=0  1 passed (2.9s)
+carried: D69(h)/D77(d) — attribute and carry.
+
+===== family 2: a11y-keyboard.spec.ts:221 'extract → save: the dropzone button opens the file chooser with Enter' =====
+mechanism: waitForEvent('filechooser') times out after 60 s (no file chooser opens).
+isolation, 3 repeats on this tree:
+a11y-keyboard:221 repeat 1: rc=0  1 passed (3.0s)
+a11y-keyboard:221 repeat 2: rc=0  1 passed (3.1s)
+a11y-keyboard:221 repeat 3: rc=0  1 passed (4.0s)
+carried: newly observed in p5-06, 3/3 there; 3/3 here. Attribute and carry.
+
+===== family 3: quests-goals-editor.spec.ts:511 'a pointer drag with the mouse moves a goal too' =====
+mechanism (pinned by this story, and it is NOT the drag itself): the arm calls copyPanelDocument,
+whose expect.poll waits only 10 s for the JSON panel's copied text to start with '{':
+  1) [chromium] › tests/ui/quests-goals-editor.spec.ts:511:3 › reordering › a pointer drag with the mouse moves a goal too 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      222 |       return text.trim().startsWith('{');
+      223 |     })
+    > 224 |     .toBe(true);
+          |      ^
+      225 |   return JSON.parse(text) as Record<string, unknown>;
+      226 | }
+      227 |
+        at copyPanelDocument (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/quests-goals-editor.spec.ts:224:6)
+isolation, 3 repeats on this tree:
+repeat 1: rc=1
+repeat 2: rc=1
+repeat 3: rc=0
+=> 2 of 3 FAILED in isolation, so this family is not a rare flake: that 10 s poll is
+   load-sensitive (the arm takes 13.7 s when it fails, 3.8 s when it passes).
+carried: classified pre-existing by p5-06's measurement; the rate and the exact line are this
+story's addition. The durable fix — raise that poll's budget the way D77(a) raised the unit
+suites' 5 s to 30 s, or assert on the document rather than on the clipboard — belongs to the
+spec's owner, not to a11y/responsive work, so it is flagged rather than patched here.
+
+===== what the full runs looked like (three full runs on this tree) =====
+run A (invalid, pre-header-fix): rc=1  ~ shell.spec.ts:865 (executor's own, since fixed) + family 1
+run B: rc=1   1 failed  392 passed (3.1m)   — family 3 only
+run C: rc=1   3 failed  390 passed (2.7m)   — all three families:
+        ✘ quests-goals-editor.spec.ts:511 (13.7s)  ✘ a11y-keyboard.spec.ts:221 (1.0m)  ✘ extraction.spec.ts:828 (1.0m)
+run D (discarded): rc=1  19 failed / 374 passed, 17 of them
+        ERR_CONNECTION_REFUSED because the dev stack died mid-run — not a measurement of anything.
+
+===== the two specs this story owns, per run =====
+/tmp/p507/uish-full-final2.txt: a11y arms scanned=15  zero-at-every-severity=15  a11y arms failed=0  responsive arms failed=0
+/tmp/p507/uish-full-final3.txt: a11y arms scanned=15  zero-at-every-severity=15  a11y arms failed=0  responsive arms failed=0
+/tmp/p507/ci-condition-final.txt: a11y arms scanned=15  zero-at-every-severity=15  a11y arms failed=0  responsive arms failed=0
+=> 17/17 a11y arms and 41/41 responsive arms passed in every run whose stack stayed alive.

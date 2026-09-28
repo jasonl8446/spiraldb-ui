@@ -1,0 +1,58 @@
+# p5-07 — the CI condition, reproduced locally and MEASURED (D81's rule)
+# Captured 2026-09-28T00:56:23Z.
+
+CI has no corpus at all: data/ is gitignored, so a runner has no data/spiraldb-ui.db, no
+data/test-spiraldb clone and no sibling SpiralDB repo. The harness already boots an empty
+data/test-ui.db with SPIRALDB_UI_SKIP_IMPORT=1 (playwright.config.ts's webServer command);
+the one variable left is the corpus path, which SPIRALDB_PATH overrides per key
+(server/src/db.ts:200-229 — explicit env var wins over the NODE_ENV=test clone default).
+
+===== the throwaway corpus path =====
+$ mkdir -p /tmp/p507/empty-corpus; ls -A /tmp/p507/empty-corpus | wc -l
+0
+$ ls -d /tmp/p507/empty-corpus
+/tmp/p507/empty-corpus
+(no QuestTemplates/ inside it — the exact shape of a fresh runner)
+
+===== run 1: a11y + responsive with SPIRALDB_PATH pointed at the empty dir =====
+$ rm -f data/test-ui.db && SPIRALDB_PATH=/tmp/p507/empty-corpus npx playwright test \
+    tests/ui/a11y.spec.ts tests/ui/responsive.spec.ts --reporter=list   # (fresh DB, rc captured in-log)
+[corpus] {"envSpiraldbPath":"/tmp/p507/empty-corpus","servedSpiraldbPath":"/tmp/p507/empty-corpus","templatesDirExists":false,"questFiles":0,"apiRows":0,"apiSkipped":1,"skipMessage":"ENOENT: no such file or directory, scandir '/tmp/p507/empty-corpus/QuestTemplates'"}
+  58 passed (1.4m)
+CI-CONDITION-FINAL rc=0
+
+===== run 2 (earlier, same env, same result before the final source state) =====
+  57 passed (1.0m)
+CI-CONDITION rc=0
+
+===== the NORMAL condition, for contrast (no SPIRALDB_PATH: the D17 clone) =====
+$ npx playwright test tests/ui/a11y.spec.ts -g 'corpus condition' --reporter=list
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","questFiles":322,"apiRows":322,"apiSkipped":0}
+  1 passed (2.0s)
+
+===== the mechanism, verified out of band on a bare isolated server (PORT=5301, my own port) =====
+--- rig 1: SPIRALDB_PATH=/tmp/p507/empty-corpus, SPIRALDB_UI_DB=/tmp/p507/ciproof-empty.db ---
+[spiraldb-ui] database ready at /tmp/p507/ciproof-empty.db
+[spiraldb-ui] API listening on http://localhost:5301
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+$ curl -s http://localhost:5301/api/settings   # identity + the resolved corpus path
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-27",...,"spiraldb_path":"/tmp/p507/empty-corpus","user_name":""}
+$ curl -s http://localhost:5301/api/quests | (counts)
+{"rows":0,"skipped":1,"skipMessage":"ENOENT: no such file or directory, scandir '/tmp/p507/empty-corpus/QuestTemplates'","summary":{"total":0,"extracted":0,"reviewed":0,"verified":0}}
+(killed by explicit PID; 5301 closed)
+
+--- rig 2: the same server, SPIRALDB_PATH=data/test-spiraldb (the clone present) ---
+[spiraldb-ui] database ready at /tmp/p507/ciproof-clone.db
+[spiraldb-ui] API listening on http://localhost:5301
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+$ curl -s http://localhost:5301/api/quests | (counts)
+{"rows":322,"skipped":0,"summary":{"total":322,"extracted":322,"reviewed":0,"verified":0}}
+(same binary, same DB variable, only SPIRALDB_PATH moved: 0 rows -> 322 rows. That is the
+ difference the CI condition consists of, measured on the settings code path itself.)
+
+===== what the spec itself asserts about the condition (§4) =====
+The a11y spec's 17th arm asks the harness's OWN Express (through Vite's proxy, via the
+'request' fixture, which page.route does not intercept) and asserts the invariant that ties
+the two readings together: the server's rows are exactly the corpus files at the path it
+reports. With the empty dir: 0 files -> 0 rows + 1 skip. With the clone: 322 -> 322 + 0.
+So the suite is proven under BOTH conditions, and a runner's condition is one of them.

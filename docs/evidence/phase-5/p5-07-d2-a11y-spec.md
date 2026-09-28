@@ -29,7 +29,9 @@
 
 ## 2. The histogram — all 15 scanned arms, at every severity
 
-From the normal local run (`/tmp/p507/a11y-run5-normal.txt`, `16 passed (22.5s)`, `rc=0`):
+From the normal local run (`/tmp/p507/a11y-run5-normal.txt`, `16 passed (22.5s)`, `rc=0` — taken
+before the §4 corpus arm was added, so 16 tests then and 17 now; the 15 scanned arms are the same
+set either way, and the same zero-at-every-severity result repeated in every full run afterwards):
 
 | arm | critical | serious | moderate | minor | incomplete | console errors |
 |---|---|---|---|---|---|---|
@@ -61,7 +63,7 @@ and one of them was a real defect (fixed, §4.4):
 
 | rule | axe's message, verbatim | what it is | real? |
 |---|---|---|---|
-| `aria-prohibited-attr` (1–50 nodes/arm) | *"aria-label attribute is not well supported on a span with no valid role attribute."* | `StatusBadge`'s `<span aria-label="Status: X">`. The same ARIA 1.2 prohibition as the Header div (§4.3) — axe cannot call it a *violation* because the badge also carries the visible status word, so the name is not lost. | **Yes, but inert.** The label is ignored by AT and the visible text is the real name. **Not changed**: four committed specs locate the badge *through* that label (`object-editors.spec.ts:340,360`, `status-integration.spec.ts:408`, `extraction.spec.ts:1236`), so removing it breaks them; the honest fix is a role on the badge, which is an owner call over a p5-05-recorded surface. Recorded, not re-designed (D85's precedent). |
+| `aria-prohibited-attr` (~1–50 nodes/arm) | *"aria-label attribute is not well supported on a span with no valid role attribute."* | `StatusBadge`'s `<span aria-label="Status: X">`. The same ARIA 1.2 prohibition as the Header div (§4.3) — axe cannot call it a *violation* because the badge also carries the visible status word, so the name is not lost. | **Yes, but inert.** The label is ignored by AT and the visible text is the real name. **Kept, by explicit ruling**: four committed specs locate the badge *through* that label (`object-editors.spec.ts:340,360`, `status-integration.spec.ts:408`, `extraction.spec.ts:1236`), so the lead ruled it known debt with the better long-term fix (locate the badge by its visible text) rather than an edit to four specs to satisfy an incomplete. Recorded, not re-designed (D85's precedent). |
 | `color-contrast` (quest-list, quest-detail:Goals) | *"Element's background color could not be determined because element contains an image node"* / *"…overlapped by another element"* / *"Element content contains only non-text characters"* | the sortable `<th>`'s button, and the non-text glyphs (the 2px `aria-hidden` mainline dot, the dnd-kit drag handle). | **No claim either way** — axe could not compute a ratio here, which is exactly why it is reported rather than asserted. Nothing with text is left undecided. |
 | `aria-valid-attr-value` (1 node, `Goal Logic` only) | *"ARIA attribute element ID does not exist on the page: `aria-labelledby=":rd:-tab-Goal Logic"`"* | **A real defect** — the two-word tab's DOM id contained a space, so `aria-labelledby` was two ids and the tabpanel had no accessible name. | **Yes** — fixed in §4.4; the incomplete is gone from every arm afterwards. |
 
@@ -154,10 +156,21 @@ serious aria-prohibited-attr (1 node): aria-label attribute is not well supporte
 The same ARIA prohibition as §4.1, but it only *violates* below `sm` — which is why p5-05's
 desktop scan saw nothing. The reason is exact: axe's `ariaProhibitedAttrEvaluate` returns
 **incomplete** when the element has text content, and the block's name span is `hidden … sm:inline`.
-At ≥640px the div has text (`incomplete`); at 375px it has none, so the rule fires. **Fix:**
-`role="group"` (the correct semantics for a named identity region, and it makes the existing label
-legal at every width) **plus** an `sr-only sm:hidden` copy of the name, because below `sm` the
-visible span is display-hidden and a screen-reader user otherwise learned only "Current user".
+At ≥640px the div has text (`incomplete`); at 375px it has none, so the rule fires.
+
+**Fix: `role="group"` — one attribute.** A named `group` is the correct semantics for a distinct
+identity region, and it makes the existing label legal at every width.
+
+**A second half was tried and reverted, and the revert is itself the evidence.** Below `sm` the
+user's *name* is display-hidden, so a screen-reader user at mobile width learns the region's name
+("Current user") but not which user. Adding a second `sr-only sm:hidden` span carrying the same
+words fixes that — and **breaks a committed spec**: `shell.spec.ts:865`'s
+`getByText(user_name, { exact: true })` then resolves to **two** elements and fails strict mode
+(observed in full-suite run A: `strict mode violation … resolved to 2 elements`). The alternative,
+`sr-only sm:not-sr-only` on the one span, changes `truncate`'s `white-space` at ≥sm and so needs a
+layout measurement this story did not budget. So the gap is **recorded in the component's own
+comment** (with both candidate fixes and why neither was taken) and below — not silently left, and
+not closed by editing a committed locator to suit it.
 
 ### 4.4 The Goal Logic tabpanel had no accessible name (an `aria-labelledby` split in two)
 
@@ -177,26 +190,39 @@ absent from every arm afterwards (compare the `Goal Logic` row: 3 incompletes be
 
 ## 5. Falsification (D67(d)) — the break, and *which* arm caught it
 
-*(See §8 for the transcript.)* One deliberate break was introduced into
-`client/src/components/objects/DropTableForm.tsx`, chosen so the failing arms are
-**page-specific**: the shared field renderer's `<label htmlFor={id}>` was pointed at a
-non-existent id (`broken-${id}`), which axe reports as the **critical** `label` rule
-(*"Form elements must have labels"*) **only where that form renders**.
+One deliberate break was introduced into `client/src/components/objects/DropTableForm.tsx`,
+chosen so the failing arms are **page-specific**: the shared field renderer's `<label htmlFor={id}>`
+(`:222`) was pointed at a non-existent id (`broken-${id}`), which axe reports as the **critical**
+`label` rule (*"Form elements must have labels"*) **only where that form renders**.
 
-Expected and observed: the three DropTable arms fail with `critical 3+ … label`; the other
-fourteen pass. **That is the whole point** — it falsifies the brief's named failure mode ("a scan
-of the whole app repeated four times rather than of the four pages' own states"): four
-independent navigations to four different pages, each with its own DOM. Restore was
-byte-identical, verified by md5 of the file before and after.
+| step | result |
+|---|---|
+| back up + md5 before | `cp … /tmp/p507/backup/`; `51864a70468f88cc344706c7ccae382b` |
+| `npx playwright test tests/ui/a11y.spec.ts` | **rc=1, 3 failed / 14 passed (26.7s)** |
+| which arms failed | **only** `drop-table:view`, `drop-table:edit`, `drop-table@375` |
+| which rule | `critical label (9 node(s)): Form elements must have labels` — one node per DropTable field |
+| restore | `cp /tmp/p507/backup/DropTableForm.tsx …` — **never `git checkout`** (p5-06's lesson) |
+| md5 after | **`51864a70468f88cc344706c7ccae382b` — identical** |
+| residue | `grep -c 'broken-'` → 0; `git status --porcelain <file>` → 0 lines |
+
+**That is the whole point**: the break fires on the predicted page and on no other, so the four
+page arms are four independent navigations to four different DOMs — the brief's named failure mode
+("a scan of the whole app repeated four times rather than of the four pages' own states"),
+falsified rather than asserted. The lead's own AC#9 tier-2 re-scan independently reproduced it on
+the broken tree: **1 CRITICAL `label`, 9 nodes, DropTable detail only, no other page.**
 
 ## 6. Typecheck and lint
 
 ```
-$ npx prettier --write tests/ui/a11y.spec.ts client/src/{components/layout/Header.tsx,...}
+$ npx prettier --write tests/ui/a11y.spec.ts client/src/{components/layout/Header.tsx,…}
 $ npx tsc -p tests/tsconfig.json --noEmit        → rc=0
 $ npx tsc -p client/tsconfig.json --noEmit       → rc=0
 $ npx eslint tests/ui/a11y.spec.ts client/src/…  → rc=0
 ```
+
+All seven gate checks (including `npm test`, `lint`, `typecheck:tests`, the server tsconfig and
+`npm run build`) are in [`p5-07-gate.txt`](./p5-07-gate.txt); the AC#13 runs are in
+[`p5-07-d3-proof.md`](./p5-07-d3-proof.md).
 
 ## 7. Honest limits
 
@@ -207,9 +233,13 @@ $ npx eslint tests/ui/a11y.spec.ts client/src/…  → rc=0
 - **The token/copy surfaces are not machine-checkable.** WCAG 1.4.1 (colour-only status) has no
   axe rule — p5-05's audit §4 already records the desktop table's status cell as the one real
   instance, with its owner-decision item. This suite cannot add or remove that finding.
-- **`aria-prohibited-attr` on `StatusBadge` remains an incomplete** (§2.1). It is real, inert and
-  load-bearing for four committed specs; it is recorded for the owner rather than changed here.
-- **17 arms of 16 pages-states is not "every state".** The dashboard's per-type bars, the quest
-  list's four filter tabs, the status-dialog and the error surfaces have their own specs
-  (`dashboard.spec.ts`, `status-filter-url.spec.ts`, `p5-04-error-surfaces.spec.ts`) and are not
-  re-scanned for a11y here.
+- **`aria-prohibited-attr` on `StatusBadge` remains an incomplete, kept deliberately** (§2.1). It
+  is real but inert (the visible status word is a real accessible name) and four committed specs
+  locate the badge *through* that label; the lead ruled it known debt with the better long-term fix
+  (locate the badge by its visible text) rather than a four-spec edit to satisfy an incomplete.
+- **The header's mobile name gap is also recorded, not closed** (§4.3): below `sm` the user's name
+  is not in the accessibility tree, because the one fix that closes it breaks a committed locator
+  and the other needs a layout measurement this story did not budget.
+- **17 arms is not "every state".** The dashboard's per-type bars, the quest list's four filter
+  tabs, the status dialog and the error surfaces have their own specs (`dashboard.spec.ts`,
+  `status-filter-url.spec.ts`, `p5-04-error-surfaces.spec.ts`) and are not re-scanned for a11y here.
