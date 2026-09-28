@@ -1,5 +1,10 @@
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import type { Db } from '../db.js';
 import { escapeLike } from './names.js';
+import { parseJsonLenient } from './sync/json.js';
+import type { SpiraldbIndex } from './spiraldbIndex.js';
 
 /**
  * The **NPC name namespace** — P6-17 / D112, the read behind `GET /api/search`'s
@@ -344,4 +349,298 @@ export function npcEntityById(db: Db, rawId: string): NpcEntity | undefined {
     }
   }
   return buildEntity(index, displayName, aliasSet, template);
+}
+
+/* ------------------------------------------------------------------ the view */
+
+/**
+ * The **NPC view** — `GET /api/npcs/:id` (P6-17 / D112; docs/spec-api.md L496-550).
+ *
+ * Task 6.5 shipped the namespace ({@link searchNpcEntities}, {@link npcEntityById});
+ * the plan carried this endpoint to task 6.6 because two of its arms need the
+ * **speaker ladder's index** (`persona_index`, `server/src/services/sync/personaIndex.ts`):
+ * `personas` and `dialogs` are exactly the reverse of `persona name → NPC`, and
+ * answering them as empty arrays before that index existed would have claimed "this
+ * NPC has no personas" when the truth was "nothing could resolve them".
+ *
+ * Every arm is resolved live from the indexed tables and the corpus files — the same
+ * rule the evidence endpoint follows. `counts` are computed from the arms that were
+ * actually returned, so a caller never re-derives them and can never disagree with
+ * what it sees.
+ */
+
+/** One persona of the NPC: the persona key plus its resolved components. */
+export interface NpcViewPersona {
+  /** The persona name as the corpus references it (`WC_RAV-NPC02_Persona` spelling preserved). */
+  persona_key: string;
+  /** The resolved `m_firstName` text, or `null` when no persona struct supplied one. */
+  first: string | null;
+  /** The resolved `m_lastName` text, or `null`. */
+  last: string | null;
+  /** The manifest id this persona resolves to — the id that made it this NPC's persona. */
+  template_id: number | null;
+}
+
+/** One dialogue line of the NPC, as recorded by a corpus quest file. */
+export interface NpcViewDialog {
+  quest_name: string;
+  /** Position among that quest's dialogue entries, in document order (0-based). */
+  index: number;
+  /** The resolved `m_dialog` text, or `null` when the key resolves to nothing. */
+  text: string | null;
+}
+
+/** One NPC-keyed inventory file. */
+export interface NpcInventoryRow {
+  /** The object key (`TemplateID`, stringified). */
+  key: string;
+  /** The file's path relative to the SpiralDB root. */
+  file: string;
+}
+
+export interface NpcView {
+  npc_key: string;
+  template_id: number | null;
+  display_name: string;
+  aliases: string[];
+  personas: NpcViewPersona[];
+  dialogs: NpcViewDialog[];
+  quests: string[];
+  inventories: {
+    npc_inventories: NpcInventoryRow[];
+    npc_spell_inventories: NpcInventoryRow[];
+    npc_drop_tables: NpcInventoryRow[];
+  };
+  counts: { aliases: number; personas: number; dialogs: number; quests: number };
+  /**
+   * Why an arm is empty, when the reason is not "there are no rows": a public
+   * endpoint that answers `[]` for an arm it could **not resolve** would read as a
+   * claim about the corpus. Each note names the arm and the missing input, and the
+   * array is empty unless an arm genuinely could not be populated.
+   */
+  notes: string[];
+}
+
+/** The three NPC-keyed inventory families and their corpus directories. */
+const NPC_INVENTORY_FAMILIES = [
+  { arm: 'npc_inventories', fileType: 'npcinventory', directory: 'NpcInventory' },
+  { arm: 'npc_spell_inventories', fileType: 'npcspellinventory', directory: 'NpcSpellInventory' },
+  { arm: 'npc_drop_tables', fileType: 'npcdroptable', directory: 'NpcDropTable' },
+] as const;
+
+/** One `persona_index` row, as the view needs it. */
+interface PersonaIndexRow {
+  object_name: string;
+  template_id: number | null;
+  first_key: string | null;
+  last_key: string | null;
+}
+
+/** Non-empty string member, else `null`. */
+function viewText(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/** `WC_ShopArea_RobeShop_Persona` → `WC_ShopArea_RobeShop` (the index's key). */
+function personaObjectName(personaName: string): string {
+  return personaName.endsWith('_Persona') ? personaName.slice(0, -'_Persona'.length) : personaName;
+}
+
+/**
+ * Every dialogue entry of one quest file, in document order, with the path-free
+ * index the view reports. The detection rule is the evidence endpoint's — an
+ * object's own `$type` names `NPCDialogEntry` — so the two readers cannot disagree
+ * about what a dialogue entry is.
+ */
+function questDialogEntries(document: unknown): Array<{ entry: Record<string, unknown> }> {
+  const found: Array<{ entry: Record<string, unknown> }> = [];
+  function visit(value: unknown): void {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (typeof value !== 'object' || value === null) {
+      return;
+    }
+    const record = value as Record<string, unknown>;
+    const declared = record.$type;
+    if (typeof declared === 'string' && declared.includes('NPCDialogEntry')) {
+      found.push({ entry: record });
+    }
+    for (const [key, child] of Object.entries(record)) {
+      if (key !== '$type') {
+        visit(child);
+      }
+    }
+  }
+  visit(document);
+  return found;
+}
+
+/** `true` when one dialogue entry names this NPC (by persona, or by template id directly). */
+function entryNamesNpc(
+  entry: Record<string, unknown>,
+  personaObjects: ReadonlySet<string>,
+  templateId: number | null,
+): boolean {
+  const persona = viewText(entry.m_personaName);
+  if (persona !== null && personaObjects.has(personaObjectName(persona))) {
+    return true;
+  }
+  if (templateId === null) {
+    return false;
+  }
+  // The entry may also name the NPC's template outright (`m_actorTemplateID` on the zone
+  // entries, `m_walkAwayNpcTemplateID` when the actor walks away) — a direct link the
+  // persona arm does not cover, so it is its own test rather than an inference.
+  return entry.m_actorTemplateID === templateId || entry.m_walkAwayNpcTemplateID === templateId;
+}
+
+/**
+ * One NPC's view, or `undefined` for an id that resolves to nothing (⇒ 404).
+ *
+ * @param rawId the numeric template id **or** an alias-vocabulary key
+ *              (`WC-NPCs_00000003`) — both forms {@link npcEntityById} accepts.
+ */
+export function buildNpcView(db: Db, index: SpiraldbIndex, rawId: string): NpcView | undefined {
+  const entity = npcEntityById(db, rawId);
+  if (entity === undefined) {
+    return undefined;
+  }
+
+  const strings = new Map<string, string>();
+  for (const row of db
+    .prepare<[], { key: string; value: string }>('SELECT key, value FROM string_table')
+    .all()) {
+    strings.set(row.key, row.value);
+  }
+
+  const notes: string[] = [];
+  const templateId = entity.template_id;
+
+  // --- personas: every persona_index row that resolves to this NPC's template id ---
+  const personaRows =
+    templateId === null
+      ? []
+      : db
+          .prepare<[number], PersonaIndexRow>(
+            `SELECT object_name, template_id, first_key, last_key
+               FROM persona_index WHERE template_id = ? ORDER BY object_name`,
+          )
+          .all(templateId);
+  const personas: NpcViewPersona[] = personaRows.map((row) => ({
+    persona_key: `${row.object_name}_Persona`,
+    first: row.first_key === null ? null : (strings.get(row.first_key) ?? row.first_key),
+    last: row.last_key === null ? null : (strings.get(row.last_key) ?? row.last_key),
+    template_id: row.template_id,
+  }));
+  // Keyed by the persona's object name, so both spellings the corpus uses
+  // (`X_Persona` and bare `X`) match through `personaObjectName` below.
+  const personaObjects = new Set<string>(personaRows.map((row) => row.object_name));
+
+  // --- dialogs + quests: a live scan of the corpus quest files ---
+  const dialogs: NpcViewDialog[] = [];
+  const questNames = new Set<string>();
+  const actorMarker = templateId === null ? null : String(templateId);
+  for (const questName of index.keys('questtemplates')) {
+    const file = index.pathFor('questtemplates', questName);
+    if (file === undefined) {
+      continue;
+    }
+    let raw: string;
+    try {
+      raw = readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    // A cheap gate first: only a file that mentions one of this NPC's persona names (or its
+    // template id beside the actor keys) can hold a line for it, so the JSON5 parse is paid
+    // once per matching file rather than once per corpus file.
+    const mentionsPersona = [...personaObjects].some((objectName) =>
+      raw.includes(`${objectName}_Persona`),
+    );
+    const mentionsActor =
+      actorMarker !== null &&
+      new RegExp(`"m_(actor|walkAwayNpc)TemplateID"\\s*:\\s*${actorMarker}\\b`).test(raw);
+    if (!mentionsPersona && !mentionsActor) {
+      continue;
+    }
+    let document: unknown;
+    try {
+      document = parseJsonLenient(raw);
+    } catch {
+      continue;
+    }
+    questDialogEntries(document).forEach((node, position) => {
+      if (!entryNamesNpc(node.entry, personaObjects, templateId)) {
+        return;
+      }
+      questNames.add(questName);
+      const dialogKey = viewText(node.entry.m_dialog);
+      dialogs.push({
+        quest_name: questName,
+        index: position,
+        text: dialogKey === null ? null : (strings.get(dialogKey) ?? null),
+      });
+    });
+  }
+
+  // --- inventories: the corpus files whose key IS this NPC's template id ---
+  const inventories: NpcView['inventories'] = {
+    npc_inventories: [],
+    npc_spell_inventories: [],
+    npc_drop_tables: [],
+  };
+  for (const family of NPC_INVENTORY_FAMILIES) {
+    if (templateId === null) {
+      continue;
+    }
+    const rows: NpcInventoryRow[] = [];
+    for (const key of index.keys(family.fileType)) {
+      // The key **is** the `TemplateID` (shared/objectTypes.ts's `keyField`), compared as a
+      // number rather than as text so `44169` and `044169` cannot disagree.
+      if (!/^\d+$/.test(key) || Number(key) !== templateId) {
+        continue;
+      }
+      const file = index.pathFor(family.fileType, key);
+      if (file !== undefined) {
+        rows.push({ key, file: path.relative(index.root, file) });
+      }
+    }
+    inventories[family.arm] = rows;
+  }
+
+  if (templateId === null) {
+    notes.push(
+      `personas, dialogs, quests and the inventory arms could not be resolved: "${entity.npc_key}" is an alias-only entity with no template id (the manifest index places none of its names on an NPC template).`,
+    );
+  }
+  for (const family of NPC_INVENTORY_FAMILIES) {
+    if (inventories[family.arm].length > 0) {
+      continue;
+    }
+    if (!existsSync(path.join(index.root, family.directory))) {
+      notes.push(
+        `inventories.${family.arm} is empty because ${family.directory}/ does not exist in this corpus, not because no row matched.`,
+      );
+    }
+  }
+
+  return {
+    npc_key: entity.npc_key,
+    template_id: templateId,
+    display_name: entity.display_name,
+    aliases: entity.aliases,
+    personas,
+    dialogs,
+    quests: [...questNames].sort(),
+    inventories,
+    counts: {
+      aliases: entity.aliases.length,
+      personas: personas.length,
+      dialogs: dialogs.length,
+      quests: questNames.size,
+    },
+    notes,
+  };
 }

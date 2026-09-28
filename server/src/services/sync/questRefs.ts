@@ -284,6 +284,27 @@ export function parseQuestTitleKey(key: string): number | null {
   return Number.isSafeInteger(questId) ? questId : null;
 }
 
+/** The prefix of a quest's own text-table keys (`WizQst17318F_00000006`). */
+export const QUEST_TEXT_PREFIX = 'WizQst';
+
+/**
+ * `'WizQst17318F_00000006'` → `0x17318F`, or `null` when the key is not a
+ * `WizQst<hex>_…` row. The sibling of {@link parseQuestTitleKey}: the two key
+ * spellings that carry a quest id, both parsed by the same hex rule, so the id of a
+ * title key and the id of its text rows can never be read two ways.
+ *
+ * The same rule the id tier is built with (`questCatalog.ts`'s `readQuestIdTier`),
+ * which counts rows per id by this prefix.
+ */
+export function parseWizQstKey(key: string): number | null {
+  const match = /^WizQst([0-9A-Fa-f]+)_/.exec(key);
+  if (match === null) {
+    return null;
+  }
+  const questId = Number.parseInt(match[1] ?? '', 16);
+  return Number.isSafeInteger(questId) ? questId : null;
+}
+
 /**
  * The quest's **group** key: the name up to its last `-<digits>` suffix
  * (`AQ-GARD-C01-002` → `AQ-GARD-C01`).

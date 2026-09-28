@@ -3,6 +3,7 @@ import { Router, type Response } from 'express';
 import type { ApiError } from '../../../shared/index.js';
 import { readSettings, type Db } from '../db.js';
 import { DirtyRepoError } from '../services/git.js';
+import { questEvidenceByName } from '../services/questEvidence.js';
 import { listQuests, QuestRequestError, readQuest, saveQuest } from '../services/quests.js';
 import { createSavePipeline, type SavePipeline } from '../services/savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbIndex.js';
@@ -10,9 +11,10 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
 /**
  * Quests API — task 2.5, the three endpoints of docs/spec-api.md L164-180:
  *
- * - `GET  /api/quests`        list the corpus (D12: scan + JSON5 parse per request)
- * - `GET  /api/quests/:name`  one quest's full JSON, via the D19 content-keyed index
- * - `POST /api/quests`        save `{ quest, notes?, source? }` through the task 2.4 pipeline
+ * - `GET  /api/quests`                 list the corpus (D12: scan + JSON5 parse per request)
+ * - `GET  /api/quests/:name`           one quest's full JSON, via the D19 content-keyed index
+ * - `GET  /api/quests/:name/evidence`  the per-quest evidence surface (task 6.6)
+ * - `POST /api/quests`                 save `{ quest, notes?, source? }` through the task 2.4 pipeline
  *
  * The spec fixes no response shape ("List all quests" / "Single quest JSON"), so
  * the shapes the client will consume are documented on the service types
@@ -25,6 +27,8 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  *                             summary: {total, extracted, reviewed, verified},
  *                             skipped: [ {file, message} ] }          (skipped = unparsable files)
  * GET  /api/quests/:name  → the parsed quest object itself (exactly what POST round-trips)
+ * GET  /api/quests/:name/evidence → { quest, text_rows, goal_gates, dialogue, references, warnings }
+ *                            (docs/spec-api.md L420-492; `services/questEvidence.ts` documents the shape)
  * POST /api/quests        → { quest_name, outcome, action, commit, branch, commit_message,
  *                             file, metadata, metadata_outcome, status, warnings }
  * ```
@@ -139,6 +143,38 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
     }
     try {
       res.json(await listQuests({ db, spiraldbPath: root }));
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `GET /api/quests/:name/evidence` — task 6.6.
+   *
+   * Declared before `/:name` so the two-nearest-segment path is unambiguous to a reader (Express
+   * already distinguishes them — `/:name` matches one segment — but the order makes the intent
+   * explicit). The name must be in the **catalog** (`quests`); a name nothing names is the spec's
+   * 404 with its exact text.
+   */
+  router.get('/:name/evidence', (req, res) => {
+    const root = spiraldbRoot(res);
+    if (root === undefined) {
+      return;
+    }
+    try {
+      const { index } = runtimeFor(root);
+      // The file behind the name is read fresh: its own string values decide `used_by_this_file`,
+      // and a file edited outside the tool must not be judged against a stale scan.
+      index.rebuildType('questtemplates');
+
+      const result = questEvidenceByName({ db, index }, req.params.name);
+      if (result.kind === 'unknown') {
+        res.status(404).json({
+          error: `Unknown quest "${req.params.name}"`,
+        } satisfies ApiError);
+        return;
+      }
+      res.json(result.evidence);
     } catch (error) {
       fail(res, error);
     }

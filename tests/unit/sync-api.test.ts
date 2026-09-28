@@ -41,6 +41,7 @@ const SUCCESS: RunSyncResult = {
     zones: 6,
     drop_tables: 7,
     string_table: 8,
+    persona_index: 9,
   },
   deduplicated: { items: 0, spells: 0, npcs: 0 },
   manifest: {

@@ -1,0 +1,10 @@
+{
+  "$type": "Imcodec.ObjectProperty.TypeCache.NpcInventory, Imcodec.ObjectProperty",
+  "TemplateID": 9001,
+  "Items": [
+    {
+      "TemplateID": 1,
+      "Quantity": 2
+    }
+  ]
+}

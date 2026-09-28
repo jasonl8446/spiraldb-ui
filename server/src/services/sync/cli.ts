@@ -234,6 +234,7 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('zones', n(result.counts.zones)),
       field('drop_tables', n(result.counts.drop_tables)),
       field('string_table', n(result.counts.string_table)),
+      field('persona_index', `${n(result.counts.persona_index)} persona object names`),
       // Manifest id provenance (D35 / task 1.4h). Always printed, including the
       // zeroes: "0 dropped" is the acceptance criterion, so it must be visible.
       field('manifest entries', `${n(result.manifest.entries)} ids`),

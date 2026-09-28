@@ -229,6 +229,36 @@ after the first sync, later syncs merge the same rows. If `tools/bin/wad-scan` i
 recorded as `skipped` with a message and the sync still succeeds (D55's CI has no .NET SDK), leaving
 the corpus rows' `has_definition` correct.
 
+### Persona Index (Phase 6, migration `0003_persona_index.sql`)
+
+The speaker ladder an evidence response needs (`m_nameOverride` → composed `m_nameSTKey` → the persona's template
+name) cannot be a pure request-time join: `m_persona` structs are **inline structs, not templates**, so they are
+absent from the manifest's id space, and `loadTemplateManifest` deliberately does not retain its 17 MB document.
+The sync therefore persists the two facts the ladder needs, and the request path joins against them.
+
+```sql
+-- One row per persona object name; an INDEX over the client's own strings, not a materialised evidence table.
+CREATE TABLE IF NOT EXISTS persona_index (
+  object_name TEXT PRIMARY KEY,  -- 'WC-RAV-NPC02' (the persona name minus a trailing '_Persona')
+  template_id INTEGER,           -- from the manifest's basename→id map, kept only when `npcs` can name it
+  first_key TEXT,                -- the persona struct's `m_firstName` string-table KEY ('WC-NPCs_00000083')
+  last_key TEXT,                 -- its `m_lastName` key ('WC-NPCs_00000084')
+  title_key TEXT
+);
+```
+
+**Built by the sync**, inside the existing run: `buildManifestPersonaRows` filters the manifest it already loads to
+the ids `npcs` can name, and `scanPersonaStructs` walks the unpack tree's **`Cinematics/`** root for the
+`m_firstName`/`m_lastName` components. Measured on `V_r806919.Wizard_1_610`: **23,003** persona object names, of
+which **3** carry components — the components are rare because most speakers resolve by template name or override.
+`WC-RAV-NPC02` carries `WC-NPCs_00000083` = "Cyrus" / `WC-NPCs_00000084` = "Drake", which is what composes "Cyrus
+Drake" for `WC-CYCLOPS-MAIN-002`.
+
+**Two rules for readers.** (a) The **adjacent-key heuristic must not be used**: `WC-NPCs_00000082` = "Cyrus Drake"
+sits next to `_83` = "Cyrus" and `_84` = "Drake", but of 1,149 multi-word `WC-NPCs` rows whose neighbours both
+exist only **167 (15%)** follow that convention — a coincidence, not a rule. (b) `Persona,First` / `Persona,Last`
+(78 / 57 rows) are an **unrelated roster** and do not hold these components; do not compose from them.
+
 ### Sync Metadata
 
 ```sql

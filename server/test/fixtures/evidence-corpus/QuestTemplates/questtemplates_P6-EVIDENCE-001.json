@@ -1,0 +1,157 @@
+{
+  "$type": "Imcodec.ObjectProperty.TypeCache.QuestTemplate, Imcodec.ObjectProperty",
+  "m_questName": "P6-EVIDENCE-001",
+  "m_questTitle": "QuestTitle_1A2B",
+  "m_questLevel": 5,
+  "m_mainline": false,
+  "m_startGoals": [
+    "Fix_Goal1"
+  ],
+  "m_goals": [
+    {
+      "$type": "Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty",
+      "m_goalName": "Fix_Goal1",
+      "m_goalText": null,
+      "m_dialogList": {
+        "m_dialogs": [
+          {
+            "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",
+            "m_dialogTag": "",
+            "m_dialogEntries": [
+              {
+                "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+                "m_personaName": "FIXTURE-NPC01_Persona",
+                "m_nameOverride": "",
+                "m_nameSTKey": "NPCFormats_First_Last",
+                "m_guiDisplay": "",
+                "m_dialog": "WizQst1A2B_00000000",
+                "m_picture": "GUI/NpcPortraits/Portrait_Fixture.dds",
+                "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/Fixture_005_01.mp3",
+                "m_actorTemplateID": 0,
+                "m_cameraName": "Cinematic Camera - Cyrus Drake",
+                "m_cameraZoneName": "",
+                "m_walkAwayNpcTemplateID": 0
+              },
+              {
+                "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+                "m_personaName": "FIXTURE-NPC02_Persona",
+                "m_nameOverride": "WC-NPCs_00000027",
+                "m_nameSTKey": "",
+                "m_guiDisplay": "",
+                "m_dialog": "WizQst1A2B_00000001",
+                "m_picture": "GUI/NpcPortraits/Portrait_Fixture.dds",
+                "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/Fixture_005_01.mp3",
+                "m_actorTemplateID": 0,
+                "m_cameraName": "LOCATION",
+                "m_cameraZoneName": "",
+                "m_walkAwayNpcTemplateID": 0
+              },
+              {
+                "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+                "m_personaName": "FIXTURE-NPC03_Persona",
+                "m_nameOverride": "",
+                "m_nameSTKey": "NPCFormats_First_Only",
+                "m_guiDisplay": "",
+                "m_dialog": "WizQst1A2B_00000002",
+                "m_picture": "GUI/NpcPortraits/Portrait_Fixture.dds",
+                "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/Fixture_005_01.mp3",
+                "m_actorTemplateID": 0,
+                "m_cameraName": "LOCATION",
+                "m_cameraZoneName": "",
+                "m_walkAwayNpcTemplateID": 0
+              },
+              {
+                "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+                "m_personaName": "FIXTURE-ABSENT_Persona",
+                "m_nameOverride": "",
+                "m_nameSTKey": "NPCFormats_First_Last",
+                "m_guiDisplay": "",
+                "m_dialog": "WizQst1A2B_00000003",
+                "m_picture": "GUI/NpcPortraits/Portrait_Fixture.dds",
+                "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/Fixture_005_01.mp3",
+                "m_actorTemplateID": 0,
+                "m_cameraName": "LOCATION",
+                "m_cameraZoneName": "",
+                "m_walkAwayNpcTemplateID": 0
+              },
+              {
+                "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+                "m_personaName": "FIXTURE-VILLAIN-NPC_Persona",
+                "m_nameOverride": "",
+                "m_nameSTKey": "NPCFormats_First_Last",
+                "m_guiDisplay": "",
+                "m_dialog": "WizQst1A2B_00000004",
+                "m_picture": "GUI/NpcPortraits/Portrait_Fixture.dds",
+                "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/Fixture_005_01.mp3",
+                "m_actorTemplateID": 0,
+                "m_cameraName": "LOCATION",
+                "m_cameraZoneName": "",
+                "m_walkAwayNpcTemplateID": 0
+              },
+              {
+                "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+                "m_personaName": "",
+                "m_nameOverride": "",
+                "m_nameSTKey": "",
+                "m_guiDisplay": "",
+                "m_dialog": "",
+                "m_picture": "",
+                "m_soundFile": "",
+                "m_actorTemplateID": 9001,
+                "m_walkAwayNpcTemplateID": 0,
+                "m_cameraName": "LOCATION",
+                "m_cameraZoneName": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty",
+      "m_goalName": "Fix_Goal2",
+      "m_goalText": null,
+      "m_destinationZone": "FixtureCity/Fix_Zone",
+      "m_zoneTag": "FixtureCity/Fix_Zone"
+    },
+    {
+      "$type": "Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty",
+      "m_goalName": "Fix_Goal3",
+      "m_goalText": null,
+      "m_destinationZone": "FixtureCity/Not_Synced",
+      "m_zoneTag": ""
+    }
+  ],
+  "m_results": [
+    {
+      "$type": "Imcodec.ObjectProperty.TypeCache.ResLearnSpell, Imcodec.ObjectProperty",
+      "m_templateID": 5001
+    },
+    {
+      "$type": "Imcodec.ObjectProperty.TypeCache.ResGiveSpell, Imcodec.ObjectProperty",
+      "m_templateID": 9001,
+      "m_spellID": 5001
+    }
+  ],
+  "m_dialogList": {
+    "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",
+    "m_dialogs": [
+      {
+        "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",
+        "m_dialogTag": "Prep",
+        "m_dialogEntries": [
+          {
+            "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty",
+            "m_personaName": "FIXTURE-NPC01_Persona",
+            "m_nameOverride": "",
+            "m_nameSTKey": "NPCFormats_First_Last",
+            "m_dialog": "WizQst9999_00000000",
+            "m_picture": "",
+            "m_soundFile": "",
+            "m_cameraName": ""
+          }
+        ]
+      }
+    ]
+  }
+}

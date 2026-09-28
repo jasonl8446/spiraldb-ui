@@ -7,6 +7,8 @@ import { createDashboardRouter } from './dashboard.js';
 import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
 import { createObjectRouter } from './objects.js';
+import { createNpcsRouter } from './npcs.js';
+import { createQuestIdsRouter } from './questIds.js';
 import { createQuestsRouter } from './quests.js';
 import { createSearchRouter } from './search.js';
 import { createSettingsRouter } from './settings.js';
@@ -150,6 +152,29 @@ let questsRouter: Router | undefined;
 apiRouter.use('/quests', (req, res, next) => {
   questsRouter ??= createQuestsRouter({ db: getDb() });
   questsRouter(req, res, next);
+});
+
+/**
+ * Quest-id evidence (task 6.6, story p6-07) — `GET /api/quest-ids/:id/evidence`, the
+ * second tier of the catalog (`quest_ids`). Lazily mounted like every router above.
+ */
+let questIdsRouter: Router | undefined;
+
+apiRouter.use('/quest-ids', (req, res, next) => {
+  questIdsRouter ??= createQuestIdsRouter({ db: getDb() });
+  questIdsRouter(req, res, next);
+});
+
+/**
+ * NPC view (task 6.6, story p6-07, P6-17/D112) — `GET /api/npcs/:id`. Lazily mounted
+ * for the same reason: its first request is the first moment the process needs
+ * `data/spiraldb-ui.db` (D32).
+ */
+let npcsRouter: Router | undefined;
+
+apiRouter.use('/npcs', (req, res, next) => {
+  npcsRouter ??= createNpcsRouter({ db: getDb() });
+  npcsRouter(req, res, next);
 });
 
 /**

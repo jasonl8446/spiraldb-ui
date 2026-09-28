@@ -249,6 +249,9 @@ describe('runSync — success path', () => {
       zones: 1,
       drop_tables: 1,
       string_table: 4,
+      // Task 6.6's persona index: the fake tree has no `Cinematics/` and the fake manifest is
+      // empty, so the index is empty — and it is still reported, so a silent zero is visible.
+      persona_index: 0,
     });
     for (const table of SEVEN_TABLES) {
       expect(count(db, table)).toBe(result.counts[table]);

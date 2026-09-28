@@ -9,6 +9,7 @@ import {
   computeHoldoutAccuracy,
   createQuestIdLookups,
   parseQuestTitleKey,
+  parseWizQstKey,
   summarizeQuestRefs,
   type HoldoutReport,
   type QuestCatalogRecord,
@@ -399,12 +400,10 @@ function readQuestIdTier(db: Db): QuestIdTier {
     key: string;
   }>;
   for (const row of rows) {
-    const match = /^WizQst([0-9A-Fa-f]+)_/.exec(row.key);
-    if (match === null) {
-      continue;
-    }
-    const questId = Number.parseInt(match[1] ?? '', 16);
-    if (!Number.isSafeInteger(questId)) {
+    // `parseWizQstKey` is the one home of this spelling (task 6.6 also reads the id off a
+    // `WizQst` key); the rule is unchanged — a safe-integer hex id, anything else skipped.
+    const questId = parseWizQstKey(row.key);
+    if (questId === null) {
       continue;
     }
     textRows.set(questId, (textRows.get(questId) ?? 0) + 1);

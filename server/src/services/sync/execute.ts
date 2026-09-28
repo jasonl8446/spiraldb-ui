@@ -25,6 +25,12 @@ import {
   type CollectedQuestCatalog,
   type QuestCatalogReport,
 } from './questCatalog.js';
+import {
+  buildManifestPersonaRows,
+  mergePersonaStructs,
+  scanPersonaStructs,
+  type PersonaIndexRow,
+} from './personaIndex.js';
 import { resolveRevision } from './revision.js';
 import { buildStringTableRows, type StringTableRow } from './stringtable.js';
 import { scanTemplateTree, type ItemRow, type NpcRow, type SpellRow } from './templates.js';
@@ -82,6 +88,8 @@ export interface SyncCounts {
   zones: number;
   drop_tables: number;
   string_table: number;
+  /** Rows written to `persona_index` (task 6.6) — the speaker ladder's index. */
+  persona_index: number;
 }
 
 export const ZERO_SYNC_COUNTS: SyncCounts = {
@@ -92,6 +100,7 @@ export const ZERO_SYNC_COUNTS: SyncCounts = {
   zones: 0,
   drop_tables: 0,
   string_table: 0,
+  persona_index: 0,
 };
 
 export type SyncStatus = 'success' | 'failed';
@@ -260,6 +269,7 @@ export type SyncRunner = (options: RunSyncOptions) => Promise<RunSyncResult>;
 const REPLACED_TABLES = [
   'quest_catalog_refs',
   'quest_ids',
+  'persona_index',
   'string_table',
   'items',
   'spells',
@@ -299,6 +309,7 @@ function replaceTables(
   timestamp: string,
   catalog: CollectedQuestCatalog,
   corpusPath: string | null,
+  personaRows: readonly PersonaIndexRow[],
 ): QuestCatalogReport {
   const insertString = db.prepare(
     'INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)',
@@ -315,6 +326,12 @@ function replaceTables(
     'INSERT INTO zones (zone_path, display_name, world) VALUES (?, ?, ?)',
   );
   const insertDropTable = db.prepare('INSERT INTO drop_tables (name, description) VALUES (?, ?)');
+  // The speaker ladder's index (task 6.6): one row per persona object name, written inside the
+  // same transaction as the `npcs` rows it resolves against.
+  const insertPersona = db.prepare(
+    `INSERT INTO persona_index (object_name, template_id, first_key, last_key, title_key)
+     VALUES (?, ?, ?, ?, ?)`,
+  );
   const insertHistory = db.prepare(
     `INSERT INTO sync_history
        (sync_timestamp, revision, items_count, spells_count, npcs_count, quests_count, zones_count, status, error_message)
@@ -346,6 +363,15 @@ function replaceTables(
     }
     for (const row of rows.drop_tables) {
       insertDropTable.run(row.name, row.description);
+    }
+    for (const row of personaRows) {
+      insertPersona.run(
+        row.object_name,
+        row.template_id,
+        row.first_key,
+        row.last_key,
+        row.title_key,
+      );
     }
     // Inside the same transaction, after `string_table` is written: the catalog's id links are
     // resolved against it (see questCatalog.ts).
@@ -530,6 +556,15 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       drop_tables: dropTables.rows,
     };
 
+    // The speaker ladder's index (task 6.6). Built here, not in `replaceTables`, because both
+    // halves need data this scope already holds: the manifest's id space (filtered to the ids
+    // `npcs` can name) and the persona structs the tree scan found. The parse of the 17 MB
+    // manifest is already gone by now, so only the two maps are walked.
+    const personaRows = mergePersonaStructs(
+      buildManifestPersonaRows(manifest, new Set(rows.npcs.map((row) => row.template_id))),
+      await scanPersonaStructs(treeDir),
+    );
+
     counts = {
       items: rows.items.length,
       spells: rows.spells.length,
@@ -538,6 +573,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       zones: rows.zones.length,
       drop_tables: rows.drop_tables.length,
       string_table: rows.string_table.length,
+      persona_index: personaRows.length,
     };
 
     // The catalog stage's process half: the game tree the resolved revision names —
@@ -550,7 +586,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
 
     const timestamp = formatSyncTimestamp(now());
     const writeStarted = Date.now();
-    catalog = replaceTables(db, rows, revision, timestamp, collected, spiraldbPath);
+    catalog = replaceTables(db, rows, revision, timestamp, collected, spiraldbPath, personaRows);
     timings.writeMs = Date.now() - writeStarted;
 
     return {

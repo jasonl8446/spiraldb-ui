@@ -57,7 +57,7 @@ const ENV_VAR_BY_KEY: Record<SettingKey, string> = {
  * **Adding a file here is load-bearing**: a new `.sql` file on disk is never
  * applied until it is listed (task 6.4's measured trap).
  */
-const MIGRATION_FILES = ['0001_init.sql', '0002_quest_catalog.sql'];
+const MIGRATION_FILES = ['0001_init.sql', '0002_quest_catalog.sql', '0003_persona_index.sql'];
 
 /** The migration whose `quests` column adds are applied by a guarded step (see below). */
 const QUEST_CATALOG_MIGRATION = '0002_quest_catalog.sql';
@@ -206,8 +206,9 @@ export function openDb(options: OpenDbOptions = {}): Db {
  * Idempotent by construction: 0001 and 0002 are `CREATE ... IF NOT EXISTS` only,
  * and 0002's four `ALTER TABLE` statements live in
  * {@link applyQuestCatalogColumnAdds}, which skips a column that already exists.
- * Running this repeatedly therefore leaves the same 13 tables, 1 view and 6
- * indexes (see tests/unit/db.test.ts).
+ * Running this repeatedly therefore leaves the same 14 tables, 1 view and 7
+ * indexes (see tests/unit/db.test.ts) — 0003_persona_index.sql (task 6.6) adds the
+ * `persona_index` table and its one index, itself `CREATE ... IF NOT EXISTS` only.
  */
 export function initSchema(db: Db): void {
   for (const file of MIGRATION_FILES) {

@@ -338,7 +338,7 @@ export function goalLogicReachability(document: unknown): GoalLogicReachability 
  * `m_zoneName`-shaped keys of its own, and checking those against the tables would report a
  * brand-new quest as an unknown reference to itself.
  */
-interface ReferenceFieldSpec {
+export interface ReferenceFieldSpec {
   /** The document key. */
   key: string;
   /** The short `$type` names of the nodes this key belongs to. */
@@ -696,7 +696,7 @@ export function validateQuest(
 /* --------------------------------------------------------------- document walk */
 
 /** One scalar (or `$type`) occurrence the walker hands to the rules. */
-interface WalkedValue {
+export interface WalkedValue {
   /** The exact document path of this value. */
   path: DocPath;
   /** The key this value sits under (`$type` for a type annotation). */
@@ -715,8 +715,13 @@ interface WalkedValue {
  * Walks every scalar of the document (objects, arrays and the `$type` annotations included),
  * handing each to `visit` with its exact path and its nearest enclosing known type.
  * Read-only: it builds no copy and mutates nothing.
+ *
+ * Exported for the evidence API (task 6.6, `server/src/services/questEvidence.ts`), which must
+ * resolve `REFERENCE_FIELDS` against **the same walk** the Save gate uses — a second walker would
+ * let the panel and the validator disagree about which node owns a field, and the owner set is
+ * exactly what decides whether a reference exists at all (`ReferenceFieldSpec.types`).
  */
-function walkScalars(document: unknown, visit: (node: WalkedValue) => void): void {
+export function walkScalars(document: unknown, visit: (node: WalkedValue) => void): void {
   function walk(value: unknown, path: DocPath, enclosing: string | null): void {
     if (Array.isArray(value)) {
       value.forEach((element, index) => walk(element, [...path, index], enclosing));

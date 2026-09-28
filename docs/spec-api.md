@@ -491,6 +491,38 @@ tables — there is **no materialised evidence table**:
   `has_definition` is `false`, and `title_source` stays honest about it.
 - Unknown quest or id → `404 {"error": "Unknown quest \"…\""}`.
 
+**Shipped shape, as implemented by p6-07 (the fields the example above does not name).** The example fixes the
+sections; these are the additions the implementation made and the response now guarantees, so a consumer can rely
+on them rather than on a sample:
+
+- `quest.inference_basis` — the basis travels **beside** the `title_source: 'inferred'` label (the
+  `quest_ids.inference_basis` column), so a labelled guess always arrives with its reasoning.
+- `text_rows[].field` — the document path that references the row **when it is used**, and `null` when it is
+  available. `used_by_this_file` is a **per-row computed predicate**: the file's own string values are collected,
+  and a row is used iff its **key is one of those whole strings** — no prefix test, no naming convention.
+- `dialogue[].field`, `dialogue[].dialog_key`, `dialogue[].own_table`, `dialogue[].camera_name`,
+  `dialogue[].actor_template_id` — the entry's path, its `m_dialog` key, and **whether that key belongs to *this*
+  quest's own table**. `own_table` is not decoration: a quest file legitimately carries a top-level `m_dialogList`
+  whose entries point at a **sibling** quest's table (measured on `WC-CYCLOPS-MAIN-002`: 27 entries, 22 under
+  `m_goals` pointing at `WizQst17318F_*` and 5 at `WizQst17318E_*`), and a consumer that cannot tell them apart
+  will read another quest's text as this one's. `camera_name` is echoed as **data** and is never the speaker;
+  `actor_template_id` is surfaced verbatim because the ladder below has no rung that uses it (see the note).
+- `dialogue[].speaker.override_key` / `.st_key` — which string-table key the override or the composition keyed on.
+- `warnings[]` carries the counted, never-dropped cases (the raw-persona fallback, and non-gate references).
+
+**The speaker ladder, and what it cannot do.** The order is `m_nameOverride` → `m_nameSTKey` composed through
+`NPCFormats_First_Last` / `NPCFormats_First_Only` → the persona's template name via the manifest; `m_cameraName` is
+**never** the name. Two consequences measured in p6-07: (i) `m_cameraName` frequently *contains* a plausible
+speaker name (`"Cinematic Camera - Cyrus Drake"`) while elsewhere it is `"LOCATION"`, so the ladder must be proven
+on the entries where the shortcut is wrong, and the response does not read it; (ii) entries exist with an **empty
+persona and a positive `m_actorTemplateID`** (1,377 corpus entries overall) that `npcs` *can* name — the ladder has
+no rung for them, so the id is surfaced as data and the miss is counted rather than an invented rung being added.
+
+**Request-time inputs the ladder needs are indexed, not materialised.** `persona_index` (migration `0003`) holds
+the persona's `template_id` and its first/last component **keys**, built by the sync from the manifest it already
+loads plus a scan of the unpack tree's `Cinematics/` root. It is an **index** — the thing the spec forbids is a
+materialised *evidence* table, not an index over the client's own strings.
+
 ---
 
 ## NPC View (Phase 6 — D112)
@@ -545,9 +577,14 @@ alias keying, the one-row-two-aliases result, and `npcEntityById` resolving both
 unit-tested there). **This view endpoint does not ship with task 6.5**, and the reason is a real dependency, not
 an omission: its `dialogs` and `quests` arms both need the **speaker ladder** (`m_nameOverride` → composed
 `nameSTKey` → template name) that task 6.6's evidence API builds, and serving those arms as empty arrays today
-would read as "this NPC has no dialogs" — a false claim. The view is therefore **carried to task 6.6**, which
-owns the ladder and the per-quest dialogue rows; until then its counts-equal-a-direct-query claim is **untested
-rather than satisfied**, and this endpoint must not be described as shipped.
+would read as "this NPC has no dialogs" — a false claim. The view is therefore **carried to task 6.6**, which owns the ladder and the per-quest dialogue rows.
+
+**Status: shipped by p6-07 (task 6.6).** With the speaker ladder and `persona_index` in place the view serves
+`personas` / `dialogs` / `quests` / `inventories` with `counts`, and the counts were verified against direct
+queries (`GET /api/npcs/44169` → `{aliases: 2, personas: 1, dialogs: 4, quests: 1}`, matching the SQL). An arm
+that cannot be populated is **explained in `notes`** rather than returned as an empty array posing as an
+answer — e.g. `inventories.npc_drop_tables is empty because NpcDropTable/ does not exist in this corpus, not
+because no row matched` — and an alias-only entity says which arms could not be resolved and why.
 
 ---
 

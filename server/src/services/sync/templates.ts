@@ -359,8 +359,15 @@ export interface TemplateScanResult {
   manifest: ManifestIdReport;
 }
 
-/** Recursively lists `*_deser.json` files under `root`. */
-async function listDeserFiles(
+/**
+ * Recursively lists `*_deser.json` files under `root` (a missing/unreadable root
+ * yields nothing rather than throwing).
+ *
+ * Exported for [personaIndex.ts](./personaIndex.ts) (task 6.6): the persona-struct
+ * scan walks the same tree and must not grow a second implementation of "which
+ * files a tree root holds".
+ */
+export async function listDeserFiles(
   root: string,
   deps: TemplateScanDeps,
   out: string[] = [],

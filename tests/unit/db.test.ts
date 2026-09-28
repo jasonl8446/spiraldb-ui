@@ -33,7 +33,9 @@ import {
  * (docs/spec-data-model.md L137-220): two tables, three indexes, the `coverage`
  * view and four `quests` columns applied by a PRAGMA-guarded step because SQLite
  * has no `ADD COLUMN IF NOT EXISTS` and this runner re-execs every file on every
- * open. The `settings` seed matches L164-169 with the env/NODE_ENV precedence from
+ * open. Task 6.6 adds migration 0003 — the **persona index** the evidence endpoint's
+ * speaker ladder reads (one table, one index; `CREATE ... IF NOT EXISTS` only, so it
+ * needs no guarded step). The `settings` seed matches L164-169 with the env/NODE_ENV precedence from
  * the lead's decisions, and every step is idempotent.
  *
  * Every test uses `:memory:` or a throwaway file under `data/` (gitignored) —
@@ -46,6 +48,7 @@ const EXPECTED_TABLES = [
   'entry_status',
   'items',
   'npcs',
+  'persona_index',
   'quest_catalog_refs',
   'quest_ids',
   'quests',
@@ -61,6 +64,7 @@ const EXPECTED_INDEXES = [
   'idx_entry_status_key',
   'idx_entry_status_status',
   'idx_entry_status_type',
+  'idx_persona_index_template',
   'idx_quest_catalog_refs_quest',
   'idx_quest_catalog_refs_wad',
   'idx_quest_ids_matched',
@@ -145,17 +149,17 @@ afterEach(() => {
 });
 
 describe('schema introspection', () => {
-  it('creates exactly the 13 tables from the spec (11 + migration 0002), on a fresh database', () => {
+  it('creates exactly the 14 tables from the spec (11 + migrations 0002/0003), on a fresh database', () => {
     const db = open();
 
-    expect(listTables(db)).toHaveLength(13);
+    expect(listTables(db)).toHaveLength(14);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
   });
 
-  it('creates the 6 named indexes from the spec (3 + migration 0002)', () => {
+  it('creates the 7 named indexes from the spec (3 + migrations 0002/0003)', () => {
     const db = open();
 
-    expect(listIndexes(db)).toHaveLength(6);
+    expect(listIndexes(db)).toHaveLength(7);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
   });
 
@@ -444,17 +448,17 @@ describe('settings override precedence', () => {
 });
 
 describe('idempotency', () => {
-  it('re-running initSchema keeps 13 tables, 1 view, 6 indexes and the seeded rows', () => {
+  it('re-running initSchema keeps 14 tables, 1 view, 7 indexes and the seeded rows', () => {
     const db = open();
     seedSettings(db, { env: {}, now: FIXED_NOW, repoRoot: '/repo' });
 
     expect(() => initSchema(db)).not.toThrow();
     expect(() => initSchema(db)).not.toThrow();
 
-    expect(listTables(db)).toHaveLength(13);
+    expect(listTables(db)).toHaveLength(14);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
     expect(listViews(db)).toEqual(EXPECTED_VIEWS);
-    expect(listIndexes(db)).toHaveLength(6);
+    expect(listIndexes(db)).toHaveLength(7);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
     expect(readSettings(db)).toEqual({
       aurorium_path: DEFAULT_AURORIUM_PATH,
