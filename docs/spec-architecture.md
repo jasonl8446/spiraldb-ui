@@ -127,7 +127,7 @@ UI dropdowns now show friendly names
 
 ## Server Configuration
 
-- **Express backend**: Port 3001
+- **Express backend**: Port 3001, **bound to loopback only** (`127.0.0.1`) — this is a local single-user tool, so the API is not reachable from another interface, and it carries no CORS headers (final-review gate 2, finding M1; the Vite proxy target below is unchanged and still reaches it)
 - **Vite dev server**: Port 5173
 - **Proxy config** in `vite.config.ts`:
   ```typescript
@@ -142,6 +142,11 @@ UI dropdowns now show friendly names
   }
   ```
 - **Production**: Express serves built Vite static files on port 3001
+
+The list above is illustrative and predates several decisions (the current manifest is
+`package.json`); `cors` was in it until the final-review gate-2 fix work removed both the
+middleware and the dependency — the client is same-origin in both modes, so no CORS header is
+needed, and the *absence* of one is what makes a foreign-origin preflight fail.
 
 ## Database Location
 
@@ -183,7 +188,6 @@ These are read-only inputs. Do NOT modify them directly.
   "dependencies": {
     "express": "^4.18.0",
     "better-sqlite3": "^9.0.0",
-    "cors": "^2.8.5",
     "simple-git": "^3.20.0",
     "json5": "^2.2.0"
   },

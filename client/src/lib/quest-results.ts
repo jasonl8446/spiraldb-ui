@@ -189,9 +189,6 @@ export const NO_RESULTS_TEXT = 'No results.';
 /** The absent/null wrapper's sentence — still offered an Add control. */
 export const NO_RESULT_WRAPPER_TEXT = 'This list is absent or null.';
 
-/** A node whose value is not an object: kept visible instead of dropped. */
-export const UNREADABLE_RESULT_TEXT = 'Unrecognised result value';
-
 /** The read-only disclosure of keys the model does not know. */
 export const RAW_FIELDS_LABEL = 'Raw fields';
 

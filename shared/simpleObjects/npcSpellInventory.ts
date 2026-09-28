@@ -1,5 +1,5 @@
 import type { DocEdit, DocPath } from '../document.js';
-import { numberIdFromRaw, type SimpleFieldSpec, type SimpleNamesType } from './model.js';
+import { numberIdFromRaw, type SimpleFieldSpec } from './model.js';
 
 /**
  * `NpcSpellInventory` — plan task 4.4 (story p4-03, AC2): docs/spec-domain-reference.md
@@ -293,6 +293,3 @@ export function requiredSpellEdit(index: number, rawId: string): DocEdit | null 
 export function requiredSpellIsNone(value: unknown): boolean {
   return value === undefined || value === null || value === NONE_REQUIRED_SPELL;
 }
-
-/** The names table both spell controls search. Re-exported so a form names it once. */
-export const SPELL_NAMES_TYPE: SimpleNamesType = 'spells';

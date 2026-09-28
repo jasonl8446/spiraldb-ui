@@ -150,11 +150,17 @@ async function openJson(page: Page): Promise<Locator> {
  * The live document, read through the JSON panel's own `[Copy]` affordance (the panel's
  * serialization of the document the editors mutated), parsed back so a key can be compared
  * exactly instead of by substring.
+ *
+ * The clipboard is **wiped first** (final-review gate 2, S1 — the same no-wipe shape as
+ * `quests-goals-editor.spec.ts`): two arms here read the document twice in one test, and
+ * without the wipe the second read can be the first one's text rather than a fresh
+ * serialization of the live document.
  */
 async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
+  await page.evaluate(() => navigator.clipboard.writeText(''));
   await page.getByRole('button', { name: 'Copy' }).click();
   // The click starts an async serialize-then-write; reading the clipboard straight after can
-  // catch it empty (or the previous document). Poll until the panel's JSON is there.
+  // catch it empty. Poll until the panel's JSON is there.
   let text = '';
   await expect
     .poll(async () => {

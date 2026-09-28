@@ -1,0 +1,49 @@
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/a11y-keyboard.spec.ts
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:856558) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] (node:856588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] (node:856605) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:856587) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 293 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://127.0.0.1:3181 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 8 tests using 1 worker
+
+(node:856645) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/a11y-keyboard.spec.ts:126:3 › AC#8 — the four flows, keyboard only › dashboard navigation: Tab reaches the feed link and Enter follows it (1.7s)
+  ✓  2 [chromium] › tests/ui/a11y-keyboard.spec.ts:151:3 › AC#8 — the four flows, keyboard only › mark reviewed: menu → notes dialog → PATCH (799ms)
+  ✓  3 [chromium] › tests/ui/a11y-keyboard.spec.ts:181:3 › AC#8 — the four flows, keyboard only › edit a DropTable item: Edit → combobox → remove → Save (648ms)
+  ✓  4 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (568ms)
+  ✓  5 [chromium] › tests/ui/a11y-keyboard.spec.ts:390:3 › AC#8 — every focus stop shows the spec ring › quest list: 20 stops, each with ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950 (525ms)
+  ✓  6 [chromium] › tests/ui/a11y-keyboard.spec.ts:411:3 › AC#8 — every focus stop shows the spec ring › DropTable detail (edit mode): the walk stays on the spec ring (478ms)
+  ✓  7 [chromium] › tests/ui/a11y-keyboard.spec.ts:429:3 › AC#8 — every focus stop shows the spec ring › the flowchart’s focused node gets the spec ring, and an edge is distinguishable without colour (685ms)
+  ✓  8 [chromium] › tests/ui/a11y-keyboard.spec.ts:589:3 › AC#10 — the rendered surfaces expose a name for every control › quest list, quest detail (edit mode), DropTable detail and the dashboard (1.3s)
+
+  8 passed (8.1s)
+
+# [review-appended rc] rc=0 — captured on the command itself by the review shell; appended to this transcript by the review pass

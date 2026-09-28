@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    The Imview checkout the CLI tools build against (D45, story p2-02).
+
+    It is a property rather than a literal `../../../Imview/...` path so the build is not
+    location-dependent (F1, final-deslop). The default below is the owner's sibling layout and
+    keeps that checkout working unchanged; any other checkout — a clone, CI, another machine —
+    points the build at its own copy with either
+
+        dotnet build tools/PacketReaderCli/PacketReaderCli.csproj -p:ImviewRoot=/path/to/Imview
+
+    or an exported `ImviewRoot` environment variable (MSBuild imports environment variables as
+    properties, and the Condition only fills an empty value).
+
+    It sits in `tools/` rather than at the repo root because both consumers
+    (`tools/PacketReaderCli`, `tools/FixtureGen`) live here, so the default has one home
+    (D51/D76's one-shared-unit rule) without imposing an MSBuild props file on the rest of the
+    repository. `tools/` is prettier-ignored, and MSBuild resolves this file by walking up from
+    each project, so nothing outside this directory is affected.
+
+    `$(MSBuildThisFileDirectory)` is `tools/`, so `../../Imview` is the sibling checkout.
+  -->
+  <PropertyGroup>
+    <ImviewRoot Condition="'$(ImviewRoot)' == ''">$(MSBuildThisFileDirectory)../../Imview</ImviewRoot>
+  </PropertyGroup>
+
+</Project>

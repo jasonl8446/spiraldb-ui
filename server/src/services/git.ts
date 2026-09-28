@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { simpleGit } from 'simple-git';
@@ -55,6 +56,48 @@ export class DirtyRepoError extends Error {
   }
 }
 
+/** The longest caller-supplied commit note kept, in **code points** (final-review gate 2, S4). */
+export const MAX_COMMIT_NOTES_LENGTH = 255;
+
+/**
+ * Reduces caller-supplied `notes` to **one safe line**, or `undefined` for "no body".
+ *
+ * The commit message is the one place a caller's text reaches the owner's repository history,
+ * and the header is server-built (`spiraldb: {action} {type} {key}`) — so unsanitised `notes`
+ * could only ever spoof the **body**, but a body with newlines in it can still fabricate a
+ * `spiraldb: create quest X` line or a `Co-authored-by:`/`Signed-off-by:` trailer block
+ * (final-review gate 2, S4). Every control character (newlines included) and every run of
+ * whitespace collapses to a single space, so no caller text can start a line, and the result is
+ * capped at {@link MAX_COMMIT_NOTES_LENGTH}.
+ *
+ * One home: both write paths (`services/quests.ts` and the generic `routes/objects.ts`) reach a
+ * commit through {@link buildCommitMessage}, so neither has to remember this. It is deliberately
+ * *not* the quests capture-note sanitiser (`sanitizeCaptureSource`) — that one also reduces a
+ * path to its base name, which is meaningless for a note a user typed.
+ */
+export function sanitizeCommitNotes(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point
+  const cleaned = value.replace(/[\s\u0000-\u001f\u007f]+/g, ' ').trim();
+  if (cleaned === '') {
+    return undefined;
+  }
+  // The cap is applied on **code points**, not UTF-16 code units: `String.prototype.slice`
+  // counts code units, so a slice boundary landing between the halves of a surrogate pair emits
+  // a **lone surrogate** — a string that does not survive a UTF-8 round trip and would reach the
+  // repository as U+FFFD. Measured (final-verify gate 3, the real module): 254 ASCII characters
+  // followed by one astral character (`'a'.repeat(254) + '😀'`) produced a 255-code-unit body
+  // ending in the bare high surrogate `\ud83d`, whose `Buffer.from(…, 'utf8')` re-encode is not
+  // equal to itself. ASCII is unaffected — code units equal code points there — which is why the
+  // pinned length test (`tests/unit/git-service.test.ts`, an ASCII payload) still holds.
+  const points = [...cleaned];
+  return points.length <= MAX_COMMIT_NOTES_LENGTH
+    ? cleaned
+    : points.slice(0, MAX_COMMIT_NOTES_LENGTH).join('');
+}
+
 /** The commit message header (docs/spec-data-model.md L216-223). */
 export function buildCommitMessage(options: {
   action: string;
@@ -63,8 +106,8 @@ export function buildCommitMessage(options: {
   notes?: string;
 }): string {
   const header = `spiraldb: ${options.action} ${options.objectType} ${options.objectKey}`;
-  const notes = options.notes?.trim();
-  return notes !== undefined && notes !== '' ? `${header}\n\n${notes}` : header;
+  const notes = sanitizeCommitNotes(options.notes);
+  return notes !== undefined ? `${header}\n\n${notes}` : header;
 }
 
 /**
@@ -102,6 +145,23 @@ export function commitAuthorEmail(author: string): string {
  * lock files behaving the way the rest of the toolchain expects.
  */
 const INHERITED_ENV_KEYS = ['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ'] as const;
+
+/**
+ * `path.resolve(candidate)` with symlinks resolved when the filesystem can (N4).
+ *
+ * Git reports the physical path of a working tree, so comparing a configured path with git's
+ * answer has to happen on physical paths or a symlinked `spiraldb_path` is refused. A path the
+ * filesystem cannot resolve (a directory that does not exist yet) falls back to its resolved
+ * form, which then simply fails the comparison as before.
+ */
+function physicalPath(candidate: string): string {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
 
 function baseEnv(): Record<string, string> {
   const env: Record<string, string> = {};
@@ -230,6 +290,13 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
    * passes too (`--show-toplevel` names it), which `rev-parse --git-dir` would not
    * report as `.`, and a subdirectory of some repository fails — pointing
    * `spiraldb_path` at one would commit into the wrong tree.
+   *
+   * The comparison is on **physical** paths (final-review gate 2, N4): git answers with the
+   * resolved path, so a `settings.spiraldb_path` that is a symlink to a real work-tree root used
+   * to be refused with "not the root of a git working tree — check settings.spiraldb_path",
+   * which sent the operator to a setting that was in fact fine. `realpath` keeps the rule that
+   * matters (the *root*, not a subdirectory of a repository) and stops refusing a valid
+   * configuration.
    */
   async function isWorkingTreeRoot(): Promise<boolean> {
     try {
@@ -237,7 +304,7 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
         return false;
       }
       const topLevel = (await client.raw('rev-parse', '--show-toplevel')).trim();
-      return path.resolve(topLevel) === repoPath;
+      return physicalPath(topLevel) === physicalPath(repoPath);
     } catch {
       return false;
     }

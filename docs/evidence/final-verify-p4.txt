@@ -1,0 +1,412 @@
+
+
+===== p4-01-counts.txt =====
+### per-type corpus counts (owner corpus)
+QuestTemplates           328
+QuestMetadatas           324
+DropTables               317
+NpcInventory             215
+NpcSpellInventory        77
+CreatureSpellbook        134
+NpcDropTable             0
+TreasureCardInventory    1
+ZoneTransfer             1207
+GlobalRegistry           1
+
+### per-type counts in the D17 test clone
+QuestTemplates           322
+QuestMetadatas           323
+DropTables               317
+NpcInventory             215
+NpcSpellInventory        77
+CreatureSpellbook        134
+NpcDropTable             0
+TreasureCardInventory    1
+ZoneTransfer             1207
+GlobalRegistry           1
+
+
+===== p4-09-rig-prep.txt =====
+### rig prerequisite restore (2026-09-28T01:38:32-04:00)
+$ git -C data/test-spiraldb checkout content/2026-09-27
+Switched to branch 'content/2026-09-27'
+checkout rc=0
+$ git -C data/test-spiraldb branch --show-current
+content/2026-09-27
+$ git -C data/test-spiraldb rev-parse HEAD
+18dc92477d54b1e911796960407ce7710e703697
+  (rig docblock expects 18dc924)
+$ ls data/test-spiraldb/QuestTemplates/*.json | wc -l
+322
+$ git -C data/test-spiraldb status --porcelain
+status rc=0
+$ ls -d data/test-spiraldb/NpcDropTable
+ls: cannot access 'data/test-spiraldb/NpcDropTable': No such file or directory
+absent rc=2 (2=absent)
+
+### seed the rig DB (D76(b): user_name + git_branch before boot)
+cp rc=0
+[{"key":"git_branch","value":"content/2026-09-27"},{"key":"spiraldb_path","value":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb"},{"key":"user_name","value":"p4-09 rig"}]
+seed rc=0
+
+
+===== p4-09-live-rig.txt =====
+### P4-2 (AC2) + P4-3 (AC3) — the tier-2 LIVE rig against the real server and the real clone
+2026-09-28T01:39:13-04:00
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers P4_09_LIVE_URL=http://localhost:3001 P4_09_CLONE=$PWD/data/test-spiraldb npx playwright test --config tests/ui/p4-09-live.config.ts
+
+Running 2 tests using 1 worker
+
+(node:163931) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/p4-09-live.rig.ts:39:3 › p4-09 live rig — the built client against the real server and the real clone › AC2: Edit → one field → Save commits the ORIGINAL legacy path on the settings branch (1.3s)
+  ✓  2 [chromium] › tests/ui/p4-09-live.rig.ts:78:3 › p4-09 live rig — the built client against the real server and the real clone › AC3: `New NPC drop table` creates the convention file, the directory and the status row (637ms)
+
+  2 passed (2.3s)
+playwright rc=0
+2026-09-28T01:39:16-04:00
+
+
+===== p4-09-clone-after.txt =====
+### clone evidence after the p4-09 live rig
+$ git -C data/test-spiraldb log --format='%h %s (%an)' -3
+c32f445 spiraldb: create npc_drop_table 87113 (p4-09 rig)
+8f97185 spiraldb: update drop_table DS-ACAD-C01-001 (p4-09 rig)
+18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002 (Lead Verify)
+$ git -C data/test-spiraldb diff --stat HEAD~2 HEAD
+ DropTables/droptables_ds-acad-c01-001.json | 10 +++++-----
+ NpcDropTable/npcdroptable_87113.json       |  4 ++++
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+rc=0
+$ git -C data/test-spiraldb diff HEAD~2 HEAD -- DropTables/droptables_ds-acad-c01-001.json
+diff --git a/DropTables/droptables_ds-acad-c01-001.json b/DropTables/droptables_ds-acad-c01-001.json
+index 631d4f0..cd396e4 100644
+--- a/DropTables/droptables_ds-acad-c01-001.json
++++ b/DropTables/droptables_ds-acad-c01-001.json
+@@ -1,10 +1,10 @@
+ {
+   "Name": "DS-ACAD-C01-001",
+-  "Description": "",
+-  "RollChance": 1.0,
++  "Description": "p4-09 live rig edit",
++  "RollChance": 1,
+   "Weight": 100,
+-  "NoneChance": 0.0,
+-  "PityCounter": 0.0,
++  "NoneChance": 0,
++  "PityCounter": 0,
+   "MinGold": 0,
+   "MaxGold": 0,
+   "ExperienceAmount": 0,
+@@ -14,4 +14,4 @@
+   "ModifiedAt": "2026-06-01T00:57:40.516730Z",
+   "CreatedBy": "quest_builder",
+   "ModifiedBy": "quest_builder"
+-}
+\ No newline at end of file
++}
+rc=0
+$ cat data/test-spiraldb/NpcDropTable/npcdroptable_87113.json
+{
+  "TemplateID": 87113,
+  "DropTableNames": []
+}
+$ git -C data/test-spiraldb status --porcelain
+rc=0
+
+
+===== p4-02-live-loop.txt =====
+{
+ "mount": "drop-tables",
+ "label": "DropTable.Items",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "DS-ACAD-C01-001",
+ "listField": "Items",
+ "result": "SKIPPED",
+ "reason": "no non-empty array field (field=Items, len=0)"
+}
+---
+{
+ "mount": "npc-inventories",
+ "label": "NpcInventory.Inventory",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "87112",
+ "listField": "Inventory",
+ "edit": "Inventory: 10 -> 11 (appended a copy of element 0)",
+ "postHttp": 200,
+ "postBody": "{\"key\":\"87112\",\"file_type\":\"npcinventory\",\"object_type\":\"npc_inventory\",\"outcome\":\"updated\",\"action\":\"update\",\"commit\":\"12028651dfbc500afd6b498c8df38912e87bf3d0\",\"branch\":\"content/2026-09-27\",\"commit_message\":\"spiraldb: update npc_inventory 87112\\n\\nfinal-verify P4-2 live smoke\",\"file\":\"NpcInventory/NPCInventories_1-A.json\",\"status\":{\"object_type\":\"npc_inventory\",\"object_key\":\"87112\",\"status\":\"extracted\",\"extracted_at\":\"2026-09-28T05:41:04.601Z\",\"reviewed_at\":null,\"verified_at\":null,\"latest_notes\":\"Created via UI\"},\"status_created\":true,\"warnings\":[]}",
+ "headBefore": "c32f445b3e78de77ab3f695f0198d9fbd2d2d814",
+ "headAfter": "12028651dfbc500afd6b498c8df38912e87bf3d0",
+ "commitSubject": "spiraldb: update npc_inventory 87112",
+ "diffStat": "NpcInventory/NPCInventories_1-A.json | 3 ++-\n 1 file changed, 2 insertions(+), 1 deletion(-)",
+ "result": "SAVED"
+}
+---
+{
+ "mount": "npc-spell-inventories",
+ "label": "NpcSpellInventory.Spells",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "38226",
+ "listField": "Spells",
+ "edit": "Spells: 14 -> 15 (appended a copy of element 0)",
+ "postHttp": 200,
+ "postBody": "{\"key\":\"38226\",\"file_type\":\"npcspellinventory\",\"object_type\":\"npc_spell_inventory\",\"outcome\":\"updated\",\"action\":\"update\",\"commit\":\"fcccf948f5e905e7fc5bad9403d85635fd740032\",\"branch\":\"content/2026-09-27\",\"commit_message\":\"spiraldb: update npc_spell_inventory 38226\\n\\nfinal-verify P4-2 live smoke\",\"file\":\"NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json\",\"status\":{\"object_type\":\"npc_spell_inventory\",\"object_key\":\"38226\",\"status\":\"extracted\",\"extracted_at\":\"2026-09-28T05:41:04.765Z\",\"reviewed_at\":null,\"verified_at\":null,\"latest_notes\":\"Created via UI\"},\"status_created\":true,\"warnings\":[]}",
+ "headBefore": "12028651dfbc500afd6b498c8df38912e87bf3d0",
+ "headAfter": "fcccf948f5e905e7fc5bad9403d85635fd740032",
+ "commitSubject": "spiraldb: update npc_spell_inventory 38226",
+ "diffStat": "NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json | 5 +++++\n 1 file changed, 5 insertions(+)",
+ "result": "SAVED"
+}
+---
+{
+ "mount": "creature-spellbooks",
+ "label": "CreatureSpellbook.SpellTemplateIds",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "Mdeck-L-BR-DS-SylviaDrake-A-50",
+ "listField": "SpellTemplateIds",
+ "edit": "SpellTemplateIds: 11 -> 12 (appended a copy of element 0)",
+ "postHttp": 200,
+ "postBody": "{\"key\":\"Mdeck-L-BR-DS-SylviaDrake-A-50\",\"file_type\":\"creaturespellbook\",\"object_type\":\"creature_spellbook\",\"outcome\":\"updated\",\"action\":\"update\",\"commit\":\"d97b01fdf6465a17f121a2036ef2e40eb9f9d3c1\",\"branch\":\"content/2026-09-27\",\"commit_message\":\"spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50\\n\\nfinal-verify P4-2 live smoke\",\"file\":\"CreatureSpellbook/CreatureSpellbooks_1-A.json\",\"status\":{\"object_type\":\"creature_spellbook\",\"object_key\":\"Mdeck-L-BR-DS-SylviaDrake-A-50\",\"status\":\"extracted\",\"extracted_at\":\"2026-09-28T05:41:04.928Z\",\"reviewed_at\":null,\"verified_at\":null,\"latest_notes\":\"Created via UI\"},\"status_created\":true,\"warnings\":[]}",
+ "headBefore": "fcccf948f5e905e7fc5bad9403d85635fd740032",
+ "headAfter": "d97b01fdf6465a17f121a2036ef2e40eb9f9d3c1",
+ "commitSubject": "spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50",
+ "diffStat": "CreatureSpellbook/CreatureSpellbooks_1-A.json | 3 ++-\n 1 file changed, 2 insertions(+), 1 deletion(-)",
+ "result": "SAVED"
+}
+---
+{
+ "mount": "treasure-card-inventories",
+ "label": "TreasureCardInventory.TreasureCards",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "38214",
+ "listField": "TreasureCards",
+ "edit": "TreasureCards: 71 -> 72 (appended a copy of element 0)",
+ "postHttp": 200,
+ "postBody": "{\"key\":\"38214\",\"file_type\":\"treasurecardinventory\",\"object_type\":\"treasure_card_inventory\",\"outcome\":\"updated\",\"action\":\"update\",\"commit\":\"c923934cebda605bbd3e62a2a3f33aaeb8a3af96\",\"branch\":\"content/2026-09-27\",\"commit_message\":\"spiraldb: update treasure_card_inventory 38214\\n\\nfinal-verify P4-2 live smoke\",\"file\":\"TreasureCardInventory/NpcTreasureCards_2019-A.json\",\"status\":{\"object_type\":\"treasure_card_inventory\",\"object_key\":\"38214\",\"status\":\"extracted\",\"extracted_at\":\"2026-09-28T05:41:05.084Z\",\"reviewed_at\":null,\"verified_at\":null,\"latest_notes\":\"Created via UI\"},\"status_created\":true,\"warnings\":[]}",
+ "headBefore": "d97b01fdf6465a17f121a2036ef2e40eb9f9d3c1",
+ "headAfter": "c923934cebda605bbd3e62a2a3f33aaeb8a3af96",
+ "commitSubject": "spiraldb: update treasure_card_inventory 38214",
+ "diffStat": "TreasureCardInventory/NpcTreasureCards_2019-A.json | 359 +++++++++++++++++----\n 1 file changed, 288 insertions(+), 71 deletions(-)",
+ "result": "SAVED"
+}
+---
+{
+ "mount": "zone-transfers",
+ "label": "ZoneTransfer.Teleports",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "WizardCity/WC_Hub",
+ "listField": "Teleports",
+ "edit": "Teleports: 12 -> 13 (appended a copy of element 0)",
+ "postHttp": 200,
+ "postBody": "{\"key\":\"WizardCity/WC_Hub\",\"file_type\":\"zonetransfer\",\"object_type\":\"zone_transfer\",\"outcome\":\"updated\",\"action\":\"update\",\"commit\":\"134d3b4c7a1b2cc17d7159ffaf8d56607458656a\",\"branch\":\"content/2026-09-27\",\"commit_message\":\"spiraldb: update zone_transfer WizardCity/WC_Hub\\n\\nfinal-verify P4-2 live smoke\",\"file\":\"ZoneTransfer/WizardZoneDatas_1-A.json\",\"status\":{\"object_type\":\"zone_transfer\",\"object_key\":\"WizardCity/WC_Hub\",\"status\":\"extracted\",\"extracted_at\":\"2026-09-28T05:41:05.289Z\",\"reviewed_at\":null,\"verified_at\":null,\"latest_notes\":\"Created via UI\"},\"status_created\":true,\"warnings\":[]}",
+ "headBefore": "c923934cebda605bbd3e62a2a3f33aaeb8a3af96",
+ "headAfter": "134d3b4c7a1b2cc17d7159ffaf8d56607458656a",
+ "commitSubject": "spiraldb: update zone_transfer WizardCity/WC_Hub",
+ "diffStat": "ZoneTransfer/WizardZoneDatas_1-A.json | 11 +++++++++++\n 1 file changed, 11 insertions(+)",
+ "result": "SAVED"
+}
+---
+{
+ "mount": "npc-drop-tables",
+ "label": "NpcDropTable.DropTableNames",
+ "steps": [],
+ "detailHttp": 200,
+ "key": "87113",
+ "listField": "DropTableNames",
+ "result": "SKIPPED",
+ "reason": "no non-empty array field (field=DropTableNames, len=0)"
+}
+---
+clone clean? ""
+
+
+===== p4-03-create-loop.txt =====
+{
+ "mount": "drop-tables",
+ "keyField": "Name",
+ "newKey": "FV-NEW-DROPTABLE-001",
+ "expected": "DropTables/droptable_FV-NEW-DROPTABLE-001.json",
+ "postHttp": 200,
+ "outcome": "created",
+ "action": "create",
+ "file": "DropTables/droptable_FV-NEW-DROPTABLE-001.json",
+ "commitMessage": "spiraldb: create drop_table FV-NEW-DROPTABLE-001",
+ "warnings": [],
+ "fileNameMatchesConvention": true,
+ "fileExistsInClone": true,
+ "committedPaths": "DropTables/droptable_FV-NEW-DROPTABLE-001.json",
+ "result": "PASS"
+}
+---
+{
+ "mount": "npc-inventories",
+ "keyField": "TemplateID",
+ "newKey": 900000001,
+ "expected": "NpcInventory/npcinventory_900000001.json",
+ "postHttp": 200,
+ "outcome": "created",
+ "action": "create",
+ "file": "NpcInventory/npcinventory_900000001.json",
+ "commitMessage": "spiraldb: create npc_inventory 900000001",
+ "warnings": [],
+ "fileNameMatchesConvention": true,
+ "fileExistsInClone": true,
+ "committedPaths": "NpcInventory/npcinventory_900000001.json",
+ "result": "PASS"
+}
+---
+{
+ "mount": "npc-spell-inventories",
+ "keyField": "TemplateID",
+ "newKey": 900000002,
+ "expected": "NpcSpellInventory/npcspellinventory_900000002.json",
+ "postHttp": 200,
+ "outcome": "created",
+ "action": "create",
+ "file": "NpcSpellInventory/npcspellinventory_900000002.json",
+ "commitMessage": "spiraldb: create npc_spell_inventory 900000002",
+ "warnings": [],
+ "fileNameMatchesConvention": true,
+ "fileExistsInClone": true,
+ "committedPaths": "NpcSpellInventory/npcspellinventory_900000002.json",
+ "result": "PASS"
+}
+---
+{
+ "mount": "creature-spellbooks",
+ "keyField": "DeckName",
+ "newKey": "FV-NEW-DECK-001",
+ "expected": "CreatureSpellbook/creaturespellbook_FV-NEW-DECK-001.json",
+ "postHttp": 200,
+ "outcome": "created",
+ "action": "create",
+ "file": "CreatureSpellbook/creaturespellbook_FV-NEW-DECK-001.json",
+ "commitMessage": "spiraldb: create creature_spellbook FV-NEW-DECK-001",
+ "warnings": [],
+ "fileNameMatchesConvention": true,
+ "fileExistsInClone": true,
+ "committedPaths": "CreatureSpellbook/creaturespellbook_FV-NEW-DECK-001.json",
+ "result": "PASS"
+}
+---
+{
+ "mount": "treasure-card-inventories",
+ "keyField": "TemplateID",
+ "newKey": 900000003,
+ "expected": "TreasureCardInventory/treasurecardinventory_900000003.json",
+ "postHttp": 200,
+ "outcome": "created",
+ "action": "create",
+ "file": "TreasureCardInventory/treasurecardinventory_900000003.json",
+ "commitMessage": "spiraldb: create treasure_card_inventory 900000003",
+ "warnings": [],
+ "fileNameMatchesConvention": true,
+ "fileExistsInClone": true,
+ "committedPaths": "TreasureCardInventory/treasurecardinventory_900000003.json",
+ "result": "PASS"
+}
+---
+{
+ "mount": "zone-transfers",
+ "keyField": "ZoneName",
+ "newKey": "FV/New_Zone_Verify",
+ "expected": "ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json",
+ "postHttp": 200,
+ "outcome": "created",
+ "action": "create",
+ "file": "ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json",
+ "commitMessage": "spiraldb: create zone_transfer FV/New_Zone_Verify",
+ "warnings": [],
+ "fileNameMatchesConvention": true,
+ "fileExistsInClone": true,
+ "committedPaths": "ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json",
+ "result": "PASS"
+}
+---
+git log -8: 4bb2749 spiraldb: create zone_transfer FV/New_Zone_Verify
+66cf1a2 spiraldb: create treasure_card_inventory 900000003
+b035675 spiraldb: create creature_spellbook FV-NEW-DECK-001
+32b0bb1 spiraldb: create npc_spell_inventory 900000002
+624fe75 spiraldb: create npc_inventory 900000001
+3f6afae spiraldb: create drop_table FV-NEW-DROPTABLE-001
+134d3b4 spiraldb: update zone_transfer WizardCity/WC_Hub
+c923934 spiraldb: update treasure_card_inventory 38214
+clone clean? ""
+
+
+===== p4-04-negatives.txt =====
+### P4-4: DropTable validation negatives — direct POST must be a 400 (plan L63)
+
+### case: Name empty
+$ curl -s -X POST http://localhost:3001/api/drop-tables -d '{"object":{"Name":"","Description":"","RollChance":1,"Weight":100,"NoneChance":0,"PityCounter":0,"MinGold":0,"MaxGold":0,"ExperienceAmount":0,"TrainingPoints":0,"Items":[]}}'
+http=400
+curl rc=0
+{"error":"DropTable validation failed with 1 validation error (Missing name).","fields":{"Name":["A drop table needs a non-empty Name before it can be saved. The Name is also the file’s key and what NpcDropTable and ResDropTable reference."]}}
+
+### case: Name duplicate (DS-ACAD-C01-001 exists)
+$ curl -s -X POST http://localhost:3001/api/drop-tables -d '{"object":{"Name":"DS-ACAD-C01-001","Description":"","RollChance":1,"Weight":100,"NoneChance":0,"PityCounter":0,"MinGold":0,"MaxGold":0,"ExperienceAmount":0,"TrainingPoints":0,"Items":[]}}'
+http=400
+curl rc=0
+{"error":"DropTable validation failed with 1 validation error (Duplicate name).","fields":{"Name":["The name \"DS-ACAD-C01-001\" is already used by another drop table. Names must be unique across all drop tables, because other files reference a table by name."]}}
+
+### case: RollChance 1.5
+$ curl -s -X POST http://localhost:3001/api/drop-tables -d '{"object":{"Name":"FV-NEG-ROLL-001","Description":"","RollChance":1.5,"Weight":100,"NoneChance":0,"PityCounter":0,"MinGold":0,"MaxGold":0,"ExperienceAmount":0,"TrainingPoints":0,"Items":[]}}'
+http=400
+curl rc=0
+{"error":"DropTable validation failed with 1 validation error (Roll chance out of range).","fields":{"RollChance":["Roll chance 1.5 must be a number between 0 and 1."]}}
+
+### case: NoneChance -0.1
+$ curl -s -X POST http://localhost:3001/api/drop-tables -d '{"object":{"Name":"FV-NEG-NONE-001","Description":"","RollChance":1,"Weight":100,"NoneChance":-0.1,"PityCounter":0,"MinGold":0,"MaxGold":0,"ExperienceAmount":0,"TrainingPoints":0,"Items":[]}}'
+http=400
+curl rc=0
+{"error":"DropTable validation failed with 1 validation error (None chance out of range).","fields":{"NoneChance":["None chance -0.1 must be a number between 0 and 1."]}}
+
+### case: MinGold 100 > MaxGold 10
+$ curl -s -X POST http://localhost:3001/api/drop-tables -d '{"object":{"Name":"FV-NEG-GOLD-001","Description":"","RollChance":1,"Weight":100,"NoneChance":0,"PityCounter":0,"MinGold":100,"MaxGold":10,"ExperienceAmount":0,"TrainingPoints":0,"Items":[]}}'
+http=400
+curl rc=0
+{"error":"DropTable validation failed with 1 validation error (Inverted gold range).","fields":{"MaxGold":["Minimum gold (100) must not be greater than maximum gold (10)."]}}
+
+### positive control: a VALID new drop table must be 200
+
+### case: valid new table
+$ curl -s -X POST http://localhost:3001/api/drop-tables -d '{"object":{"Name":"FV-POS-OK-001","Description":"","RollChance":1,"Weight":100,"NoneChance":0,"PityCounter":0,"MinGold":0,"MaxGold":10,"ExperienceAmount":0,"TrainingPoints":0,"Items":[]}}'
+http=200
+curl rc=0
+{"key":"FV-POS-OK-001","file_type":"droptable","object_type":"drop_table","outcome":"created","action":"create","commit":"61a00729979c931e2caa069756ee888a44bb3400","branch":"content/2026-09-27","commit_message":"spiraldb: create drop_table FV-POS-OK-001","file":"DropTables/droptable_FV-POS-OK-001.json","status":{"object_type":"drop_table","object_key":"FV-POS-OK-001","status":"extracted","extracted_at":"2026-09-28T05:42:27.639Z","reviewed_at":null,"verified_at":null,"latest_notes":"Created via UI"},"status_created":true,"warnings":[]}
+
+### the four rejections must not have created files
+grep rc=1 (1 = none created, as required)
+
+
+===== p4-05-globalregistry.txt =====
+### P4-5: GlobalRegistry consolidate-and-replace (D22) — clone evidence
+$ git -C data/test-spiraldb show --name-status --format='%H %s' HEAD
+e6ab835deec56a95540c8fc0c1ab8eb67f831cd1
+spiraldb: update global_registry globalregistry
+
+R090	GlobalRegistry/GlobalRegistryModels_1-A.json	GlobalRegistry/globalregistry.json
+rc=0
+
+$ ls data/test-spiraldb/GlobalRegistry/
+total 12
+drwxr-xr-x  2 jason users 4096 Sep 28 01:43 .
+drwxr-xr-x 13 jason users 4096 Sep 28 01:39 ..
+-rw-r--r--  1 jason users  594 Sep 28 01:43 globalregistry.json
+rc=0
+
+$ git -C data/test-spiraldb status --porcelain   (only the merge, nothing else)
+rc=0
+
+$ cat the merged output — entry count and the added flag
+top-level keys: [ 'GlobalRegistryValues' ]
+entries: 24
+VALUES equal to the editor document for all 23 original keys: ["Localization","Christmas","Halloween","WizardDay","Easter","StPatricks","Vallentines","Thanksgiving","Revamp01","Revamp02","LoyaltyProgram","KM-Teaser","MaestroEvent","ME_Sinbad","ME_GreatClock","ME_SpiralCup","ClassProject_Fishing_01_Teleport","Krampus","PageEvent","ME_AccursedPlay","ME_FantasticVoyage","ME_GrandTourney","TestRealmShop"]
+added key present: true = true
+rc=0

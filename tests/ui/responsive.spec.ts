@@ -70,6 +70,21 @@ interface Family {
 
 const QUEST_KEYS = ['DS-ACAD-C01-001', 'DS-ACAD-C01-002', 'DS-ACAD-C01-003'] as const;
 
+/**
+ * **The corpus's longest `ZoneName`, on the long-KEY axis** (architect-verification DR-09).
+ *
+ * 93 characters, re-measured directly against the owner's fork
+ * (`grep -h -o '"ZoneName": *"[^"]*"' *.json | awk '{print length($0)}'` over `ZoneTransfer/` —
+ * `DragonSpire/DS_A1_Knowledge/Interiors/DS_Chasm_Gauntlet_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_{2,3,4}`
+ * are three keys tied at 93). §1 below asserts "no horizontal overflow" on every route × width, but
+ * until this constant existed the zone detail route was reached through an **18-character** key
+ * (`WizardCity/WC_Hub`), so the view-mode header span — the element the live 397-vs-360 measurement
+ * in `final-verify-gate3` caught — was never exercised anywhere near the width real data reaches.
+ * The mock is only as demanding as its fixture (D90(a)); this fixture is now the corpus's worst case.
+ */
+const ZONE_LONG_KEY =
+  'DragonSpire/DS_A1_Knowledge/Interiors/DS_Chasm_Gauntlet_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_4';
+
 const FAMILIES: readonly Family[] = [
   {
     fileType: 'quest',
@@ -139,9 +154,9 @@ const FAMILIES: readonly Family[] = [
     routeType: 'zone_transfers',
     urlPath: '/api/zone-transfers',
     listPath: '/zone-transfers',
-    detailPath: '/zone-transfers/WizardCity%2FWC_Hub',
+    detailPath: `/zone-transfers/${encodeURIComponent(ZONE_LONG_KEY)}`,
     cardListName: 'zone transfers',
-    keys: ['WizardCity/WC_Hub', 'WizardCity/WC_Plaza', 'WizardCity/WC_Port'],
+    keys: [ZONE_LONG_KEY, 'WizardCity/WC_Plaza', 'WizardCity/WC_Port'],
   },
 ];
 
@@ -397,7 +412,37 @@ function documentFor(fileType: string, key: string): Record<string, unknown> {
     case 'treasure_card_inventory':
       return { TemplateID: Number(key), TreasureCards: [] };
     case 'zone_transfer':
-      return { ZoneName: key, Teleports: [] };
+      // **A real-shaped teleport, carrying the corpus's longest `m_destinationZone`** (93
+      // characters: `DragonSpire/…_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_2`). §1 below used to
+      // assert "no horizontal overflow" against `{ ZoneName: key, Teleports: [] }` with an
+      // 18-character key, so the arm passed while the live page scrolled sideways at 375px:
+      // the zone-path spans render an unbreakable `font-mono` string (final-verify gate 3
+      // measured `documentElement.scrollWidth` 469 vs 360 on `/zone-transfers/WizardCity%2FWC_Hub`,
+      // and 838 vs 360 on the 93-character path). A mock narrower than reality is a **false
+      // pass** — the D78(d) class — so the mock now carries the shape that makes §1 bite.
+      //
+      // **The key is now the corpus's longest too** (`ZONE_LONG_KEY`, 93 characters — DR-09), so the
+      // route's `ZoneName: key` below is a 93-character unbreakable span as well: this one route
+      // carries BOTH the long header (the element the 397-vs-360 measurement caught) and the long
+      // destination, which is strictly more demanding than the zero-teleport real case it replaces.
+      // A teleport is still present so the destination axis keeps its assertion on the same route.
+      return {
+        ZoneName: key,
+        Teleports: [
+          {
+            TriggerName: 'Teleport location (the zone-path-width probe)',
+            Teleport: {
+              m_destinationLoc: '-2.263153,-464.7307,0.0002441406,-3.125134',
+              m_destinationZone:
+                'DragonSpire/DS_A1_Knowledge/Interiors/DS_Chasm_Gauntlet_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_2',
+              m_exitTeleporter: 0,
+              m_teleporterTag: 0,
+              m_teleportType: 'TELEPORT_STATIC',
+              m_transitionID: 0,
+            },
+          },
+        ],
+      };
     default:
       return { key };
   }

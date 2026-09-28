@@ -204,10 +204,6 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
 const BY_FILE_TYPE = new Map<string, ObjectTypeConfig>(
   OBJECT_TYPES.map((config) => [config.fileType, config]),
 );
-const BY_URL_PATH = new Map<string, ObjectTypeConfig>(
-  OBJECT_TYPES.map((config) => [config.urlPath, config]),
-);
-
 /** The config for a family id; throws for anything outside the eight. */
 export function objectTypeConfig(fileType: ObjectFileType): ObjectTypeConfig {
   const config = BY_FILE_TYPE.get(fileType);
@@ -219,11 +215,6 @@ export function objectTypeConfig(fileType: ObjectFileType): ObjectTypeConfig {
     );
   }
   return config;
-}
-
-/** The config mounted at `urlPath`, or `undefined` for a path nothing is mounted at. */
-export function objectTypeConfigForUrlPath(urlPath: string): ObjectTypeConfig | undefined {
-  return BY_URL_PATH.get(urlPath);
 }
 
 /**

@@ -30,6 +30,14 @@
  * (`fileNameFor(parsed.type, parsed.fileKey) === fileName`); rebuilding the `ZoneName`
  * does not. A caller that needs the real `ZoneName` reads it from the file's
  * `ZoneName` field.
+ *
+ * **Consequence for creates** (final-review gate 2, N1): the transform is not injective —
+ * `fileNameFor('zonetransfer', 'A/B') === fileNameFor('zonetransfer', 'A_B')` — so a genuinely
+ * new `A_B` zone cannot be created while `A/B` exists: the create path refuses a convention path
+ * another key already occupies, and says so (`savePipeline.ts`). Nothing is overwritten, and it
+ * is not reachable in the measured corpus (1205 distinct `ZoneName`s, 0 such collisions;
+ * decision D74(h) records the one duplicate *key*), so it is recorded rather than worked around:
+ * the residue is one uncreatable name shape, never a wrong-file write.
  */
 
 /** Every object type this convention writes a file for (the nine rows + GlobalRegistry). */

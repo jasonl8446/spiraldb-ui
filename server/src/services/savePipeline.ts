@@ -9,8 +9,10 @@ import {
   collectionSpec,
   createTargetPath,
   mergePreservingAbsent,
+  objectKeyFromData,
   readSpiraldbJson,
   refreshQuestMetadata,
+  relativeTo,
   resolveObjectKey,
   SpiraldbFileError,
   writeSpiraldbJson,
@@ -52,6 +54,113 @@ export type SaveRequestedAction = 'extract' | 'create';
 export type SaveCommitAction = SaveRequestedAction | 'update';
 
 export type SaveOutcome = 'created' | 'updated';
+
+/**
+ * The `QuestMetadatas/` file a quest save updates, and which rule chose it
+ * (final-review gate 2, S3).
+ *
+ * `tieBreak` is part of the answer on purpose: the quests API's duplicate warning names this file
+ * and has to say *why* it was chosen, so a caller can tell a convention-file preference from the
+ * ordinary first-in-name-order resolution.
+ */
+export interface QuestMetadataSaveTarget {
+  path: string;
+  outcome: SaveOutcome;
+  tieBreak: 'created' | 'convention' | 'indexed';
+}
+
+/** `true` when `filePath` is a readable metadata file whose key field holds `name`. */
+function holdsMetadataName(filePath: string, name: string): boolean {
+  const keyField = collectionSpec('questmetadata').keyField;
+  if (keyField === null || !fs.existsSync(filePath)) {
+    return false;
+  }
+  try {
+    return objectKeyFromData(readSpiraldbJson(filePath), keyField) === name;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolves the metadata file a save of `name` updates — **one home**, because two callers must
+ * agree on the answer: this pipeline writes the file and the quests API's duplicate warning
+ * (`services/quests.ts`) tells the operator which file it updated.
+ *
+ * The rule is D19/D20's: the content-keyed index resolves the name to the file that actually
+ * holds it, first-in-file-name-order when several do, with **one deliberate exception** — when
+ * this tool's own convention file (`QuestMetadatas/questmetadata_<name>.json`,
+ * `shared/naming.ts`) *also* holds this `Name`, the convention file wins.
+ *
+ * Why the exception: measured on the owner's corpus (2026-09-28), 324 `QuestMetadatas/` files
+ * cover 316 distinct names, and every one of the 8 duplicate names is an opaque capture-UUID file
+ * (`069f430e-….json`, written by the owner's own builder) plus this tool's convention file.
+ * `'0' < 'q'`, so first-in-name-order refreshed the legacy UUID file and left the newer,
+ * own-toolchain file stale. It is deliberately narrow: a name held by a *single* off-convention
+ * file keeps updating that file (never a new create), so the one-file case — the whole corpus
+ * except those 8 — is unchanged.
+ */
+export function questMetadataSaveTarget(
+  index: SpiraldbIndex,
+  root: string,
+  name: string,
+): QuestMetadataSaveTarget {
+  const conventionPath = createTargetPath(root, collectionSpec('questmetadata'), name);
+  const indexed = index.pathFor('questmetadata', name);
+  if (indexed === undefined) {
+    return { path: conventionPath, outcome: 'created', tieBreak: 'created' };
+  }
+  if (indexed !== conventionPath && holdsMetadataName(conventionPath, name)) {
+    return { path: conventionPath, outcome: 'updated', tieBreak: 'convention' };
+  }
+  return { path: indexed, outcome: 'updated', tieBreak: 'indexed' };
+}
+
+/**
+ * Raised when a save wrote files but its git commit did not happen (final-review gate 2, M2).
+ *
+ * The write order is forced: the object file is written (and the D22 deletions applied) before
+ * the commit, so a deletion can never be committed without the file that replaces it. When the
+ * commit side then fails — a `pre-commit` hook that rejects, an `index.lock` held by another git
+ * process, a `commitObject` rejection — the bytes are already on disk, uncommitted, and D14's
+ * clean-tree guard refuses **every later save** on a tree the user did not dirty. This error makes
+ * that state explicit instead of leaving a bare git message: it names every path this save wrote
+ * or deleted, says the tree is dirty, and says how to get out.
+ *
+ * Why the paths are named rather than the bytes rolled back: a faithful rollback would have to
+ * restore the object, each D22 deletion and the companion metadata **and** unstage everything this
+ * save staged — a failed `commit` leaves the index staged, so restoring bytes alone leaves `git
+ * status` at `MM` and D14 still refuses — while the hook that failed may itself own the index. A
+ * half-rollback the guard still rejects is worse than an honest, actionable error, and the bytes
+ * are the owner's own edit, never lost.
+ */
+export class UncommittedSaveError extends Error {
+  /** Absolute paths this save wrote (the object, and the metadata beside it). */
+  readonly written: string[];
+  /** Absolute paths this save deleted (the D22 replacements). */
+  readonly removed: string[];
+  /** The git failure that stopped the commit. */
+  readonly failure: unknown;
+
+  constructor(options: { root: string; written: string[]; removed: string[]; failure: unknown }) {
+    const rel = (file: string): string => relativeTo(options.root, file);
+    const failure =
+      options.failure instanceof Error && options.failure.message
+        ? options.failure.message
+        : String(options.failure);
+    super(
+      `The save was written but not committed: the SpiralDB working tree at ${options.root} is ` +
+        `now dirty. Written: ${options.written.map(rel).join(', ')}.` +
+        (options.removed.length === 0 ? '' : ` Deleted: ${options.removed.map(rel).join(', ')}.`) +
+        ` Every later save is refused by the clean-tree guard (D14) until you resolve this: ` +
+        `commit or restore these paths by hand. The commit failed with: ${failure}`,
+    );
+    this.name = 'UncommittedSaveError';
+    this.written = options.written;
+    this.removed = options.removed;
+    this.failure = options.failure;
+  }
+}
 
 export interface SaveObjectRequest {
   /** Which family is being saved (`questtemplates`, `droptable`, …). */
@@ -275,19 +384,22 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
       },
     });
 
-  /** Writes the paired quest metadata file, updating the existing one in place (D20). */
+  /**
+   * Writes the paired quest metadata file, updating the existing one in place (D20) — or, when
+   * the index's answer is ambiguous, the tool's own convention file (S3: see
+   * {@link questMetadataSaveTarget}).
+   */
   function writeQuestMetadata(
     name: string,
     input: { now: string; user: string; description?: string },
   ): { path: string; outcome: SaveOutcome } {
-    const paired = index.pathFor('questmetadata', name);
-    if (paired !== undefined) {
-      writeSpiraldbJson(paired, refreshQuestMetadata(readSpiraldbJson(paired), input));
-      return { path: paired, outcome: 'updated' };
+    const target = questMetadataSaveTarget(index, root, name);
+    if (target.outcome === 'updated') {
+      writeSpiraldbJson(target.path, refreshQuestMetadata(readSpiraldbJson(target.path), input));
+      return { path: target.path, outcome: 'updated' };
     }
-    const target = createTargetPath(root, collectionSpec('questmetadata'), name);
-    writeSpiraldbJson(target, buildQuestMetadata(name, input));
-    return { path: target, outcome: 'created' };
+    writeSpiraldbJson(target.path, buildQuestMetadata(name, input));
+    return { path: target.path, outcome: 'created' };
   }
 
   async function saveObject(request: SaveObjectRequest): Promise<SaveObjectResult> {
@@ -378,33 +490,54 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     // 4. Write the file (clean JSON), delete the files this save replaces, and refresh the
     //    index for this family. The write is first, so the commit below can never contain a
     //    deletion without the file that replaces it (the D22 failure mode).
-    writeSpiraldbJson(filePath, payload);
-    for (const candidate of removePaths) {
-      fs.rmSync(candidate, { force: true });
-    }
-    index.rebuildType(spec.fileType);
-
-    // 5. Companion metadata — quests only (docs/spec-data-model.md L191).
+    //
+    //    Everything from here to the commit runs inside one `try`: once bytes have moved, a
+    //    failure on the git side leaves them written and uncommitted, and the caller must be told
+    //    that in those terms (M2 — see `UncommittedSaveError`). The step *after* the commit (the
+    //    status upsert) is deliberately outside it: a failure there must not claim the commit
+    //    never happened.
+    const written: string[] = [];
+    const removed: string[] = [];
     let metadata: { path: string; outcome: SaveOutcome } | null = null;
-    if (spec.fileType === 'questtemplates') {
-      metadata = writeQuestMetadata(key, {
-        now: nowIso,
-        user,
-        description: request.metadataDescription,
-      });
-      index.rebuildType('questmetadata');
-    }
+    let committed: Awaited<ReturnType<GitService['commitObject']>>;
+    try {
+      writeSpiraldbJson(filePath, payload);
+      written.push(filePath);
+      for (const candidate of removePaths) {
+        fs.rmSync(candidate, { force: true });
+        removed.push(candidate);
+      }
+      index.rebuildType(spec.fileType);
 
-    // 6. One commit for the object and its metadata (D13).
-    const committed = await git.commitObject({
-      action,
-      objectType: spec.commitType,
-      objectKey: key,
-      notes: request.notes,
-      author: user,
-      paths: [filePath, ...(metadata === null ? [] : [metadata.path])],
-      ...(removePaths.length === 0 ? {} : { removePaths }),
-    });
+      // 5. Companion metadata — quests only (docs/spec-data-model.md L191).
+      if (spec.fileType === 'questtemplates') {
+        metadata = writeQuestMetadata(key, {
+          now: nowIso,
+          user,
+          description: request.metadataDescription,
+        });
+        written.push(metadata.path);
+        index.rebuildType('questmetadata');
+      }
+
+      // 6. One commit for the object and its metadata (D13).
+      committed = await git.commitObject({
+        action,
+        objectType: spec.commitType,
+        objectKey: key,
+        notes: request.notes,
+        author: user,
+        paths: [filePath, ...(metadata === null ? [] : [metadata.path])],
+        ...(removePaths.length === 0 ? {} : { removePaths }),
+      });
+    } catch (failure) {
+      // Nothing had been written yet (a rejected write, a refused `rm`) — the plain failure is
+      // the honest report, and the tree is untouched.
+      if (written.length === 0 && removed.length === 0) {
+        throw failure;
+      }
+      throw new UncommittedSaveError({ root, written, removed, failure });
+    }
 
     // 7. Verification status (skipped for families with no lifecycle).
     //

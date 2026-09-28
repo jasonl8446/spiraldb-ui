@@ -1,0 +1,81 @@
+
+
+===== clone-before-restore.txt =====
+### D17 clone: state BEFORE restore (2026-09-28T02:00:06-04:00)
+--- branch ---
+content/2026-09-27
+--- HEAD ---
+4aaf89047d27b96c4112b0182a166915b061d791
+--- main ---
+f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+--- commit count on HEAD ---
+58
+--- porcelain ---
+porcelain rc=0 (empty above)
+--- all local branches ---
+  content/2026-09-26 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+* content/2026-09-27 4aaf890 spiraldb: update quest WC-CYCLOPS-MAIN-002
+  content/2026-09-28 b316b8b spiraldb: extract quest WC-UNICORN-MAIN-004
+  main               f3f8b5c [origin/main: ahead 1] test-setup: make two quests not-yet-extracted (gate-2 fixture)
+--- content/2026-09-28 reflog (was it created by MY save?) ---
+c22b0d7 content/2026-09-28@{1}: commit: spiraldb: update quest DS-ACAD-C01-002
+b316b8b content/2026-09-28@{2}: commit: spiraldb: extract quest WC-UNICORN-MAIN-004
+c47c156 content/2026-09-28@{3}: commit: spiraldb: update quest WC-FIRECAT-MAIN-004
+e324535 content/2026-09-28@{4}: commit: spiraldb: update quest MB-YARD1-C01-001
+f3f8b5c content/2026-09-28@{5}: branch: Created from main
+--- content/2026-09-27 reflog (head) ---
+4aaf890 content/2026-09-27@{0}: commit: spiraldb: update quest WC-CYCLOPS-MAIN-002
+e6ab835 content/2026-09-27@{1}: commit: spiraldb: update global_registry globalregistry
+61a0072 content/2026-09-27@{2}: commit: spiraldb: create drop_table FV-POS-OK-001
+4bb2749 content/2026-09-27@{3}: commit: spiraldb: create zone_transfer FV/New_Zone_Verify
+66cf1a2 content/2026-09-27@{4}: commit: spiraldb: create treasure_card_inventory 900000003
+b035675 content/2026-09-27@{5}: commit: spiraldb: create creature_spellbook FV-NEW-DECK-001
+32b0bb1 content/2026-09-27@{6}: commit: spiraldb: create npc_spell_inventory 900000002
+624fe75 content/2026-09-27@{7}: commit: spiraldb: create npc_inventory 900000001
+3f6afae content/2026-09-27@{8}: commit: spiraldb: create drop_table FV-NEW-DROPTABLE-001
+134d3b4 content/2026-09-27@{9}: commit: spiraldb: update zone_transfer WizardCity/WC_Hub
+c923934 content/2026-09-27@{10}: commit: spiraldb: update treasure_card_inventory 38214
+d97b01f content/2026-09-27@{11}: commit: spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50
+fcccf94 content/2026-09-27@{12}: commit: spiraldb: update npc_spell_inventory 38226
+1202865 content/2026-09-27@{13}: commit: spiraldb: update npc_inventory 87112
+c32f445 content/2026-09-27@{14}: commit: spiraldb: create npc_drop_table 87113
+8f97185 content/2026-09-27@{15}: commit: spiraldb: update drop_table DS-ACAD-C01-001
+18dc924 content/2026-09-27@{16}: reset: moving to 18dc92477d54b1e911796960407ce7710e703697
+2d22cfa content/2026-09-27@{17}: commit: spiraldb: update quest DS-ACAD-C01-002
+18dc924 content/2026-09-27@{18}: reset: moving to 18dc92477d54b1e911796960407ce7710e703697
+32ed123 content/2026-09-27@{19}: commit: spiraldb: update quest DS-ACAD-C01-002
+
+
+===== clone-restore.txt =====
+### D17 clone restore — five axes (2026-09-28T02:01:07-04:00)
+
+--- 1. reset content/2026-09-27 to the frozen base 18dc924 (removes my 16 commits) ---
+HEAD is now at 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+reset rc=0
+
+--- 2. delete content/2026-09-28 (created by my P2-4 save; tips at my b316b8b) ---
+Deleted branch content/2026-09-28 (was b316b8b).
+delete rc=0
+
+--- 3. the five axes AFTER ---
+checked-out branch : content/2026-09-27
+HEAD               : 18dc92477d54b1e911796960407ce7710e703697
+main               : f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+commit count (HEAD): 42   [18dc924's own count = 42]
+porcelain          : 0
+  (0 lines = clean)
+tree vs 18dc924    : 0 lines of diff
+QuestTemplates     : 322 files
+GlobalRegistry     : GlobalRegistryModels_1-A.json
+NpcDropTable dir   : absent
+
+--- 4. branches (content/2026-09-26 is pre-existing residue from an earlier gate, not mine) ---
+  content/2026-09-26 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+* content/2026-09-27 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+  main               f3f8b5c [origin/main: ahead 1] test-setup: make two quests not-yet-extracted (gate-2 fixture)
+
+--- 5. the residue commits remain reachable only via the reflog; their SHAs are recorded ---
+18dc924 content/2026-09-27@{0}: reset: moving to 18dc92477d54b1e911796960407ce7710e703697
+4aaf890 content/2026-09-27@{1}: commit: spiraldb: update quest WC-CYCLOPS-MAIN-002
+e6ab835 content/2026-09-27@{2}: commit: spiraldb: update global_registry globalregistry
+61a0072 content/2026-09-27@{3}: commit: spiraldb: create drop_table FV-POS-OK-001

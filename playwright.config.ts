@@ -25,6 +25,15 @@ import { defineConfig, devices } from '@playwright/test';
  *   through the Vite proxy only answers 200 once Vite, the proxy *and* Express are
  *   all up, so the harness cannot start testing a half-booted stack. Measured on
  *   this machine: 0.9 s from `npm run dev` to ready.
+ * - **The harness owns its API port as well as its client port** (`PORT` +
+ *   `VITE_API_PORT`, both `3181` — architect-verification DR-12, closed by the
+ *   unattended review): the proxy target used to be hardcoded to `3001` while the stack
+ *   under test also tried to bind `3001`, so a sibling process already listening there
+ *   could either kill the harness's own Express (EADDRINUSE) or — worse, because it is
+ *   silent — answer the readiness probe above and let the suite measure a stack whose API
+ *   was not ours. The two variables must always carry the **same** value: `PORT` is what
+ *   `server/src/index.ts` binds and `VITE_API_PORT` is what `client/vite.config.ts`
+ *   proxies `/api` to; `tests/unit/harness-port-ownership.test.ts` pins that agreement.
  * - **Browsers come from `PLAYWRIGHT_BROWSERS_PATH`**, set by the npm scripts
  *   (`test:ui` / `test:ui:install`) — never the Nix store's or `~/.cache`'s copy,
  *   whose revision is coupled to a different playwright package (plan task 1.10).
@@ -59,7 +68,7 @@ export default defineConfig({
 
   webServer: {
     command:
-      'rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 VITE_PORT=5181 npm run dev',
+      'rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 PORT=3181 VITE_API_PORT=3181 VITE_PORT=5181 npm run dev',
     url: 'http://localhost:5181/api/status/_import',
     // Never reuse a running stack: the server this harness must talk to is the
     // isolated one booted above. A developer's own `npm run dev` holds the live

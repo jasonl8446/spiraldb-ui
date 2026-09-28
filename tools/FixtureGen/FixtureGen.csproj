@@ -11,7 +11,7 @@
   <ItemGroup>
     <!-- Same reference graph as tools/PacketReaderCli: the generator writes the blobs that
          QuestBuilder reads, so it must see the identical Imcodec type cache. -->
-    <ProjectReference Include="../../../Imview/src/Imview.PacketReader/Imview.PacketReader.csproj" />
+    <ProjectReference Include="$(ImviewRoot)/src/Imview.PacketReader/Imview.PacketReader.csproj" />
   </ItemGroup>
 
   <ItemGroup>

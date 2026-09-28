@@ -1,8 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
-import { getImportReport, IMPORT_REPORT_QUERY_KEY } from '../../lib/api';
+import {
+  getImportReport,
+  IMPORT_REPORT_QUERY_KEY,
+  shouldAnnounceImport,
+  type ImportReport,
+} from '../../lib/api';
 import { notifySuccess } from '../../lib/notify';
 import { isSearchShortcut } from '../../lib/search';
 import { importSummaryMessage } from '../../lib/toast';
@@ -18,8 +23,11 @@ import Sidebar from './Sidebar';
  * content column, with every route rendering through `<Outlet />`.
  *
  * The one-time "Imported N existing entries from SpiralDB" toast (decision D37) is
- * also owned here: the server reports the current process's first-startup import,
- * and a module-level flag keeps StrictMode's double-mount from showing it twice.
+ * also owned here: the server reports the current process's first-startup import, and
+ * the announcement is guarded by `shouldAnnounceImport` — the "already announced" mark
+ * lives **on the cached report** in the query layer, not in a module-level flag, so
+ * StrictMode's double-mount reads it back and a later remount does not re-announce it
+ * (final-deslop, F2).
  *
  * Story p5-02's **global search palette** is mounted here too, and for the same structural
  * reason: this component wraps every route, so the palette is reachable from all of them
@@ -33,11 +41,10 @@ import Sidebar from './Sidebar';
  * while the banner sits at the top of every page, so `useConnection()` is called once here.
  * Nothing below it knows the feature exists.
  */
-let importToastShown = false;
-
 export default function AppLayout(): JSX.Element {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const queryClient = useQueryClient();
   // The one call site of the offline detector (story p5-04): a request failure reported by
   // `lib/api.ts` from anywhere in the app becomes the banner at the top of the shell, and a
   // recovery invalidates every query so the stale page refreshes itself.
@@ -51,12 +58,17 @@ export default function AppLayout(): JSX.Element {
 
   useEffect(() => {
     const report = importReport.data;
-    if (importToastShown || report === undefined || !report.ran || report.imported <= 0) {
+    if (report === undefined || !shouldAnnounceImport(report)) {
       return;
     }
-    importToastShown = true;
+    // Mark the cached report announced *before* the toast, so the re-render this write causes
+    // reads the mark back instead of announcing again (the F2 shape: the query layer owns it).
+    queryClient.setQueryData<ImportReport>(IMPORT_REPORT_QUERY_KEY, {
+      ...report,
+      announced: true,
+    });
     notifySuccess(importSummaryMessage(report.imported));
-  }, [importReport.data]);
+  }, [importReport.data, queryClient]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {

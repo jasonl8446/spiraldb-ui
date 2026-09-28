@@ -1,0 +1,229 @@
+
+
+===== tracked-write-fix.txt =====
+### T: tracked-write fix verification — the SENSITIVE instrument (mtime + hash + path)
+2026-09-28T02:01:54-04:00
+HEAD=f7e7004f3b36a01f113fc3355c72ba4df1e96f02
+
+--- T0 identity: the fix is a WORKING-TREE change, not a commit ---
+ M server/src/services/git.ts
+ M tests/ui/a11y-reduced-motion.spec.ts
+?? docs/evidence/final-verify-p5-process-clause.md
+?? docs/evidence/final-verify-plan.md
+?? docs/evidence/phase-1/final-verify-p1-06-dropdown-json.png
+?? docs/evidence/phase-1/final-verify-p1-06-dropdown-selected.png
+?? docs/evidence/phase-1/final-verify-p1-06-settings.png
+?? docs/evidence/phase-1/final-verify-p1-06-shell-dashboard.png
+?? docs/evidence/phase-1/final-verify-p1-06-sync-spinner.png
+?? docs/evidence/phase-1/final-verify-p1-06-sync-toast.png
+
+--- T1 the 79 tracked files: count ---
+79
+
+--- T1a git's own view (content-sensitive): any tracked file under docs/evidence/phase-5 differing from HEAD? ---
+status rc=0 (empty output above = all 79 match HEAD)
+diff rc=0 (empty = byte-identical to HEAD)
+
+--- T1b snapshot BEFORE (mtime epoch.ns  sha256  path) ---
+79 /tmp/fv3/rm79-before.txt
+1790562678.9189884410 99ad57597a4d7efd92e0e034ed0fe3ff1b0fedcfbf590f3db5f2ccb85f5769e5 docs/evidence/phase-5/p5-01-d1-activity.md
+1790562678.9202072920 ef72b506c05e000c7b828e1da7123a35c7fe279dd8604a89945e8b60648009c7 docs/evidence/phase-5/p5-01-d2-page.md
+1790562678.9202072920 944b9b88a59353d6a177dd877b0d5d6f1e0205c7c0e9b8c735b91734baa9b1f1 docs/evidence/phase-5/p5-01-d3b-scratch-empty.png
+
+--- T2 clear the gitignored target so fresh files must appear ---
+ls: cannot access 'test-results/a11y-reduced-motion': No such file or directory
+absent rc=2 (2 = cleared)
+.gitignore:24:test-results/	test-results/a11y-reduced-motion/x.png
+
+--- T3 run the spec SOLO, rc captured on the command itself ---
+run-start epoch=1790575314
+[WebServer] [client] [WebServer]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://127.0.0.1:3001 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 6 tests using 1 worker
+
+(node:201325) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:190:3 › reduced motion — computed styles, with the counterfactual › the sidebar transition is off under reduce and on without it (3.5s)
+  ✓  2 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:218:3 › reduced motion — computed styles, with the counterfactual › the whole rendered DOM obeys the invariant, except the deliberate spinner (976ms)
+  ✓  3 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:265:3 › reduced motion — computed styles, with the counterfactual › a spinner is the one animation left, and it is slowed rather than stopped (575ms)
+  ✓  4 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:293:3 › reduced motion — the panel animation, sampled per frame › the palette panel is already settled while the un-reduced panel is animating (1.8s)
+  ✓  5 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:337:3 › reduced motion — React Flow, sampled per frame › fitView jumps under reduce and animates without it (1.6s)
+  ✓  6 [chromium] › tests/ui/a11y-reduced-motion.spec.ts:378:3 › reduced motion — React Flow, sampled per frame › React Flow's `dashdraw` is off by rule, proven against React Flow's own markup (554ms)
+
+  6 passed (11.7s)
+npx playwright rc=0
+
+--- T3a where did the six PNGs actually go? ---
+total 608
+drwxr-xr-x 2 jason users   4096 02:02:06 .
+drwxr-xr-x 3 jason users   4096 02:02:07 ..
+-rw-r--r-- 1 jason users 119223 02:02:06 p5-05-reduced-motion-flowchart-after.png
+-rw-r--r-- 1 jason users 119224 02:02:06 p5-05-reduced-motion-flowchart-before.png
+-rw-r--r-- 1 jason users  80977 02:02:05 p5-05-reduced-motion-panel-after-reduce.png
+-rw-r--r-- 1 jason users  80977 02:02:04 p5-05-reduced-motion-panel-mid-noreduce.png
+-rw-r--r-- 1 jason users  80977 02:02:04 p5-05-reduced-motion-panel-mid-reduce.png
+-rw-r--r-- 1 jason users 122425 02:02:01 p5-05-reduced-motion-sidebar.png
+ls rc=0
+
+--- T3b any path under docs/evidence written during the run? (find -newermt) ---
+find rc=0 (no lines above = nothing under docs/evidence was written)
+
+--- T4 snapshot AFTER, then diff both mtime and hash ---
+identical? (mtime+hash+path)
+IDENTICAL — no mtime moved, no hash changed
+diff rc=0
+
+--- T4b hashes alone ---
+ALL 79 sha256 IDENTICAL
+
+--- T5 re-affirm git's view ---
+status rc=0
+
+
+===== tracked-write-negctl.txt =====
+### T6 NEGATIVE CONTROL: prove the mtime instrument detects a write to the OLD path
+2026-09-28T02:02:24-04:00
+
+--- T6a the six tracked PNGs: mtime + sha256 BEFORE ---
+1790572052.2026-09-28 01:07:32  88e89c333bb2a738ad92611252073dbb5e4c5c97eca6769266ac278637895653  p5-05-reduced-motion-sidebar.png
+1790572054.2026-09-28 01:07:34  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-noreduce.png
+1790572054.2026-09-28 01:07:34  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-reduce.png
+1790572054.2026-09-28 01:07:34  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-after-reduce.png
+1790572055.2026-09-28 01:07:35  27bed5bb68168010f097ce678ee057f39eac03b8cf2277b300ab85926f82814d  p5-05-reduced-motion-flowchart-before.png
+1790572056.2026-09-28 01:07:36  a551f1728005d730a23e83ce82729b75438a12186fb9609d628bc48670efadae  p5-05-reduced-motion-flowchart-after.png
+
+--- T6b scratch spec: the FIXED spec with only the output path reverted ---
+sed rc=0
+62:const screenshotPath = (name: string): string => `docs/evidence/phase-5/${name}`;
+
+--- T6c run the control spec SOLO ---
+Running 6 tests using 1 worker
+
+(node:203480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/ui/zz-fv-mtime-negctl.spec.ts:190:3 › reduced motion — computed styles, with the counterfactual › the sidebar transition is off under reduce and on without it (1.9s)
+  ✓  2 [chromium] › tests/ui/zz-fv-mtime-negctl.spec.ts:218:3 › reduced motion — computed styles, with the counterfactual › the whole rendered DOM obeys the invariant, except the deliberate spinner (567ms)
+  ✓  3 [chromium] › tests/ui/zz-fv-mtime-negctl.spec.ts:265:3 › reduced motion — computed styles, with the counterfactual › a spinner is the one animation left, and it is slowed rather than stopped (316ms)
+  ✓  4 [chromium] › tests/ui/zz-fv-mtime-negctl.spec.ts:293:3 › reduced motion — the panel animation, sampled per frame › the palette panel is already settled while the un-reduced panel is animating (1.4s)
+  ✓  5 [chromium] › tests/ui/zz-fv-mtime-negctl.spec.ts:337:3 › reduced motion — React Flow, sampled per frame › fitView jumps under reduce and animates without it (1.4s)
+  ✓  6 [chromium] › tests/ui/zz-fv-mtime-negctl.spec.ts:378:3 › reduced motion — React Flow, sampled per frame › React Flow's `dashdraw` is off by rule, proven against React Flow's own markup (554ms)
+
+  6 passed (7.5s)
+npx playwright rc=0
+
+--- T6d mtime + sha256 AFTER ---
+1790575347.2026-09-28 02:02:27  88e89c333bb2a738ad92611252073dbb5e4c5c97eca6769266ac278637895653  p5-05-reduced-motion-sidebar.png
+1790575349.2026-09-28 02:02:29  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-noreduce.png
+1790575349.2026-09-28 02:02:29  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-reduce.png
+1790575350.2026-09-28 02:02:30  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-after-reduce.png
+1790575351.2026-09-28 02:02:31  27bed5bb68168010f097ce678ee057f39eac03b8cf2277b300ab85926f82814d  p5-05-reduced-motion-flowchart-before.png
+1790575351.2026-09-28 02:02:31  a551f1728005d730a23e83ce82729b75438a12186fb9609d628bc48670efadae  p5-05-reduced-motion-flowchart-after.png
+
+--- T6e VERDICT: did the mtimes move, and did the hashes stay equal? ---
+p5-05-reduced-motion-sidebar.png                     mtime MOVED  hash equal
+p5-05-reduced-motion-panel-mid-noreduce.png          mtime MOVED  hash equal
+p5-05-reduced-motion-panel-mid-reduce.png            mtime MOVED  hash equal
+p5-05-reduced-motion-panel-after-reduce.png          mtime MOVED  hash equal
+p5-05-reduced-motion-flowchart-before.png            mtime MOVED  hash equal
+p5-05-reduced-motion-flowchart-after.png             mtime MOVED  hash equal
+
+--- T6f git's (insensitive) view of the same event ---
+git status rc=0 (EMPTY = git cannot see the rewrite — the whole point)
+git diff rc=0 (EMPTY = byte-identical to HEAD)
+
+
+===== tracked-write-cleanup.txt =====
+### T6g restore the control's side effects
+
+--- restore the six mtimes to their pre-control values ---
+touch: invalid date format ‘@1790572052.2026-09-28’
+touch -m -d @1790572052.2026-09-28 docs/evidence/phase-5/ rc=1
+touch: invalid date format ‘@1790572054.2026-09-28’
+touch -m -d @1790572054.2026-09-28 docs/evidence/phase-5/ rc=1
+touch: invalid date format ‘@1790572054.2026-09-28’
+touch -m -d @1790572054.2026-09-28 docs/evidence/phase-5/ rc=1
+touch: invalid date format ‘@1790572054.2026-09-28’
+touch -m -d @1790572054.2026-09-28 docs/evidence/phase-5/ rc=1
+touch: invalid date format ‘@1790572055.2026-09-28’
+touch -m -d @1790572055.2026-09-28 docs/evidence/phase-5/ rc=1
+touch: invalid date format ‘@1790572056.2026-09-28’
+touch -m -d @1790572056.2026-09-28 docs/evidence/phase-5/ rc=1
+
+--- delete the scratch control spec ---
+ls: cannot access 'tests/ui/zz-fv-mtime-negctl.spec.ts': No such file or directory
+absent rc=2 (2 = gone)
+
+--- VERIFY the six are back to the recorded mtime+hash ---
+1,6c1,6
+< 1790572052.2026-09-28 01:07:32  88e89c333bb2a738ad92611252073dbb5e4c5c97eca6769266ac278637895653  p5-05-reduced-motion-sidebar.png
+< 1790572054.2026-09-28 01:07:34  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-noreduce.png
+< 1790572054.2026-09-28 01:07:34  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-reduce.png
+< 1790572054.2026-09-28 01:07:34  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-after-reduce.png
+< 1790572055.2026-09-28 01:07:35  27bed5bb68168010f097ce678ee057f39eac03b8cf2277b300ab85926f82814d  p5-05-reduced-motion-flowchart-before.png
+< 1790572056.2026-09-28 01:07:36  a551f1728005d730a23e83ce82729b75438a12186fb9609d628bc48670efadae  p5-05-reduced-motion-flowchart-after.png
+---
+> 1790575347.2026-09-28 02:02:27  88e89c333bb2a738ad92611252073dbb5e4c5c97eca6769266ac278637895653  p5-05-reduced-motion-sidebar.png
+> 1790575349.2026-09-28 02:02:29  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-noreduce.png
+> 1790575349.2026-09-28 02:02:29  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-mid-reduce.png
+> 1790575350.2026-09-28 02:02:30  563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be  p5-05-reduced-motion-panel-after-reduce.png
+> 1790575351.2026-09-28 02:02:31  27bed5bb68168010f097ce678ee057f39eac03b8cf2277b300ab85926f82814d  p5-05-reduced-motion-flowchart-before.png
+> 1790575351.2026-09-28 02:02:31  a551f1728005d730a23e83ce82729b75438a12186fb9609d628bc48670efadae  p5-05-reduced-motion-flowchart-after.png
+diff rc=1
+
+--- VERIFY all 79 are back to the T1b snapshot ---
+36,41c36,41
+< 1790572056.2909051690 a551f1728005d730a23e83ce82729b75438a12186fb9609d628bc48670efadae docs/evidence/phase-5/p5-05-reduced-motion-flowchart-after.png
+< 1790572055.9088987100 27bed5bb68168010f097ce678ee057f39eac03b8cf2277b300ab85926f82814d docs/evidence/phase-5/p5-05-reduced-motion-flowchart-before.png
+< 1790572054.9588826440 563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be docs/evidence/phase-5/p5-05-reduced-motion-panel-after-reduce.png
+< 1790572054.4888746940 563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be docs/evidence/phase-5/p5-05-reduced-motion-panel-mid-noreduce.png
+< 1790572054.5908764190 563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be docs/evidence/phase-5/p5-05-reduced-motion-panel-mid-reduce.png
+< 1790572052.6288432260 88e89c333bb2a738ad92611252073dbb5e4c5c97eca6769266ac278637895653 docs/evidence/phase-5/p5-05-reduced-motion-sidebar.png
+---
+> 1790575351.5438015150 a551f1728005d730a23e83ce82729b75438a12186fb9609d628bc48670efadae docs/evidence/phase-5/p5-05-reduced-motion-flowchart-after.png
+> 1790575351.1687956790 27bed5bb68168010f097ce678ee057f39eac03b8cf2277b300ab85926f82814d docs/evidence/phase-5/p5-05-reduced-motion-flowchart-before.png
+> 1790575350.1627800220 563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be docs/evidence/phase-5/p5-05-reduced-motion-panel-after-reduce.png
+> 1790575349.6617722240 563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be docs/evidence/phase-5/p5-05-reduced-motion-panel-mid-noreduce.png
+> 1790575349.7777740300 563e66fb33ce9536a598e20d55b3a8ff2aa067a8fb474fbade6e08631ad2a1be docs/evidence/phase-5/p5-05-reduced-motion-panel-mid-reduce.png
+> 1790575347.8427439140 88e89c333bb2a738ad92611252073dbb5e4c5c97eca6769266ac278637895653 docs/evidence/phase-5/p5-05-reduced-motion-sidebar.png
+diff rc=1
+
+--- the working tree is as found: exactly the two authored files modified ---
+ M server/src/services/git.ts
+ M tests/ui/a11y-reduced-motion.spec.ts
+?? docs/evidence/final-verify-p5-process-clause.md
+?? docs/evidence/final-verify-plan.md
+?? docs/evidence/phase-1/final-verify-p1-06-dropdown-json.png
+?? docs/evidence/phase-1/final-verify-p1-06-dropdown-selected.png
+?? docs/evidence/phase-1/final-verify-p1-06-settings.png
+?? docs/evidence/phase-1/final-verify-p1-06-shell-dashboard.png
+?? docs/evidence/phase-1/final-verify-p1-06-sync-spinner.png
+?? docs/evidence/phase-1/final-verify-p1-06-sync-toast.png
+status rc=0
+
+--- and git still sees the 79 as matching HEAD ---
+rc=0 (both empty)
+
+
+===== tracked-write-cleanup2.txt =====
+### T6g (retry): restore the six mtimes from the precise pre-experiment snapshot
+
+touch -m -d @1790572056.2909051690 docs/evidence/phase-5/p5-05-reduced-motion-flowchart-after.png
+  rc=0  now: 1790572056.2026-09-28 01:07:36
+touch -m -d @1790572055.9088987100 docs/evidence/phase-5/p5-05-reduced-motion-flowchart-before.png
+  rc=0  now: 1790572055.2026-09-28 01:07:35
+touch -m -d @1790572054.9588826440 docs/evidence/phase-5/p5-05-reduced-motion-panel-after-reduce.png
+  rc=0  now: 1790572054.2026-09-28 01:07:34
+touch -m -d @1790572054.4888746940 docs/evidence/phase-5/p5-05-reduced-motion-panel-mid-noreduce.png
+  rc=0  now: 1790572054.2026-09-28 01:07:34
+touch -m -d @1790572054.5908764190 docs/evidence/phase-5/p5-05-reduced-motion-panel-mid-reduce.png
+  rc=0  now: 1790572054.2026-09-28 01:07:34
+touch -m -d @1790572052.6288432260 docs/evidence/phase-5/p5-05-reduced-motion-sidebar.png
+  rc=0  now: 1790572052.2026-09-28 01:07:32
+
+--- verify against the pre-experiment snapshot ---
+ALL 79 IDENTICAL to the pre-experiment snapshot (mtime + sha256 + path)
+diff rc=0

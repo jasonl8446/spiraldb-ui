@@ -165,11 +165,6 @@ export function goalLogicEntryField(entry: unknown, key: string): unknown {
   return isPlainObject(entry) ? entry[key] : undefined;
 }
 
-/** `true` when `entry` carries `key` at all (present with `null` counts as present). */
-export function goalLogicEntryHasKey(entry: unknown, key: string): boolean {
-  return isPlainObject(entry) && Object.prototype.hasOwnProperty.call(entry, key);
-}
-
 /**
  * The names of one entry's name-list field: the strings, in order, with duplicates kept.
  * A missing field, a `null` field or a non-array field reads as `[]` — never as an error,

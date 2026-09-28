@@ -153,11 +153,6 @@ const COLLECTION_BY_TYPE = new Map<ObjectFileType, SpiraldbCollectionSpec>(
   SPIRALDB_COLLECTIONS.map((spec) => [spec.fileType, spec]),
 );
 
-/** Spec families the save pipeline may write. */
-export const SAVEABLE_COLLECTIONS: readonly SpiraldbCollectionSpec[] = SPIRALDB_COLLECTIONS.filter(
-  (spec) => spec.saveable,
-);
-
 /** A spec row whose `keyField` is known — everything the content-keyed index can scan. */
 export interface IndexedCollectionSpec extends SpiraldbCollectionSpec {
   keyField: string;
@@ -301,13 +296,29 @@ export function stringifySpiraldbJson(data: unknown): string {
  * Writes a document as clean JSON, creating the directory when missing (the
  * first save of an absent family, e.g. `NpcDropTable/`, must work).
  *
+ * **Fails closed on a symlinked target** (final-review gate 2, N5): `fs.writeFileSync` follows a
+ * symbolic link, so a link planted in a family directory could redirect a save's bytes outside
+ * the SpiralDB root. No corpus family directory holds one and nothing here creates one, so
+ * refusing costs nothing; the delete side needs no such guard because `fs.rmSync` unlinks the
+ * link itself rather than its target.
+ *
  * @throws {SpiraldbFileError} when the write fails — the message names the file.
  */
 export function writeSpiraldbJson(filePath: string, data: unknown): void {
   try {
+    if (fs.lstatSync(filePath, { throwIfNoEntry: false })?.isSymbolicLink() === true) {
+      throw new SpiraldbFileError(
+        `Refusing to write ${filePath}: it is a symbolic link, and a save must never write ` +
+          `through a link into another tree. Replace the link with the file it points at.`,
+      );
+    }
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, stringifySpiraldbJson(data));
   } catch (error) {
+    // The symlink refusal is already the actionable message; only real I/O failures get wrapped.
+    if (error instanceof SpiraldbFileError) {
+      throw error;
+    }
     throw new SpiraldbFileError(
       `Could not write SpiralDB file ${filePath}: ${describeError(error)}`,
     );
@@ -325,6 +336,19 @@ export function writeSpiraldbJson(filePath: string, data: unknown): void {
 export function createTargetPath(root: string, spec: SpiraldbCollectionSpec, key: string): string {
   const name = spec.keyField === null ? UNKEYED_FILE_NAME : fileNameFor(spec.fileType, key);
   return path.join(root, spec.directory, name);
+}
+
+/**
+ * `file` relative to `root`, or `file` itself when it is outside/equal to root — the
+ * form the API reports a committed path in.
+ *
+ * The body sat byte-for-byte in both `objects.ts` and `quests.ts` (final-deslop); it
+ * lives in the file layer because that is what a SpiralDB-root-relative path is, and
+ * both services already import this module.
+ */
+export function relativeTo(root: string, file: string): string {
+  const relative = path.relative(root, file);
+  return relative === '' ? file : relative;
 }
 
 /**

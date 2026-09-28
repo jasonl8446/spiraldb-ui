@@ -2,6 +2,8 @@ import type { DocPath } from '@shared/document';
 import type { QuestFinding, QuestValidationResult } from '@shared/quest/validation';
 import { findingField, findingMessage, kindLabel } from '@shared/quest/validation-messages';
 
+import { joinKinds } from './validation-message';
+
 /**
  * The client-side view model of a validation pass — plan task 3.9's presentation half
  * (story p3-09; [spec-domain-reference.md] L547).
@@ -112,14 +114,6 @@ export interface ValidationBannerModel {
   errorKinds: string[];
   /** Distinct warning kinds, in finding order. */
   warningKinds: string[];
-}
-
-/** `A, B and C` — an English list of the distinct kinds. */
-function joinKinds(kinds: readonly string[]): string {
-  if (kinds.length === 1) {
-    return kinds[0];
-  }
-  return `${kinds.slice(0, -1).join(', ')} and ${kinds[kinds.length - 1]}`;
 }
 
 /** The distinct kind labels of a message list, in order. */

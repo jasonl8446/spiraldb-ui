@@ -1,0 +1,81 @@
+== rig identity ==
+corpus : /tmp/dr10/boot/corpus (3 files)
+db     : /tmp/dr10/boot/boot.db (exists: no)
+live db: /home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db sha256=acf5b40e92784ac8d82f8a24b0b0be550d18aa0f1e3da42e75e234e6669a26eb
+port 5471 free: yes
+port 5472 free: yes
+port 5473 free: yes
+owner's :5173 listener present (not ours, untouched): 1
+
+===== BOOT 1 — entry_status empty (first adoption) =====
+--- boot on :5471 (listening pid 426585) log: /tmp/dr10/logs/boot1.log
+[spiraldb-ui] database ready at /tmp/dr10/boot/boot.db
+Imported 3 existing entries from SpiralDB
+[spiraldb-ui] API listening on http://127.0.0.1:5471 (loopback only)
+--- probes ---
+GET /api/status/_import -> HTTP 200
+{"ran":true,"imported":3,"imported_at":"2026-09-28T07:33:31.292Z"}
+
+GET /api/status/quests -> HTTP 200
+{"entries":[{"object_type":"quest","object_key":"BOOT-A","status":"extracted","extracted_at":"2026-09-28T07:33:31.292Z","reviewed_at":null,"verified_at":null,"latest_notes":null},{"object_type":"quest","object_key":"BOOT-B","status":"extracted","extracted_at":"2026-09-28T07:33:31.292Z","reviewed_at":null,"verified_at":null,"latest_notes":null}],"summary":{"total":2,"extracted":2,"reviewed":0,"veri
+
+killed process group 426549 (listener pid 426585, port 5471)
+
+===== the corpus grows: one new quest file appears =====
+/tmp/dr10/boot/corpus/DropTables/d.json
+/tmp/dr10/boot/corpus/QuestTemplates/a.json
+/tmp/dr10/boot/corpus/QuestTemplates/b.json
+/tmp/dr10/boot/corpus/QuestTemplates/c.json
+
+===== BOOT 2 — entry_status non-empty (a normal startup heals the gap) =====
+--- boot on :5472 (listening pid 426646) log: /tmp/dr10/logs/boot2.log
+[spiraldb-ui] database ready at /tmp/dr10/boot/boot.db
+Imported 1 existing entries from SpiralDB
+[spiraldb-ui] API listening on http://127.0.0.1:5472 (loopback only)
+--- probes ---
+GET /api/status/_import -> HTTP 200
+{"ran":true,"imported":1,"imported_at":"2026-09-28T07:33:32.188Z"}
+
+GET /api/status/quests -> HTTP 200
+{"entries":[{"object_type":"quest","object_key":"BOOT-A","status":"extracted","extracted_at":"2026-09-28T07:33:31.292Z","reviewed_at":null,"verified_at":null,"latest_notes":null},{"object_type":"quest","object_key":"BOOT-B","status":"extracted","extracted_at":"2026-09-28T07:33:31.292Z","reviewed_at":null,"verified_at":null,"latest_notes":null},{"object_type":"quest","object_key":"BOOT-C","status":
+
+BOOT-C occurrences in the quests list above: 1
+GET /api/status/quests/BOOT-C/history -> HTTP 200
+{"history":[{"old_status":null,"new_status":"extracted","notes":"Imported from SpiralDB corpus QuestTemplates/c.json","changed_by":"corpus import","changed_at":"2026-09-28T07:33:32.188Z"}]}
+
+--- the arm D82(b) says used to 404: a status write on a key the palette could not see ---
+PATCH /api/status/quests/BOOT-C -> HTTP 200
+{"object_type":"quest","object_key":"BOOT-C","status":"reviewed","extracted_at":"2026-09-28T07:33:32.188Z","reviewed_at":"2026-09-28T07:33:32.379Z","verified_at":null,"latest_notes":"rig: now trackable"}
+
+GET /api/status/quests/BOOT-C/history -> HTTP 200
+{"history":[{"old_status":null,"new_status":"extracted","notes":"Imported from SpiralDB corpus QuestTemplates/c.json","changed_by":"corpus import","changed_at":"2026-09-28T07:33:32.188Z"},{"old_status":"extracted","new_status":"reviewed","notes":"rig: now trackable","changed_by":"","changed_at":"2026-09-28T07:33:32.379Z"}]}
+
+--- control: an unknown key still 404s (so the PATCH probe above is meaningful) ---
+PATCH /api/status/quests/BOOT-ZZZ -> HTTP 404
+{"error":"Unknown quests entry \"BOOT-ZZZ\""}
+
+killed process group 426621 (listener pid 426646, port 5472)
+
+===== BOOT 3 — nothing missing (must adopt nothing and write nothing) =====
+--- boot on :5473 (listening pid 426731) log: /tmp/dr10/logs/boot3.log
+[spiraldb-ui] database ready at /tmp/dr10/boot/boot.db
+[spiraldb-ui] corpus already tracked (entry_status covers every corpus key)
+[spiraldb-ui] API listening on http://127.0.0.1:5473 (loopback only)
+--- probes ---
+GET /api/status/_import -> HTTP 200
+{"ran":false,"imported":0,"imported_at":null}
+
+killed process group 426706 (listener pid 426731, port 5473)
+db sha256 before boot 3: c365567083e705b5b988250a033e5709f0322f70beb410fd0ef44fc973d72b7b
+db sha256 after  boot 3: c365567083e705b5b988250a033e5709f0322f70beb410fd0ef44fc973d72b7b
+boot 3 wrote no byte to the database: true
+boot 3 log 'Imported' lines: 0 (0 expected)
+
+===== residue check =====
+listeners on :5471 = 0
+listeners on :5472 = 0
+listeners on :5473 = 0
+rig processes left: 0
+TOTAL rig residue: 0
+live db sha256 after the whole rig: acf5b40e92784ac8d82f8a24b0b0be550d18aa0f1e3da42e75e234e6669a26eb
+owner's :5173 listener present (not ours): 1

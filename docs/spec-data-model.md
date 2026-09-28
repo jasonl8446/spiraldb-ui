@@ -259,7 +259,7 @@ On first startup (when `entry_status` table is empty):
 2. For each file, parse the JSON to extract the key field
 3. Insert into `entry_status` with `status='extracted'`, `extracted_at=CURRENT_TIMESTAMP`
 4. Show toast: "Imported {n} existing entries from SpiralDB"
-5. This runs once only; subsequent startups skip if table has rows
+5. This runs once only; subsequent startups skip if table has rows **[AMENDED BY D82(a), docs/plan-overview.md L158 — the table is never skipped: a startup whose table has rows _reconciles_ instead. For every corpus key with no `entry_status` row it inserts the same `status='extracted'` row **plus one `status_history` row recording the file it came from**, and it never deletes, re-statuses, re-stamps or re-writes a row that already exists (an existing row's status, notes, timestamps and history survive a backfill untouched). The first startup's bulk adoption writes no history row — the whole table appears at once, which is an origin rather than a transition; a file that arrives later is a change to a dataset that already existed, and it gets the provenance row. A family whose directory is absent (`NpcDropTable/` today) contributes zero work and is never an error.]**
 
 Scan mapping:
 

@@ -537,9 +537,6 @@ export interface SearchResponse {
   groups: SearchGroup[];
 }
 
-/** TanStack Query key prefix for every search read. */
-export const SEARCH_QUERY_KEY = ['search'] as const;
-
 /** TanStack Query key for one query text. */
 export function searchQueryKey(
   q: string,
@@ -692,6 +689,12 @@ export interface ImportReport {
   ran: boolean;
   imported: number;
   imported_at: string | null;
+  /**
+   * **Client-side only — the server never sends this.** The shell sets it on the cached
+   * report once it has announced the import, so "has this report been announced?" is state
+   * the query layer owns rather than a module-level flag (final-deslop, F2).
+   */
+  announced?: boolean;
 }
 
 /** Query key for the once-per-process first-startup import report. */
@@ -700,6 +703,24 @@ export const IMPORT_REPORT_QUERY_KEY = ['status', '_import'] as const;
 /** Whether this server process imported pre-existing entries, and how many. */
 export function getImportReport(): Promise<ImportReport> {
   return apiFetch<ImportReport>('/api/status/_import');
+}
+
+/**
+ * `true` when this import report still needs announcing (decision D37).
+ *
+ * The mark rides on the **cached report** ({@link ImportReport.announced}), so the shell's
+ * toast has one owner — the query layer — instead of a module-level boolean. Two things
+ * follow from that: StrictMode's double-mount and any later remount read the mark back and
+ * do not re-announce, and a **second** import in the same process (a new report) is no
+ * longer swallowed the way a permanent `let` swallowed it.
+ *
+ * It deliberately does **not** claim to survive a page load: the query cache is per-document,
+ * and this app has no client-side persistence at all, so a reload still re-announces an old
+ * import. That remainder is recorded as debt in `docs/evidence/final-deslop-d1-disposition.md`
+ * (item 16) rather than papered over here.
+ */
+export function shouldAnnounceImport(report: ImportReport | undefined): boolean {
+  return report !== undefined && report.ran && report.imported > 0 && report.announced !== true;
 }
 
 /* ---------------------------------------------------------------- extraction */

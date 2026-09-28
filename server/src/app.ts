@@ -1,5 +1,4 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
-import cors from 'cors';
 
 import { NOT_FOUND_MESSAGE, type ApiError } from '../../shared/index.js';
 import { apiRouter } from './routes/index.js';
@@ -16,14 +15,25 @@ export interface CreateAppOptions {
 /**
  * Builds the Express application.
  *
- * Task 1.1 owns the bootstrap only: CORS, JSON body parsing, route mounting,
+ * Task 1.1 owns the bootstrap only: JSON body parsing, route mounting,
  * a JSON 404 envelope for unknown routes, and the error-handling middleware.
  * Feature routers are mounted under `/api` in `./routes/index.ts`.
+ *
+ * **No CORS, deliberately** (final-review gate 2, finding M1). The blanket
+ * `cors()` this function used to install answered `Access-Control-Allow-Origin: *`
+ * to any origin and approved a foreign-origin preflight for `PUT`, so a page the
+ * owner merely visited could drive the write paths (they set `spiraldb_path` /
+ * `git_branch` / `user_name` and then create objects, which commit into git). The
+ * client is **same-origin in both modes** — dev goes through the Vite `/api` proxy
+ * (`client/vite.config.ts`) and production is served by this same process — so no
+ * CORS header is needed for the app to work, and the absence of one is also what
+ * makes a cross-origin preflight fail: the browser then refuses to send the
+ * non-simple `application/json` request at all. See `server/src/index.ts` for the
+ * loopback bind that closes the other half of the exposure.
  */
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
-  app.use(cors());
   app.use(express.json());
 
   // Feature routes (names, status, settings, sync, dashboard, ...) mount here.

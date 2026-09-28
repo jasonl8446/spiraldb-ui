@@ -1,0 +1,125 @@
+# DR-10 rigs — scratch corpus/DB, steady-state cost, real corpus on a DB COPY, structural grep
+
+==================== scratch corpus + scratch database ====================
+=== rig identity ===
+corpus: "/tmp/dr10/rig/corpus"
+database: "/tmp/dr10/rig/rig.db"
+live database (never opened here): "/home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db"
+corpus files: ["q-a.json","q-b.json"]
+NpcDropTable dir exists: false
+start counts: {"entry_status":0,"status_history":0}
+start digest: "faeda8efb4cd02fe74335258a819ef766a87f748555f5334a9e2f5655d2fa31f"
+start file sha256: "b1f4c12aeb06c22854db65ab7d5d24e02971e5506842a2b8bdc649051537e94b"
+
+=== run 1: first adoption (entry_status empty) ===
+now: "2026-09-28T10:00:00.000Z"
+result: {"ran":true,"imported":4,"skipped":0,"failed":0,"byType":{"quest":{"imported":2,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"drop_table":{"imported":1,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"npc_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"npc_spell_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"creature_spellbook":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"npc_drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"treasure_card_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"zone_transfer":{"imported":1,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false}},"importedAt":"2026-09-28T10:00:00.000Z"}
+counts: {"entry_status":4,"status_history":0}
+rows: {"entries":[{"id":3,"object_type":"drop_table","object_key":"RIG-DROP","status":"extracted","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":null,"verified_at":null,"reviewed_by":null,"verified_by":null},{"id":1,"object_type":"quest","object_key":"RIG-A","status":"extracted","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":null,"verified_at":null,"reviewed_by":null,"verified_by":null},{"id":2,"object_type":"quest","object_key":"RIG-B","status":"extracted","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":null,"verified_at":null,"reviewed_by":null,"verified_by":null},{"id":4,"object_type":"zone_transfer","object_key":"Rig/Zone","status":"extracted","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":null,"verified_at":null,"reviewed_by":null,"verified_by":null}],"history":[]}
+
+=== a human reviews RIG-A with a note (the real transition writer) ===
+applyStatusChange: {"object_type":"quest","object_key":"RIG-A","status":"reviewed","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":"2026-09-28T10:30:00.000Z","verified_at":null,"latest_notes":"rig: human review note"}
+reviewed row (before backfill): {"id":1,"object_type":"quest","object_key":"RIG-A","status":"reviewed","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":"2026-09-28T10:30:00.000Z","verified_at":null,"reviewed_by":"jason","verified_by":null}
+reviewed history (before backfill): [{"id":1,"entry_status_id":1,"old_status":"extracted","new_status":"reviewed","notes":"rig: human review note","changed_by":"jason","changed_at":"2026-09-28T10:30:00.000Z"}]
+digest before backfill: "5213e1a10fde500a6e9c2a323204b0ab195e70710978f01acf096dbd70349171"
+file sha256 before backfill: "a17d631aa3ad3e5d71faeb66a441654c56778d96c4d759c5f1d7a8a5e660aeb5"
+counts before backfill: {"entry_status":4,"status_history":1}
+
+=== the corpus grows: one new quest file ===
+corpus files now: ["q-a.json","q-b.json","q-c.json"]
+
+=== run 2: backfill (entry_status non-empty) ===
+now: "2026-09-28T11:00:00.000Z"
+result: {"ran":true,"imported":1,"skipped":0,"failed":0,"byType":{"quest":{"imported":1,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"npc_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"npc_spell_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"creature_spellbook":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"npc_drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"treasure_card_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"zone_transfer":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false}},"importedAt":"2026-09-28T11:00:00.000Z"}
+counts after backfill: {"entry_status":5,"status_history":2}
+digest after backfill: "bab75e4bdbb998e11ce428d6d49ea79dae56bcfd0cd3fb95f6b566110cfa01e3"
+file sha256 after backfill: "4189e3cd831088e1d0500d58627489c4f0a43706562afb5a051531977cc95245"
+the adopted key, row and history: {"entry":[{"id":5,"object_type":"quest","object_key":"RIG-C","status":"extracted","extracted_at":"2026-09-28T11:00:00.000Z","reviewed_at":null,"verified_at":null,"reviewed_by":null,"verified_by":null}],"history":[{"id":2,"entry_status_id":5,"old_status":null,"new_status":"extracted","notes":"Imported from SpiralDB corpus QuestTemplates/q-c.json","changed_by":"corpus import","changed_at":"2026-09-28T11:00:00.000Z"}]}
+reviewed row (after backfill): {"id":1,"object_type":"quest","object_key":"RIG-A","status":"reviewed","extracted_at":"2026-09-28T10:00:00.000Z","reviewed_at":"2026-09-28T10:30:00.000Z","verified_at":null,"reviewed_by":"jason","verified_by":null}
+reviewed history (after backfill): [{"id":1,"entry_status_id":1,"old_status":"extracted","new_status":"reviewed","notes":"rig: human review note","changed_by":"jason","changed_at":"2026-09-28T10:30:00.000Z"}]
+
+=== run 3: second backfill (must move nothing) ===
+now: "2026-09-28T12:00:00.000Z"
+result: {"ran":false,"imported":0,"skipped":0,"failed":0,"byType":{"quest":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"npc_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"npc_spell_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"creature_spellbook":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"npc_drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"treasure_card_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"zone_transfer":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false}},"importedAt":null}
+counts: {"entry_status":5,"status_history":2}
+digest: "bab75e4bdbb998e11ce428d6d49ea79dae56bcfd0cd3fb95f6b566110cfa01e3"
+file sha256: "4189e3cd831088e1d0500d58627489c4f0a43706562afb5a051531977cc95245"
+
+=== a family whose directory is absent (NpcDropTable) ===
+NpcDropTable dir exists: false
+byType.npc_drop_table (run 3): {"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true}
+
+=== checks ===
+PASS  run 1 adopted the 4 pre-existing keys and wrote no history
+PASS  the new key has an extracted row stamped at the backfill
+PASS  the new key has its provenance history row
+PASS  the reviewed row is byte-identical after the backfill
+PASS  the reviewed row history is byte-identical after the backfill
+PASS  run 2 moved the counts by exactly one entry and one history row
+PASS  run 2 adopted exactly one row (imported === 1, ran === true)
+PASS  run 3 adopted nothing (ran false, imported 0, importedAt null)
+PASS  run 3 changed no row of either table (whole-row digest identical)
+PASS  run 3 changed no byte of the database file
+PASS  run 3 left the row set identical
+PASS  the absent family is flagged, not thrown
+checks: 12/12 passed
+
+==================== steady-state cost (old vs new) ====================
+entry_status rows          : 2277
+corpus .json files         : 2279 in 7 directories (NpcDropTable absent)
+OLD steady state (COUNT x20): min 0.00 / median 0.00 / max 0.13 ms
+NEW steady state (x6)       : min 100.49 / median 177.00 / max 290.43 ms
+per-run ms                  : 290.4, 198.9, 177.0, 173.4, 116.6, 100.5
+rows adopted by every run   : 0, 0, 0, 0, 0, 0 (all 0 = no writes)
+marker rows after all runs  : 0
+
+==================== real corpus, COPY of the live database ====================
+live database : /home/jason/Documents/git-projects/spiraldb-ui/data/spiraldb-ui.db
+  sha256 before           : acf5b40e92784ac8d82f8a24b0b0be550d18aa0f1e3da42e75e234e6669a26eb
+copy used here: /tmp/dr10/live-copy-backfill.db
+  sha256 before           : acf5b40e92784ac8d82f8a24b0b0be550d18aa0f1e3da42e75e234e6669a26eb
+corpus        : /home/jason/Documents/git-projects/spiraldb
+
+=== state before the reconcile (on the copy) ===
+{"rows":[{"object_type":"creature_spellbook","status":"extracted","c":134},{"object_type":"drop_table","status":"extracted","c":317},{"object_type":"npc_inventory","status":"extracted","c":215},{"object_type":"npc_spell_inventory","status":"extracted","c":77},{"object_type":"quest","status":"extracted","c":327},{"object_type":"quest","status":"reviewed","c":1},{"object_type":"treasure_card_inventory","status":"extracted","c":1},{"object_type":"zone_transfer","status":"extracted","c":1205}],"total_entry_status":2277,"total_history":1,"history":[{"id":1,"entry_status_id":6,"old_status":"extracted","new_status":"reviewed","notes":"final-verify P1-4: PATCH round trip","changed_by":"final-verify","changed_at":"2026-09-28T04:53:10.808Z"}]}
+
+=== reconcile run 1 (the real corpus, 2,279 files) ===
+elapsed: 144.6 ms
+result : ran=false imported=0 skipped=3 failed=0 importedAt=null
+byType : {"quest":{"imported":0,"skipped":1,"failed":0,"duplicates":[],"directoryMissing":false},"drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"npc_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"npc_spell_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"creature_spellbook":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"npc_drop_table":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":true},"treasure_card_inventory":{"imported":0,"skipped":0,"failed":0,"duplicates":[],"directoryMissing":false},"zone_transfer":{"imported":0,"skipped":2,"failed":0,"duplicates":["WizardCity/Tutorial_Exterior","WizardCity/Tutorial_Interior"],"directoryMissing":false}}
+
+=== reconcile run 2 (immediately after, same corpus) ===
+elapsed: 85.2 ms
+result : ran=false imported=0 skipped=3 failed=0 importedAt=null
+
+=== state after both reconciles ===
+{"rows":[{"object_type":"creature_spellbook","status":"extracted","c":134},{"object_type":"drop_table","status":"extracted","c":317},{"object_type":"npc_inventory","status":"extracted","c":215},{"object_type":"npc_spell_inventory","status":"extracted","c":77},{"object_type":"quest","status":"extracted","c":327},{"object_type":"quest","status":"reviewed","c":1},{"object_type":"treasure_card_inventory","status":"extracted","c":1},{"object_type":"zone_transfer","status":"extracted","c":1205}],"total_entry_status":2277,"total_history":1,"history":[{"id":1,"entry_status_id":6,"old_status":"extracted","new_status":"reviewed","notes":"final-verify P1-4: PATCH round trip","changed_by":"final-verify","changed_at":"2026-09-28T04:53:10.808Z"}]}
+digest before: a92f7c4c92d3c89cb0807867ee2bc2feb0263a2c27f9dee5d56496d2da92c48f
+digest after : a92f7c4c92d3c89cb0807867ee2bc2feb0263a2c27f9dee5d56496d2da92c48f
+rows+history byte-identical: true
+rows stamped with the rig marker (must be 0): 0
+history rows stamped with the rig marker (must be 0): 0
+
+copy sha256 after : acf5b40e92784ac8d82f8a24b0b0be550d18aa0f1e3da42e75e234e6669a26eb  (unchanged: true)
+LIVE sha256 after : acf5b40e92784ac8d82f8a24b0b0be550d18aa0f1e3da42e75e234e6669a26eb  (unchanged: true)
+
+==================== structural grep + negative control ====================
+== A. mutating statements in the CHANGED file (expect no output; grep rc=1) ==
+   hits(import.ts) grep-rc=1  [1 = no match]
+
+== B. NEGATIVE CONTROL: the same instrument on a file that does mutate rows ==
+316:    'UPDATE entry_status SET status = ?, reviewed_at = ?, reviewed_by = ? WHERE id = ?',
+319:    'UPDATE entry_status SET status = ?, verified_at = ?, verified_by = ? WHERE id = ?',
+321:  const updatePlain = db.prepare('UPDATE entry_status SET status = ? WHERE id = ?');
+   (a match here is what makes A meaningful: the instrument can see an UPDATE)
+
+== C. every statement the changed file opens ==
+348:  const rows = db
+429:  const insertEntry = db.prepare(
+433:  const insertHistory = db.prepare(
+438:  const adoptAll = db.transaction((batch: Array<[StatusObjectType, ScannedCorpusEntry]>): void => {
+
+== D. the SQL text itself ==
+350:      'SELECT object_type, object_key FROM entry_status',
+430:    `INSERT OR IGNORE INTO entry_status (object_type, object_key, status, extracted_at)
+434:    `INSERT INTO status_history (entry_status_id, old_status, new_status, notes, changed_by, changed_at)

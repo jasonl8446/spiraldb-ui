@@ -81,6 +81,18 @@ import { Input } from '../ui/input';
  * a removal writes the element path, and each nested edit writes **one** nested field — the other
  * five keys keep their values *and* the object's own key order. The `Events` key is never an edit
  * target: nothing in this file can write it.
+ *
+ * ## The two zone paths wrap (`break-all`)
+ *
+ * The read-only `ZoneName` header and each teleport's `Destination zone` value are zone paths in
+ * `font-mono`, and a full path is long and has no break opportunity a browser will use — the
+ * corpus's longest `m_destinationZone` is 93 characters
+ * (`DragonSpire/…_4Room2_Sub/DS_Chasm_Gauntlet_4Room2_2`) and `Krokotopia/KT_Pyramid/Interiors/KT_Hall_T5`
+ * is already enough on its own. Without a wrap rule those two spans overflowed the document at
+ * 375px (`documentElement.scrollWidth` 469 vs 360 on `/zone-transfers/WizardCity%2FWC_Hub`, 838 vs
+ * 360 on the 93-character path), which is the mobile AC's "the document must not scroll sideways".
+ * `break-all` is the whole fix: it breaks the path anywhere so the value stays fully visible,
+ * instead of `truncate` which would hide part of the key the page is about.
  */
 export interface ZoneTransferFormProps {
   /** The live document (the layout's baseline-aware model). */
@@ -140,7 +152,7 @@ export default function ZoneTransferForm({
             />
           ) : (
             <>
-              <span className="font-mono text-sm text-zinc-100">
+              <span className="font-mono text-sm break-all text-zinc-100">
                 {typeof zoneName === 'string' && zoneName !== '' ? zoneName : '—'}
               </span>
               <span className="text-xs text-zinc-400">
@@ -386,7 +398,7 @@ function TeleportRow({
             placeholder="Select a zone…"
           />
         ) : (
-          <span className="font-mono text-sm text-zinc-100">
+          <span className="font-mono text-sm break-all text-zinc-100">
             {typeof destinationZone === 'string' && destinationZone !== '' ? destinationZone : '—'}
           </span>
         )}

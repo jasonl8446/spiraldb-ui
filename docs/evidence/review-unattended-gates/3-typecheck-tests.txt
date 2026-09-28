@@ -1,0 +1,6 @@
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+# [review-appended rc] rc=0 — captured on the command itself by the review shell; appended to this transcript by the review pass

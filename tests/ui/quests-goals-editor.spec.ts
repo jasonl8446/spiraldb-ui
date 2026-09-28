@@ -210,11 +210,19 @@ async function openJson(page: Page): Promise<Locator> {
  * The live document, read through the JSON panel's own `[Copy]` affordance: the panel's
  * serialization of the document the editors mutated, parsed back, so a key can be
  * compared exactly instead of by substring.
+ *
+ * The clipboard is **wiped first** (final-review gate 2, S1), as ten sibling specs do.
+ * Without it this helper only proved "the clipboard holds *some* JSON": a stale document
+ * left by an earlier test satisfied the poll, so the pointer-drag arm passed on its
+ * predecessor's clipboard in file order and failed alone (`Timeout 10000ms`, no JSON
+ * within 10 s). After the wipe the only writer of the clipboard is this click, which is
+ * what makes the caller's assertion a claim about *this* document.
  */
 async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
+  await page.evaluate(() => navigator.clipboard.writeText(''));
   await page.getByRole('button', { name: 'Copy' }).click();
   // The click starts an async serialize-then-write; reading the clipboard straight after
-  // can catch it empty (or the previous document). Poll until the panel's JSON is there.
+  // can catch it empty. Poll until the panel's JSON is there.
   let text = '';
   await expect
     .poll(async () => {
@@ -538,6 +546,15 @@ test.describe('reordering', () => {
     await page.mouse.up();
     // Await the drop's effect before reading the document: the panel is fed by the same
     // live document, so copying immediately can still capture the pre-drop order.
+    //
+    // **Budget: the global 10 s, restored (final-review gate 2, S1).** The final-deslop
+    // gate raised this poll to 30 s on the reading that "the dnd-kit pointer drag measures
+    // 13.7 s". The run's own record shows where that number came from:
+    // `docs/evidence/phase-5/p5-07-d3-proof.md` — "**not the drag**… 13.7 s when it fails,
+    // 3.8 s when it passes", the failing wait being the *clipboard* poll inside
+    // `copyPanelDocument`. So the raise rested on a symptom that belonged to the helper,
+    // which now wipes the clipboard instead of polling a stale one, and it is reverted
+    // rather than kept: a 30 s budget here would let a genuinely stalled drag pass.
     await expect
       .poll(() => cardOrder(page))
       .toStrictEqual([

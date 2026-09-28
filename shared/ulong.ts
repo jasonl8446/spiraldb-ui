@@ -28,9 +28,6 @@
  * ulong families, where both ends must be digits.
  */
 
-/** A value that could be an unsigned integer id, in whichever representation. */
-export type ULongInput = number | string;
-
 /** Largest integer JSON and `Number` can both hold exactly. */
 const MAX_SAFE_ULONG = BigInt(Number.MAX_SAFE_INTEGER);
 
