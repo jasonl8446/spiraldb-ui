@@ -1,0 +1,81 @@
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/quests-goals-editor.spec.ts
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] (node:867661) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [server] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [server] [WebServer] (node:867691) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] [WebServer] (node:867690) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [client] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [server] [WebServer] (node:867708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] [server] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 362 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://127.0.0.1:3181 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 13 tests using 1 worker
+
+(node:867743) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/ui/quests-goals-editor.spec.ts:304:3 › the goal cards › render the name, the type badge and the spec summary lines (1.9s)
+  ✓   2 [chromium] › tests/ui/quests-goals-editor.spec.ts:354:3 › the goal cards › Edit expands the card inline into its type fields and the shared base section (667ms)
+  ✓   3 [chromium] › tests/ui/quests-goals-editor.spec.ts:388:3 › the goal cards › the drag handle is a labelled button, not the card (510ms)
+  ✓   4 [chromium] › tests/ui/quests-goals-editor.spec.ts:400:3 › adding goals › each of the 5 types lands with the right $type and its own fields (1.4s)
+  ✓   5 [chromium] › tests/ui/quests-goals-editor.spec.ts:475:3 › reordering › the keyboard sensor moves a goal and changes m_goals order (1.5s)
+  ✘   6 [chromium] › tests/ui/quests-goals-editor.spec.ts:519:3 › reordering › a pointer drag with the mouse moves a goal too (11.1s)
+(node:868060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 [chromium] › tests/ui/quests-goals-editor.spec.ts:576:3 › start membership › the Start toggle adds and removes the name in m_startGoals (1.1s)
+  ✓   8 [chromium] › tests/ui/quests-goals-editor.spec.ts:600:3 › preservation (D5/D57) › an unmodelled key survives byte-identical and shows in the raw disclosure (830ms)
+  ✓   9 [chromium] › tests/ui/quests-goals-editor.spec.ts:630:3 › preservation (D5/D57) › a sparse goal stays sparse through an edit (807ms)
+  ✓  10 [chromium] › tests/ui/quests-goals-editor.spec.ts:648:3 › preservation (D5/D57) › an unlisted zone path keeps displaying itself and survives an unrelated edit (801ms)
+  ✓  11 [chromium] › tests/ui/quests-goals-editor.spec.ts:672:3 › string-table lookups on m_goalTitle › a hit resolves, a miss shows the raw key, and the empty key is never requested (695ms)
+  ✓  12 [chromium] › tests/ui/quests-goals-editor.spec.ts:708:3 › the ID-referencing controls › selecting a zone writes its zone_path (988ms)
+  ✓  13 [chromium] › tests/ui/quests-goals-editor.spec.ts:728:3 › the ID-referencing controls › the persona control keeps an unlisted name and suggests npc names (761ms)
+
+
+  1) [chromium] › tests/ui/quests-goals-editor.spec.ts:519:3 › reordering › a pointer drag with the mouse moves a goal too 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      230 |       return text.trim().startsWith('{');
+      231 |     })
+    > 232 |     .toBe(true);
+          |      ^
+      233 |   return JSON.parse(text) as Record<string, unknown>;
+      234 | }
+      235 |
+        at copyPanelDocument (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/quests-goals-editor.spec.ts:232:6)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/quests-goals-editor.spec.ts:566:17
+
+    Error Context: test-results/quests-goals-editor-reorde-37c03--the-mouse-moves-a-goal-too-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/ui/quests-goals-editor.spec.ts:519:3 › reordering › a pointer drag with the mouse moves a goal too 
+  12 passed (25.1s)
+
+# [review-appended rc] rc=1 — captured on the command itself by the review shell; appended to this transcript by the review pass

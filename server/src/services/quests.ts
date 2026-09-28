@@ -399,22 +399,16 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
   const duplicates = metadataStats.duplicateKeys.filter(
     (key) => key === metadataDuplicateKey(name),
   ).length;
-  if (duplicates > 0) {
-    // The file the pipeline will update and the reason, from the pipeline's own resolver
-    // (`questMetadataSaveTarget`) — the warning must name the file that was actually written,
-    // which since S3 is the convention file whenever this name is ambiguous.
-    const target = questMetadataSaveTarget(index, index.root, name);
-    const message =
-      `QuestMetadatas/ holds ${duplicates + 1} files whose "Name" is "${name}". ` +
-      `The save updated ${relativeTo(index.root, target.path)}` +
-      `${
-        target.tieBreak === 'convention'
-          ? " (this tool's own convention file, preferred when a save is ambiguous)"
-          : ' (first in file-name order)'
-      } and left the other untouched — resolve the duplicate metadata by hand.`;
-    warnings.push(message);
-    console.warn(`[spiraldb-ui] ${message}`);
-  }
+  // Resolve the ambiguous target **before** the save, because this is the resolver the pipeline
+  // itself calls (`questMetadataSaveTarget`) and its tie-break reason is not part of the result —
+  // the warning and the write can never disagree about which file won.
+  //
+  // The message is built and emitted only **after** the save succeeds (NF6, unattended review):
+  // previously it was pushed and `console.warn`ed first, so a save the pipeline then refused (a
+  // dirty tree under D14, a rejected write, a failed commit) had already logged "The save
+  // updated …" for a write that never happened.
+  const duplicateTarget =
+    duplicates > 0 ? questMetadataSaveTarget(index, index.root, name) : undefined;
 
   const result = await pipeline.saveObject({
     fileType: 'questtemplates',
@@ -427,6 +421,23 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     // status change and no history row (D49(d)).
     historyNotesOnCreate: source === undefined ? undefined : captureSourceNote(source),
   });
+
+  if (duplicateTarget !== undefined) {
+    // `metadataRelativePath` is the file the pipeline actually wrote; the resolver's path is the
+    // fallback for a result shape that omits it. Either way the sentence is only ever uttered
+    // once the write and its commit have succeeded.
+    const written = result.metadataRelativePath ?? relativeTo(index.root, duplicateTarget.path);
+    const message =
+      `QuestMetadatas/ holds ${duplicates + 1} files whose "Name" is "${name}". ` +
+      `The save updated ${written}` +
+      `${
+        duplicateTarget.tieBreak === 'convention'
+          ? " (this tool's own convention file, preferred when a save is ambiguous)"
+          : ' (first in file-name order)'
+      } and left the other untouched — resolve the duplicate metadata by hand.`;
+    warnings.push(message);
+    console.warn(`[spiraldb-ui] ${message}`);
+  }
 
   return {
     quest_name: result.key,

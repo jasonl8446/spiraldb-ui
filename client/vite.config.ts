@@ -24,7 +24,14 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        // The API port **the harness owns** — 3001 is only the human default. `playwright.config.ts`
+        // passes `PORT` (the Express bind, `server/src/index.ts`) and `VITE_API_PORT` (this target)
+        // as the same value, so a sibling process sitting on 3001 can neither break the harness's
+        // own server nor answer its readiness probe: before this pair existed the proxy was pinned to
+        // 3001 while the stack under test tried to bind it too, so a foreign listener could satisfy
+        // `url: 'http://localhost:5181/api/status/_import'` (architect-verification DR-12, closed by
+        // the unattended review; the tier-1 harness-identity rule is D84(c)).
+        target: `http://localhost:${process.env.VITE_API_PORT ?? 3001}`,
         changeOrigin: true,
       },
     },

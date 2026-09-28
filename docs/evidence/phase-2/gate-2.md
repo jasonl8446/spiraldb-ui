@@ -5,6 +5,17 @@ The clause is explicit: **all 19 Phase-1 checkboxes and all 15 Phase-2 acceptanc
 with raw outputs, and then the phase PR opened, CI polled to green, merged via GitHub MCP, branch deleted
 and the merge logged in `.omd/prd/progress.txt` — and no later-phase story passes before it.
 
+**[CORRECTED 2026-09-28 by the unattended review: the headline above says "all 15 Phase-2 acceptance
+criteria re-run fresh," but the gate's own raw files re-run Phase-2 Verification Steps **1–8** (V1–V8,
+across `gate-2-phase2-verification.txt`, `-api-steps.txt`, `-clone-evidence.txt`, `-tier2.txt`), not
+each of the 15 AC checkboxes individually. V1–V8 cover AC#1/#2/#3/#5/#6/#8/#12/#13/#14 directly and
+AC#10 except its search-filter clause; five clauses — AC#4 (cancel kills the child), AC#7
+(dirty-repo guard), AC#9 (name-exists → `update` action), AC#11 (JSON5 detail endpoint), AC#15
+(round-trip safety) — are NOT re-run at this boundary and rest on their
+story-level raw evidence (p2-04, p2-05, p2-06), which the architect-verification audit verified
+independently (depth S/D). The Phase-1 half is accurate: `gate-2/phase1-recheck.md` does name all 19
+checkboxes, each re-run fresh. Recorded so a reader does not take "15 re-run fresh" literally.]**
+
 ## What was re-run fresh
 
 | Group | Record |

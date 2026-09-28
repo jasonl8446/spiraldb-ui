@@ -910,6 +910,16 @@ test('the dev stack answers a real API request through the Vite proxy', async ({
   const response = await answered;
   expect(response.status()).toBe(200);
   expect(response.request().method()).toBe('GET');
+
+  // **A 200 is not an identity.** The unattended review (DR-12) parked a decoy HTTP server on
+  // `3001` answering `{"decoy":true}` to everything: this arm passed against it, and eleven
+  // readiness polls plus six real API reads from the running UI were served by the decoy while the
+  // whole suite stayed green. So this arm now also asserts *this app's* body: with
+  // `SPIRALDB_UI_SKIP_IMPORT=1` (the harness's own env) the import cannot have run, and the
+  // endpoint reports that plus the counters. Any other listener fails here.
+  const body = (await response.json()) as { ran?: unknown; imported?: unknown };
+  expect(body.ran, 'the real import-status body, not any 200-answering listener').toBe(false);
+  expect(typeof body.imported, 'the import counter the real route reports').toBe('number');
 });
 test.describe('harness self-check', () => {
   test('the console-error guard itself is live', async ({ page, consoleErrors }) => {

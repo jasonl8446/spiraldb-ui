@@ -800,6 +800,59 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     }
   });
 
+  it('announces the duplicate-metadata update only after the save succeeds (NF6)', async () => {
+    const repo = gitRepo();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      // The same ambiguity the D48(d) arm above builds, but this save is then REFUSED by the
+      // D14 dirty-tree guard inside `pipeline.saveObject` — after the handler has already seen
+      // the duplicate. Before this fix the warning was pushed and `console.warn`ed *before* the
+      // pipeline ran, so the server log claimed "The save updated …" for a write that never
+      // happened; the response is an error envelope and carries no warning either way.
+      writeFile(repo.dir, 'QuestTemplates/questtemplates_DUP-9.json', questText('DUP-9'));
+      writeFile(
+        repo.dir,
+        'QuestMetadatas/a_legacy9.json',
+        `${JSON.stringify({ Name: 'DUP-9', CreatedAt: 'x' }, null, 2)}\n`,
+      );
+      writeFile(
+        repo.dir,
+        'QuestMetadatas/b_legacy9.json',
+        `${JSON.stringify({ Name: 'DUP-9', CreatedAt: 'y' }, null, 2)}\n`,
+      );
+      repo.git(['add', '.']);
+      repo.git(['commit', '-m', 'corpus with a duplicate metadata Name']);
+      // Dirty the tree: the pipeline must refuse before it writes.
+      writeFile(repo.dir, 'README.md', 'dirty\n');
+
+      const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+      const res = await request(h.app)
+        .post('/api/quests')
+        .send({ quest: JSON.parse(questText('DUP-9')) as object })
+        .expect(409);
+      expect((res.body as { error: string }).error).toContain('uncommitted changes');
+
+      // The refused save must not have announced anything about the duplicate's resolution.
+      const logged = warn.mock.calls.map((call) => String(call[0]));
+      expect(logged.some((line) => line.includes('The save updated'))).toBe(false);
+      expect(logged.some((line) => line.includes('DUP-9'))).toBe(false);
+
+      // Positive counterpart (D78(e)): the identical save with a clean tree DOES announce it, so
+      // the arm above is testing ordering rather than a warning that no longer exists.
+      // `README.md` is the helper's *tracked* seed file, so the probe is un-dirtied by restoring
+      // its committed bytes (`'seed\n'`) — deleting it would leave a staged deletion behind.
+      writeFile(repo.dir, 'README.md', 'seed\n');
+      const clean = await request(h.app)
+        .post('/api/quests')
+        .send({ quest: JSON.parse(questText('DUP-9')) as object })
+        .expect(200);
+      expect((clean.body as { warnings: string[] }).warnings[0]).toContain('DUP-9');
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('DUP-9'));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('prefers the tool convention file when both it and a legacy file hold the Name (S3)', async () => {
     const repo = gitRepo();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

@@ -1,10 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '@server/app';
+
+import { codeOf } from '../helpers/source-text';
 
 /**
  * D88 / final-review gate 2 finding M1 — the loopback-only, no-CORS posture, pinned.
@@ -56,6 +59,20 @@ import { createApp } from '@server/app';
  *    property: a request that receives no `Access-Control-Allow-Origin` is one a foreign
  *    page cannot read or drive. What is pinned is that no foreign-origin request is ever
  *    **granted**, not that no CORS code exists anywhere.
+ *
+ * 5. **Per-route evasion, and the source itself** (added by the unattended review). Arms 1–4
+ *    probe two routes by hand, so a router that installs its own `Access-Control-*` header —
+ *    at `router.use` level or inside one handler — passed every one of them. Two arms close
+ *    that: a foreign-origin **GET and preflight against every mount prefix** derived from
+ *    `apiRouter.stack` (the lazy `apiRouter.use('/x', (req,res,next) => …)` wrappers are
+ *    exactly where such a header would be set), and a comment-stripped **scan of every
+ *    `server/src` source** for any `Access-Control` literal, any `cors` import, and any
+ *    `cors` dependency. Both fail closed: the derived prefix count and the scanned file
+ *    count are asserted non-trivial, so a broken derivation cannot pass by enumerating
+ *    nothing. The scan's honest limit: it reads text, so a header assembled from string
+ *    fragments (`'Access' + '-Control-…'`) would escape it — the per-prefix behaviour arm
+ *    is what catches that, and neither arm claims to catch a `next()`-only denylist, for
+ *    the same reason arm 4's function-origin case does not.
  *
  * One measurement worth naming, because it looks like an approval and is not: Express's
  * own default handler answers an unmatched `OPTIONS` with a plain `Allow` header —
@@ -209,16 +226,11 @@ describe('server/src/index.ts binds the loopback literal (source assertion)', ()
   );
 
   /**
-   * The entrypoint's **code**, with comments removed.
-   *
-   * Not cosmetic, and measured: the real file's own docblock quotes the vulnerable form
-   * (`app.listen(PORT)`) while explaining why it was rejected, and the first version of
-   * this assertion matched that mention instead of the real call. A rule about what the
-   * entrypoint *does* must not be decided by what it *says* about what it once did.
+   * The entrypoint's **code**, with comments removed (see `codeOf`'s note at module scope):
+   * the real file's own docblock quotes the vulnerable form while explaining why it was
+   * rejected, and the first version of this assertion matched that mention instead of the
+   * real call.
    */
-  function code(src: string): string {
-    return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-  }
 
   /** The value of the entrypoint's `const HOST = '...'` declaration. */
   function hostLiteral(src: string): string | undefined {
@@ -244,7 +256,7 @@ describe('server/src/index.ts binds the loopback literal (source assertion)', ()
       .filter((argument) => argument.length > 0);
   }
 
-  const INDEX_CODE = code(INDEX_SRC);
+  const INDEX_CODE = codeOf(INDEX_SRC);
 
   it("declares HOST as the IPv4 loopback literal, '127.0.0.1'", () => {
     expect(hostLiteral(INDEX_CODE), 'the HOST literal in server/src/index.ts').toBe('127.0.0.1');
@@ -266,5 +278,132 @@ describe('server/src/index.ts binds the loopback literal (source assertion)', ()
     // outside those arms, so the entrypoint is pinned to add none: with both arms,
     // the running composition and the tested object are the same composition.
     expect(INDEX_CODE, 'an app.use( in the entrypoint').not.toMatch(/app\.use\(/);
+  });
+});
+
+/* ------------------------------------------------- per-family evasion (added by the review) */
+
+interface LayerLike {
+  route?: { path: string };
+  regexp?: RegExp;
+}
+
+const MOUNT_SUFFIX = '\\/?(?=\\/|$)';
+
+/**
+ * `/drop-tables` from the layer regexp `^\/drop-tables\/?(?=\/|$)` — the same derivation the
+ * route-envelope audit uses (`tests/unit/api-error-envelope.test.ts`), so the two files cannot
+ * disagree about what "every mount prefix" means.
+ */
+function mountPrefixFromLayer(layer: LayerLike): string | undefined {
+  const source = layer.regexp?.source;
+  if (source === undefined || !source.startsWith('^')) {
+    return undefined;
+  }
+  const body = source.slice(1);
+  if (!body.endsWith(MOUNT_SUFFIX)) {
+    return undefined;
+  }
+  return body.slice(0, -MOUNT_SUFFIX.length).replace(/\\\//g, '/');
+}
+
+describe('D88 — no mounted router family installs its own CORS grant (per-route evasion)', () => {
+  /**
+   * Every mount prefix, plus `''` for the routes mounted on `apiRouter` itself — derived from
+   * the router rather than hand-listed, so a **new** family is probed the day it is mounted.
+   * The lazy `apiRouter.use('/x', (req, res, next) => { router ??= create…Router(); … })`
+   * wrappers are the interesting case: a header set there runs for every request into that
+   * family while being invisible to a test that only probes two hand-picked routes.
+   */
+  async function mountPrefixes(): Promise<string[]> {
+    const { apiRouter } = await import('@server/routes/index');
+    const stack = (apiRouter as unknown as { stack: LayerLike[] }).stack;
+    return [
+      '',
+      ...stack
+        .filter((layer) => layer.route === undefined)
+        .map((layer) => mountPrefixFromLayer(layer))
+        .filter((prefix): prefix is string => prefix !== undefined),
+    ];
+  }
+
+  it('gives a foreign-origin GET and preflight at every mount prefix no Access-Control-* header', async () => {
+    const prefixes = await mountPrefixes();
+    expect(
+      prefixes.length,
+      'mount prefixes derived from apiRouter.stack — a broken derivation must fail, not pass vacuously',
+    ).toBeGreaterThanOrEqual(10);
+
+    const measured: Record<string, number> = {};
+    for (const prefix of prefixes) {
+      // A subpath no route can match: the family's mount wrapper and its router-level
+      // middleware run, the route layer does not.
+      const url = `/api${prefix}/___posture_probe___`;
+
+      const simple = await request(app).get(url).set('Origin', FOREIGN_ORIGIN);
+      expectNoCorsGrant(simple.headers);
+      // A 5xx would mean the probe never reached the app's own error path, so the absence
+      // above could be "the route never ran" rather than "the route granted nothing".
+      expect(simple.status, `GET ${url} reached the app's 4xx path`).toBeLessThan(500);
+
+      // The exploit's wire shape per family, not only for `/api/settings`.
+      const preflight = await request(app).options(url).set(EXPLOIT_PREFLIGHT);
+      expectNoCorsGrant(preflight.headers);
+      expect(preflight.status, `OPTIONS ${url} is not an approved preflight`).not.toBe(204);
+
+      measured[prefix === '' ? '(root)' : prefix] = simple.status;
+    }
+
+    // Positive partner for the whole loop (D78(d)): at least the root probe must be the
+    // app's JSON 404 — proof that these requests traverse the router and are answered by
+    // this application, so the per-prefix absences are absences.
+    expect(measured['(root)']).toBe(404);
+  });
+});
+
+describe('D88 — no server source installs an Access-Control-* header (source scan)', () => {
+  const SERVER_SRC_ROOT = fileURLToPath(new URL('../../server/src/', import.meta.url));
+
+  /** Every `.ts` file under `server/src`, recursively. */
+  function serverSources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        return serverSources(full);
+      }
+      return entry.name.endsWith('.ts') ? [full] : [];
+    });
+  }
+
+  const SOURCES = serverSources(SERVER_SRC_ROOT);
+
+  it('scans the whole server tree (a broken walk must fail, not pass)', () => {
+    expect(SOURCES.length, 'server/src/**/*.ts files found').toBeGreaterThanOrEqual(30);
+  });
+
+  it('contains no Access-Control literal and no cors import, in code rather than prose', () => {
+    const hits: string[] = [];
+    for (const file of SOURCES) {
+      const relative = path.relative(SERVER_SRC_ROOT, file);
+      const code = codeOf(readFileSync(file, 'utf8'));
+      if (/access-control/i.test(code)) {
+        hits.push(`${relative}: an Access-Control literal`);
+      }
+      if (/(?:from\s+['"]cors['"]|require\(\s*['"]cors['"]\s*\))/.test(code)) {
+        hits.push(`${relative}: imports the cors package`);
+      }
+    }
+    expect(hits, 'CORS code found in server/src').toEqual([]);
+  });
+
+  it('carries no cors package in dependencies or devDependencies', () => {
+    const manifest = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'),
+    ) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const declared = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies });
+    expect(declared, 'a re-added cors dependency').not.toContain('cors');
   });
 });
