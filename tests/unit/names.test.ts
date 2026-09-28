@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NOT_FOUND_MESSAGE } from '@shared/index';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { createNamesRouter } from '@server/routes/names';
+import { NAMES_TYPE_SPECS } from '@server/services/names';
 
 /**
  * Task 1.5 acceptance: `GET /api/names/:type` and `GET /api/names/:type/:id` for
@@ -417,6 +418,82 @@ describe('?q= (optional list extension)', () => {
 
     expect(empty.status).toBe(200);
     expect(empty.text).toBe(bare.text);
+  });
+
+  /**
+   * D105/P6-16 (story p6-06): `?q=` matches the **id column** as well as the label, for
+   * the six types that have two columns — spec-api L55-67's table. Each query below is
+   * discriminating: the id column matches and the label column does not, so the row can
+   * only come back through the widening. `drop_tables` is the seventh: its id *is* its
+   * label, so it adds no column and is asserted as such.
+   */
+  it.each([
+    ['items', '4808', [{ gid: 4808, name: 'Twice Stitched Boots' }]],
+    ['spells', '1143963608', [{ template_id: 1143963608, name: 'Stun Block' }]],
+    ['npcs', '1608380', [{ template_id: 1608380, name: 'Judge Eddie' }]],
+    [
+      'quests',
+      'DS-ACAD-C01-003',
+      [{ quest_name: 'DS-ACAD-C01-003', title: 'The Bear Truth', level: 5, is_mainline: 0 }],
+    ],
+    [
+      'zones',
+      'WizardCity/WC_Shop',
+      [
+        {
+          zone_path: 'WizardCity/WC_Shop',
+          display_name: 'Wizard City / WC Hub',
+          world: 'WizardCity',
+        },
+      ],
+    ],
+  ])('matches %s on its id column too (q=%s)', async (type, q, expected) => {
+    const { app } = setup();
+
+    const res = await request(app).get(`/api/names/${type}?q=${encodeURIComponent(q)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body[type]).toEqual(expected);
+  });
+
+  it('keeps matching the label column for every widened type', async () => {
+    const { app } = setup();
+
+    const labelQueries: Array<[string, string]> = [
+      ['items', 'twice stitched'],
+      ['spells', 'conviction'],
+      ['npcs', 'ambrose'],
+      ['quests', 'bear truth'],
+      ['zones', 'AQ Z00'],
+    ];
+    for (const [type, q] of labelQueries) {
+      const res = await request(app).get(`/api/names/${type}?q=${encodeURIComponent(q)}`);
+      expect(res.status, `${type} ${q}`).toBe(200);
+      expect(res.body[type].length, `${type} ${q}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('declares exactly the widened columns, from the one table that drives the SQL', () => {
+    // The columns are the contract; the queries above are its behaviour. Re-stated by
+    // hand so a silent re-narrowing fails here rather than in a browser.
+    const expected: Record<string, string[]> = {
+      items: ['gid', 'name'],
+      spells: ['template_id', 'name'],
+      npcs: ['template_id', 'name'],
+      quests: ['quest_name', 'title'],
+      zones: ['zone_path', 'display_name'],
+      drop_tables: ['name'],
+      strings: ['key', 'value'],
+    };
+    for (const type of NAMES_TYPES) {
+      expect(NAMES_TYPE_SPECS[type].searchColumns, type).toEqual(expected[type]);
+      // The id column is always in the set, except where it *is* the label.
+      const spec = NAMES_TYPE_SPECS[type];
+      expect(
+        spec.searchColumns.includes(spec.idColumn) || spec.idColumn === spec.labelColumn,
+        `${type} searches its id column`,
+      ).toBe(true);
+    }
   });
 
   it('ignores unknown query parameters', async () => {

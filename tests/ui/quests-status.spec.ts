@@ -114,7 +114,14 @@ test.describe('the browse table status menu', () => {
       .getByRole('tab', { name: /^Reviewed / })
       .click();
     const reviewed = page.locator('tbody tr').first();
-    const reviewedName = (await reviewed.locator('td').nth(1).innerText()).trim();
+    // The name comes from the row's **status menu label**, not from the Quest Name cell:
+    // since story p6-06 that cell renders the pair (`Title (QUEST-…)`) when the title
+    // resolved, and `Change status:` carries the bare `quest_name` the menu acts on.
+    const reviewedName = (
+      (await reviewed
+        .getByRole('button', { name: /^Change status: / })
+        .getAttribute('aria-label')) ?? ''
+    ).replace('Change status: ', '');
     await reviewed.getByRole('button', { name: `Change status: ${reviewedName}` }).click();
     const reviewedMenu = page.getByLabel(`Change status: ${reviewedName}`);
     await expect(reviewedMenu.getByRole('button', { name: 'Mark Reviewed' })).toBeDisabled();

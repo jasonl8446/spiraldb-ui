@@ -1,7 +1,8 @@
-import { OBJECT_TYPES } from '../../../shared/objectTypes.js';
+import { OBJECT_TYPES, type ObjectTypeConfig } from '../../../shared/objectTypes.js';
 
 import type { Db } from '../db.js';
 import { escapeLike } from './names.js';
+import { searchNpcEntities } from './npcNames.js';
 import { isStatusValue, type StatusObjectType, type StatusValue } from './status.js';
 
 /**
@@ -38,12 +39,30 @@ import { isStatusValue, type StatusObjectType, type StatusValue } from './status
  * deliberately not done: it is the string arm 1 already matched, so a second pass could
  * only return the same quest twice.
  *
- * `zones` and `drop_tables` are not searched by name, and the reason is measured rather
- * than arbitrary: `drop_tables.name` is byte-identical to the `drop_table` object key
- * (the fork names each quest's drop table after the quest), so a name arm over it would
- * duplicate arm 1 exactly; and the plan names items/spells/npcs/quests, so `zones` (a
- * humanised `display_name` for a key the object arm already matches) stays out until a
- * task asks for it.
+ * **Phase 6 widens arm 2 selectively (D105/P6-16, story p6-06).** Every object group
+ * whose family has a friendly source gains a `nameJoin`, and the join is *derived from
+ * the same field the object list resolves `friendly_name` from*
+ * (`shared/objectTypes.ts`'s `friendlyNamesType`) rather than hand-listed here:
+ *
+ * - the four `TemplateID` families join **`npcs`** on `CAST(template_id AS TEXT) =
+ *   es.object_key`, so a quest-giver's name finds the rows keyed by his template id —
+ *   and the CAST is load-bearing, because SQLite orders every integer below every text
+ *   value and `template_id = object_key` is false for all 289 corpus rows;
+ * - `zone_transfer` joins **`zones`** on `zone_path`, so `DS_A2_Battle` in a
+ *   humanised label finds the row whose path arm 1 cannot match;
+ * - `drop_table` gains **no** arm: `drop_tables.name` is byte-identical to the object
+ *   key (the fork names each quest's drop table after the quest), so it could only
+ *   duplicate arm 1 — and for the same reason the family has no friendly source in the
+ *   per-family table (spec-ui-design L62);
+ * - `creature_spellbook` gains none either: its friendly source is a `decks` table that
+ *   task 6.9 populates, so until then the row is its technical value alone.
+ *
+ * **The `npc` group is not a `npcs` name list** (P6-17/D112): it is the alias-keyed NPC
+ * **namespace** (`services/npcNames.ts`), so `Gretta` and `Gretta Darkkettle` — one
+ * person, two string-table rows — come back as one row carrying both strings. A hit
+ * there is name-matched by construction (the group searches aliases and template names,
+ * never the template id) and stays informational: the application has no `/npcs/:id`
+ * **page**, so `object_type`/`object_key` are `null` and the row counts in `unresolved`.
  *
  * ## Nothing is interpolated from a request
  *
@@ -106,6 +125,15 @@ interface SearchNameJoin {
   keyColumn: string;
   /** The joined table's human-name column, which the search matches as well. */
   nameColumn: string;
+  /**
+   * `true` when `keyColumn` is an **INTEGER** column while `entry_status.object_key`
+   * is TEXT (the four `TemplateID` families). SQLite's type ordering puts every
+   * integer *below* every text value, so `template_id = object_key` is false for
+   * every row and the join needs `CAST(… AS TEXT)`. Without it those four groups
+   * match nothing at all — measured four times in this run, most recently as a probe
+   * that reported 0/289 resolved because it keyed integers against strings.
+   */
+  keyIsInteger: boolean;
 }
 
 /** One group backed by `entry_status` — every row is navigable. */
@@ -115,8 +143,9 @@ interface SearchObjectGroupSpec {
   /** The palette's group heading. */
   label: string;
   /**
-   * The friendly table carrying this group's human names, or `null` when none does.
-   * Only the quest group has one today (see the module doc-comment).
+   * The friendly table carrying this group's human names, or `null` when none does —
+   * which is itself derived from the family's `friendlyNamesType` (see
+   * {@link nameJoinFor}).
    */
   nameJoin: SearchNameJoin | null;
 }
@@ -131,14 +160,58 @@ interface SearchNamesGroupSpec {
   idColumn: string;
 }
 
-type SearchGroupSpec = SearchObjectGroupSpec | SearchNamesGroupSpec;
+/**
+ * The NPC group (P6-17/D112): the alias-keyed namespace, whose rows are NPC entities
+ * rather than rows of one table — one entity per NPC, its name strings as aliases.
+ */
+interface SearchNpcGroupSpec {
+  kind: 'npc';
+  type: 'npc';
+  label: string;
+}
+
+type SearchGroupSpec = SearchObjectGroupSpec | SearchNamesGroupSpec | SearchNpcGroupSpec;
 
 /** `quests`' friendly-name table: the one join that reaches a route (module doc-comment). */
 const QUEST_NAME_JOIN: SearchNameJoin = {
   table: 'quests',
   keyColumn: 'quest_name',
   nameColumn: 'title',
+  keyIsInteger: false,
 };
+
+/** The four `TemplateID` families' friendly table — an INTEGER key against a text key. */
+const NPC_NAME_JOIN: SearchNameJoin = {
+  table: 'npcs',
+  keyColumn: 'template_id',
+  nameColumn: 'name',
+  keyIsInteger: true,
+};
+
+/** ZoneTransfer's friendly table — a zone path is TEXT on both sides. */
+const ZONE_NAME_JOIN: SearchNameJoin = {
+  table: 'zones',
+  keyColumn: 'zone_path',
+  nameColumn: 'display_name',
+  keyIsInteger: false,
+};
+
+/**
+ * The join a family's row carries, from the **same** `friendlyNamesType` the object
+ * list resolves `friendly_name` from (`shared/objectTypes.ts`) — so the search arm
+ * and the list row cannot be given different friendly sources, and a family that gains
+ * a friendly source in a later task (CreatureSpellbook's `decks`) gains both at once.
+ */
+function nameJoinFor(config: ObjectTypeConfig): SearchNameJoin | null {
+  switch (config.friendlyNamesType) {
+    case 'npcs':
+      return NPC_NAME_JOIN;
+    case 'zones':
+      return ZONE_NAME_JOIN;
+    default:
+      return null;
+  }
+}
 
 /**
  * The group order — **Quests first**, then the seven generic families in
@@ -160,16 +233,14 @@ export const SEARCH_GROUPS: readonly SearchGroupSpec[] = [
             kind: 'object',
             type: config.objectType,
             label: config.label,
-            // No generic family has a friendly table carrying its human names: the
-            // drop-table one repeats the key verbatim and the zone one is a humaniser
-            // over a key the object arm already matches (module doc-comment).
-            nameJoin: null,
+            nameJoin: nameJoinFor(config),
           },
         ],
   ),
   { kind: 'names', type: 'item', label: 'Items', table: 'items', idColumn: 'gid' },
   { kind: 'names', type: 'spell', label: 'Spells', table: 'spells', idColumn: 'template_id' },
-  { kind: 'names', type: 'npc', label: 'NPCs', table: 'npcs', idColumn: 'template_id' },
+  // The namespace, not a name list: one row per NPC, its strings as aliases (D112).
+  { kind: 'npc', type: 'npc', label: 'NPCs' },
 ];
 
 /**
@@ -221,6 +292,12 @@ export interface SearchResultRow {
   status: StatusValue | null;
   /** Which column matched: the object key (`'key'`) or a friendly name (`'name'`). */
   matched_on: 'key' | 'name';
+  /**
+   * The NPC group's name strings, one per row (P6-17/D112) — `["Gretta",
+   * "Gretta Darkkettle"]` for the one entity both strings belong to. Absent for every
+   * other group, which carries at most one friendly name in `name`.
+   */
+  aliases?: string[];
 }
 
 /** One `groups[]` element. */
@@ -276,16 +353,24 @@ const RANK_OBJECT_KEY = `CASE
   END`;
 
 /**
- * The quest group's rank, which also considers the joined title: a title hit is ranked
- * by the title, so "headless rider" puts the quest titled exactly that first.
+ * The rank of a group whose joined friendly column may be what matched: a name hit is
+ * ranked by the name, so "headless rider" puts the quest titled exactly that first, and
+ * a template-id hit by the key. Shared by the quest group and every `nameJoin` group
+ * (the four `TemplateID` families and ZoneTransfer) — one rank expression, not one per
+ * family.
+ *
+ * `qualifiedNameColumn` is always one the caller already bound into the same statement
+ * (`j.${join.nameColumn}`, from a module constant) — never a request value.
  */
-const RANK_QUEST = `CASE
+function rankKeyOrName(qualifiedNameColumn: string): string {
+  return `CASE
     WHEN lower(es.object_key) = ? THEN 0
     WHEN lower(es.object_key) LIKE ? ${ESCAPE} THEN 1
-    WHEN lower(j.title) = ? THEN 0
-    WHEN lower(j.title) LIKE ? ${ESCAPE} THEN 1
+    WHEN lower(${qualifiedNameColumn}) = ? THEN 0
+    WHEN lower(${qualifiedNameColumn}) LIKE ? ${ESCAPE} THEN 1
     ELSE 2
   END`;
+}
 
 /** The name groups' rank, over the friendly-name column. */
 const RANK_NAME = `CASE
@@ -300,6 +385,8 @@ interface RawRow {
   status: string | null;
   name: string | null;
   source_id: string | null;
+  /** The NPC group's aliases; absent for every other group. */
+  aliases?: string[];
 }
 
 /** The object arm's columns for a group without a name join. */
@@ -319,6 +406,19 @@ function searchGroup(db: Db, group: SearchGroupSpec, q: string, limit: number): 
   const pattern = `%${escapeLike(q)}%`;
   const prefix = `${escapeLike(q)}%`;
 
+  if (group.kind === 'npc') {
+    // The alias-keyed namespace: one row per NPC, its strings as aliases (D112). The
+    // ranking, the tie-break and the `limit + 1` overflow probe are the module's own,
+    // so this group obeys the same byte-level contract as the SQL ones.
+    return searchNpcEntities(db, q, limit).map<RawRow>((entity) => ({
+      object_key: null,
+      status: null,
+      name: entity.display_name,
+      source_id: entity.npc_key,
+      aliases: entity.aliases,
+    }));
+  }
+
   if (group.kind === 'object') {
     const join = group.nameJoin;
     if (join === null) {
@@ -332,14 +432,18 @@ function searchGroup(db: Db, group: SearchGroupSpec, q: string, limit: number): 
         )
         .all(group.type, pattern, q, prefix, limit);
     }
+    // The CAST is required for the INTEGER key columns — see {@link SearchNameJoin}.
+    const on = join.keyIsInteger
+      ? `CAST(j.${join.keyColumn} AS TEXT) = es.object_key`
+      : `j.${join.keyColumn} = es.object_key`;
     return db
       .prepare<Array<string | number>, RawRow>(
         `SELECT es.object_key AS object_key, es.status AS status, j.${join.nameColumn} AS name
          FROM entry_status es
-         LEFT JOIN ${join.table} j ON j.${join.keyColumn} = es.object_key
+         LEFT JOIN ${join.table} j ON ${on}
          WHERE es.object_type = ?
            AND (lower(es.object_key) LIKE ? ${ESCAPE} OR lower(j.${join.nameColumn}) LIKE ? ${ESCAPE})
-         ORDER BY ${RANK_QUEST}, es.object_key
+         ORDER BY ${rankKeyOrName(`j.${join.nameColumn}`)}, es.object_key
          LIMIT ?`,
       )
       .all(group.type, pattern, pattern, q, prefix, q, prefix, limit);
@@ -364,6 +468,25 @@ function textOrNull(value: unknown): string | null {
 
 /** Builds one group's wire rows. `q` is already lower-cased. */
 function rowsFor(group: SearchGroupSpec, raw: RawRow[], q: string): SearchResultRow[] {
+  if (group.kind === 'npc') {
+    // Informational by construction: the app has no `/npcs/:id` page, so the row is
+    // shown without a link and counted in `unresolved` (spec-api L537-539). The label
+    // is the NPC's full name; `aliases` carries every string that resolves to it.
+    return raw.map((row) => {
+      const label = row.name ?? '';
+      return {
+        object_type: null,
+        object_key: null,
+        label,
+        name: label,
+        source_id: textOrNull(row.source_id),
+        status: null,
+        matched_on: 'name' as const,
+        aliases: row.aliases ?? [],
+      };
+    });
+  }
+
   if (group.kind === 'names') {
     // No detail route exists for these entities, so `object_type`/`object_key` are
     // null and the row is informational (module doc-comment).

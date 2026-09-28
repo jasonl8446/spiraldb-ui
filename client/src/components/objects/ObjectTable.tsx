@@ -10,7 +10,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { StatusValue } from '../../lib/api';
-import { relativeTime } from '../../lib/display';
+import { namePair, relativeTime } from '../../lib/display';
 import type { ObjectListRow } from '../../lib/objects';
 import { DEFAULT_OBJECT_SORT, isObjectSortKey, type ObjectSort } from '../../lib/object-list';
 import { cn } from '../../lib/utils';
@@ -81,6 +81,13 @@ export interface ObjectTableProps {
   sort: ObjectSort;
   onSortChange: (sort: ObjectSort) => void;
   onRowActivate: (row: ObjectListRow) => void;
+  /**
+   * Why a row's family has **no** friendly source, from
+   * `config.friendlyNameNote` — the key cell's tooltip when `friendly_name` is null
+   * on an unpaired family (spec-ui-design L65-69: a row with no pair says which of
+   * the two states it is in rather than leaving a blank label).
+   */
+  keyTitleNote?: string | null;
   extraColumns?: readonly ObjectListColumn[];
   className?: string;
 }
@@ -108,6 +115,7 @@ export default function ObjectTable({
   sort,
   onSortChange,
   onRowActivate,
+  keyTitleNote,
   extraColumns = NO_EXTRA_COLUMNS,
   className,
 }: ObjectTableProps): JSX.Element {
@@ -142,17 +150,24 @@ export default function ObjectTable({
         id: 'key',
         header: keyHeader,
         accessorFn: (row) => row.key,
-        cell: ({ row }) => (
-          // Truncation + tooltip, the spec's own treatment for a long monospace key.
-          <Link
-            to={href(row.original)}
-            className="block truncate font-mono text-sm text-zinc-100 hover:text-blue-400"
-            title={row.original.title}
-            onClick={(event) => event.stopPropagation()}
-          >
-            {row.original.title}
-          </Link>
-        ),
+        cell: ({ row }) => {
+          // The pair — `Merle Ambrose (38168)`, `Wizard Tours (DS-ACAD-C01-001)` — from
+          // the server's `friendly_name` and the key, through the ONE display rule. A
+          // family with no friendly source (or a row with none) renders the technical
+          // value alone, and its tooltip says which state it is in.
+          const label = namePair(row.original.friendly_name, row.original.key);
+          return (
+            // Truncation + tooltip, the spec's own treatment for a long monospace key.
+            <Link
+              to={href(row.original)}
+              className="block truncate font-mono text-sm text-zinc-100 hover:text-blue-400"
+              title={row.original.friendly_name === null ? (keyTitleNote ?? label) : label}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {label}
+            </Link>
+          );
+        },
       },
       ...extraColumns.map<ColumnDef<ObjectListRow>>((column) => ({
         id: column.id,
@@ -186,7 +201,7 @@ export default function ObjectTable({
       },
     ];
     return defs;
-  }, [extraColumns, href, keyHeader]);
+  }, [extraColumns, href, keyHeader, keyTitleNote]);
 
   // Stable identities all the way down: `data` is rebuilt only when the row set
   // itself changes, which keeps TanStack's option diff quiet between renders.

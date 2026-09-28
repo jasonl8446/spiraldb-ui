@@ -511,6 +511,11 @@ export interface SearchResultRow {
   /** `null` for a routeless row — which is exactly when the dot is absent. */
   status: StatusValue | null;
   matched_on: 'key' | 'name';
+  /**
+   * The NPC group's name strings, one entity per row (P6-17/D112) — both `["Gretta",
+   * "Gretta Darkkettle"]` for the one NPC they belong to. Absent for every other group.
+   */
+  aliases?: string[];
 }
 
 /** One `groups[]` element: a type, the heading to render, and its rows. */

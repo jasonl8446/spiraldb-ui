@@ -299,14 +299,17 @@ test.describe('AC1 — the ZoneName key and its humanized dropdown', () => {
     await openEditor(page);
 
     const trigger = main(page).getByRole('combobox', { name: 'Zone name', exact: true });
-    await expect(trigger).toContainText('Wizard City / WC Hub');
+    // The synced `display_name` and the existing humanizer agree on this documented case —
+    // the spec's own example (L700-702) — so the editor's label is the data, not a
+    // re-derivation; since story p6-06 it is the **pair** (D105/P6-16), friendly first.
+    await expect(trigger).toContainText('Wizard City / WC Hub (WizardCity/WC_Hub)');
 
-    // The label came from the cached bulk list, not a per-id fallback request.
-    expect(recorded.zoneLookups).toEqual([]);
-
-    // The synced `display_name` and the existing humanizer agree on this documented case — the
-    // spec's own example (L700-702) — so the editor's label is the data, not a re-derivation.
-    await expect(trigger).toContainText('Wizard City / WC Hub');
+    // The dropdown's label came from the **cached bulk list**: the only per-id lookup this
+    // page makes is the detail header's own pair resolution (story p6-06). The mock answers
+    // that lookup with a 404, so the header renders the raw key alone — the documented miss
+    // rule, and the reason the assertion below still finds the key verbatim.
+    expect(recorded.zoneLookups).toEqual(['WizardCity/WC_Hub']);
+    await expect(main(page).getByText('WizardCity/WC_Hub', { exact: true }).first()).toBeVisible();
   });
 
   test('writes the chosen zone_path verbatim, slashes and all', async ({ page }) => {
@@ -317,11 +320,14 @@ test.describe('AC1 — the ZoneName key and its humanized dropdown', () => {
     const search = page.getByRole('combobox', { name: 'Search zones', exact: true });
     await expect(search).toBeVisible();
     await search.fill('Aquila');
-    await page.getByRole('option', { name: 'Aquila / AQ Z00 Hub', exact: true }).click();
+    // The option is the pair — the synced label with the path it belongs to (D105/P6-16).
+    await page
+      .getByRole('option', { name: 'Aquila / AQ Z00 Hub (Aquila/AQ_Z00_Hub)', exact: true })
+      .click();
 
     await expect(
       main(page).getByRole('combobox', { name: 'Zone name', exact: true }),
-    ).toContainText('Aquila / AQ Z00 Hub');
+    ).toContainText('Aquila / AQ Z00 Hub (Aquila/AQ_Z00_Hub)');
 
     const live = await liveDocument(page);
     expect(live.ZoneName).toBe('Aquila/AQ_Z00_Hub');

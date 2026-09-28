@@ -264,7 +264,30 @@ async function mockResponsiveApi(page: Page): Promise<string[]> {
       return json({ query: url.searchParams.get('q') ?? '', results: [], truncated: false });
     }
 
-    // Every friendly-name table the editors read, in one answer.
+    // The single lookup (`GET /api/names/:type/:id`) answers **the bare row or 404** —
+    // never the list envelope (spec-api L32-44). Story p6-06's detail headers read it for
+    // the pair, so this fixture is load-bearing: an envelope here is not a row, and a
+    // mock that cannot tell the two apart is exactly what D90(a) forbids. The zone key
+    // carries slashes, which is why the id is read from the *decoded* tail of the path.
+    if (path.startsWith('/api/names/') && path.split('/').length > 4) {
+      const [, , type, ...rest] = path.split('/');
+      const id = decodeURIComponent(rest.join('/'));
+      const rows: Record<string, Record<string, unknown>> = {
+        items: { gid: 160936, name: 'Black Mantle' },
+        spells: { template_id: 84361, name: 'Firecat' },
+        npcs: { template_id: 1025, name: 'Lucky the Merchant' },
+        zones: { zone_path: id, display_name: null, world: null },
+        drop_tables: { name: id, description: null },
+        quests: { quest_name: id, title: 'Wizard Tours', level: 1, is_mainline: 1 },
+        strings: { key: id, value: 'Format X', category: 'Format' },
+      };
+      const row = rows[type as string];
+      return row === undefined
+        ? route.fulfill({ status: 404, json: { error: `Unknown ${String(type)} id "${id}"` } })
+        : json(row);
+    }
+
+    // Every friendly-name table the editors bulk-read, in one answer.
     if (path.startsWith('/api/names/')) {
       return json({
         items: [
@@ -573,7 +596,15 @@ test.describe('§1 AC#12: every route at every breakpoint has no horizontal over
       await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
       for (const route of ROUTES) {
         await page.goto(route.path);
-        await route.ready(page).first().waitFor({ state: 'visible', timeout: 20_000 });
+        // The failing route is named: a bare wait leaves "which of the 160 loads" to the
+        // reader, which is the expensive half of a red §1 run.
+        try {
+          await route.ready(page).first().waitFor({ state: 'visible', timeout: 20_000 });
+        } catch (error) {
+          throw new Error(
+            `route ${route.path} at ${width}px did not become ready: ${String(error)}`,
+          );
+        }
         await expectNoHorizontalOverflow(page, width);
       }
     }

@@ -540,6 +540,15 @@ components) when no template id resolves. The response echoes which form answere
 - The **seven-type names contract stays frozen** (G7): this is an aggregate endpoint, not a name-list
   row, so `GET /api/names/:type` is untouched.
 
+**Scope note (added by p6-06, measured).** The **namespace** and the `npc` search group ship in task 6.5 (the
+alias keying, the one-row-two-aliases result, and `npcEntityById` resolving both key forms are implemented and
+unit-tested there). **This view endpoint does not ship with task 6.5**, and the reason is a real dependency, not
+an omission: its `dialogs` and `quests` arms both need the **speaker ladder** (`m_nameOverride` → composed
+`nameSTKey` → template name) that task 6.6's evidence API builds, and serving those arms as empty arrays today
+would read as "this NPC has no dialogs" — a false claim. The view is therefore **carried to task 6.6**, which
+owns the ladder and the per-quest dialogue rows; until then its counts-equal-a-direct-query claim is **untested
+rather than satisfied**, and this endpoint must not be described as shipped.
+
 ---
 
 ### Other Object Types
@@ -561,6 +570,16 @@ Each supports:
 - `GET /` — List all entries
 - `GET /:key` — Single entry JSON
 - `POST /` — Save new/update (writes file + git commit)
+
+**Each `GET /` row carries `friendly_name: string | null`** (story p6-06, D105/P6-16). The server
+resolves the friendly **data** from the table the family's `friendlyNamesType` names — `npcs` for
+NpcInventory / NpcSpellInventory / NpcDropTable / TreasureCardInventory, `zones` for ZoneTransfer —
+and never formats it: `title` stays the key for all eight families, and the client builds the
+`Name (ID)` pair through `display.ts`'s one rule. `null` has three distinct meanings and the UI
+renders the technical value alone for all three: the family has no friendly source (DropTable,
+GlobalRegistry, and CreatureSpellbook until task 6.9 populates `decks` — `friendlyNameNote` carries
+the reason), the template is a client **engine object** (`Player Object`, `GenericCinematicActor`,
+… — every `TemplateID` at or below 4117, measured), or the key simply has no row in the names table.
 
 Save operations automatically:
 1. Write the JSON file to the correct SpiralDB subdirectory
@@ -788,6 +807,22 @@ value"), and the widening is **selective, not blanket**:
 informational one — and `name` is whichever friendly name is known for the row (a quest matched on
 its key still reports its title, or `null` when the `quests` table has none). `matched_on` is
 `"key"` or `"name"` and says which column matched.
+
+**An `npc` row additionally carries `aliases: string[]`** (story p6-06). It is the only field the
+group adds, and it is what makes "one row, several granularities" checkable from the wire rather
+than inferred: searching `Gretta` answers **one** row whose `aliases` are
+`["Gretta", "Gretta Darkkettle"]`, `label`/`name` are the full name, and `source_id` is the
+namespace's representative alias key (`WC-NPCs_00000003`, the category the corpus references most);
+a template with no alias row at all answers its template name alone with `source_id` = the template
+id. The row stays **informational** (`object_type`/`object_key`/`status` all `null`, counted in
+`unresolved`): the application has no `/npcs/:id` *page*, and the palette never invents a route.
+The group matches aliases and template names — **not** the template id, which is the four
+`TemplateID` families' join arm and `?q=` on the names API.
+
+**A joined row's `label` stays the object key**, so its friendly name reaches the palette through
+`name` and the pair is rendered client-side (`display.ts`'s one rule). The wire shape is unchanged
+from Phase 5 for that reason — `label` + `name` + `matched_on` already carried everything a
+`Wizard Tours (DS-ACAD-C01-001)` row needs.
 
 **`limit` is a per-group cap, not a response-wide one.** No group carries more than `limit`
 results; `total` is what the response actually carries (the sum over `groups`); and `truncated` is

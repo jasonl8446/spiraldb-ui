@@ -7,8 +7,10 @@ import type { ObjectTypeConfig } from '@shared/objectTypes';
 import { ObjectCreateError, buildCreateDocument, objectCreateSpec } from '@shared/objectCreate';
 import { createObjectBody } from '@shared/objectSave';
 
+import { namePair } from '../../lib/display';
 import { serverMessage } from '../../lib/extract';
 import { notifyError, notifySuccess } from '../../lib/notify';
+import { useObjectFriendlyName } from '../../hooks/useObjectFriendlyName';
 import { objectSingularNoun } from '../../lib/object-list';
 import {
   objectDetailPath,
@@ -45,6 +47,7 @@ import { Input } from '../ui/input';
  * | the button | `New <singular>` — `New drop table`, `New NPC inventory`, `New NPC spell inventory`, `New creature spellbook`, `New NPC drop table`, `New treasure card inventory`, `New zone transfer` |
  * | the dialog | `role="dialog"`, labelled by its `DialogTitle`: the same `New <singular>` |
  * | the key input | the family's `keyLabel` from `shared/objectCreate.ts` (`Drop table name`, `NPC TemplateID`, `Deck name`, `Zone name`) |
+ * | the resolved-name line | `Known as <pair>` — `Merle Ambrose (38168)` — when the typed key has a friendly name (D105/P6-16; nothing renders for a family without one) |
  * | the file-name preview | `Will create <file name>` — the exact `fileNameFor` output |
  * | the defaults disclosure | `Written on create` with one `<li>` per key/value |
  * | the submit button | `Create` (and `Creating…` while in flight) |
@@ -86,6 +89,17 @@ export default function NewObjectControl({
 
   // The preview and the inline error are one computation: a key that cannot become a file name
   // cannot be created, and the message is the same one the server-side builder would raise.
+  /**
+   * The friendly name of the key being typed, from the same single lookup the editors
+   * use — so a create dialog confirms that `38168` names a real NPC before the user
+   * commits, and a family with no friendly source (DropTable, GlobalRegistry,
+   * CreatureSpellbook until 6.9) simply shows nothing extra rather than a guess.
+   *
+   * Deliberately the *lookup*, not the 23k-row list: a create is a single key, and a
+   * 404 for a key nobody knows is the expected answer, not an error.
+   */
+  const friendlyName = useObjectFriendlyName(config, rawKey);
+
   const built = useMemo<
     { ok: true; fileName: string; document: Record<string, unknown> } | { ok: false; error: string }
   >(() => {
@@ -191,6 +205,12 @@ export default function NewObjectControl({
                 {spec.keyHelp}
               </p>
             </div>
+
+            {friendlyName === null ? null : (
+              <p className="text-xs text-zinc-300">
+                Known as <span className="font-mono">{namePair(friendlyName, rawKey)}</span>
+              </p>
+            )}
 
             {built.ok ? (
               <p className="text-xs text-zinc-300">

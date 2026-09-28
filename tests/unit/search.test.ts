@@ -2,6 +2,7 @@ import express, { type Express } from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { OBJECT_TYPES } from '@shared/objectTypes';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { createSearchRouter } from '@server/routes/search';
 import {
@@ -646,5 +647,255 @@ describe('parseSearchQuery', () => {
       ok: false,
       error: 'Query parameter "q" must be a single string value',
     });
+  });
+});
+
+/* -------------------------------- the widened name arm (story p6-06, D105/P6-16) */
+
+/** Inserts one `zones` friendly-name row. */
+function seedZone(db: Db, zonePath: string, displayName: string): void {
+  db.prepare('INSERT INTO zones (zone_path, display_name) VALUES (?, ?)').run(
+    zonePath,
+    displayName,
+  );
+}
+
+/** Inserts one `string_table` row (`WC-NPCs_…` and the persona components). */
+function seedString(db: Db, key: string, value: string, category: string): void {
+  db.prepare('INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)').run(
+    key,
+    value,
+    category,
+  );
+}
+
+/** The one group of a type, or `undefined` when it did not match. */
+function group(result: SearchResult, type: string) {
+  return result.groups.find((entry) => entry.type === type);
+}
+
+/**
+ * `SEARCH_GROUPS` gains a `nameJoin` for every family that has a friendly source — the
+ * four `TemplateID` families (`npcs`) and ZoneTransfer (`zones`) — and for no other
+ * family, because the join is *derived* from `shared/objectTypes.ts`'s
+ * `friendlyNamesType` rather than hand-listed (spec-api L769-785).
+ */
+describe('the join table is the friendly-name table, per family', () => {
+  it('is non-null exactly for the families whose friendlyNamesType is set', () => {
+    for (const group of SEARCH_GROUPS) {
+      if (group.kind !== 'object' || group.type === 'quest') {
+        continue;
+      }
+      const config = OBJECT_TYPES.find((row) => row.objectType === group.type);
+      expect(config, group.type).toBeDefined();
+      if (config?.friendlyNamesType === null || config === undefined) {
+        expect(group.nameJoin, `${group.type} has no friendly source`).toBeNull();
+      } else {
+        expect(group.nameJoin?.table, `${group.type} joins ${config.friendlyNamesType}`).toBe(
+          config.friendlyNamesType,
+        );
+      }
+    }
+    // Hand-typed: quest (joined since p5-02) plus the five Phase 6 joins — and the three
+    // families deliberately left out (drop_table, creature_spellbook, and the unkeyed
+    // global_registry, which has no search group at all).
+    const joined = SEARCH_GROUPS.filter(
+      (group) => group.kind === 'object' && group.nameJoin !== null,
+    ).map((group) => group.type);
+    expect(joined.sort()).toEqual([
+      'npc_drop_table',
+      'npc_inventory',
+      'npc_spell_inventory',
+      'quest',
+      'treasure_card_inventory',
+      'zone_transfer',
+    ]);
+  });
+
+  it('matches a template id by key and the NPC name by name, on the same family', () => {
+    const db = memoryDb();
+    seedEntry(db, 'npc_inventory', '38168', 'reviewed');
+    seedName(db, 'npcs', 38168, 'Merle Ambrose');
+
+    // The key arm: the CAST is what makes this row visible at all (SQLite orders every
+    // integer below every text value, so `template_id = object_key` matches nothing).
+    const byKey = group(searchAll(db, { q: '38168', limit: 20 }), 'npc_inventory');
+    expect(byKey?.results).toEqual([
+      {
+        object_type: 'npc_inventory',
+        object_key: '38168',
+        label: '38168',
+        name: 'Merle Ambrose',
+        source_id: null,
+        status: 'reviewed',
+        matched_on: 'key',
+      },
+    ]);
+
+    // The name arm, and the same row is still *navigable* — a real object key.
+    const byName = group(searchAll(db, { q: 'merle', limit: 20 }), 'npc_inventory');
+    expect(byName?.results).toEqual([
+      {
+        object_type: 'npc_inventory',
+        object_key: '38168',
+        label: '38168',
+        name: 'Merle Ambrose',
+        source_id: null,
+        status: 'reviewed',
+        matched_on: 'name',
+      },
+    ]);
+  });
+
+  it('does the same for the other three TemplateID families and ZoneTransfer', () => {
+    const db = memoryDb();
+    for (const [type, key] of [
+      ['npc_spell_inventory', '38169'],
+      ['npc_drop_table', '38170'],
+      ['treasure_card_inventory', '38214'],
+    ] as const) {
+      seedEntry(db, type, key);
+    }
+    seedName(db, 'npcs', 38169, 'Dworgyn');
+    seedName(db, 'npcs', 38170, 'Mindy Pixiecrown');
+    seedName(db, 'npcs', 38214, 'Harold Argleston');
+    seedEntry(db, 'zone_transfer', 'DragonSpire/DS_A2_Battle/DS_A2Z3_Detention');
+    seedZone(
+      db,
+      'DragonSpire/DS_A2_Battle/DS_A2Z3_Detention',
+      'Dragon Spire / DS A2 Battle / DS A2Z3 Detention',
+    );
+
+    for (const [type, key, name] of [
+      ['npc_spell_inventory', '38169', 'Dworgyn'],
+      ['npc_drop_table', '38170', 'Mindy Pixiecrown'],
+      ['treasure_card_inventory', '38214', 'Harold Argleston'],
+    ] as const) {
+      const hit = group(searchAll(db, { q: name, limit: 20 }), type)?.results ?? [];
+      expect(hit, `${type} by name`).toEqual([
+        {
+          object_type: type,
+          object_key: key,
+          label: key,
+          name,
+          source_id: null,
+          status: 'extracted',
+          matched_on: 'name',
+        },
+      ]);
+      const byKey = group(searchAll(db, { q: key, limit: 20 }), type)?.results ?? [];
+      expect(byKey[0]?.matched_on, `${type} by key`).toBe('key');
+    }
+
+    // ZoneTransfer: the label's own spaces make the name arm discriminating — the query
+    // `Dragon Spire` cannot match the `DragonSpire/…` path.
+    const zoneByKey = group(searchAll(db, { q: 'DS_A2Z3_Detention', limit: 20 }), 'zone_transfer');
+    expect(zoneByKey?.results[0]?.matched_on).toBe('key');
+    expect(zoneByKey?.results[0]?.name).toBe('Dragon Spire / DS A2 Battle / DS A2Z3 Detention');
+    const zoneByName = group(searchAll(db, { q: 'Dragon Spire', limit: 20 }), 'zone_transfer');
+    expect(zoneByName?.results[0]?.matched_on).toBe('name');
+    expect(zoneByName?.results[0]?.object_key).toBe('DragonSpire/DS_A2_Battle/DS_A2Z3_Detention');
+  });
+
+  it('gives drop_table and creature_spellbook no name arm, on purpose', () => {
+    const db = memoryDb();
+    // A drop table whose key is its name — `description` is NULL in 316 of 317 rows, so a
+    // name arm over the key could only duplicate the key arm (spec-api L781-783).
+    seedEntry(db, 'drop_table', 'WC-UNICORN-MAIN-007');
+    db.prepare('INSERT INTO drop_tables (name, description) VALUES (?, ?)').run(
+      'WC-UNICORN-MAIN-007',
+      'Pesky Pirates quest reward',
+    );
+    expect(group(searchAll(db, { q: 'Pesky Pirates', limit: 20 }), 'drop_table')).toBeUndefined();
+    expect(
+      group(searchAll(db, { q: 'WC-UNICORN', limit: 20 }), 'drop_table')?.results,
+    ).toHaveLength(1);
+
+    // CreatureSpellbook's friendly source is a `decks` table task 6.9 populates; until
+    // then a name query cannot reach it, and its row carries no `name` at all.
+    seedEntry(db, 'creature_spellbook', 'Mdeck-D-R2');
+    const deck = group(searchAll(db, { q: 'Mdeck-D', limit: 20 }), 'creature_spellbook');
+    expect(deck?.results[0]?.name).toBeNull();
+    expect(deck?.results[0]?.matched_on).toBe('key');
+  });
+});
+
+/* ---------------------------------------------------- the NPC namespace (P6-17) */
+
+/**
+ * The `npc` group is the alias-keyed namespace, not a `npcs` name list: one row per NPC,
+ * its strings as aliases. The measured pair (`Gretta` / `Gretta Darkkettle`) is the
+ * negative control for the failure the plan names — "one NPC carries several name strings
+ * at different granularities … a search for Gretta returns duplicates".
+ */
+describe('the npc group: one row per NPC, its strings as aliases', () => {
+  function grettaDb(): Db {
+    const db = memoryDb();
+    seedName(db, 'npcs', 38098, 'Gretta Darkkettle');
+    seedString(db, 'WC-NPCs_00000003', 'Gretta Darkkettle', 'WC-NPCs');
+    seedString(db, 'WC-NPCs_00000009', 'Gretta', 'WC-NPCs');
+    seedString(db, 'Persona,First_00000019', 'Gretta', 'Persona,First');
+    return db;
+  }
+
+  it('returns exactly one row for Gretta, carrying both strings', () => {
+    const db = grettaDb();
+    const npc = group(searchAll(db, { q: 'Gretta', limit: 20 }), 'npc');
+    expect(npc?.results).toHaveLength(1);
+    expect(npc?.results[0]).toEqual({
+      object_type: null,
+      object_key: null,
+      label: 'Gretta Darkkettle',
+      name: 'Gretta Darkkettle',
+      source_id: 'WC-NPCs_00000003',
+      status: null,
+      matched_on: 'name',
+      aliases: ['Gretta', 'Gretta Darkkettle'],
+    });
+    // The informational contract is unchanged: the app has no `/npcs/:id` page, so the
+    // row is counted as unresolved rather than linked.
+    const result = searchAll(db, { q: 'Gretta', limit: 20 });
+    expect(result.unresolved).toBe(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('is one row whichever granularity matched, and the alias is the display name', () => {
+    const db = grettaDb();
+    for (const q of ['Gretta Darkkettle', 'gretta', 'Darkkettle']) {
+      const npc = group(searchAll(db, { q, limit: 20 }), 'npc');
+      expect(npc?.results.length, q).toBe(1);
+      expect(npc?.results[0]?.name, q).toBe('Gretta Darkkettle');
+      expect(npc?.results[0]?.aliases, q).toContain('Gretta');
+    }
+  });
+
+  it('matches a template name as well as an alias, and never the template id', () => {
+    const db = grettaDb();
+    // `Zarek` exists only as a template name (no alias row at all).
+    seedName(db, 'npcs', 126322, 'Zarek Pickmaster');
+    const zarek = group(searchAll(db, { q: 'Zarek', limit: 20 }), 'npc');
+    expect(zarek?.results[0]?.name).toBe('Zarek Pickmaster');
+    expect(zarek?.results[0]?.source_id).toBe('126322');
+    // The spec's group matches aliases and template names, not the id (spec-api L537-539);
+    // the id is the four families' join arm and the names API's search.
+    expect(group(searchAll(db, { q: '126322', limit: 20 }), 'npc')).toBeUndefined();
+  });
+
+  it('adds `aliases` to the npc row and to no other row', () => {
+    const db = grettaDb();
+    seedEntry(db, 'quest', 'DS-ACAD-C01-001');
+    seedQuestName(db, 'DS-ACAD-C01-001', 'Gretta Tours');
+    const result = searchAll(db, { q: 'Gretta', limit: 20 });
+    for (const row of allRows(result)) {
+      const keys = Object.keys(row);
+      if (keys.includes('aliases')) {
+        expect(row.object_type, 'only the npc group carries aliases').toBeNull();
+        expect(row.aliases?.length).toBeGreaterThan(0);
+      } else {
+        expect([...ROW_KEYS].sort(), 'the other groups keep their exact wire shape').toEqual(
+          [...keys].sort(),
+        );
+      }
+    }
   });
 });

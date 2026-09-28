@@ -51,7 +51,19 @@ export interface NamesTypeSpec {
    * be a dead column (measured 2026-09-26, task 1.5).
    */
   labelColumn: string;
-  /** Columns `?q=` matches — `strings` matches both `key` and `value`. */
+  /**
+   * Columns `?q=` matches.
+   *
+   * **Widened by D105/P6-16 (story p6-06) to the id column as well** — "every
+   * search matches either the friendly or the technical value" (spec-api L55-67).
+   * Typing `12` finds the item whose `gid` is 12 *and* an item named `12…`, and
+   * `DragonSpire` finds the zone whose `zone_path` starts with it even though its
+   * `display_name` humanised the path into `Dragon Spire / …` with spaces.
+   *
+   * `drop_tables` is the one type whose id **is** its label (`name`), so it adds no
+   * column — a second entry for the same column could only duplicate the match.
+   * `strings` already matched both in Phase 1.
+   */
   searchColumns: readonly string[];
   /** Integer ids are coerced; anything else 404s instead of reaching SQL. */
   idKind: NamesIdKind;
@@ -64,7 +76,7 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
     idColumn: 'gid',
     selectColumns: ['gid', 'name'],
     labelColumn: 'name',
-    searchColumns: ['name'],
+    searchColumns: ['gid', 'name'],
     idKind: 'integer',
   },
   spells: {
@@ -72,7 +84,7 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
     idColumn: 'template_id',
     selectColumns: ['template_id', 'name'],
     labelColumn: 'name',
-    searchColumns: ['name'],
+    searchColumns: ['template_id', 'name'],
     idKind: 'integer',
   },
   npcs: {
@@ -80,7 +92,7 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
     idColumn: 'template_id',
     selectColumns: ['template_id', 'name'],
     labelColumn: 'name',
-    searchColumns: ['name'],
+    searchColumns: ['template_id', 'name'],
     idKind: 'integer',
   },
   quests: {
@@ -88,7 +100,7 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
     idColumn: 'quest_name',
     selectColumns: ['quest_name', 'title', 'level', 'is_mainline'],
     labelColumn: 'title',
-    searchColumns: ['title'],
+    searchColumns: ['quest_name', 'title'],
     idKind: 'text',
   },
   zones: {
@@ -96,7 +108,7 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
     idColumn: 'zone_path',
     selectColumns: ['zone_path', 'display_name', 'world'],
     labelColumn: 'display_name',
-    searchColumns: ['display_name'],
+    searchColumns: ['zone_path', 'display_name'],
     idKind: 'text',
   },
   drop_tables: {
@@ -104,6 +116,8 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
     idColumn: 'name',
     selectColumns: ['name', 'description'],
     labelColumn: 'name',
+    // The id *is* the label — no column to add (spec-api L66). Listed once so a
+    // duplicate entry cannot silently double the bound parameters.
     searchColumns: ['name'],
     idKind: 'text',
   },

@@ -80,6 +80,37 @@ does the pairing.
 trigger and options, the `SearchPalette` rows, `NewObjectControl`, and **every section of the quest
 editor** — Info, Goals, Requirements, Results, Dialog — wherever a value is a reference.
 
+**The UI spec files this contract touches (story p6-06).** The list is named here because a display
+change that only shows up in a red CI run is a change nobody reviewed. Twelve files assert a value
+produced by this rule; the greps that find them are `Name (ID)`-shaped literals, a
+`FriendlyNameDropdown` trigger/option assertion, a list row's key cell, or a detail header's own
+text.
+
+*Updated deliberately — the six whose expected bytes the widening changes:*
+
+| File | What changed, and why |
+|---|---|
+| `quests-browse.spec.ts` | The Quest Name cell of the fixture's one `resolved`-title row is now the pair (`Title DS-ACAD1-C01-001 (DS-ACAD1-C01-001)`, one named constant); every other row is `rawKey`, so its cell is unchanged. |
+| `quests-status.spec.ts` | The row's identity is read from its own `Change status: <quest_name>` label instead of the Quest Name cell, which now renders the pair. |
+| `quests-requirements-editor.spec.ts` | The quest condition's dropdown option is the pair. |
+| `drop-table-editor.spec.ts` | The inline requirement tree's quest option is the pair. |
+| `zone-transfer-editor.spec.ts` | The trigger and the option are the pair; the per-id lookup assertion now names the **detail header's** lookup (which 404s in the mock and falls back to the key), because the dropdown still reads the bulk list. |
+| `responsive.spec.ts` | The single-lookup mock answers the **bare row or 404** (`GET /api/names/:type/:id`), not the seven-table envelope — an envelope is not a row, and the ZoneTransfer detail page white-screened on it; the §1 sweep also names the route it is waiting on. |
+
+*Reviewed and left byte-identical — the six whose pairs the change does not alter:*
+
+| File | Why no edit |
+|---|---|
+| `npc-drop-table-editor.spec.ts`, `simple-object-editors.spec.ts`, `treasure-card-inventory-editor.spec.ts` | They assert the NPC pair outright (`Bob the Vendor (87112)`), which `formatNameRow('npcs')` still renders byte for byte — the rule gained a shared implementation, not a new output. |
+| `quests-dialog-editor.spec.ts`, `quests-results-editor.spec.ts` | Same: an NPC pair in a quest-editor reference (`Zarek Pickmaster (126322)`, `Draconian (35528)`). |
+| `extraction.spec.ts` | The grown quest's title is a raw key (`title_source: 'rawKey'`), which is not a name, so the new `questFriendlyTitle` gate correctly renders the quest name alone — the assertion is unchanged *because* the rule is right, not because it was relaxed. |
+
+The other display-shaped candidates (`object-list`, `search-palette`,
+`object-create-and-counts`, `quests-goals-editor`, `object-mobile`) assert rows whose mocks carry no
+`friendly_name`/`name`, so they render the technical value alone and need no edit; `object-editors`
+and `p5-04-error-surfaces` match a `Name (ID)` grep only through `Remove <name> (<index>)` action
+labels, which are not pairs (`tests/unit/display-single-home.test.ts` allowlists them with reasons).
+
 ---
 
 ## Global Layout

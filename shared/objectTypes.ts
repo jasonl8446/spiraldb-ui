@@ -87,6 +87,19 @@ export type ObjectRouteType =
  */
 export type ObjectAuditMode = 'embedded' | 'none';
 
+/**
+ * The **names type** that carries a family's friendly names, per spec-ui-design
+ * §Names L56-63 (D105/P6-16), or `null` when the family has no friendly source.
+ *
+ * One string rather than two loose column names: the server resolves
+ * `friendly_name` from exactly the table `GET /api/names/:type` serves
+ * (`NAMES_TYPE_SPECS`), so the list row and the names API cannot disagree about
+ * where a name lives, and a detail header asks the single lookup for the same type.
+ * `decks` is deliberately absent — task 6.9 populates it, and CreatureSpellbook's
+ * `friendlyNamesType` stays `null` until then.
+ */
+export type ObjectFriendlyNamesType = 'npcs' | 'zones';
+
 export interface ObjectTypeConfig {
   readonly fileType: ObjectFileType;
   /** Base path with the `/api` prefix (docs/spec-api.md L310-319). */
@@ -103,6 +116,21 @@ export interface ObjectTypeConfig {
   readonly keyField: string | null;
   readonly keyType: ObjectKeyType;
   readonly audit: ObjectAuditMode;
+  /**
+   * The names table holding this family's friendly names, or `null` when none
+   * exists (spec-ui-design §Names L56-63, D105/P6-16). Drives the server's
+   * `ObjectListRow.friendly_name` and the client's single lookup on a detail
+   * header — one mapping, both surfaces.
+   */
+  readonly friendlyNamesType: ObjectFriendlyNamesType | null;
+  /**
+   * **Why** `friendlyNamesType` is `null`, in one sentence — `null` when the family
+   * pairs normally. It rides to the UI as the key cell's tooltip so a row with no
+   * pair says which of the two states it is in (spec-ui-design L65-69) instead of
+   * leaving the reader to guess, and it is deliberately a sentence *about the data*
+   * rather than a humanised key: a humanised key reads as a name that does not exist.
+   */
+  readonly friendlyNameNote: string | null;
 }
 
 /**
@@ -121,6 +149,9 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'Name',
     keyType: 'string',
     audit: 'embedded',
+    friendlyNamesType: null,
+    friendlyNameNote:
+      'No friendly source: DropTable.description is NULL in 316 of 317 corpus rows, so the key is the name.',
   },
   {
     fileType: 'npcinventory',
@@ -132,6 +163,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'npcspellinventory',
@@ -143,6 +176,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'creaturespellbook',
@@ -154,6 +189,9 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'DeckName',
     keyType: 'string',
     audit: 'none',
+    friendlyNamesType: null,
+    friendlyNameNote:
+      'No friendly source yet: DeckName has no "decks" table until task 6.9 populates it from DeckTemplate, so the key is the label.',
   },
   {
     fileType: 'npcdroptable',
@@ -165,6 +203,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'treasurecardinventory',
@@ -176,6 +216,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'zonetransfer',
@@ -187,6 +229,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'ZoneName',
     keyType: 'string',
     audit: 'none',
+    friendlyNamesType: 'zones',
+    friendlyNameNote: null,
   },
   {
     fileType: 'globalregistry',
@@ -198,6 +242,9 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: null,
     keyType: 'string',
     audit: 'none',
+    friendlyNamesType: null,
+    friendlyNameNote:
+      'No friendly source: a GlobalRegistry key is a flag name, and the dictionary has no id/label split.',
   },
 ];
 

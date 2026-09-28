@@ -19,6 +19,7 @@ import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonP
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import StatusBadge from '../components/StatusBadge';
+import { namePairDistinct } from '../lib/display';
 import UnsavedChangesDialog from '../components/quest/UnsavedChangesDialog';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -60,6 +61,7 @@ import {
   QUEST_LOAD_ERROR,
   QUEST_LOADING,
   QUEST_NOT_FOUND_TITLE,
+  questFriendlyTitle,
   questStatus,
 } from '../lib/quests';
 import {
@@ -332,6 +334,7 @@ function LoadedQuest({
       <QuestHeader
         quest={quest}
         questName={questName}
+        questTitle={row === undefined ? null : questFriendlyTitle(row)}
         status={status}
         jsonOpen={jsonOpen}
         onToggleJson={() => setJsonOpen((open) => !open)}
@@ -423,6 +426,7 @@ function BackLink(): JSX.Element {
 function QuestHeader({
   quest,
   questName,
+  questTitle,
   status,
   jsonOpen,
   onToggleJson,
@@ -437,6 +441,12 @@ function QuestHeader({
 }: {
   quest: QuestObject;
   questName: string;
+  /**
+   * The resolved title from the list row, or `null` when the list has not answered or
+   * answered with a raw key / the name itself (`questFriendlyTitle` owns that rule). It is
+   * the friendly half of the QuestTemplate pair (D105/P6-16).
+   */
+  questTitle: string | null;
   status: StatusValue;
   jsonOpen: boolean;
   onToggleJson: () => void;
@@ -454,7 +464,10 @@ function QuestHeader({
   /** Story p3-10: discard the edits and restore the loaded document byte for byte. */
   onDiscard: () => void;
 }): JSX.Element {
-  const displayName = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
+  const questKey = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
+  // The QuestTemplate pair: `Wizard Tours (DS-ACAD-C01-001)`, collapsed to the name
+  // alone when the title lookup fell back to the name itself (or has not answered).
+  const displayName = namePairDistinct(questTitle, questKey);
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-3">
       <BackLink />

@@ -25,6 +25,22 @@ import {
   searchRows,
 } from './object-list';
 
+/**
+ * The friendly half of a quest row's pair — the D105/P6-16 rule applied to
+ * `QuestListRow`, which is the one place the QuestTemplate family is *not* a plain
+ * `{ id, label }` row.
+ *
+ * `QuestListRow.title` is "the string-table resolved title, the raw `m_questTitle` key,
+ * or `m_questName`" (spec-api), and only the **resolved** case is a name: a raw key is a
+ * lookup that missed and `m_questName` is the technical value itself. Returning `null`
+ * for those two is what keeps the browse cell, the mobile card and the detail header
+ * rendering the quest name alone instead of `QuestTitle_1625CA (WC-UNICORN-MAIN-004)` —
+ * a "friendly" half that is not a name is the humaniser this phase forbids.
+ */
+export function questFriendlyTitle(row: QuestListRow): string | null {
+  return row.title_source === 'resolved' ? row.title : null;
+}
+
 /* -------------------------------------------------------------- the columns */
 
 /** The seven column ids of the browse table, in spec order (L254-262). */

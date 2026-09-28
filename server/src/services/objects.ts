@@ -26,6 +26,8 @@ import {
   type SavePipeline,
 } from './savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from './spiraldbIndex.js';
+import { NAMES_TYPE_SPECS } from './names.js';
+import { ENGINE_OBJECT_TEMPLATE_MAX_ID } from './npcNames.js';
 import { isStatusValue, listStatus, type StatusSummary, type StatusValue } from './status.js';
 import { isPlainObject } from './sync/json.js';
 
@@ -89,11 +91,31 @@ export interface ObjectListRow {
   /** The key in its canonical text form (`ULong.toKey` for the `TemplateID` families). */
   key: string;
   /**
-   * Display title. The key itself for all eight families today (the drop table's
+   * Display title. **Equal to `key` for all eight families** (the drop table's
    * `Name`, a zone path, an NPC template id): none of the eight has a separate
-   * title field, unlike a quest's `m_questTitle`, so no string-table lookup happens.
+   * title field, unlike a quest's `m_questTitle`. The friendly half is
+   * {@link ObjectListRow.friendly_name}, and the pairing happens in the client
+   * through `display.ts`'s one rule — this server emits data and never formats.
    */
   title: string;
+  /**
+   * The family's friendly name for this key, resolved from the table
+   * `config.friendlyNamesType` names (`npcs` for the four `TemplateID` families,
+   * `zones` for ZoneTransfer), or `null` when there is none (D105/P6-16, spec
+   * §Names L71-77).
+   *
+   * `null` has three distinct meanings, and the client renders the technical value
+   * alone for all three (never a blank label, never a humaniser):
+   *
+   * 1. the family has no friendly source at all (DropTable, GlobalRegistry, and
+   *    CreatureSpellbook until task 6.9 populates `decks`) — `config.friendlyNameNote`
+   *    carries the reason and is what the UI says;
+   * 2. the template is an **engine object** — the low-id client templates
+   *    (`Player Object`, `GenericCinematicActor`, …), which are not characters;
+   * 3. the key simply has no row in the friendly table (5 corpus rows today:
+   *    `40448`, `164313`, `789125`, `1528509`, `1749527`).
+   */
+  friendly_name: string | null;
   /** The source file's mtime, ISO 8601; `null` when it vanished before the stat. */
   modified_at: string | null;
   /** `entry_status.status`, or `null` for a family with no lifecycle. */
@@ -151,6 +173,44 @@ function modifiedAt(filePath: string): string | null {
 function statusFor(lookup: Map<string, string>, key: string): StatusValue {
   const stored = lookup.get(key);
   return isStatusValue(stored) ? stored : 'extracted';
+}
+
+/**
+ * `key → friendly name` for one family, or `null` when the family has no friendly
+ * source (DropTable, GlobalRegistry, CreatureSpellbook until task 6.9).
+ *
+ * Built from the **same** `NAMES_TYPE_SPECS` row `GET /api/names/:type` serves, so
+ * the list row's `friendly_name` and the names API's own label cannot come from two
+ * different columns. One query per list request (23,033 + 1,241 rows worst case) —
+ * the list already scans and parses ~2,000 corpus files per request (D12), so this
+ * is a rounding error, and caching it would go stale silently after a sync.
+ *
+ * NpcInv/Spell/DropTable/TreasureCard keys are `ULong.toKey` strings, so the map is
+ * keyed by the decimal text of `template_id`; a zone key is the path verbatim.
+ */
+function friendlyNameLookup(db: Db, config: ObjectTypeConfig): Map<string, string> | null {
+  const type = config.friendlyNamesType;
+  if (type === null) {
+    return null;
+  }
+  const spec = NAMES_TYPE_SPECS[type];
+  const rows = db
+    .prepare<[], { id: unknown; name: unknown }>(
+      `SELECT ${spec.idColumn} AS id, ${spec.labelColumn} AS name FROM ${spec.table}`,
+    )
+    .all();
+
+  const lookup = new Map<string, string>();
+  for (const row of rows) {
+    if (typeof row.name !== 'string' || row.name.trim() === '') {
+      continue;
+    }
+    if (type === 'npcs' && Number(row.id) <= ENGINE_OBJECT_TEMPLATE_MAX_ID) {
+      continue;
+    }
+    lookup.set(String(row.id), row.name);
+  }
+  return lookup;
 }
 
 /** `*.json` entries of a directory in name order; `undefined` when it does not exist. */
@@ -214,6 +274,9 @@ export function listObjects(options: ListObjectsOptions): ObjectListResult {
   const summary: StatusSummary = { total: 0, extracted: 0, reviewed: 0, verified: 0 };
   const seen = new Set<string>();
   const objects: ObjectListRow[] = [];
+  // Resolved once per request, from the same table the names API serves; `null`
+  // for the three families that have no friendly source (never a humaniser).
+  const friendlyNames = friendlyNameLookup(db, config);
 
   for (const entry of entries) {
     const filePath = path.join(directory, entry.name);
@@ -254,7 +317,13 @@ export function listObjects(options: ListObjectsOptions): ObjectListResult {
       summary[status] += 1;
     }
 
-    objects.push({ key, title: key, modified_at: modifiedAt(filePath), status });
+    objects.push({
+      key,
+      title: key,
+      friendly_name: friendlyNames?.get(key) ?? null,
+      modified_at: modifiedAt(filePath),
+      status,
+    });
   }
 
   return {

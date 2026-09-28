@@ -10,13 +10,14 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { QuestListRow } from '../../lib/api';
-import { relativeTime } from '../../lib/display';
+import { namePairDistinct, relativeTime } from '../../lib/display';
 import {
   DEFAULT_QUEST_SORT,
   EDIT_ACTION_LABEL,
   EDIT_DISABLED_TOOLTIP,
   QUEST_COLUMNS,
   QUEST_SORT_KEYS,
+  questFriendlyTitle,
   questStatus,
   type QuestColumnId,
   type QuestSort,
@@ -125,13 +126,16 @@ export default function QuestBrowseTable({
         accessorFn: (row) => row.quest_name,
         cell: ({ row }) => (
           // The truncation + tooltip the spec's Quest Name column asks for (L257).
+          // The friendly title joined to the name it belongs to — the QuestTemplate
+          // family's pair (D105/P6-16), collapsed to the name alone when the title
+          // lookup fell back to it.
           <Link
             to={`/quests/${encodeURIComponent(row.original.quest_name)}`}
             className="block truncate font-mono text-sm text-zinc-100 hover:text-blue-400"
-            title={row.original.quest_name}
+            title={namePairDistinct(questFriendlyTitle(row.original), row.original.quest_name)}
             onClick={(event) => event.stopPropagation()}
           >
-            {row.original.quest_name}
+            {namePairDistinct(questFriendlyTitle(row.original), row.original.quest_name)}
           </Link>
         ),
       },

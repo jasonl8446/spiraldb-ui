@@ -14,7 +14,10 @@ import {
 import {
   formatNameRow,
   formatNameValue,
+  friendlyNameOf,
   humanizeZone,
+  namePair,
+  namePairDistinct,
   nameRowId,
   NAMES_TYPES,
   npcDisplayName,
@@ -384,17 +387,28 @@ describe('zone humanization', () => {
     expect(humanizeZone('Marleybone/MB_Scotland_Yard')).toBe('Marleybone / MB Scotland Yard');
   });
 
-  it('prefers the cached display_name and falls back to the path', () => {
+  it('pairs the cached display_name with the path, and humanizes a blank label', () => {
+    // ZoneTransfer's pair (D105/P6-16): the friendly label with the technical key.
     expect(
       formatNameRow('zones', {
         zone_path: 'WizardCity/WC_Hub',
         display_name: 'Wizard City Commons',
         world: null,
       }),
-    ).toBe('Wizard City Commons');
+    ).toBe('Wizard City Commons (WizardCity/WC_Hub)');
     expect(
       formatNameRow('zones', { zone_path: 'WizardCity/WC_Hub', display_name: null, world: null }),
-    ).toBe('Wizard City / WC Hub');
+    ).toBe('Wizard City / WC Hub (WizardCity/WC_Hub)');
+    // The plan's own measured pair, verbatim.
+    expect(
+      formatNameRow('zones', {
+        zone_path: 'DragonSpire/DS_A2_Battle/DS_A2Z3_Detention',
+        display_name: 'Dragon Spire / DS A2 Battle / DS A2Z3 Detention',
+        world: 'DragonSpire',
+      }),
+    ).toBe(
+      'Dragon Spire / DS A2 Battle / DS A2Z3 Detention (DragonSpire/DS_A2_Battle/DS_A2Z3_Detention)',
+    );
   });
 });
 
@@ -409,7 +423,8 @@ describe('per-type display formats (lead decision 5)', () => {
     );
   });
 
-  it('shows the resolved quest title, falling back to the quest name', () => {
+  it('pairs the resolved quest title with the quest name, falling back to the name alone', () => {
+    // QuestTemplate's pair (D105/P6-16).
     expect(
       formatNameRow('quests', {
         quest_name: 'DS-ACAD1-C01-001',
@@ -417,7 +432,7 @@ describe('per-type display formats (lead decision 5)', () => {
         level: 1,
         is_mainline: 1,
       }),
-    ).toBe('A Trip to the Library');
+    ).toBe('A Trip to the Library (DS-ACAD1-C01-001)');
     expect(
       formatNameRow('quests', {
         quest_name: 'DS-ACAD1-C01-001',
@@ -466,6 +481,73 @@ describe('per-type display formats (lead decision 5)', () => {
     for (const type of NAMES_TYPES) {
       expect(nameRowId(type, rows[type].row), type).toBe(rows[type].id);
     }
+  });
+
+  it('is the one construction of the pair, and `npcDisplayName` is it with a numeric id', () => {
+    expect(namePair('Merle Ambrose', '38168')).toBe('Merle Ambrose (38168)');
+    expect(namePair(null, '38168')).toBe('38168');
+    expect(namePair('   ', '38168')).toBe('38168');
+    // The NPC convention is this rule, not a second one (spec §Names L50-51).
+    expect(npcDisplayName('Merle Ambrose', 38168)).toBe(namePair('Merle Ambrose', '38168'));
+  });
+
+  it('pairs only when the friendly name differs from the technical value', () => {
+    // The identity case is real (a quest whose title lookup fell back to its own name,
+    // a drop table whose `Name` is its key): `X (X)` says nothing.
+    expect(namePairDistinct('Wizard Tours', 'DS-ACAD-C01-001')).toBe(
+      'Wizard Tours (DS-ACAD-C01-001)',
+    );
+    expect(namePairDistinct('DS-ACAD-C01-001', 'DS-ACAD-C01-001')).toBe('DS-ACAD-C01-001');
+    expect(namePairDistinct(null, 'DS-ACAD-C01-001')).toBe('DS-ACAD-C01-001');
+    expect(namePairDistinct('   ', 'DS-ACAD-C01-001')).toBe('DS-ACAD-C01-001');
+  });
+
+  it('reads the friendly half of a row through one accessor, per type', () => {
+    // `friendlyNameOf` is what `formatNameRow`, `toNameOptions` and the object detail
+    // header all share — so "the friendly name" cannot mean two things.
+    expect(friendlyNameOf('items', { gid: 1, name: 'Boots' })).toBe('Boots');
+    expect(friendlyNameOf('spells', { template_id: 1, name: 'Pixie' })).toBe('Pixie');
+    expect(friendlyNameOf('npcs', { template_id: 38168, name: 'Merle Ambrose' })).toBe(
+      'Merle Ambrose',
+    );
+    expect(
+      friendlyNameOf('quests', {
+        quest_name: 'Q',
+        title: 'Wizard Tours',
+        level: 1,
+        is_mainline: 1,
+      }),
+    ).toBe('Wizard Tours');
+    expect(
+      friendlyNameOf('zones', {
+        zone_path: 'WizardCity/WC_Hub',
+        display_name: 'Wizard City Commons',
+        world: null,
+      }),
+    ).toBe('Wizard City Commons');
+    expect(
+      friendlyNameOf('zones', { zone_path: 'WizardCity/WC_Hub', display_name: null, world: null }),
+    ).toBe('Wizard City / WC Hub');
+    expect(friendlyNameOf('drop_tables', { name: 'DT', description: null })).toBe('DT');
+    expect(friendlyNameOf('strings', { key: 'K', value: null, category: null })).toBeNull();
+    // A NULL/blank friendly column is `null`, never the empty string.
+    expect(friendlyNameOf('items', { gid: 1, name: null })).toBeNull();
+    expect(friendlyNameOf('npcs', { template_id: 1, name: '  ' })).toBeNull();
+  });
+
+  it('treats a body that is not a row as a miss, never a crash', () => {
+    // The single lookup answers the bare row or 404 (spec-api L32-44); anything else —
+    // the seven-table envelope a careless mock returns, an error object, an empty body —
+    // must degrade to the technical value alone. This is the guard that kept the
+    // ZoneTransfer detail page from white-screening on exactly such a body.
+    const envelope = { items: [], zones: [], npcs: [] } as unknown as NameRow;
+    expect(friendlyNameOf('zones', envelope)).toBeNull();
+    expect(friendlyNameOf('zones', { zone_path: 7 } as unknown as NameRow)).toBeNull();
+    expect(friendlyNameOf('npcs', {} as unknown as NameRow)).toBeNull();
+    expect(friendlyNameOf('quests', {} as unknown as NameRow)).toBeNull();
+    expect(friendlyNameOf('strings', {} as unknown as NameRow)).toBeNull();
+    expect(friendlyNameOf('zones', null as unknown as NameRow)).toBeNull();
+    expect(friendlyNameOf('items', null as unknown as NameRow)).toBeNull();
   });
 
   it('builds searchable options that include the raw id', () => {

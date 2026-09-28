@@ -6,6 +6,7 @@ import type { ObjectTypeConfig } from '@shared/objectTypes';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
 import type { StatusValue } from '../../lib/api';
+import { namePair } from '../../lib/display';
 import { JSON_PANEL_LABEL } from '../../lib/quests';
 import { cn } from '../../lib/utils';
 import StatusBadge from '../StatusBadge';
@@ -44,6 +45,13 @@ export interface ObjectDetailLayoutProps {
   config: ObjectTypeConfig;
   /** The entry's canonical key, shown beside the type name. */
   objectKey: string;
+  /**
+   * The entry's friendly name from `useObjectFriendlyName`, or `null` when the family
+   * (or this key) has none. The header renders `namePair(friendlyName, objectKey)`
+   * through `display.ts`'s ONE rule — `Merle Ambrose (38168)` — and the technical
+   * value alone when it is null.
+   */
+  friendlyName?: string | null;
   /**
    * The entry's lifecycle status; `null` renders no badge, no mark actions and no history
    * panel (GlobalRegistry, Q1).
@@ -89,6 +97,7 @@ export interface ObjectDetailLayoutProps {
 export default function ObjectDetailLayout({
   config,
   objectKey,
+  friendlyName = null,
   status,
   editable: editableProp,
   noun,
@@ -130,8 +139,17 @@ export default function ObjectDetailLayout({
         </Link>
 
         <span className="text-sm font-medium text-zinc-200">{config.label}</span>
-        <span className="truncate font-mono text-sm text-zinc-400" title={objectKey}>
-          {objectKey}
+        {/*
+          The pair, through the one display rule. When `friendlyName` is null the
+          technical value stands alone and the tooltip says which of the two states the
+          family is in (`config.friendlyNameNote` for DropTable/GlobalRegistry/
+          CreatureSpellbook) rather than leaving a blank label (spec-ui-design L65-69).
+        */}
+        <span
+          className="truncate font-mono text-sm text-zinc-400"
+          title={friendlyName === null ? (config.friendlyNameNote ?? objectKey) : undefined}
+        >
+          {namePair(friendlyName, objectKey)}
         </span>
 
         {status === null ? null : <StatusBadge status={status} />}
