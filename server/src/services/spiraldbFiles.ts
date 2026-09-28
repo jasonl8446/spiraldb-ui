@@ -296,13 +296,29 @@ export function stringifySpiraldbJson(data: unknown): string {
  * Writes a document as clean JSON, creating the directory when missing (the
  * first save of an absent family, e.g. `NpcDropTable/`, must work).
  *
+ * **Fails closed on a symlinked target** (final-review gate 2, N5): `fs.writeFileSync` follows a
+ * symbolic link, so a link planted in a family directory could redirect a save's bytes outside
+ * the SpiralDB root. No corpus family directory holds one and nothing here creates one, so
+ * refusing costs nothing; the delete side needs no such guard because `fs.rmSync` unlinks the
+ * link itself rather than its target.
+ *
  * @throws {SpiraldbFileError} when the write fails — the message names the file.
  */
 export function writeSpiraldbJson(filePath: string, data: unknown): void {
   try {
+    if (fs.lstatSync(filePath, { throwIfNoEntry: false })?.isSymbolicLink() === true) {
+      throw new SpiraldbFileError(
+        `Refusing to write ${filePath}: it is a symbolic link, and a save must never write ` +
+          `through a link into another tree. Replace the link with the file it points at.`,
+      );
+    }
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, stringifySpiraldbJson(data));
   } catch (error) {
+    // The symlink refusal is already the actionable message; only real I/O failures get wrapped.
+    if (error instanceof SpiraldbFileError) {
+      throw error;
+    }
     throw new SpiraldbFileError(
       `Could not write SpiralDB file ${filePath}: ${describeError(error)}`,
     );

@@ -795,6 +795,48 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
       warn.mockRestore();
     }
   });
+
+  it('prefers the tool convention file when both it and a legacy file hold the Name (S3)', async () => {
+    const repo = gitRepo();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      // Same measured corpus shape as the 8 duplicate names: an opaque legacy file plus this
+      // tool's own `questmetadata_<name>.json`. `a_legacy.json` sorts first, so the index would
+      // have resolved — and the warning would have named — the legacy file before this fix.
+      writeFile(repo.dir, 'QuestTemplates/questtemplates_DUP-2.json', questText('DUP-2'));
+      writeFile(
+        repo.dir,
+        'QuestMetadatas/a_legacy.json',
+        `${JSON.stringify({ Name: 'DUP-2', CreatedAt: 'x', ModifiedBy: 'makima' }, null, 2)}\n`,
+      );
+      writeFile(
+        repo.dir,
+        'QuestMetadatas/questmetadata_DUP-2.json',
+        `${JSON.stringify({ Name: 'DUP-2', CreatedAt: 'y', ModifiedBy: 'quest_builder' }, null, 2)}\n`,
+      );
+      repo.git(['add', '.']);
+      repo.git(['commit', '-m', 'legacy UUID file plus the convention file']);
+
+      const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+      const res = await request(h.app)
+        .post('/api/quests')
+        .send({ quest: JSON.parse(questText('DUP-2')) as object })
+        .expect(200);
+
+      const warnings = (res.body as { warnings: string[] }).warnings;
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('2 files whose "Name" is "DUP-2"');
+      // The warning names the file the pipeline actually wrote, and says which rule chose it.
+      expect(warnings[0]).toContain(path.join('QuestMetadatas', 'questmetadata_DUP-2.json'));
+      expect(warnings[0]).toContain("this tool's own convention file");
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('DUP-2'));
+      expect(readRepoFile(repo, 'QuestMetadatas/questmetadata_DUP-2.json')).toContain(USER);
+      expect(readRepoFile(repo, 'QuestMetadatas/a_legacy.json')).not.toContain(USER);
+      expect((res.body as { metadata_outcome: string }).metadata_outcome).toBe('updated');
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });
 
 describe('capture source note — gap B of p2-07 (plan §2.4)', () => {

@@ -66,10 +66,24 @@ function advanced(page: Page): Locator {
  * affordance. This is the strongest available check: it is the panel's serialization
  * of the live document, parsed back, so an untouched key can be compared exactly
  * instead of by substring.
+ *
+ * Wiped **first** and then polled (final-review gate 2, S1), which is the shape the
+ * sibling specs use and this helper did not: every arm here reads the document twice
+ * (before and after an edit), so without the wipe the "after" read could be the
+ * pre-edit text still on the clipboard — and the single un-awaited `readText` could
+ * also catch the async `writeText` empty. With the wipe, only the click that follows
+ * can have written the clipboard, and the poll waits for it.
  */
 async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
+  await page.evaluate(() => navigator.clipboard.writeText(''));
   await page.getByRole('button', { name: 'Copy' }).click();
-  const text = await page.evaluate(() => navigator.clipboard.readText());
+  let text = '';
+  await expect
+    .poll(async () => {
+      text = await page.evaluate(() => navigator.clipboard.readText());
+      return text.trim().startsWith('{');
+    })
+    .toBe(true);
   return JSON.parse(text) as Record<string, unknown>;
 }
 

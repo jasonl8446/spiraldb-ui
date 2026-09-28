@@ -231,6 +231,28 @@ describe('reading and writing SpiralDB files', () => {
       /Could not write SpiralDB file/,
     );
   });
+
+  it('refuses to write through a symbolic link, leaving the target untouched (N5)', () => {
+    // A link planted in a family directory would otherwise redirect this save's bytes to
+    // wherever it points — outside the SpiralDB root (final-review gate 2, N5).
+    const outside = path.join(root, 'outside-the-family', 'real.json');
+    fs.mkdirSync(path.dirname(outside), { recursive: true });
+    fs.writeFileSync(outside, '{\n  "Name": "untouched"\n}\n');
+    const link = path.join(root, 'DropTables', 'link-to-outside.json');
+    fs.mkdirSync(path.dirname(link), { recursive: true });
+    fs.symlinkSync(outside, link);
+
+    expect(() => writeSpiraldbJson(link, { Name: 'through the link' })).toThrow(SpiraldbFileError);
+    expect(() => writeSpiraldbJson(link, { Name: 'through the link' })).toThrow(/symbolic link/);
+    // The bytes the link points at are exactly what they were, and the link is still a link.
+    expect(fs.readFileSync(outside, 'utf8')).toBe('{\n  "Name": "untouched"\n}\n');
+    expect(fs.lstatSync(link).isSymbolicLink()).toBe(true);
+
+    // Positive partner: an ordinary file at the same place is still written.
+    const ordinary = path.join(root, 'DropTables', 'ordinary.json');
+    writeSpiraldbJson(ordinary, { Name: 'written' });
+    expect(JSON.parse(fs.readFileSync(ordinary, 'utf8'))).toEqual({ Name: 'written' });
+  });
 });
 
 describe('convention paths for new files', () => {

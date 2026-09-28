@@ -42,7 +42,7 @@ SQLite local database (verification status + friendly names)
 |---|---|---|
 | start with | `npm run dev` | `npm run build && npm start` |
 | client served by | Vite (`:5173`; `VITE_PORT` overrides) | Express static, from `client/dist` |
-| API | Express `:3001`, reached through Vite's `/api` proxy | Express `:3001`, directly |
+| API | Express `:3001` (loopback only), reached through Vite's `/api` proxy | Express `:3001` (loopback only), directly |
 | open | `http://localhost:5173` | `http://localhost:3001` |
 | SPA fallback | Vite's history fallback | `app.get('*')` → `index.html` (`server/src/app.ts`) |
 
@@ -110,7 +110,7 @@ npm run sync
 # Optional, and the only step that needs the .NET 9 SDK: quest extraction.
 npm run build:cli
 
-# Development: Express :3001 + Vite :5173 → open http://localhost:5173
+# Development: Express :3001 (loopback only) + Vite :5173 → open http://localhost:5173
 npm run dev
 ```
 
@@ -118,7 +118,7 @@ Production, which is what a release run looks like:
 
 ```bash
 npm run build     # typechecks server + client, emits server/dist and client/dist
-npm start         # Express on :3001 serves the built client — no Vite involved
+npm start         # Express on :3001 (loopback only) serves the built client — no Vite involved
 ```
 
 ### Everyday scripts

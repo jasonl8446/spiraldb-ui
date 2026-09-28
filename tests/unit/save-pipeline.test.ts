@@ -11,13 +11,24 @@ import {
   writeSettings,
   type Db,
 } from '@server/db';
-import { DirtyRepoError, sessionBranchName } from '@server/services/git';
+import {
+  createGitService,
+  DirtyRepoError,
+  sessionBranchName,
+  type GitService,
+} from '@server/services/git';
 import {
   createSavePipeline,
+  questMetadataSaveTarget,
+  UncommittedSaveError,
   type SaveObjectRequest,
   type SavePipeline,
 } from '@server/services/savePipeline';
-import { readSpiraldbJson, stringifySpiraldbJson } from '@server/services/spiraldbFiles';
+import {
+  readSpiraldbJson,
+  SpiraldbFileError,
+  stringifySpiraldbJson,
+} from '@server/services/spiraldbFiles';
 import { createSpiraldbIndex, type SpiraldbIndex } from '@server/services/spiraldbIndex';
 import { getStatusEntry, getStatusHistory, readDashboard } from '@server/services/status';
 import {
@@ -867,5 +878,212 @@ describe('failure modes', () => {
       h.pipeline.saveObject({ fileType: 'questtemplates', data: { m_questLevel: 3 } }),
     ).rejects.toThrow(/no usable "m_questName" value/);
     expect(h.repo.git(['status', '--porcelain']).trim()).toBe('');
+  });
+});
+
+/**
+ * Final-review gate 2's blocking-set fix work.
+ *
+ * M2: the pipeline writes before it commits (deliberately — a D22 deletion must never be
+ * committable without the file that replaces it), so a commit-side failure leaves the bytes on
+ * disk and uncommitted, and D14's clean-tree guard then refuses every later save. The chosen fix
+ * is the reviewer's honest minimum: **name the paths** in the error. This arm forces the failure
+ * and shows the cluster's state before and after, so the message cannot claim more than the tree
+ * holds.
+ *
+ * S3: when a metadata `Name` is ambiguous, the tool's own convention file wins over the opaque
+ * legacy UUID file. The measured corpus shape is one of each, which is what this arm builds.
+ *
+ * S4: caller `notes` reach the commit body through `buildCommitMessage`, which now collapses them
+ * to one line; this arm reads the body back out of the real repository.
+ */
+describe('a commit failure after the bytes moved (M2)', () => {
+  /** A harness whose git layer writes nothing and rejects the commit. */
+  function failingHarness(message = 'pre-commit hook rejected the commit'): {
+    h: Harness;
+    real: ReturnType<typeof createGitService>;
+  } {
+    const h = harness();
+    const real = createGitService({
+      repoPath: h.repo.dir,
+      settingsBranch: () => '',
+      persistBranch: () => undefined,
+    });
+    const failing: GitService = {
+      ...real,
+      commitObject: () => Promise.reject(new Error(message)),
+    };
+    const pipeline = createSavePipeline({
+      db: h.db,
+      spiraldbPath: h.repo.dir,
+      index: h.index,
+      now: () => new Date(NOW),
+      git: failing,
+    });
+    return { h: { ...h, pipeline }, real };
+  }
+
+  it('names the written-but-uncommitted paths, and the tree really holds exactly those', async () => {
+    const { h, real } = failingHarness();
+    const name = 'DS-P205-CFAIL-001';
+    const QUEST = `QuestTemplates/questtemplates_${name}.json`;
+    const META = `QuestMetadatas/questmetadata_${name}.json`;
+
+    // Before: clean tree, one seed commit, neither file present.
+    expect((await real.statusPorcelain()).trim()).toBe('');
+    expect(commitCount(h.repo)).toBe(1);
+
+    const failure = await h.pipeline.saveObject(request(name)).then(
+      () => null as unknown as Error,
+      (error: unknown) => error as Error,
+    );
+
+    expect(failure).toBeInstanceOf(UncommittedSaveError);
+    const message = failure.message;
+    expect(message).toContain('written but not committed');
+    expect(message).toContain(QUEST);
+    expect(message).toContain(META);
+    expect(message).toContain('clean-tree guard (D14)');
+    expect(message).toContain('pre-commit hook rejected the commit');
+
+    // After: exactly the paths the message names are on disk and uncommitted, and the claim
+    // "every later save is refused" is not rhetoric — D14 refuses the next one.
+    const porcelain = (await real.statusPorcelain()).split('\n').filter((line) => line !== '');
+    expect(porcelain).toHaveLength(2);
+    expect(repoFileExists(h.repo, QUEST)).toBe(true);
+    expect(repoFileExists(h.repo, META)).toBe(true);
+    expect(commitCount(h.repo)).toBe(1);
+    await expect(h.pipeline.saveObject(request('DS-P205-CFAIL-002'))).rejects.toThrow(
+      DirtyRepoError,
+    );
+  });
+
+  it('names the D22 deletions it applied, not only the files it wrote', async () => {
+    const { h } = failingHarness();
+    const name = 'DS-P205-CFAIL-DEL-001';
+    const REPLACED = 'QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json';
+    writeRepoFile(h.repo, REPLACED, stringifySpiraldbJson(metadataFixture('DS-P205-OLD-001')));
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'legacy metadata to be replaced']);
+    h.index.rebuild();
+
+    const failure = await h.pipeline
+      .saveObject({
+        ...request(name),
+        removePaths: [path.join(h.repo.dir, REPLACED)],
+      })
+      .then(
+        () => null as unknown as Error,
+        (error: unknown) => error as Error,
+      );
+
+    expect(failure).toBeInstanceOf(UncommittedSaveError);
+    expect(failure.message).toContain(`Deleted: ${REPLACED}`);
+    // The deletion really happened and is uncommitted, which is what the message says.
+    expect(repoFileExists(h.repo, REPLACED)).toBe(false);
+    expect(h.repo.git(['status', '--porcelain'])).toContain(REPLACED);
+  });
+
+  it('does not claim uncommitted bytes when the failure happened before the write', async () => {
+    const h = harness();
+
+    // The replacement guard refuses an outside path before anything is written, so this failure
+    // must surface as itself — the wrapper is not a blanket relabel.
+    const error = await h.pipeline
+      .saveObject({
+        ...request('DS-P205-CFAIL-003'),
+        removePaths: [path.resolve(path.sep, 'not-in-repo', 'x.json')],
+      })
+      .then(
+        () => null as unknown as Error,
+        (thrown: unknown) => thrown as Error,
+      );
+
+    expect(error).toBeInstanceOf(SpiraldbFileError);
+    expect(error).not.toBeInstanceOf(UncommittedSaveError);
+    expect(error.message).toMatch(/outside the SpiralDB root/);
+    expect(repoFileExists(h.repo, 'QuestTemplates/questtemplates_DS-P205-CFAIL-003.json')).toBe(
+      false,
+    );
+    expect(commitCount(h.repo)).toBe(1);
+  });
+});
+
+describe('an ambiguous metadata Name (S3)', () => {
+  const NAME = 'DS-P205-DUP-001';
+  const UUID_PATH = 'QuestMetadatas/069f430e-b191-448c-94db-ab03da221c1e.json';
+  const CONVENTION_PATH = `QuestMetadatas/questmetadata_${NAME}.json`;
+
+  function twoFileHarness(): Harness {
+    const h = harness();
+    writeRepoFile(h.repo, UUID_PATH, stringifySpiraldbJson(metadataFixture(NAME)));
+    writeRepoFile(
+      h.repo,
+      CONVENTION_PATH,
+      stringifySpiraldbJson({ ...metadataFixture(NAME), CreatedBy: 'quest_builder' }),
+    );
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'legacy UUID file plus the convention file']);
+    h.index.rebuild();
+    return h;
+  }
+
+  it('leaves the ordinary (single-file) resolution alone', () => {
+    const h = harness();
+    writeRepoFile(h.repo, UUID_PATH, stringifySpiraldbJson(metadataFixture(NAME)));
+    h.repo.git(['add', '--all']);
+    h.repo.git(['commit', '-m', 'one legacy file']);
+    h.index.rebuild();
+
+    expect(questMetadataSaveTarget(h.index, h.repo.dir, NAME)).toEqual({
+      path: path.join(h.repo.dir, UUID_PATH),
+      outcome: 'updated',
+      tieBreak: 'indexed',
+    });
+  });
+
+  it('updates the tool convention file, and reports which rule chose it', async () => {
+    const h = twoFileHarness();
+
+    // The ambiguity is real: the index's own rule resolves the name to the UUID file.
+    expect(h.index.pathFor('questmetadata', NAME)).toBe(path.join(h.repo.dir, UUID_PATH));
+    expect(questMetadataSaveTarget(h.index, h.repo.dir, NAME)).toEqual({
+      path: path.join(h.repo.dir, CONVENTION_PATH),
+      outcome: 'updated',
+      tieBreak: 'convention',
+    });
+
+    const result = await h.pipeline.saveObject(request(NAME));
+
+    expect(result.metadataOutcome).toBe('updated');
+    expect(result.metadataPath).toBe(path.join(h.repo.dir, CONVENTION_PATH));
+    expect(readRepoFile(h.repo, CONVENTION_PATH)).toContain(USER);
+    expect(readRepoFile(h.repo, UUID_PATH)).not.toContain(USER);
+    // The measured corpus pair says the legacy file's owner identity is preserved, not refreshed.
+    expect(JSON.parse(readRepoFile(h.repo, UUID_PATH))).toMatchObject({ ModifiedBy: 'makima' });
+  });
+});
+
+describe('caller notes in the commit body (S4)', () => {
+  it('collapses newlines and trailers to one line, in the real commit', async () => {
+    const h = harness();
+    const payload = 'totally normal note\n\nCo-authored-by: evil <evil@example.com>';
+    const result = await h.pipeline.saveObject({
+      ...request('DS-P205-NOTES-001'),
+      notes: payload,
+    });
+
+    expect(result.commitMessage).toBe(
+      'spiraldb: extract quest DS-P205-NOTES-001\n\ntotally normal note Co-authored-by: evil <evil@example.com>',
+    );
+    // Read it back out of the repository: the body is one line, so no trailer block can form.
+    const rawBody = h.repo.git(['log', '-1', '--pretty=%B']);
+    // Exactly three lines: the header, the blank separator and one body line. The body line
+    // therefore cannot be the start of a `Co-authored-by:` trailer block.
+    const body = rawBody.trimEnd().split('\n');
+    expect(body).toHaveLength(3);
+    expect(body[1]).toBe('');
+    expect(body[2]).toBe('totally normal note Co-authored-by: evil <evil@example.com>');
+    expect(rawBody).not.toMatch(/^Co-authored-by:/m);
   });
 });

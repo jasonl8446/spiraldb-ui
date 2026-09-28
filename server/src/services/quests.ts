@@ -17,6 +17,7 @@ import {
 } from './spiraldbFiles.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
 import type { SaveObjectResult, SaveOutcome, SavePipeline } from './savePipeline.js';
+import { questMetadataSaveTarget } from './savePipeline.js';
 import { isStatusValue, listStatus, type StatusSummary, type StatusValue } from './status.js';
 import { buildQuestRows } from './sync/corpus.js';
 import { isPlainObject } from './sync/json.js';
@@ -399,12 +400,18 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     (key) => key === metadataDuplicateKey(name),
   ).length;
   if (duplicates > 0) {
-    const paired = index.pathFor('questmetadata', name);
+    // The file the pipeline will update and the reason, from the pipeline's own resolver
+    // (`questMetadataSaveTarget`) — the warning must name the file that was actually written,
+    // which since S3 is the convention file whenever this name is ambiguous.
+    const target = questMetadataSaveTarget(index, index.root, name);
     const message =
       `QuestMetadatas/ holds ${duplicates + 1} files whose "Name" is "${name}". ` +
-      `The save updated ${
-        paired === undefined ? 'the new convention file' : relativeTo(index.root, paired)
-      } (first in file-name order) and left the other untouched — resolve the duplicate metadata by hand.`;
+      `The save updated ${relativeTo(index.root, target.path)}` +
+      `${
+        target.tieBreak === 'convention'
+          ? " (this tool's own convention file, preferred when a save is ambiguous)"
+          : ' (first in file-name order)'
+      } and left the other untouched — resolve the duplicate metadata by hand.`;
     warnings.push(message);
     console.warn(`[spiraldb-ui] ${message}`);
   }

@@ -16,7 +16,7 @@ Scope boundary from AGENTS.md Phase 1: scaffolding, sync script + schema, names 
 - Root `package.json`: dependencies per [spec-architecture.md](./spec-architecture.md) L181–198 plus the approved additions (D25): `multer`, `@tanstack/react-query`, `concurrently`, `tsx`, `vitest`, `supertest`, ESLint + Prettier (deterministic agent style). Scripts: `dev` (concurrently: tsx-watch server + vite client), `build`, `start`, `sync`, `test`, `lint`.
 - Layout per decision D1 ([plan-overview.md](./plan-overview.md)): `server/`, `client/`, `shared/`, `scripts/`, `data/` (gitignored), `tools/` placeholder.
 - `client/vite.config.ts` per [spec-architecture.md](./spec-architecture.md) L132–143: port 5173, proxy `/api` → `http://localhost:3001`.
-- Express bootstrap `server/src/index.ts`: port 3001, `cors`, JSON body parsing, route mounting, error-handling middleware returning `{ "error": "..." }` shapes.
+- Express bootstrap `server/src/index.ts`: port 3001 **bound to loopback** (`127.0.0.1`), JSON body parsing, route mounting, error-handling middleware returning `{ "error": "..." }` shapes. No CORS middleware: the client is same-origin in both modes (dev through Vite's `/api` proxy, production served by this same process), so the blanket `cors()` this line originally listed was removed by the final-review gate-2 fix work (finding M1: it answered any origin while the same API writes files and commits).
 - `.gitignore`: `data/`, `tools/bin/`, `tools/.obj/`, `tools/.nuget/` (D18), `node_modules/`, `client/dist/` (spec L150–154).
 - TypeScript strict mode; path alias `@shared/*`.
 

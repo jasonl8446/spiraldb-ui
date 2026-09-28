@@ -4,7 +4,6 @@ import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 
-import cors from 'cors';
 import express, { type Express, type Router } from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -49,7 +48,8 @@ afterEach(async () => {
 
 function createTestApp(extractRouter: Router): Express {
   const app = express();
-  app.use(cors());
+  // No `cors()`: this app mirrors the real composition (`server/src/app.ts`), which
+  // carries no CORS middleware at all (final-review gate 2, M1).
   app.use(express.json());
   app.use('/api/extract', extractRouter);
   app.use('/api', apiRouter);

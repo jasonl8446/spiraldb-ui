@@ -5,6 +5,7 @@ import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
 import {
   buildCommitMessage,
+  MAX_COMMIT_NOTES_LENGTH,
   commitAuthorEmail,
   createGitService,
   DirtyRepoError,
@@ -18,6 +19,7 @@ import {
   logLines,
   readRepoFile,
   removeTempGitRepo,
+  SCRATCH_PARENT,
   writeRepoFile,
   type TempRepo,
 } from '../helpers/temp-git-repo';
@@ -98,6 +100,24 @@ describe('the dirty-repo guard (D14)', () => {
     await expect(createGitService({ repoPath: subdirectory }).assertClean()).rejects.toThrow(
       /is not the root of a git working tree — check settings.spiraldb_path/,
     );
+  });
+
+  it('accepts a symlink to a working-tree root, which git reports by its physical path (N4)', async () => {
+    const target = repo();
+    // No relation to the case above: this path *is* the root, reached through a link, so
+    // refusing it sent the operator to a `spiraldb_path` that was in fact fine.
+    const link = path.join(SCRATCH_PARENT, `link-to-${path.basename(target.dir)}`);
+    // Idempotent and self-cleaning: a stale link from an interrupted run must not make this
+    // arm fail on EEXIST, and nothing of this test outlives it.
+    fs.rmSync(link, { force: true });
+    fs.symlinkSync(target.dir, link);
+    try {
+      const throughLink = createGitService({ repoPath: link });
+      await expect(throughLink.assertClean()).resolves.toBeUndefined();
+      expect(await throughLink.currentBranch()).toBe('main');
+    } finally {
+      fs.rmSync(link, { force: true });
+    }
   });
 });
 
@@ -232,6 +252,39 @@ describe('committing one saved object (D13, docs/spec-data-model.md L216-232)', 
     expect(
       buildCommitMessage({ action: 'create', objectType: 'quest', objectKey: 'X', notes: '  ' }),
     ).toBe('spiraldb: create quest X');
+  });
+
+  it('collapses caller notes to one line, so a body cannot start a line (S4)', () => {
+    // The header is server-built, so the only thing a caller can reach is the body — and a body
+    // with newlines in it could fabricate a `spiraldb: …` line or a `Co-authored-by:` trailer.
+    expect(
+      buildCommitMessage({
+        action: 'create',
+        objectType: 'drop_table',
+        objectKey: 'X',
+        notes: 'normal\n\nCo-authored-by: evil <evil@example.com>\nSigned-off-by: evil',
+      }),
+    ).toBe(
+      'spiraldb: create drop_table X\n\nnormal Co-authored-by: evil <evil@example.com> Signed-off-by: evil',
+    );
+    // Tabs, carriage returns, NUL and the DEL character collapse the same way.
+    expect(
+      buildCommitMessage({
+        action: 'update',
+        objectType: 'quest',
+        objectKey: 'X',
+        notes: 'a\tb\rc\u0000d\u007fe',
+      }),
+    ).toBe('spiraldb: update quest X\n\na b c d e');
+    // Capped, so a caller cannot write an unbounded body.
+    expect(
+      buildCommitMessage({
+        action: 'create',
+        objectType: 'quest',
+        objectKey: 'X',
+        notes: 'z'.repeat(MAX_COMMIT_NOTES_LENGTH + 100),
+      }),
+    ).toHaveLength('spiraldb: create quest X\n\n'.length + MAX_COMMIT_NOTES_LENGTH);
   });
 
   it('synthesises a local-only author email from the configured name', () => {

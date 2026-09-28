@@ -476,10 +476,16 @@ describe('API error envelope audit (AC2 / D37)', () => {
     expect(failures).toEqual([]);
   });
 
-  it('leaks no stack trace, no source file and no filesystem path in any error body', () => {
+  it('leaks no stack trace, no source file and no filesystem path in the 400s it probes', () => {
     // Only *error* bodies are checked: `GET /api/settings` legitimately answers with
     // the configured absolute paths, so "no filesystem path" is a rule about failures
     // (where a path would name an internal file), not about success payloads.
+    //
+    // Scope, stated: every probe below is a **malformed request** (a 400), so this arm proves
+    // the 400 surface only. A 5xx is *allowed* to name a path — `app.ts`'s `errorHandler`
+    // returns `err.message` and the file layer's messages name the file (D37/D38, deliberate
+    // actionability: the operator has to be able to find it) — so reading this arm as "no error
+    // body ever names a path" would over-read it (final-review gate 2, N2).
     const errorBodies = results.filter((result) => result.actual >= 400);
     expect(errorBodies.length).toBeGreaterThan(30);
     const failures = errorBodies.flatMap((result) => {
