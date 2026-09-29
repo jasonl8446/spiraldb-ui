@@ -643,7 +643,7 @@ the world names, what has been built, and what is missing.
 
 ```
 ┌─ Quest Catalog ─────────────────────────────────────────────────────────────┐
-│  12 defined of 1,447 nameable of ~4,830 quests the client holds text for     │
+│  322 defined of 1,717 nameable of ~4,823   (illustrative; every number is read from the view) quests the client holds text for     │
 │  ▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0.8%                                   │
 │                                                                    [ ] missing only │
 ├─────────────────────────┬──────────────────┬──────────┬────────┬────────────┤
@@ -678,8 +678,11 @@ the world names, what has been built, and what is missing.
 
 ### 11. NPC View (Phase 6 — D112 / P6-17)
 
-Route **`/npcs/:npcId`**. Reached from a paired name in any list row, from a `SearchPalette` result, or
-from a dialog speaker. There is **no nav item**: an NPC is a detail surface, not a roster.
+**API-only in Phase 6 (D112).** `GET /api/npcs/:npcId` ships — personas, dialogs, quests, inventories,
+the alias-keyed namespace and its `notes` — and it is unit-tested. **No `/npcs/:npcId` page was built**:
+`searchResultHref` returns `null` for an NPC row and the palette shows it unlinked, so none of the three
+entry points this section used to promise exists. Recorded by the final-deslop pass as a spec-vs-reality
+gap (a promise is a claim to re-test — D121's rule).
 
 ```
 ┌─ Gretta Darkkettle (WC-NPCs_00000003) ──────────────────────────────────────┐

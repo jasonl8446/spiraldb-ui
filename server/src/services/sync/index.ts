@@ -162,7 +162,6 @@ export {
 
 export {
   SYNC_USAGE,
-  formatCatalogSummary,
   formatSyncSummary,
   parseSyncArgs,
   runSyncCli,
@@ -170,25 +169,3 @@ export {
   type SyncCliArgs,
   type SyncCliOptions,
 } from './cli.js';
-
-export {
-  CATALOG_EXTRACT_SELECT,
-  MAX_ID_COLLISION_SAMPLES,
-  NOT_COLLECTED,
-  ZERO_QUEST_CATALOG_COUNTS,
-  collectQuestCatalog,
-  corpusQuestIdPairs,
-  defaultQuestCatalogDeps,
-  notRunQuestCatalogReport,
-  resolveIdOwnership,
-  writeQuestCatalog,
-  type CollectedQuestCatalog,
-  type CollectQuestCatalogOptions,
-  type IdOwnership,
-  type QuestCatalogCorpusRow,
-  type QuestCatalogCounts,
-  type QuestCatalogDeps,
-  type QuestCatalogReport,
-  type QuestCatalogStatus,
-  type WriteQuestCatalogOptions,
-} from './questCatalog.js';

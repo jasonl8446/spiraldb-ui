@@ -25,6 +25,7 @@ import type {
   QuestEvidenceReference,
   QuestEvidenceTextRow,
 } from '../../lib/api';
+import type { ReactNode } from 'react';
 import {
   dialogueInsertRow,
   inferredTitleBadge,
@@ -234,6 +235,42 @@ interface InsertSectionProps {
 }
 
 /**
+ * The one section shell: the accessible `<section>`, the `── heading ──` rule, the optional
+ * refusal sentence and the empty-state paragraph.
+ *
+ * All five sections open with exactly these elements, differing only in the constant they name, and
+ * the tier-1 arms find them by role and text — so the shell lives here once (including the
+ * `evidence-refusal-${heading}` testid spelling) rather than five times, where a later edit to one
+ * copy could change the DOM of one section alone.
+ */
+function EvidenceSection({
+  heading,
+  empty,
+  isEmpty,
+  refusal,
+  children,
+}: {
+  heading: string;
+  empty: string;
+  isEmpty: boolean;
+  /** A sentence explaining why the whole section refuses, or `null`/absent when it does not. */
+  refusal?: string | null;
+  children: ReactNode;
+}): JSX.Element {
+  return (
+    <section aria-label={heading} className="flex flex-col gap-2">
+      <h3 className="font-mono text-xs text-zinc-400">{`── ${heading} ──`}</h3>
+      {refusal === undefined || refusal === null ? null : (
+        <p className="text-xs text-zinc-400" data-testid={`evidence-refusal-${heading}`}>
+          {refusal}
+        </p>
+      )}
+      {isEmpty ? <p className="text-sm text-zinc-400">{empty}</p> : children}
+    </section>
+  );
+}
+
+/**
  * One `Used by this file` / `Available` section: each row's key and text, its insert action, and
  * the sentence explaining a refusal — once, when the whole section refuses for one reason.
  */
@@ -262,16 +299,13 @@ function TextSection({
     { editable },
   );
   return (
-    <section aria-label={heading} className="flex flex-col gap-2">
-      <h3 className="font-mono text-xs text-zinc-400">{`── ${heading} ──`}</h3>
-      {sectionMessage === null ? null : (
-        <p className="text-xs text-zinc-400" data-testid={`evidence-refusal-${heading}`}>
-          {sectionMessage}
-        </p>
-      )}
-      {rows.length === 0 ? (
-        <p className="text-sm text-zinc-400">{empty}</p>
-      ) : grouped ? (
+    <EvidenceSection
+      heading={heading}
+      empty={empty}
+      isEmpty={rows.length === 0}
+      refusal={sectionMessage}
+    >
+      {grouped ? (
         <ul className="flex flex-col gap-3">
           {groupedByField(rows, entries).map(([field, group]) => (
             <li key={field} className="flex flex-col gap-1">
@@ -301,7 +335,7 @@ function TextSection({
           ))}
         </ul>
       )}
-    </section>
+    </EvidenceSection>
   );
 }
 
@@ -378,116 +412,103 @@ function DialogueSection({
     { editable },
   );
   return (
-    <section aria-label={EVIDENCE_DIALOGUE_HEADING} className="flex flex-col gap-2">
-      <h3 className="font-mono text-xs text-zinc-400">{`── ${EVIDENCE_DIALOGUE_HEADING} ──`}</h3>
-      {sectionMessage === null ? null : (
-        <p
-          className="text-xs text-zinc-400"
-          data-testid={`evidence-refusal-${EVIDENCE_DIALOGUE_HEADING}`}
-        >
-          {sectionMessage}
-        </p>
-      )}
-      {rows.length === 0 ? (
-        <p className="text-sm text-zinc-400">{EVIDENCE_DIALOGUE_EMPTY}</p>
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {entries.map(({ row, plan, entry }) => (
-            <li key={row.id} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-xs text-zinc-200" title={entry.speaker.name}>
-                  {entry.speaker.name}
-                  {entry.own_table ? null : (
-                    <span className="ml-1 text-zinc-400">(sibling table)</span>
-                  )}
-                </span>
-                <InsertAction plan={plan} row={row} onInsert={onInsert} />
-              </div>
-              <p className="text-xs text-zinc-300">{`“${entry.text ?? ''}”`}</p>
-              <p
-                className="min-w-0 truncate font-mono text-[10px] text-zinc-400"
-                title={entry.dialog_key ?? ''}
-              >
-                {entry.dialog_key ?? '—'}
-              </p>
-              <InsertTarget plan={plan} />
-              {plan.ok || sectionMessage !== null ? null : (
-                <p className="text-xs text-zinc-400">{plan.message}</p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <EvidenceSection
+      heading={EVIDENCE_DIALOGUE_HEADING}
+      empty={EVIDENCE_DIALOGUE_EMPTY}
+      isEmpty={rows.length === 0}
+      refusal={sectionMessage}
+    >
+      <ul className="flex flex-col gap-3">
+        {entries.map(({ row, plan, entry }) => (
+          <li key={row.id} className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate text-xs text-zinc-200" title={entry.speaker.name}>
+                {entry.speaker.name}
+                {entry.own_table ? null : (
+                  <span className="ml-1 text-zinc-400">(sibling table)</span>
+                )}
+              </span>
+              <InsertAction plan={plan} row={row} onInsert={onInsert} />
+            </div>
+            <p className="text-xs text-zinc-300">{`“${entry.text ?? ''}”`}</p>
+            <p
+              className="min-w-0 truncate font-mono text-[10px] text-zinc-400"
+              title={entry.dialog_key ?? ''}
+            >
+              {entry.dialog_key ?? '—'}
+            </p>
+            <InsertTarget plan={plan} />
+            {plan.ok || sectionMessage !== null ? null : (
+              <p className="text-xs text-zinc-400">{plan.message}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </EvidenceSection>
   );
 }
 
 /** The `World gates` section: each gate with its required status and the objects that reference it. */
 function GatesSection({ gates }: { gates: QuestEvidence['goal_gates'] }): JSX.Element {
   return (
-    <section aria-label={EVIDENCE_GATES_HEADING} className="flex flex-col gap-2">
-      <h3 className="font-mono text-xs text-zinc-400">{`── ${EVIDENCE_GATES_HEADING} ──`}</h3>
-      {gates.length === 0 ? (
-        <p className="text-sm text-zinc-400">{EVIDENCE_GATES_EMPTY}</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {gates.map((gate) => (
-            <li key={`${gate.goal_name}:${gate.required_status ?? ''}`} className="flex flex-col">
-              <span className="break-all font-mono text-xs text-zinc-200">{gate.goal_name}</span>
-              <span className="text-xs text-zinc-400">
-                {`${gate.required_status ?? 'no required status'} · ${String(gate.refs.length)} reference(s)`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <EvidenceSection
+      heading={EVIDENCE_GATES_HEADING}
+      empty={EVIDENCE_GATES_EMPTY}
+      isEmpty={gates.length === 0}
+    >
+      <ul className="flex flex-col gap-2">
+        {gates.map((gate) => (
+          <li key={`${gate.goal_name}:${gate.required_status ?? ''}`} className="flex flex-col">
+            <span className="break-all font-mono text-xs text-zinc-200">{gate.goal_name}</span>
+            <span className="text-xs text-zinc-400">
+              {`${gate.required_status ?? 'no required status'} · ${String(gate.refs.length)} reference(s)`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </EvidenceSection>
   );
 }
 
 /** The `References` section: every `REFERENCE_FIELDS` field, through the one display rule. */
 function ReferencesSection({ references }: { references: QuestEvidenceReference[] }): JSX.Element {
   return (
-    <section aria-label={EVIDENCE_REFERENCES_HEADING} className="flex flex-col gap-2">
-      <h3 className="font-mono text-xs text-zinc-400">{`── ${EVIDENCE_REFERENCES_HEADING} ──`}</h3>
-      {references.length === 0 ? (
-        <p className="text-sm text-zinc-400">{EVIDENCE_REFERENCES_EMPTY}</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {references.map((reference) => (
-            <li key={reference.field} className="flex flex-col">
-              <span className="break-all font-mono text-[11px] text-zinc-400">
-                {reference.field}
-              </span>
-              <span className="text-xs text-zinc-200">
-                {reference.resolved === null
-                  ? `unresolved (${reference.kind ?? 'no namespace'}) ${String(reference.value)}`
-                  : reference.resolved.display}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <EvidenceSection
+      heading={EVIDENCE_REFERENCES_HEADING}
+      empty={EVIDENCE_REFERENCES_EMPTY}
+      isEmpty={references.length === 0}
+    >
+      <ul className="flex flex-col gap-2">
+        {references.map((reference) => (
+          <li key={reference.field} className="flex flex-col">
+            <span className="break-all font-mono text-[11px] text-zinc-400">{reference.field}</span>
+            <span className="text-xs text-zinc-200">
+              {reference.resolved === null
+                ? `unresolved (${reference.kind ?? 'no namespace'}) ${String(reference.value)}`
+                : reference.resolved.display}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </EvidenceSection>
   );
 }
 
 /** The `Warnings` section: the API's own misses, counted rather than dropped. */
 function WarningsSection({ warnings }: { warnings: string[] }): JSX.Element {
   return (
-    <section aria-label={EVIDENCE_WARNINGS_HEADING} className="flex flex-col gap-2">
-      <h3 className="font-mono text-xs text-zinc-400">{`── ${EVIDENCE_WARNINGS_HEADING} ──`}</h3>
-      {warnings.length === 0 ? (
-        <p className="text-sm text-zinc-400">{EVIDENCE_WARNINGS_EMPTY}</p>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {warnings.map((warning) => (
-            <li key={warning} className="text-xs text-amber-300/90">
-              {warning}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <EvidenceSection
+      heading={EVIDENCE_WARNINGS_HEADING}
+      empty={EVIDENCE_WARNINGS_EMPTY}
+      isEmpty={warnings.length === 0}
+    >
+      <ul className="flex flex-col gap-1">
+        {warnings.map((warning) => (
+          <li key={warning} className="text-xs text-amber-300/90">
+            {warning}
+          </li>
+        ))}
+      </ul>
+    </EvidenceSection>
   );
 }

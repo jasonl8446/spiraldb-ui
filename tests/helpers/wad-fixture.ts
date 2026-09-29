@@ -21,7 +21,7 @@ import path from 'node:path';
  */
 
 /** One entry to build: name, payload, and the index fields the reader must copy back verbatim. */
-export interface WadFixtureEntry {
+interface WadFixtureEntry {
   name: string;
   /** Uncompressed payload bytes; stored as-is or zlib-compressed per `isCompressed`. */
   payload: Buffer;
@@ -37,7 +37,7 @@ export interface WadFixtureEntry {
 }
 
 /** An archive to build: header version, optional padding, and its entries. */
-export interface WadFixtureSpec {
+interface WadFixtureSpec {
   version: number;
   /** Padding bytes between the file header and the first entry (default: 1 for v2, 0 for v1). */
   paddingBytes?: number;
@@ -45,7 +45,7 @@ export interface WadFixtureSpec {
 }
 
 /** Where each entry landed, so the test can assert exact offsets and slice the index precisely. */
-export interface BuiltEntry {
+interface BuiltEntry {
   entry: WadFixtureEntry;
   /** Absolute offset of the entry's data. */
   offset: number;
@@ -56,7 +56,7 @@ export interface BuiltEntry {
 }
 
 /** A built archive plus its layout — `indexEnd` is where the first payload byte begins. */
-export interface BuiltWad {
+interface BuiltWad {
   bytes: Buffer;
   version: number;
   indexEnd: number;
@@ -77,7 +77,7 @@ function adler32(data: Buffer): number {
 }
 
 /** A zlib stream made of stored (uncompressed) deflate blocks: deterministic under any zlib build. */
-export function storedZlibStream(payload: Buffer): Buffer {
+function storedZlibStream(payload: Buffer): Buffer {
   const parts: Buffer[] = [ZLIB_HEADER];
   let offset = 0;
   do {

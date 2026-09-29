@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Db } from '../db.js';
 import { escapeLike } from './names.js';
 import { parseJsonLenient } from './sync/json.js';
+import { personaObjectName } from './sync/personaIndex.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
 
 /**
@@ -72,7 +73,13 @@ import type { SpiraldbIndex } from './spiraldbIndex.js';
  */
 export const ENGINE_OBJECT_TEMPLATE_MAX_ID = 4117;
 
-/** The string-table categories whose `value` is an NPC name string (D112). */
+/** The string-table categories whose `value` is an NPC name string (D112).
+ *
+ * The order **is** the category priority for an entity's representative `npc_key`: most-
+ * corpus-referenced first (findings Measurement 5 — `WC-NPCs` 1,733 references, `NPCs` 7,
+ * `WizardNPC` 2, then the persona components). One list, so the vocabulary the query selects and
+ * the ranking that picks a key cannot drift apart.
+ */
 export const NPC_ALIAS_CATEGORIES = [
   'WC-NPCs',
   'NPCs',
@@ -81,19 +88,6 @@ export const NPC_ALIAS_CATEGORIES = [
   'Persona, Last',
   'Persona,Last',
 ] as const;
-
-/**
- * Category priority for the entity's representative `npc_key`, most-corpus-referenced
- * first (findings Measurement 5: `WC-NPCs` 1,733 references, `NPCs` 7, `WizardNPC` 2).
- */
-const NPC_KEY_CATEGORY_ORDER: readonly string[] = [
-  'WC-NPCs',
-  'NPCs',
-  'WizardNPC',
-  'Persona,First',
-  'Persona, Last',
-  'Persona,Last',
-];
 
 /** One row of the alias vocabulary. */
 export interface NpcAliasRow {
@@ -194,7 +188,7 @@ function npcKeyFor(rows: readonly NpcAliasRow[], displayName: string): string | 
     if (row.value !== displayName) {
       continue;
     }
-    const rank = NPC_KEY_CATEGORY_ORDER.indexOf(row.category);
+    const rank = (NPC_ALIAS_CATEGORIES as readonly string[]).indexOf(row.category);
     if (rank === -1) {
       continue;
     }
@@ -439,11 +433,6 @@ interface PersonaIndexRow {
 /** Non-empty string member, else `null`. */
 function viewText(value: unknown): string | null {
   return typeof value === 'string' && value !== '' ? value : null;
-}
-
-/** `WC_ShopArea_RobeShop_Persona` → `WC_ShopArea_RobeShop` (the index's key). */
-function personaObjectName(personaName: string): string {
-  return personaName.endsWith('_Persona') ? personaName.slice(0, -'_Persona'.length) : personaName;
 }
 
 /**

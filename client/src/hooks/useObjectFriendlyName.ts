@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ObjectTypeConfig } from '@shared/objectTypes';
 
 import { getName, nameLookupQueryKey } from '../lib/api';
-import { friendlyNameOf, type NameRow, type NamesType } from '../lib/display';
+import { friendlyNameOf, NAMES_TYPES, type NameRow, type NamesType } from '../lib/display';
 
 /**
  * The friendly name of one object entry, for the **detail header** (D105/P6-16).
@@ -31,15 +31,16 @@ import { friendlyNameOf, type NameRow, type NamesType } from '../lib/display';
  * `staleTime: Infinity` mirrors the names cache: a sync invalidates the `['names']`
  * prefix (D8), and a header is a read-only label.
  */
-/** The names-API types — the subset of `friendlyNamesType` the frozen seven-type endpoint serves. */
-const NAMES_API_TYPES: readonly string[] = ['npcs', 'zones'];
-
 export function useObjectFriendlyName(config: ObjectTypeConfig, objectKey: string): string | null {
   const source = config.friendlyNamesType;
   // A source the names API does not serve (`decks`, D112's frozen seven) is a deliberate miss,
-  // never a request that can only 404.
+  // never a request that can only 404. The vocabulary is `display.ts`'s `NAMES_TYPES` — the same
+  // seven-type list the endpoint and `nameLookupQueryKey` are built from — rather than a second
+  // list here (D105); the config's own type is what keeps `decks` from reaching the check at all.
   const type: NamesType | null =
-    source !== null && NAMES_API_TYPES.includes(source) ? (source as NamesType) : null;
+    source !== null && (NAMES_TYPES as readonly string[]).includes(source)
+      ? (source as NamesType)
+      : null;
   const query = useQuery({
     queryKey: nameLookupQueryKey(type ?? 'strings', objectKey),
     queryFn: () => getName(type as NamesType, objectKey),

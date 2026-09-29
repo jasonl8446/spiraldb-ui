@@ -8,16 +8,17 @@ import {
   QuestRefsCollector,
   computeHoldoutAccuracy,
   createQuestIdLookups,
-  extractQuestRefs,
   formatInferenceBasis,
   parseQuestTitleKey,
   questGroupKey,
   questRequirementClass,
   requirementKeys,
   summarizeQuestRefs,
+  type ExtractQuestRefsOptions,
   type QuestIdLookups,
   type QuestIdPair,
   type QuestRefSourceRow,
+  type QuestRefsResult,
 } from '@server/services/sync/questRefs';
 
 /**
@@ -47,6 +48,25 @@ const FIXTURE_ROWS: QuestRefSourceRow[] = fs
 const NV_DIRECT_KEY = 'QuestTitle_179840';
 const NV_NAME = 'NV-NEWV-MAIN-012';
 const EM_NAME = 'EM-REV-MAIN-003';
+
+/**
+ * Walk the fixture's four in-memory rows through the **producer's own two-step interface** —
+ * `add` then `finish` (`QuestRefsCollector`). This test-local helper replaces the array-in wrapper
+ * the module used to export: the producer keeps only the streaming interface (the real NDJSON is
+ * 97.7 MB, so a materialised-array convenience there invited exactly the shape streaming avoids),
+ * and a four-row fixture is the one caller for which the walk is a formality.
+ */
+function extractQuestRefs(
+  rows: Iterable<QuestRefSourceRow>,
+  lookups: QuestIdLookups,
+  options: ExtractQuestRefsOptions = {},
+): QuestRefsResult {
+  const collector = new QuestRefsCollector();
+  for (const row of rows) {
+    collector.add(row);
+  }
+  return collector.finish(lookups, options);
+}
 
 /** An injected lookup over two plain maps — the shape every arm below is pinned with. */
 function fakeLookups(input: {

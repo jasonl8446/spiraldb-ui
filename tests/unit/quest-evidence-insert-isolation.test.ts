@@ -1,7 +1,5 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -19,6 +17,15 @@ import {
   planEvidenceInsert,
   textInsertRow,
 } from '../../client/src/lib/evidence-insert';
+import {
+  CLONE,
+  CLONE_QUEST_FILES,
+  cloneAxes,
+  cloneGit as git,
+  questFileCount,
+  resetClone,
+} from '../helpers/clone-fixture';
+import { isPlainObject } from '../helpers/roundtrip-fidelity';
 
 /**
  * Story p6-08, **ac1** — "inserting a dialogue row sets the field and the saved file's `git diff`
@@ -69,7 +76,6 @@ import {
  * complete local ref list, before and after.
  */
 
-const CLONE = path.resolve(fileURLToPath(new URL('../../data/test-spiraldb/', import.meta.url)));
 const QUEST_NAME = 'WC-CYCLOPS-MAIN-002';
 const QUEST_FILE = `QuestTemplates/questtemplates_${QUEST_NAME}.json`;
 const META_FILE = `QuestMetadatas/questmetadata_${QUEST_NAME}.json`;
@@ -113,44 +119,11 @@ const MEASURED_AVAILABLE = 8;
 const GOAL_INDEX = 2;
 const GOAL_FIELD = 'm_goalText';
 
-/** Runs git inside the clone and returns stdout (throwaway repository — never the owner's fork). */
-function git(args: readonly string[]): string {
-  return execFileSync('git', ['-C', CLONE, ...args], { encoding: 'utf8' });
-}
-
-/** The five axes a restore has to move back, plus the corpus file count. */
-interface CloneAxes {
-  branch: string;
-  head: string;
-  main: string;
-  commitCount: string;
-  porcelain: string;
-  questFiles: number;
-  /** Every local branch, verbatim — the D76(b) check (`git reset --hard` can leave one behind). */
-  refs: string;
-}
-
-function cloneAxes(): CloneAxes {
-  return {
-    branch: git(['rev-parse', '--abbrev-ref', 'HEAD']).trim(),
-    head: git(['rev-parse', 'HEAD']).trim(),
-    main: git(['rev-parse', 'main']).trim(),
-    commitCount: git(['rev-list', '--count', 'HEAD']).trim(),
-    porcelain: git(['status', '--porcelain']),
-    questFiles: questFileCount(),
-    refs: git(['show-ref', '--heads']),
-  };
-}
-
-/** The corpus shape: the number of `QuestTemplates/*.json` files in the clone. */
-function questFileCount(): number {
-  return Number(
-    execFileSync('bash', ['-c', `ls ${CLONE}/QuestTemplates/*.json | wc -l`])
-      .toString()
-      .trim(),
-  );
-}
-
+/**
+ * `git`, `cloneAxes` and `questFileCount` come from `tests/helpers/clone-fixture.ts`; the readiness
+ * check below stays here because the files *it* needs (the quest's file **and** its metadata) are
+ * this suite's.
+ */
 function cloneReadiness(): { ok: boolean; reason: string } {
   if (!existsSync(path.join(CLONE, '.git'))) {
     return { ok: false, reason: 'the D17 clone data/test-spiraldb is absent' };
@@ -184,10 +157,6 @@ interface LeafChange {
   kind: 'changed' | 'removed' | 'added';
   before: unknown;
   after: unknown;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Every leaf that differs between two parsed documents — what *actually* changed. */
@@ -418,19 +387,8 @@ function seedTables(db: Db): void {
 
 let restorePoint: string | null = null;
 
-function restoreClone(): void {
-  if (restorePoint === null) {
-    return;
-  }
-  git(['reset', '--hard', restorePoint]);
-  const porcelain = git(['status', '--porcelain']);
-  if (porcelain.trim() !== '') {
-    throw new Error(`the D17 clone is still dirty after reset: ${porcelain}`);
-  }
-}
-
 afterAll(() => {
-  restoreClone();
+  resetClone(restorePoint);
 });
 
 describe.skipIf(!READINESS.ok)(
@@ -676,7 +634,7 @@ describe.skipIf(!READINESS.ok)(
         expect(afterMeta.QuestTemplateId).toBe(beforeMeta.QuestTemplateId);
       } finally {
         db.close();
-        restoreClone();
+        resetClone(restorePoint);
         restorePoint = null;
       }
 
@@ -689,8 +647,7 @@ describe.skipIf(!READINESS.ok)(
       expect(after.commitCount).toBe(before.commitCount);
       // The complete local ref list too: D76(b)'s incident restored the commit and left a branch.
       expect(after.refs).toBe(before.refs);
-      expect(questFileCount()).toBe(322);
-      expect(questFileCount()).toBeGreaterThan(0);
+      expect(questFileCount()).toBe(CLONE_QUEST_FILES);
       expect(before).toMatchObject({ branch: 'content/2026-09-27' });
       expect(readFileSync(path.join(CLONE, QUEST_FILE), 'utf8')).toBe(beforeFileBytes);
       console.log(

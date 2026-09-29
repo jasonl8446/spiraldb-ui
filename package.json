@@ -25,7 +25,9 @@
     "report:quest-refs": "tsx scripts/quest-refs-report.ts",
     "scaffold:quest": "tsx scripts/scaffold-quest.ts",
     "census:quest-corpus": "node scripts/quest-corpus-census.mjs",
+    "wad:census": "node scripts/wad-census.mjs",
     "verify:quest-catalog": "tsx scripts/quest-catalog-verify.ts",
+    "verify:wad-index": "tsx scripts/wad-index-verify.ts",
     "imlight:boot": "tsx scripts/imlight-boot.ts",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -33,6 +35,7 @@
     "test:ui": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test",
     "test:ui:install": "PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium",
     "typecheck:tests": "tsc -p tests/tsconfig.json --noEmit",
+    "typecheck:scripts": "tsc -p scripts/tsconfig.json --noEmit",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "audit:corpus": "node scripts/audit-corpus-roundtrip.mjs"

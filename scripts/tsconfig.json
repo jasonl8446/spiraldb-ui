@@ -1,0 +1,35 @@
+{
+  /**
+   * The `scripts/**\/*.ts` program — the phase's seven TS CLIs (`imlight-boot`, `scaffold-quest`,
+   * `quest-catalog-verify`, `quest-refs-report`, `wad-index-verify`, `sync-dry-run`,
+   * `sync-spotcheck`, `lang-collision-survey`) were type-checked by nothing before this file: there
+   * is no root tsconfig, `server`/`tests`/`client` each cover only their own tree, and
+   * `build:server` / `typecheck:tests` were the only `tsc` runs. A dead field in a CLI was therefore
+   * invisible to CI (`S15a` in the final-deslop disposition).
+   *
+   * The compiler options are `server/tsconfig.json`'s, because that is what these files are: Node
+   * ESM programs importing `../server/src/*.js` and `../shared/*.ts` and nothing else. The one
+   * difference is `noEmit` — this program exists to type-check, not to produce a `dist`.
+   */
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["**/*.ts", "../server/src/**/*.ts", "../shared/**/*.ts"]
+}

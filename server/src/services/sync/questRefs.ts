@@ -219,7 +219,7 @@ export const QUEST_TITLE_PREFIX = 'QuestTitle_';
 /** The named hold-out protocol (see {@link computeHoldoutAccuracy}). */
 export const HOLD_OUT_METHOD = 'neighbour-midpoint';
 
-/** The named inference protocol (see {@link extractQuestRefs}). */
+/** The named inference protocol (see {@link QuestRefsCollector}). */
 export const INFERENCE_METHOD = 'neighbour-midpoint';
 
 /* ------------------------------------------------------------------ helpers */
@@ -335,7 +335,8 @@ export interface ExtractQuestRefsOptions {
  * Streaming matters: the real NDJSON is 97.7 MB across 6,733 rows, so neither the file nor a
  * materialised array of its parsed rows is held in memory by the caller
  * ([quest-refs-report.ts](../../../../scripts/quest-refs-report.ts) feeds it line by line).
- * `extractQuestRefs` is the array-in convenience wrapper over the same collector.
+ * There is no array-in wrapper: `add` then `finish` **is** the interface, so nothing in the
+ * producer can encourage the materialised shape the streaming matters for.
  */
 export class QuestRefsCollector {
   private readonly references = new Map<string, QuestRefRow[]>();
@@ -541,19 +542,6 @@ export class QuestRefsCollector {
       link_conflicts: linkConflicts,
     };
   }
-}
-
-/** The array-in convenience wrapper: collects every row, then resolves the links. */
-export function extractQuestRefs(
-  rows: Iterable<QuestRefSourceRow>,
-  lookups: QuestIdLookups,
-  options: ExtractQuestRefsOptions = {},
-): QuestRefsResult {
-  const collector = new QuestRefsCollector();
-  for (const row of rows) {
-    collector.add(row);
-  }
-  return collector.finish(lookups, options);
 }
 
 function compareReferences(a: QuestRefRow, b: QuestRefRow): number {

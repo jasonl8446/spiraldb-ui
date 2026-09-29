@@ -5,6 +5,7 @@ import {
   CATALOG_LOADING,
   coverageHeadline,
   coveragePercentLabel,
+  coverageRatio,
   type QuestCoverage,
 } from '../../lib/quest-catalog';
 import { getQuestCoverage, QUEST_COVERAGE_QUERY_KEY } from '../../lib/api';
@@ -39,6 +40,10 @@ export default function CoverageHeader({ className }: CoverageHeaderProps): JSX.
   });
 
   const coverage = query.data;
+  // One ratio, read by the label **and** the bar. The bar previously re-decided `nameable > 0` for
+  // itself while the label went through `coveragePercentLabel`'s own copy of the same guard, so the
+  // two could disagree about whether the catalog's numbers mean anything.
+  const ratio = coverage === undefined ? null : coverageRatio(coverage.defined, coverage.nameable);
   const percent =
     coverage === undefined ? '' : coveragePercentLabel(coverage.defined, coverage.nameable);
 
@@ -79,10 +84,7 @@ export default function CoverageHeader({ className }: CoverageHeaderProps): JSX.
                 className="h-full rounded-full bg-blue-500"
                 data-testid="coverage-bar"
                 style={{
-                  width:
-                    coverage.nameable > 0
-                      ? `${(coverage.defined / coverage.nameable) * 100}%`
-                      : '0%',
+                  width: ratio === null ? '0%' : `${ratio * 100}%`,
                 }}
               />
             </div>

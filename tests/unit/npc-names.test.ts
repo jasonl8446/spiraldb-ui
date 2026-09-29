@@ -7,6 +7,7 @@ import {
   npcEntityById,
   searchNpcEntities,
 } from '@server/services/npcNames';
+import { seedNpc, seedString } from '../helpers/seed';
 
 /**
  * The NPC name namespace (P6-17/D112, story p6-06's "the NPC namespace").
@@ -35,18 +36,6 @@ function memoryDb(): Db {
   const db = openDb({ file: MEMORY_DB });
   OPEN.push(db);
   return db;
-}
-
-function seedNpc(db: Db, templateId: number, name: string): void {
-  db.prepare('INSERT INTO npcs (template_id, name) VALUES (?, ?)').run(templateId, name);
-}
-
-function seedString(db: Db, key: string, value: string, category: string): void {
-  db.prepare('INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)').run(
-    key,
-    value,
-    category,
-  );
 }
 
 /** The measured Gretta pair plus Merle and Zarek, as the live tables hold them. */

@@ -456,6 +456,25 @@ describe('per-type display formats (lead decision 5)', () => {
     ).toBe('DS-ACAD1-C01-001');
   });
 
+  it('collapses the quest identity pair — a title that fell back to the name is not a second name', () => {
+    // The catalog's common shape: the sync writes `title = record.quest_name` when the world linked
+    // no title (only 286 of 1,447 carry a direct one), so `namePair` here would render the forbidden
+    // `X (X)` on a real, frequent row rather than on an edge. `formatNameRow` routes through
+    // `namePairDistinct` for exactly this case (D105/P6-16).
+    const identity = {
+      quest_name: 'DS-ACAD-C01-001',
+      title: 'DS-ACAD-C01-001',
+      level: 1,
+      is_mainline: 1,
+    };
+    expect(formatNameRow('quests', identity)).toBe('DS-ACAD-C01-001');
+    expect(formatNameRow('quests', identity)).not.toContain(' (');
+    // …and the non-identity neighbour, so the arm is not simply asserting the fallback.
+    expect(formatNameRow('quests', { ...identity, title: 'Wizard Tours' })).toBe(
+      'Wizard Tours (DS-ACAD-C01-001)',
+    );
+  });
+
   it('shows a string value and falls back to its raw key', () => {
     expect(
       formatNameRow('strings', {

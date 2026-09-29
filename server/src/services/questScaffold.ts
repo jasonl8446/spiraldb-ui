@@ -347,9 +347,11 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
   const { db, index, pipeline, name } = options;
 
   // 1. ac3 — the guard is the writer's first statement. Nothing is read or written for a
-  //    name that would land outside QuestTemplates/.
-  const target = questTemplateTargetPath(index.root, name);
-  assertQuestTemplateTarget(index.root, name, target);
+  //    name that would land outside QuestTemplates/. Called for its refusal only: the pipeline
+  //    below resolves the target again from `(fileType, key)`, and `questTemplateTargetPath`
+  //    asserts the path itself as its last act before returning, so asserting its result here
+  //    could only re-run a check the call already made.
+  questTemplateTargetPath(index.root, name);
 
   // 2. The catalog row decides whether there is anything to scaffold at all.
   const row = db

@@ -18,7 +18,9 @@
  *
  * Exit codes: `0` ok · `2` usage · `3` a port answers from a process this harness cannot use ·
  * `4` the prebuilt Imlight output is stale · `5` the Director did not produce its log line ·
- * `6` the count did not rise by exactly one.
+ * `6` the count did not rise by exactly one **or** the clone did not restore to its snapshot
+ * (two proofs whose failure means the same thing to a caller: the run's own claim is not
+ * established).
  *
  * The run directories (`tools/.imlight-run/`, `tools/.aurorium-run/`, `tools/ImlightEmbeddedDatabase/`)
  * are inside the workspace on purpose: Imlight's `LocalWadCachePath = ./cache` and
@@ -45,6 +47,7 @@ import {
   forgetOwned,
   HarnessError,
   HARNESS_PORTS,
+  NON_QUEST_FAMILIES,
   parseSpiralDbLoadLines,
   PORT_SERVICE,
   portDecisions,
@@ -974,6 +977,28 @@ function restoreClone(snapshot: CloneSnapshot): void {
 
 type Flags = Record<string, string | boolean | undefined>;
 
+/**
+ * Every flag this CLI documents, in one place.
+ *
+ * `parseFlags` used to store any `--key` it was given and validate nothing, so a typo'd
+ * `--restore-clonee` was silently a no-op: the clone restore was skipped and the run still exited 0
+ * with a dirty fixture behind it. An unknown flag is now a usage refusal (rc=2), which is the only
+ * direction that fails closed.
+ */
+const KNOWN_FLAGS: readonly string[] = [
+  'help',
+  'clean',
+  'build',
+  'name',
+  'db',
+  'spiraldb',
+  'timeout',
+  'evidence-dir',
+  'prefix',
+  'restore-clone',
+  'keep-services',
+];
+
 function parseFlags(argv: readonly string[]): { mode: string; flags: Flags } {
   const mode = argv[0] ?? '';
   const flags: Flags = {};
@@ -984,6 +1009,10 @@ function parseFlags(argv: readonly string[]): { mode: string; flags: Flags } {
     }
     const equals = arg.indexOf('=');
     const key = equals === -1 ? arg.slice(2) : arg.slice(2, equals);
+    if (!KNOWN_FLAGS.includes(key)) {
+      console.error(`[harness] unknown flag: --${key}`);
+      usage();
+    }
     if (equals !== -1) {
       flags[key] = arg.slice(equals + 1);
       continue;
@@ -1324,20 +1353,9 @@ async function main(): Promise<void> {
       `  baseline readings inside the one process: ${identical(run.baselineLines)}`,
       `  after readings inside the one process   : ${identical(run.afterLines)}`,
       `  files counter : baseline ${baselineLine.files} -> after ${afterLine.files} (delta ${afterLine.files - baselineLine.files})`,
-      `  seven non-quest families: ${[
-        'spellbooks',
-        'dropTables',
-        'npcInventories',
-        'npcSpellInventories',
-        'npcDropTables',
-        'treasureCardInventories',
-        'zoneData',
-      ]
-        .map(
-          (family) =>
-            `${family} ${String((afterLine as unknown as Record<string, number>)[family])}`,
-        )
-        .join(', ')}`,
+      `  seven non-quest families: ${NON_QUEST_FAMILIES.map(
+        (family) => `${family} ${String(afterLine[family])}`,
+      ).join(', ')}`,
     ].join('\n');
     console.log('');
     console.log(report);
@@ -1394,6 +1412,10 @@ async function main(): Promise<void> {
       );
     } else {
       await stopOwnedAurorium();
+    }
+    if (!run.proof.ok) {
+      console.error(`[harness] the count proof failed: ${run.proof.detail}`);
+      process.exit(6);
     }
     return;
   }

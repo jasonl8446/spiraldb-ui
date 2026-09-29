@@ -670,7 +670,8 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       collectedBreadth,
     );
     catalog = written.catalog;
-    breadth = collectedBreadth;
+    // `breadth` was already set to `collectedBreadth` above; the catch path below reads it, so the
+    // store that is live on both paths is the earlier one (a second identical store here was dead).
     const breadthReport = written.breadth;
     timings.writeMs = Date.now() - writeStarted;
 

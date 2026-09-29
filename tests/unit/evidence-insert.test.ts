@@ -469,6 +469,17 @@ describe('the inferred badge, and the collision it must not fall into', () => {
       inference_basis: 'midpoint of the two anchored neighbours',
     };
     expect(inferredTitleBadge(header.title_source)).toBe(INFERRED_TITLE_BADGE_LABEL);
+
+    // …and the direction the assertion above cannot see. `title_source: 'inferred'` is assignable
+    // while the field is the catalog enum **and** while it is `string`, so a widening of the field
+    // would leave that check green; this half fails in exactly that case. The directive carries the
+    // negative control with it: `@ts-expect-error` is itself an error (`TS2578`) when the next line
+    // compiles, so `typecheck:tests` goes red the moment 'rawKey' becomes assignable.
+    // @ts-expect-error — `rawKey` is the quests LIST endpoint's vocabulary, not the catalog enum.
+    const listVocabulary: QuestEvidence['quest']['title_source'] = 'rawKey';
+    // The runtime half of the same claim: the wrong-vocabulary value reaching the badge function
+    // yields no badge, exactly as the arm above asserts for the other two list values.
+    expect(inferredTitleBadge(listVocabulary)).toBeNull();
   });
 });
 

@@ -1,7 +1,12 @@
 import { OBJECT_TYPES, type ObjectTypeConfig } from '../../../shared/objectTypes.js';
 
 import type { Db } from '../db.js';
-import { escapeLike } from './names.js';
+import {
+  escapeLike,
+  FRIENDLY_SOURCE_SPECS,
+  NAMES_TYPE_SPECS,
+  type NamesTypeSpec,
+} from './names.js';
 import { searchNpcEntities } from './npcNames.js';
 import { isStatusValue, type StatusObjectType, type StatusValue } from './status.js';
 
@@ -173,40 +178,38 @@ interface SearchNpcGroupSpec {
 
 type SearchGroupSpec = SearchObjectGroupSpec | SearchNamesGroupSpec | SearchNpcGroupSpec;
 
+/**
+ * One join, **derived** from the family's own spec rather than re-spelled here.
+ *
+ * `keyColumn` is the spec's `idColumn` and `nameColumn` its `labelColumn` — the very columns
+ * `GET /api/names/:type` selects and the object list builds `friendly_name` from, so a rename in
+ * `names.ts` cannot leave this arm joining the old column (which would be silent: the join would
+ * simply match nothing). Only `keyIsInteger` is local, because it is a fact about the *comparison*
+ * against `entry_status.object_key` rather than about the names table.
+ */
+function nameJoin(spec: NamesTypeSpec, keyIsInteger: boolean): SearchNameJoin {
+  return {
+    table: spec.table,
+    keyColumn: spec.idColumn,
+    nameColumn: spec.labelColumn,
+    keyIsInteger,
+  };
+}
+
 /** `quests`' friendly-name table: the one join that reaches a route (module doc-comment). */
-const QUEST_NAME_JOIN: SearchNameJoin = {
-  table: 'quests',
-  keyColumn: 'quest_name',
-  nameColumn: 'title',
-  keyIsInteger: false,
-};
+const QUEST_NAME_JOIN: SearchNameJoin = nameJoin(NAMES_TYPE_SPECS.quests, false);
 
 /** The four `TemplateID` families' friendly table — an INTEGER key against a text key. */
-const NPC_NAME_JOIN: SearchNameJoin = {
-  table: 'npcs',
-  keyColumn: 'template_id',
-  nameColumn: 'name',
-  keyIsInteger: true,
-};
+const NPC_NAME_JOIN: SearchNameJoin = nameJoin(FRIENDLY_SOURCE_SPECS.npcs, true);
 
 /** ZoneTransfer's friendly table — a zone path is TEXT on both sides. */
-const ZONE_NAME_JOIN: SearchNameJoin = {
-  table: 'zones',
-  keyColumn: 'zone_path',
-  nameColumn: 'display_name',
-  keyIsInteger: false,
-};
+const ZONE_NAME_JOIN: SearchNameJoin = nameJoin(FRIENDLY_SOURCE_SPECS.zones, false);
 
 /**
  * CreatureSpellbook's friendly table (task 6.9) — `decks.deck_name` is the `DeckTemplate`
  * `m_name` the object's own `DeckName` holds, so both sides are TEXT.
  */
-const DECK_NAME_JOIN: SearchNameJoin = {
-  table: 'decks',
-  keyColumn: 'deck_name',
-  nameColumn: 'name',
-  keyIsInteger: false,
-};
+const DECK_NAME_JOIN: SearchNameJoin = nameJoin(FRIENDLY_SOURCE_SPECS.decks, false);
 
 /**
  * The join a family's row carries, from the **same** `friendlyNamesType` the object

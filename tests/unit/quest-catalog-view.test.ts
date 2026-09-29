@@ -178,8 +178,21 @@ describe('the row cells are words (D85)', () => {
 
   it('the Title cell falls back to an em dash rather than an empty cell', () => {
     expect(catalogTitleText(MISSING)).toBe('Stakes and Stones');
-    expect(catalogTitleText({ title: '   ' })).toBe(CATALOG_NO_TITLE);
+    expect(catalogTitleText({ title: '   ', quest_name: 'WC-UNICORN-MAIN-004' })).toBe(
+      CATALOG_NO_TITLE,
+    );
     expect(CATALOG_NO_TITLE).toBe('—');
+  });
+
+  it('the Title cell is the em dash when the title fell back to the name, not a repeated Name cell', () => {
+    // An unlinked quest's `title` **is** its `quest_name` (the sync writes `title =
+    // record.quest_name`; only 286 of 1,447 catalog rows carry a direct title), so without this the
+    // Name and Title columns print one string twice and `CATALOG_NO_TITLE` is unreachable.
+    const identity = { quest_name: 'WC-UNICORN-MAIN-004', title: 'WC-UNICORN-MAIN-004' };
+    expect(catalogTitleText(identity)).toBe(CATALOG_NO_TITLE);
+    expect(catalogTitleText(identity)).not.toBe(identity.quest_name);
+    // The linked neighbour still prints its own title — the fallback is not swallowing real ones.
+    expect(catalogTitleText({ ...identity, title: 'Unicorn Way' })).toBe('Unicorn Way');
   });
 
   it('an inferred title carries the labelled badge', () => {

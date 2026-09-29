@@ -54,6 +54,29 @@ const SCRATCH = fs.mkdtempSync(path.join(SCRATCH_PARENT, 'wad-index-'));
 const V1_BYTES = buildWadArchive(WAD_V1_FIXTURE);
 const V2_BYTES = buildWadArchive(WAD_V2_FIXTURE);
 
+/**
+ * The census script's own index parser, imported so its "agree byte for byte" claim can be
+ * **tested** rather than asserted in prose (S8).
+ *
+ * The annotation is the module's shape, written here because `scripts/wad-census.mjs` is plain
+ * `.mjs` with no declaration file: it names exactly the fields the comparison below depends on
+ * (including the census's own `compressed` spelling, which is *not* the app's `isCompressed`).
+ * `tests/tsconfig.json` sets `allowJs` for this import; `wad-census.mjs` runs `main()` only when it
+ * is the process entry point, which is what makes it importable at all.
+ */
+const { parseIndex } = (await import('../../scripts/wad-census.mjs')) as {
+  parseIndex: (buffer: Buffer) => {
+    version: number;
+    entries: Array<{
+      name: string;
+      offset: number;
+      size: number;
+      compressedSize: number;
+      compressed: boolean;
+    }>;
+  };
+};
+
 afterAll(() => {
   fs.rmSync(SCRATCH, { recursive: true, force: true });
 });
@@ -229,6 +252,55 @@ describe('committed v2 fixture (fixture-only — the corpus holds zero v2 archiv
         V2_PADDING_BYTES +
         V2_BYTES.entries.reduce((sum, entry) => sum + ENTRY_HEADER_BYTES + entry.nameLength, 0),
     );
+  });
+});
+
+/**
+ * The cross-reader parity arm (final-deslop S8).
+ *
+ * `wadindex.ts`'s header claims it and `scripts/wad-census.mjs`'s `parseIndex` "agree byte for
+ * byte" — a claim that was prose-only, with the census's parser exported and imported by nothing.
+ * This is the arm that makes it a test: the **same bytes** through both readers, both header
+ * versions, compared field by field. v2 is the version that matters, because its one padding byte
+ * is exactly where a divergent field layout would show up, and the corpus holds zero v2 archives
+ * for a real mismatch to be noticed in.
+ *
+ * The comparison is proven **sensitive** before its clean result is trusted (D90(c)): the two
+ * versions' projections are asserted non-empty and unequal to each other, so a `toEqual` between
+ * two empty or accidentally-identical lists cannot pass this arm.
+ */
+describe('the census reader agrees with the app reader (S8)', () => {
+  it('yields the same version and entry fields for both header versions', async () => {
+    const projections: Array<Array<Record<string, unknown>>> = [];
+    for (const file of [V1_PATH, V2_PATH]) {
+      const bytes = fs.readFileSync(file);
+      const census = parseIndex(bytes);
+      const app = await readWadIndex(file);
+      // Field names differ on purpose (`isCompressed` on the app side, `compressed` in the census),
+      // so the projection maps them onto one shape rather than assuming the spellings agree.
+      const projected = census.entries.map((entry) => ({
+        name: entry.name,
+        offset: entry.offset,
+        size: entry.size,
+        compressedSize: entry.compressedSize,
+        isCompressed: entry.compressed,
+      }));
+      expect(census.version).toBe(app.version);
+      expect(projected).toEqual(
+        app.entries.map((entry) => ({
+          name: entry.name,
+          offset: entry.offset,
+          size: entry.size,
+          compressedSize: entry.compressedSize,
+          isCompressed: entry.isCompressed,
+        })),
+      );
+      projections.push(projected);
+    }
+    // The negative control for the instrument: real, distinct, non-empty inputs.
+    expect(projections[0]).toHaveLength(4);
+    expect(projections[1]).toHaveLength(2);
+    expect(projections[0]).not.toEqual(projections[1]);
   });
 });
 

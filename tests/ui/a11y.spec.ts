@@ -5,7 +5,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { ITEM_ROWS, mockDocument, mockRows, QUEST_ROWS, SELF_KEY } from './drop-table-mocks';
-import { MOCK_QUEST, mockQuestRows } from './quests-mocks';
+import { MOCK_CATALOG_ROWS, MOCK_COVERAGE, MOCK_QUEST, mockQuestRows } from './quests-mocks';
 
 /**
  * Story p5-07's tier-1 accessibility spec — **Phase-5 AC#13** (plan task 5.7; decisions D23
@@ -308,32 +308,17 @@ async function mockA11yApi(page: Page): Promise<Mocked> {
     // `/api/quests/coverage` and `/api/quests/catalog` start with the same prefix and would
     // otherwise be answered as a quest document — which is not a coverage payload at all.
     if (path === '/api/quests/coverage') {
-      return json({
-        nameable: 1717,
-        id_space: 4823,
-        defined: 322,
-        missing: 1395,
-        references: 2855,
-        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
-      });
+      // The shared fixture: `MOCK_COVERAGE` is the one measured home for these five numbers, so a
+      // re-typed copy here could only drift from what the page asserts against elsewhere.
+      return json(MOCK_COVERAGE);
     }
     if (path === '/api/quests/catalog') {
-      const catalogRows = [
-        {
-          quest_name: 'DS-ACAD1-C01-001',
-          title: 'Wizard Tours',
-          title_source: 'inferred',
-          has_definition: 1,
-          reference_count: 6,
-        },
-        {
-          quest_name: 'DM-GRAVE-MAIN-008',
-          title: 'Stakes and Stones',
-          title_source: 'direct',
-          has_definition: 0,
-          reference_count: 19,
-        },
-      ];
+      // The shared fixture (`quests-mocks.ts`), not a hand-rolled copy: this spec navigates to no
+      // catalog route, so its rows are *just* the fixture. `shell.spec.ts` and `responsive.spec.ts`
+      // keep their own copies deliberately — they navigate to `/quests/DS-ACAD-C01-001` and
+      // `/quests/catalog`, so their rows carry the older placeholder those arms address, and
+      // unifying the spelling would be the drift, not the fix.
+      const catalogRows = MOCK_CATALOG_ROWS;
       const missingOnly = url.searchParams.get('missing_only') === '1';
       const quests = missingOnly
         ? catalogRows.filter((row) => row.has_definition === 0)

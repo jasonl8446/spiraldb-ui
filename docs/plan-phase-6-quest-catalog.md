@@ -1,6 +1,6 @@
 # Phase 6 — Quest authoring: catalog, evidence, and names everywhere
 
-**Status:** proposed (2026-09-28) — awaiting owner sign-off of the decision ledger below
+**Status:** proposed (2026-09-28) — merged (PR #9 → `0afb308`); superseded by the delivered build of the decision ledger below
 **Depends on:** Phase 1 (sync pipeline, SQLite), Phase 2 (import + save pipeline), Phase 3 (quest editors). New external dependency: none (the .NET tool builds against the Imcodec submodule the repo already references).
 **Spec reading order before starting:** [spec-domain-reference.md](./spec-domain-reference.md) → [spec-data-model.md](./spec-data-model.md) → [spec-api.md](./spec-api.md) → [spec-ui-design.md](./spec-ui-design.md)
 
@@ -42,7 +42,7 @@ names API searches the label column only for six of its seven types.
 | Corpus quests with a parseable id | 308/315; 2,602 text rows available, 1,303 used (**~50% unused material**) |
 | Dialogue speaker personas resolving to a template id | 280/288 (97%) via the manifest the sync already loads |
 | Files carrying a quest reference (`ReqHasQuest`/`ReqHasEntry`/`ReqIsQuest`) | 1,177 across 500 WADs |
-| Hold-out accuracy of id interpolation from neighbours | **78%** (128/165) |
+| Hold-out accuracy of id interpolation from neighbours | **78.0%** (168 cases, 131 hits — the 128/165 in the first draft does not reproduce; p6-04's evidence) |
 | Name types whose `?q=` can match the technical id | **1 of 7** (`strings` only) |
 | Object families whose list row shows a friendly name | **0 of 8** |
 | Object families whose global-search row can match a friendly name | **1 of 9** (quests) |
@@ -82,7 +82,7 @@ Answers given by the owner on 2026-09-28. Each becomes a D-item in task 6.0.
 | P6-12 | Crawl + tooling | Crawl **all 6,733** zone-data files via a new batch tool; per-file CLI fallback over the 1,177 flagged files when the tool is absent. |
 | P6-13 | Non-quest breadth | Zones **and** recipes stay in this phase. |
 | P6-14 | Execution model | **Phase 6 under the existing D29 loop** — phase branch, one story per round, PR self-merge at CI-green, boundary gate story. |
-| P6-15 | Definition of done | Evidence completeness and authoring reachable, **no throughput gate**: coverage reads "*n* defined of 1,447 nameable of ~4,830 that exist", with *n* taken from the `coverage` view and the corpus named (322 in-run, 328 in production). |
+| P6-15 | Definition of done | Evidence completeness and authoring reachable, **no throughput gate**: coverage reads "*n* defined of 1,717 nameable of ~4,823 (read from the view; the plan's literal 1,447 is the world-named sub-count) that exist", with *n* taken from the `coverage` view and the corpus named (322 in-run, 328 in production). |
 | P6-16 | Friendly + technical names | Shown **paired in every section** — every list, table, detail header, picker option, search-palette row and the quest editor's Info/Goals/Requirements/Results/Dialog sections — and **every search matches either** the friendly or the technical value. |
 | P6-17 | NPC names | A **first-class searchable namespace plus an NPC view** — keyed on the NPC (template/persona), with the name strings as aliases, so "Gretta" and "Gretta Darkkettle" are one NPC rather than two. Delivered as a `SEARCH_GROUPS` entry plus a dedicated NPC view endpoint, **leaving the seven-type names contract frozen** (G7): the names API's row is single-id and an NPC's identity is dual (template id *and* persona name), while the NPC view is an aggregate, not a name list. |
 | P6-20 | Final-gate mechanics | The three existing `final-*` stories are **reset to `passes:false`** and re-run over the cumulative tree after gate-6, with `final-verify`'s criterion amended through `prd_amend` to name P6 alongside P1–P5. One authoritative closing gate; the previous run's evidence files stay in `docs/evidence/`. |

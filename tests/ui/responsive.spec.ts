@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
+import { MOCK_COVERAGE } from './quests-mocks';
+
 /**
  * Story p5-06's tier-1 responsive spec (plan task 5.6, **Phase-5 AC#12**; decisions D23 tier 1,
  * D40/D44, D67(d), D78(d), D81).
@@ -371,14 +373,12 @@ async function mockResponsiveApi(page: Page): Promise<string[]> {
     // mock that is not as demanding as reality proves nothing about it (D90(a)).
     if (path === '/api/quests/coverage') {
       return json({
-        nameable: 1717,
-        id_space: 4823,
-        defined: 322,
-        missing: 1395,
-        references: 2855,
+        ...MOCK_COVERAGE,
+        // …with the one deliberate override: this spec is the only instrument that watches the
+        // header's unbreakable corpus path, so it must be the longest one the repo can produce.
         corpus: {
+          ...MOCK_COVERAGE.corpus,
           spiraldb_path: '/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb',
-          quest_files: 322,
         },
       });
     }
