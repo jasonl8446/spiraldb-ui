@@ -529,20 +529,48 @@ test.describe('reordering', () => {
     await handle.scrollIntoViewIfNeeded();
     await handle.hover();
     const source = await handle.boundingBox();
+    const sourceCard = await card(page, 0).boundingBox();
     const target = await card(page, 1).boundingBox();
     expect(source).not.toBeNull();
+    expect(sourceCard).not.toBeNull();
     expect(target).not.toBeNull();
 
+    // **Where the pointer must END, measured rather than assumed (gate 6).** The pointer is
+    // grabbed on the *handle*, which sits near the top of the card, but dnd-kit's
+    // `closestCenter` compares the dragged **card's** centre with each droppable's — it
+    // translates the whole card by the pointer's delta. So aiming the *handle* at the second
+    // card's centre overshoots the *card* by the grab offset plus one card height, and the
+    // drop resolves to index 2 (this arm failed on CI and locally for exactly that reason;
+    // instrumenting `onDragEnd` showed `over=m_goals:2` for a pointer sitting on card 1, and
+    // the previous comment blamed the card's bottom edge, which the measurement refutes).
+    // The honest simulation moves the pointer by the delta between the two **cards'**
+    // centres and adds the grab offset back, so the dragged card's centre lands on the
+    // second card's centre and the collision resolves to index 1.
+    const grabOffsetY = source!.y + source!.height / 2 - (sourceCard!.y + sourceCard!.height / 2);
+    // 70 % of the way from the first card's centre to the second: at that point the dragged
+    // card's centre is decisively closest to card 1 (0.3Δ from it, 0.7Δ from card 0, and at
+    // least a further 0.3Δ + one card away from card 2), which is what makes the arm stable
+    // rather than borderline — aiming at card 1's *centre* sits on the boundary whenever the
+    // cards' heights differ, and this arm was measured passing 1 of 3 runs there.
+    const firstCentre = sourceCard!.y + sourceCard!.height / 2;
+    const secondCentre = target!.y + target!.height / 2;
+    const dropY = firstCentre + (secondCentre - firstCentre) * 0.7 + grabOffsetY;
     await page.mouse.move(source!.x + source!.width / 2, source!.y + source!.height / 2);
     await page.mouse.down();
-    // dnd-kit's PointerSensor starts on pointerdown and needs movement for the
-    // collision detection to see the card it passes over, so the move is incremental.
-    // It ends on the *centre* of the second card: `closestCenter` compares the dragged
-    // item's centre with each droppable's, and aiming at the card's bottom edge lands in
-    // the third card's half of the gap — the drop then inserts at index 2, not 1.
-    await page.mouse.move(target!.x + target!.width / 2, target!.y + target!.height / 2, {
-      steps: 20,
+    // **The long move must not race the sensor.** A pointerdown arms dnd-kit's PointerSensor
+    // one frame later, and a long move sent inside that window is processed without an active
+    // drag: the item never lifts and the arm fails on the poll even though the geometry was
+    // right (measured: 3 of 4 runs passed once the drop point was corrected, the fourth
+    // failing with the order simply unchanged). So the lift is awaited on the evidence the
+    // keyboard arm already uses — dnd-kit announces the sortable it picked up in its live
+    // region — after a nudge past the activation distance.
+    await page.mouse.move(source!.x + source!.width / 2, source!.y + source!.height / 2 + 12, {
+      steps: 4,
     });
+    await expect.poll(() => liveAnnouncements(page)).toContain('m_goals:0');
+    // dnd-kit's PointerSensor needs movement for the collision detection to see the card it
+    // passes over, so the move to the drop point is incremental.
+    await page.mouse.move(target!.x + target!.width / 2, dropY, { steps: 20 });
     await page.mouse.up();
     // Await the drop's effect before reading the document: the panel is fed by the same
     // live document, so copying immediately can still capture the pre-drop order.
