@@ -26,6 +26,7 @@
     "scaffold:quest": "tsx scripts/scaffold-quest.ts",
     "census:quest-corpus": "node scripts/quest-corpus-census.mjs",
     "verify:quest-catalog": "tsx scripts/quest-catalog-verify.ts",
+    "imlight:boot": "tsx scripts/imlight-boot.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:reset-clone": "rm -rf $PWD/data/test-spiraldb && git clone /home/jason/Documents/git-projects/spiraldb $PWD/data/test-spiraldb",

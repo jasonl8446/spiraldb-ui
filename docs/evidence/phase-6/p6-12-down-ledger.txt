@@ -1,0 +1,45 @@
+### a leftover from a run killed by a broken pipe: the ledger lets a later run find and stop it
+
+$ npm run imlight:boot -- probe   (all five report 'owned', including the RavenDB child on 8080)
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts probe
+
+port   role      status  pid      detail
+12369  aurorium  owned   1801051  port 12369 answers from pid 1801051 (/home/jason/Documents/git-projects/Aurorium/target/debug/aurorium), recorded as the aurorium this harness started at 2026-09-29T04:06:35.923Z in /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run — reuse, do not stop
+12500  imlight   owned   1801081  port 12500 answers from pid 1801081 (/nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet/dotnet /home/jason/Documents/git-projects/s…), recorded as the imlight this harness started at 2026-09-29T04:06:36.266Z in /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run — reuse, do not stop
+12000  imlight   owned   1801081  port 12000 answers from pid 1801081 (/nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet/dotnet /home/jason/Documents/git-projects/s…), recorded as the imlight this harness started at 2026-09-29T04:06:36.266Z in /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run — reuse, do not stop
+12333  imlight   owned   1801081  port 12333 answers from pid 1801081 (/nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet/dotnet /home/jason/Documents/git-projects/s…), recorded as the imlight this harness started at 2026-09-29T04:06:36.266Z in /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run — reuse, do not stop
+8080   imlight   owned   1801139  port 8080 answers from pid 1801139 (dotnet --fx-version 10.0.12 /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run/RavenDBServer/Raven.Server…), recorded as the imlight this harness started at 2026-09-29T04:06:36.266Z in /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run — reuse, do not stop
+
+start  : (none)
+reuse  : 12369, 12500, 12000, 12333, 8080
+refused: (none)
+
+$ npm run imlight:boot -- down
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts down
+
+[harness] stopped Aurorium pid 1801051
+[harness] stopped recorded Imlight on port 12500 pid 1801081
+[harness] recorded Imlight on port 12000 pid 1801081 is already gone
+[harness] recorded Imlight on port 12333 pid 1801081 is already gone
+[harness] stopped recorded Imlight on port 8080 pid 1801139
+
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+[harness] stopped what it had started; nothing else was touched
+
+$ for p in 12369 12500 12000 12333 8080; do TCP connect; done
+  12369: free
+  12500: free
+  12000: free
+  12333: free
+  8080: free
+
+  (no harness process is still running)

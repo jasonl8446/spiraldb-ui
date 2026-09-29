@@ -1,0 +1,57 @@
+=== a measured correction to task 6.11's blocker 2 ("Paths are cwd-relative") ===
+
+blocker 2 as written:
+  "Paths are cwd-relative (LocalWadCachePath = ./cache, EmbeddedDatabaseDataDirectory =
+   ../ImlightEmbeddedDatabase/), which is what makes a workspace copy viable — and means the run
+   directory and its parent must both be in the workspace."
+
+--- what the run measured: the two paths do NOT resolve the same way ---
+
+1. LocalWadCachePath = ./cache  ->  the process cwd (the run directory). CONFIRMED cwd-relative:
+-rw-r--r-- 1 jason users 297418752 Sep 29 00:08 tools/.imlight-run/cache
+   (it is a LiteDB FILE, not a directory, and it grows to the size of the wads it caches)
+
+2. Logging.LogPath = ./logs/log.txt -> the process cwd too:
+total 32
+drwxr-xr-x 2 jason users  4096 Sep 29 00:08 .
+drwxr-xr-x 9 jason users  4096 Sep 29 00:08 ..
+-rw-r--r-- 1 jason users 23383 Sep 29 00:08 log20260929.txt
+
+3. EmbeddedDatabaseDataDirectory = ../ImlightEmbeddedDatabase/  ->  NOT the process cwd.
+   The Director's cwd is tools/.imlight-run/, so '..' would be tools/ —— and tools/ImlightEmbeddedDatabase
+   does not exist. The embedded database is written inside the run directory instead, because
+   Raven.Embedded spawns Raven.Server with its own working directory and hands it
+   --DataDir=../ImlightEmbeddedDatabase/ (absolute --Logs.Path is derived from the app base dir):
+
+   $ ls tools/ImlightEmbeddedDatabase
+ls: cannot access 'tools/ImlightEmbeddedDatabase': No such file or directory
+   $ ls -la tools/.imlight-run/ImlightEmbeddedDatabase
+total 16
+drwxr-xr-x 4 jason users 4096 Sep 29 00:08 .
+drwxr-xr-x 9 jason users 4096 Sep 29 00:08 ..
+drwxr-xr-x 3 jason users 4096 Sep 24 12:28 Databases
+drwxr-xr-x 4 jason users 4096 Sep 29 00:08 System
+   $ find tools/.imlight-run/ImlightEmbeddedDatabase -newermt 2026-09-28
+tools/.imlight-run/ImlightEmbeddedDatabase
+tools/.imlight-run/ImlightEmbeddedDatabase/System
+tools/.imlight-run/ImlightEmbeddedDatabase/System/Temp
+tools/.imlight-run/ImlightEmbeddedDatabase/System/Temp/scratch.0000000000.buffers
+tools/.imlight-run/ImlightEmbeddedDatabase/System/Temp/compression.0000000000.buffers
+
+   and the RavenDB child's own command line carries the evidence:
+
+--- what this does and does not change ---
+  * the criterion's guarantee still holds: the run directory and its parent are both inside the
+    workspace, and NOTHING lands outside it, so no run artifact can leak into git or into a
+    sibling tree. Confirmed: find on Imlight's built output shows no file written today.
+  * what is wrong is the stated *mechanism* for the embedded database: it is the RavenDB
+    child's directory, not the Director's, that '../' is relative to.
+  * consequence for .gitignore: the entry that matters is tools/.imlight-run/ (which holds the
+    database); the ImlightEmbeddedDatabase/ entry never had a directory to match here.
+
+--- run-directory growth after one boot (measured) ---
+1.2G	tools/.imlight-run
+  866 MB is the copy of the prebuilt output; the rest is cache/ (the LiteDB wad cache) and the
+284M	tools/.imlight-run/cache
+254M	tools/.imlight-run/ImlightEmbeddedDatabase
+28K	tools/.imlight-run/logs

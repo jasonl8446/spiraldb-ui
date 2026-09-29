@@ -1,0 +1,131 @@
+ _____           _ _       _     _    ______   
+|_   _|         | (_)     | |   | |   \ \ \ \  
+  | |  _ __ ___ | |_  __ _| |__ | |_   \ \ \ \ 
+  | | | '_ ` _ \| | |/ _` | '_ \| __|   \ \ \ \
+ _| |_| | | | | | | | (_| | | | | |_    / / / /
+|_____|_| |_| |_|_|_|\__, |_| |_|\__|  / / / / 
+===================== __/ |===========/_/_/_/  
+   :: L&G Boot ::    |___/ (KALI 26Q3.40c dev)
+
+2026-09-29 00:08:17.068 INF Program.Main@L112                        : Imlight configuration loaded. 
+2026-09-29 00:08:17.091 INF Program.Main@L117                        : Getting Akka.NET configuration.. 
+2026-09-29 00:08:17.092 INF AkkaConfiguration.GetAkkaConfiguration@L : Searching for Akka.NET configuration file /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run/Config/akka.conf 
+2026-09-29 00:08:17.325 INF Program.Main@L124                        : Akka.NET system created. 
+2026-09-29 00:08:17.328 DBG Program.StartPatchServer@L209            : New actor created under Imlight: Imlight.Patch 
+2026-09-29 00:08:17.333 INF TcpListenerActor.Start@L78               : TcpListener for Imlight.Patch bound to port 12500 — listening. 
+2026-09-29 00:08:17.332 INF PatchServer..ctor@L78                    : Patch server created with name Imlight.Patch under port 12500. 
+2026-09-29 00:08:17.340 INF PatchServer.GetPatchServerStatus@L229    : Checking patch server at URL http://127.0.0.1:12369/V_r806919.Wizard_1_610. Timeout: 10 s 
+2026-09-29 00:08:17.354 INF PatchServer.GetPatchServerStatus@L240    : Patch server at URL http://127.0.0.1:12369/V_r806919.Wizard_1_610 found and set 
+2026-09-29 00:08:17.355 DBG PatchServer.InitializeServer@L102        : Patch server status check took 14 ms. 
+2026-09-29 00:08:17.361 INF PatchServer.DownloadFileStream@L198      : Attempting to download file from patch server endpoint at url http://127.0.0.1:12369/V_r806919.Wizard_1_610/LatestFileList.xml. Content size: 2 MB 
+2026-09-29 00:08:17.374 INF PatchServer.DownloadFileStream@L212      : File successfully downloaded from http://127.0.0.1:12369/V_r806919.Wizard_1_610/LatestFileList.xml. Content size: 2 MB 
+2026-09-29 00:08:17.456 INF PatchServer.DownloadFileStream@L198      : Attempting to download file from patch server endpoint at url http://127.0.0.1:12369/V_r806919.Wizard_1_610/LatestFileList.bin. Content size: 1 MB 
+2026-09-29 00:08:17.458 INF PatchServer.DownloadFileStream@L212      : File successfully downloaded from http://127.0.0.1:12369/V_r806919.Wizard_1_610/LatestFileList.bin. Content size: 1 MB 
+2026-09-29 00:08:17.461 DBG PatchServer.InitializeServer@L119        : Downloaded and parsed LatestFileList in 105 ms. 
+2026-09-29 00:08:17.462 INF Program.Main@L137                        : Director is now explicitly loading resources.. 
+2026-09-29 00:08:17.469 INF RootArchiveLoader.ReloadRootWad@L46      : Loading Root.wad into memory.. 
+2026-09-29 00:08:17.470 INF LocalWadCache.Initialize@L83             : Created local cache file at ./cache 
+2026-09-29 00:08:17.470 INF LocalWadCache.Initialize@L88             : Begin updating local cache.. 
+2026-09-29 00:08:17.524 INF LocalWadCache.Initialize@L90             : Local cache updated! 
+2026-09-29 00:08:17.528 WRN LocalWadCache.GetCachedWad@L106          : LocalCache does not contain a file definition for Root! 
+2026-09-29 00:08:17.534 INF PatchServer.DownloadFileStream@L198      : Attempting to download file from patch server endpoint at url http://127.0.0.1:12369/V_r806919.Wizard_1_610/Data/GameData/Root.wad. Content size: 281 MB 
+2026-09-29 00:08:17.780 INF PatchServer.DownloadFileStream@L212      : File successfully downloaded from http://127.0.0.1:12369/V_r806919.Wizard_1_610/Data/GameData/Root.wad. Content size: 281 MB 
+2026-09-29 00:08:18.691 INF RootArchiveLoader.ReloadRootWad@L53      : Root.wad successfully loaded into memory. 
+2026-09-29 00:08:18.704 INF CharacterNameBank.AfterLoad@L67          : Loaded 9 character name tables. 
+2026-09-29 00:08:18.937 INF CoreObjectFactory.AfterLoad@L78          : Loaded 137423 CoreTemplates. 
+2026-09-29 00:08:18.941 INF PriceModifiersConfig.AfterLoad@L73       : Loaded dye shop prices: dye at 0.225 of the item cost plus 1, pet rename 500 gold. 
+2026-09-29 00:08:18.946 INF MagicLevelsConfig.LoadMaxLevel@L191      : Imlight max level set to 180 
+2026-09-29 00:08:18.947 INF MagicLevelsConfig.LoadMobLevelConfig@L20 : Loaded 28 mob level configurations 
+2026-09-29 00:08:18.947 INF MagicLevelsConfig.LoadPlayerLevelConfig@ : Loaded 1267 player level configurations 
+2026-09-29 00:08:18.955 INF AccessPassManager.AfterLoad@L69          : Loaded 3385 zones. 
+2026-09-29 00:08:18.957 INF WorldHubZones.AfterLoad@L66              : Loaded 117 world hub zones 
+2026-09-29 00:08:18.958 INF WorldVendorLocations.AfterLoad@L64       : Loaded 335 vendor locations 
+2026-09-29 00:08:18.961 ERR WizBangPriority.AfterLoad@L76            : Could not parse PvPLobby as WizBangs 
+2026-09-29 00:08:18.961 ERR WizBangPriority.AfterLoad@L76            : Could not parse PrepQuest as WizBangs 
+2026-09-29 00:08:18.961 ERR WizBangPriority.AfterLoad@L76            : Could not parse Interactable as WizBangs 
+2026-09-29 00:08:18.961 ERR WizBangPriority.AfterLoad@L76            : Could not parse GuildMuseumCurator as WizBangs 
+2026-09-29 00:08:18.961 ERR WizBangPriority.AfterLoad@L76            : Could not parse MagicWeavingTome as WizBangs 
+2026-09-29 00:08:18.961 ERR WizBangPriority.AfterLoad@L76            : Could not parse HousingHallOfFame as WizBangs 
+2026-09-29 00:08:18.961 INF WizBangPriority.AfterLoad@L83            : Loaded WizBang priority list with 29 entries 
+2026-09-29 00:08:18.963 INF WizBangs.AfterLoad@L127                  : Loaded 33 wizbangs. 
+2026-09-29 00:08:18.964 INF MinigameConfig.AfterLoad@L63             : Loaded 10 minigame configurations 
+2026-09-29 00:08:18.968 INF CanonicalStatEffects.AfterLoad@L97       : Loaded 134 canonical stat effects 
+2026-09-29 00:08:18.972 INF WizStatisticEffectConfigLoader.AfterLoad : Loaded 20 crit and block level ranges 
+2026-09-29 00:08:18.973 INF CantripFactory.AfterLoad@L64             : Loaded 11 cantrip XP levels 
+2026-09-29 00:08:19.189 INF Locale.AfterLoad@L67                     : Loaded 5132 English locale files. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000309 in Locale/en-US/ConsoleCastleMagic.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000292 in Locale/en-US/ConsoleCastleMagic.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000309 in Locale/en-US/ConsoleCastleMagic.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000460 in Locale/en-US/ConsoleCastleMagic.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000776 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00004322 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000705 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00004805 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00008393 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00008432 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00008437 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00008994 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00009015 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.195 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00009066 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00010793 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00010818 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00010821 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00010822 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00010823 in Locale/en-US/ConsoleGUI.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000053 in Locale/en-US/ConsoleGaryTest.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000055 in Locale/en-US/ConsoleGaryTest.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000057 in Locale/en-US/ConsoleGaryTest.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000059 in Locale/en-US/ConsoleGaryTest.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000039 in Locale/en-US/ConsoleHelp.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000076 in Locale/en-US/ConsoleHelp.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key CharacterTips02 in Locale/en-US/ConsoleHelp.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key HousingTips2text3 in Locale/en-US/ConsoleHelp.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key InterfaceTips06 in Locale/en-US/ConsoleHelp.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000028 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000041 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000056 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000027 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000043 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000044 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000045 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000046 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000047 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000055 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000057 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.196 WRN Locale.ProcessLocaleFile@L183            : Duplicate key 00000058 in Locale/en-US/ConsoleHelpChat.lang. 
+2026-09-29 00:08:19.335 INF Locale.ProcessNameParts@L261             : Processed 407 NPC name part mappings. 
+2026-09-29 00:08:19.422 INF StateFactory.AfterLoad@L71               : Loaded 1824 state sets. 
+2026-09-29 00:08:19.426 INF MagicSchools.AfterLoad@L89               : Loaded 16 magic school configurations. 
+2026-09-29 00:08:19.642 INF SpellCinematics.AfterLoad@L83            : Loaded 3979 cinematic templates. 
+2026-09-29 00:08:20.435 INF SpellFactory.AfterLoad@L91               : Loaded 18173 spell templates. 
+2026-09-29 00:08:20.449 INF SigilFactory.AfterLoad@L71               : Loaded 25 sigils. 
+2026-09-29 00:08:20.517 INF ReagentFactory.AfterLoad@L80             : Loaded 828 reagent templates. 
+2026-09-29 00:08:20.646 INF PetFactory.AfterLoad@L59                 : Loaded 1480 pet templates. 
+2026-09-29 00:08:20.660 INF GameEffectRuleData.ProcessStatTables@L10 : Loaded 134 stat tables 
+2026-09-29 00:08:20.660 INF Program.Main@L139                        : Director has called all resources to load. 
+2026-09-29 00:08:20.660 INF Program.Main@L141                        : Resource loading completed in 0 ms. 
+2026-09-29 00:08:20.661 DBG Program.StartLoginServer@L173            : New actor created under Imlight: Imlight.Login 
+2026-09-29 00:08:20.661 INF Program.StartGameServers@L197            : Director requested game server 'Imlight.Game.Centaur' on port 12333 (realm: Centaur). 
+2026-09-29 00:08:20.661 INF Program.StartGameServers@L197            : Director requested game server 'Imlight.Game.Pegasus' on port 12334 (realm: Pegasus). 
+2026-09-29 00:08:20.662 INF Program.StartGameServers@L197            : Director requested game server 'Imlight.Game.Phoenix' on port 12335 (realm: Phoenix). 
+2026-09-29 00:08:20.663 INF TcpListenerActor.Start@L78               : TcpListener for Imlight.Login bound to port 12000 — listening. 
+2026-09-29 00:08:20.664 INF GameServerPool..ctor@L71                 : GameServerPool created. 
+2026-09-29 00:08:20.664 INF EmbeddedDatabaseManager.Start@L48        : Initializing embedded RavenDB database for the first time.. 
+2026-09-29 00:08:20.664 INF EmbeddedDatabaseManager.Start@L49        : Database data directory: ../ImlightEmbeddedDatabase/ 
+2026-09-29 00:08:20.663 INF LoginServer..ctor@L55                    : Login server created with name Imlight.Login under port 12000. 
+2026-09-29 00:08:20.670 INF TcpListenerActor.Start@L78               : TcpListener for Imlight.Game.Centaur bound to port 12333 — listening. 
+2026-09-29 00:08:20.670 DBG GameServerPool.ReceiveCreateGameServer@L : Game server pool registered new game server Imlight.Game.Centaur (realm: Centaur) on port 12333. 
+2026-09-29 00:08:20.672 DBG GameServerPool.ReceiveCreateGameServer@L : Game server pool registered new game server Imlight.Game.Pegasus (realm: Pegasus) on port 12334. 
+2026-09-29 00:08:20.672 DBG GameServerPool.ReceiveCreateGameServer@L : Game server pool registered new game server Imlight.Game.Phoenix (realm: Phoenix) on port 12335. 
+2026-09-29 00:08:20.672 INF TcpListenerActor.Start@L78               : TcpListener for Imlight.Game.Pegasus bound to port 12334 — listening. 
+2026-09-29 00:08:20.672 INF TcpListenerActor.Start@L78               : TcpListener for Imlight.Game.Phoenix bound to port 12335 — listening. 
+2026-09-29 00:08:20.675 INF SpiralDB.Load@L110                       : Loading SpiralDB from /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb... 
+2026-09-29 00:08:20.675 INF SpiralDB.Load@L110                       : Loading SpiralDB from /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb... 
+2026-09-29 00:08:20.675 INF SpiralDB.Load@L110                       : Loading SpiralDB from /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb... 
+2026-09-29 00:08:20.684 INF EmbeddedDatabaseManager.Start@L84        : Embedded database initialized. 
+2026-09-29 00:08:21.243 INF SpiralDB.Load@L149                       : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries. 
+2026-09-29 00:08:21.243 INF SpiralDB.Load@L149                       : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries. 
+2026-09-29 00:08:21.246 INF GameServer..ctor@L98                     : Game server created with name Imlight.Game.Pegasus under port 12334. 
+2026-09-29 00:08:21.246 INF GameServer..ctor@L98                     : Game server created with name Imlight.Game.Centaur under port 12333. 
+2026-09-29 00:08:21.249 INF SpiralDB.Load@L149                       : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries. 
+2026-09-29 00:08:21.250 INF GameServer..ctor@L98                     : Game server created with name Imlight.Game.Phoenix under port 12335. 

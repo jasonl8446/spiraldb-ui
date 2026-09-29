@@ -1,0 +1,67 @@
+=== final machine state ===
+
+--- pin 1: data/spiraldb-ui.db byte-identical ---
+a13f9aa8376411f6c6c0ea704098fcba6c4a226298eaba114230414af9e572ac  data/spiraldb-ui.db
+expected a13f9aa8376411f6c6c0ea704098fcba6c4a226298eaba114230414af9e572ac
+
+--- pin 2: the D17 clone (raw git) ---
+$ git -C data/test-spiraldb rev-parse --abbrev-ref HEAD -> content/2026-09-27
+$ git -C data/test-spiraldb rev-parse HEAD               -> 18dc92477d54b1e911796960407ce7710e703697
+$ git -C data/test-spiraldb rev-parse main               -> f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+$ git -C data/test-spiraldb rev-list --count HEAD         -> 42
+$ git -C data/test-spiraldb status --porcelain            -> [] (empty)
+$ ls data/test-spiraldb/QuestTemplates/*.json | wc -l      -> 322
+$ git -C data/test-spiraldb for-each-ref refs/heads refs/remotes
+    content/2026-09-26 18dc92477d54b1e911796960407ce7710e703697
+    content/2026-09-27 18dc92477d54b1e911796960407ce7710e703697
+    main f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+    origin c55ccab175440c5f676b8d5315575ccd6d550332
+    origin/main c55ccab175440c5f676b8d5315575ccd6d550332
+
+--- the run directories are gitignored ---
+.gitignore:27:tools/.imlight-run/	tools/.imlight-run
+.gitignore:28:tools/.aurorium-run/	tools/.aurorium-run
+
+--- the five ports (as found at dispatch: free) ---
+  12369: free
+  12500: free
+  12000: free
+  12333: free
+  8080: free
+
+--- no harness process is running ---
+  (none)
+
+--- the sibling trees ---
+  Imlight  git status: []  HEAD 6e5966b2
+  Imlight  built output written today: []
+  Aurorium git status: [?? config.toml.bak|] (config.toml.bak, 2026-09-24 13:34 — not mine)
+-rw-r--r-- 1 jason users    4096 Sep 24 10:19 /home/jason/Documents/git-projects/Aurorium/aurorium.db
+-rw-r--r-- 1 jason users   32768 Sep 29 00:04 /home/jason/Documents/git-projects/Aurorium/aurorium.db-shm
+-rw-r--r-- 1 jason users 1306072 Sep 24 10:19 /home/jason/Documents/git-projects/Aurorium/aurorium.db-wal
+
+--- my repo: what is dirty (nothing staged, nothing committed) ---
+ M package.json
+?? docs/evidence/phase-6/p6-12-aurorium-boot.txt
+?? docs/evidence/phase-6/p6-12-aurorium-tree-untouched.txt
+?? docs/evidence/phase-6/p6-12-blocker-2-measurement.txt
+?? docs/evidence/phase-6/p6-12-boot-clean.txt
+?? docs/evidence/phase-6/p6-12-clone-restore.txt
+?? docs/evidence/phase-6/p6-12-config-pins.txt
+?? docs/evidence/phase-6/p6-12-count.txt
+?? docs/evidence/phase-6/p6-12-down-ledger.txt
+?? docs/evidence/phase-6/p6-12-final-state.txt
+?? docs/evidence/phase-6/p6-12-freshness.txt
+?? docs/evidence/phase-6/p6-12-gates.txt
+?? docs/evidence/phase-6/p6-12-imlight-boot-after.txt
+?? docs/evidence/phase-6/p6-12-imlight-boot-baseline.txt
+?? docs/evidence/phase-6/p6-12-imlight-boot-single.txt
+?? docs/evidence/phase-6/p6-12-npm-test-harness-absent.txt
+?? docs/evidence/phase-6/p6-12-ports-live.txt
+?? docs/evidence/phase-6/p6-12-prove-count-run.txt
+?? docs/evidence/phase-6/p6-12-refusal.txt
+?? docs/evidence/phase-6/p6-12-reuse.txt
+?? docs/evidence/phase-6/p6-12.md
+?? scripts/imlight-boot.ts
+?? server/src/services/imlightHarness.ts
+?? tests/unit/imlight-harness.test.ts

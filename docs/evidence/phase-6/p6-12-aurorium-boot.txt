@@ -1,0 +1,4 @@
+29.09.2026 00:14:21  INFO aurorium::db: Database aurorium.db initialized!
+29.09.2026 00:14:21  INFO aurorium: Checking for a new revision @ 127.0.0.1:1
+29.09.2026 00:14:21  INFO aurorium: File server listening on 127.0.0.1:12369
+29.09.2026 00:14:21  WARN aurorium: Revision check failed. Will retry next time. error=Failed to connect to the server

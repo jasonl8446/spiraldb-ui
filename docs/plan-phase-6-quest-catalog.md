@@ -146,7 +146,13 @@ Measured blockers, each with the exact failure:
    `System.Exception: Patch server is not reachable. Cannot load Root.wad.` — its `LocalWadCache` (`./cache`) is an
    empty **LiteDB** database and it looks for a `FileDefinition { Filename, Size, Crc }` for `Root`. So the chain
    needs Aurorium serving, not a seeded cache.
-2. **Paths are cwd-relative** (`LocalWadCachePath = ./cache`, `EmbeddedDatabaseDataDirectory = ../ImlightEmbeddedDatabase/`),
+2. **Two paths are cwd-relative and a third is not what it looks like** (`LocalWadCachePath = ./cache` and
+   `Logging.LogPath = ./logs/log.txt` resolve against the Director's cwd; **`EmbeddedDatabaseDataDirectory =
+   ../ImlightEmbeddedDatabase/` does NOT** — measured in task 6.11, it resolves against Raven.Embedded's
+   **RavenDB child** (`--DataDir=../ImlightEmbeddedDatabase/ --Embedded.ParentProcessId=<director>`), so the
+   database lands at `<run>/ImlightEmbeddedDatabase/` and `tools/ImlightEmbeddedDatabase/` never exists. The
+   guarantee the row exists for still holds — nothing leaves the workspace and nothing enters Imlight's tree —
+   but the stated mechanism was wrong),
    which is what makes a workspace copy viable — and means the run directory and its parent must both be in the
    workspace.
 3. **`SpiralDBLocalPath` is an absolute path to the owner's real fork** and `SpiralDBDisableRemote = false`. Both must

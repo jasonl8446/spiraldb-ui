@@ -1,0 +1,43 @@
+### 1. the harness's own computation, against the real prebuilt output
+
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts freshness
+
+input                    value
+build directory          /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0
+Imlight.Director.dll     /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0/Imlight.Director.dll
+its mtime (ISO)          2026-09-27T14:32:58.321Z
+Imlight repo             /home/jason/Documents/git-projects/Imlight
+commit window queried    14 commit(s), --since = mtime - 14 days
+commits after the mtime  6e5966b, f8c54a8
+code commits after it    (none)
+verdict                  code-current
+
+[harness] code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+rc=0
+
+### 2. the falsification: the same check against a copy whose DLL mtime was doctored to 2026-09-01
+###    (cp -a of the real DLL, then: touch -d '2026-09-01T00:00:00')
+
+-rw-r--r-- 1 jason users 24064 Sep  1 00:00 /tmp/p6-12-stale-build/Imlight.Director.dll
+
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts freshness --build /tmp/p6-12-stale-build
+
+input                    value
+build directory          /tmp/p6-12-stale-build
+Imlight.Director.dll     /tmp/p6-12-stale-build/Imlight.Director.dll
+its mtime (ISO)          2026-09-01T04:00:00.000Z
+Imlight repo             /home/jason/Documents/git-projects/Imlight
+commit window queried    26 commit(s), --since = mtime - 14 days
+commits after the mtime  6e5966b, f8c54a8, 8dcb955, 480ff8c, 432bee5, 2afed91, bfdf408, a789a4c, f1182f0, 76575da, 6e21307, 98985d1, 6f94b66, 172d5a8, 95e87fc, c2d716e, f6eca09, 8f5fb31, 00e5ff2, 8246562, 97b53b8, 78cdef6, 29e53da, f453980, f2fea12
+code commits after it    480ff8c, 432bee5, 2afed91, bfdf408, a789a4c, f1182f0, 76575da, 98985d1, 6f94b66, 172d5a8, 00e5ff2, 8246562, 97b53b8, 78cdef6, 29e53da, f453980, f2fea12
+verdict                  stale
+
+[harness] stale: Imlight.Director.dll mtime 2026-09-01T04:00:00.000Z; 17 commit(s) after it touched src/**/*.cs or *.csproj (480ff8c @ 2026-09-27T02:03:20-04:00, 432bee5 @ 2026-09-26T18:48:41-04:00, 2afed91 @ 2026-09-26T18:03:24-04:00, bfdf408 @ 2026-09-26T13:44:49-04:00, a789a4c @ 2026-09-24T21:07:44-04:00, f1182f0 @ 2026-09-24T20:50:54-04:00, 76575da @ 2026-09-24T20:47:09-04:00, 98985d1 @ 2026-09-14T19:37:35-04:00, 6f94b66 @ 2026-09-14T19:37:25-04:00, 172d5a8 @ 2026-09-14T19:37:14-04:00, 00e5ff2 @ 2026-09-08T18:47:05-04:00, 8246562 @ 2026-09-08T18:46:53-04:00, 97b53b8 @ 2026-09-07T14:07:46-04:00, 78cdef6 @ 2026-09-07T14:07:03-04:00, 29e53da @ 2026-09-06T19:19:02-04:00, f453980 @ 2026-09-06T19:08:52-04:00, f2fea12 @ 2026-09-06T19:01:10-04:00) — the prebuilt output predates the code
+[harness] refusing to reuse the prebuilt output.
+  Rebuild with the D18 flags:
+  DOTNET_ROOT=/nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet NUGET_PACKAGES=/home/jason/Documents/git-projects/spiraldb-ui/tools/.nuget /nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet/dotnet build /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/Imlight.Director.csproj -c Debug -p:UseArtifactsOutput=true -p:ArtifactsPath=/home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-artifacts
+rc=4

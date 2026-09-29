@@ -1,0 +1,42 @@
+### the reuse arm: a second run reuses the live Aurorium without stopping it
+
+$ ss -lptnH 'sport = :12369'; ps -o pid,lstart,cmd -p <pid>   (before)
+LISTEN 0      128    127.0.0.1:12369 0.0.0.0:* users:(("aurorium",pid=1808370,fd=14))
+1808370 Tue Sep 29 00:14:21 2026 /home/jason/Documents/git-projects/Aurorium/target/debug/aurorium
+
+$ npm run imlight:boot -- boot --keep-services
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts boot --keep-services
+
+[harness] Aurorium on 12369: REUSED without stopping it — port 12369 answers from pid 1808370 (/home/jason/Documents/git-projects/Aurorium/target/debug/aurorium), recorded as the aurorium this harness started at 2026-09-29T04:14:22.190Z in /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run — reuse, do not stop
+[harness] Aurorium identity: GET /latest returned the expected revision V_r806919.Wizard_1_610
+[harness] freshness: code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+[harness] freshness inputs: dll 2026-09-27T14:32:58.321Z, 14 commit(s) in the 14-day window
+[harness] run directory /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run (1.2G	/home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run)
+[harness] config pins: SpiralDBLocalPath=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb SpiralDBDisableRemote=true PlayerDatabaseUrl=(empty) ports 12500/12000/12333/8080
+[harness] boot "single": pid 1808527, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "single" console -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run/boot.txt (15935 bytes)
+[harness] stopped Director (single) pid 1808527
+
+=== Imlight's own log line (the process under test) ===
+  SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2274
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            322
+zone data entries          1205
+[harness] raw console: /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run/boot.txt
+[harness] --keep-services: leaving the Aurorium it started running
+
+$ ss -lptnH 'sport = :12369'; ps -o pid,lstart,cmd -p <pid>   (after — the same pid, the same start time)
+LISTEN 0      128    127.0.0.1:12369 0.0.0.0:* users:(("aurorium",pid=1808370,fd=14))
+1808370 Tue Sep 29 00:14:21 2026 /home/jason/Documents/git-projects/Aurorium/target/debug/aurorium
+
+  before pid=1808370  after pid=1808370  -> IDENTICAL

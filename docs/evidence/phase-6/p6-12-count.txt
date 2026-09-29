@@ -1,0 +1,12 @@
+=== the count proof (p6-12-ac2) ===
+  baseline line : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+  scaffold      : AQ-GARD-SIS-001 — exit 0, one file into /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  after line    : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+  arithmetic    : 322 + 1 = 323
+  delta         : 1 (expected 1)
+  verdict       : PASS — rises by exactly one
+  detail        : quest templates rose by exactly 1 across the scaffold of "AQ-GARD-SIS-001": 322 + 1 = 323; the other seven families are unchanged (spellbooks, dropTables, npcInventories, npcSpellInventories, npcDropTables, treasureCardInventories, zoneData)
+  baseline readings inside the one process: 3 reading(s), all identical
+  after readings inside the one process   : 3 reading(s), all identical
+  files counter : baseline 2274 -> after 2275 (delta 1)
+  seven non-quest families: spellbooks 134, dropTables 317, npcInventories 215, npcSpellInventories 77, npcDropTables 0, treasureCardInventories 1, zoneData 1205

@@ -1,0 +1,32 @@
+=== the five owned ports, sampled live every second while the chain booted ===
+
+$ for i in $(seq 1 60); do for p in 12369 12500 12000 12333 8080; do ss -lptnH "sport = :$p"; done; sleep 1; done
+
+--- the unique listening sockets seen (pid and command, as ss reported them) ---
+LISTEN 0      128    127.0.0.1:12369 0.0.0.0:* users:(("aurorium",pid=1807174,fd=13))
+LISTEN 0      4096   0.0.0.0:12000 0.0.0.0:* users:(("dotnet",pid=1807204,fd=174))
+LISTEN 0      4096   0.0.0.0:12333 0.0.0.0:* users:(("dotnet",pid=1807204,fd=187))
+LISTEN 0      4096   0.0.0.0:12500 0.0.0.0:* users:(("dotnet",pid=1807204,fd=149))
+
+--- what the five are, and who owned them ---
+  12369  Aurorium HTTP         `aurorium` — started by the harness and in its ledger (OWNED; reuse, do not stop)
+  12500  Imlight patch         the Director (`dotnet …/Imlight.Director.dll`), pid 1807204
+  12000  Imlight login         the Director, pid 1807204
+  12333  Imlight game realm 1  the Director, pid 1807204
+  8080   embedded RavenDB      a CHILD of the Director: `dotnet --fx-version 10.0.12
+                              <run>/RavenDBServer/Raven.Server.dll --Embedded.ParentProcessId=<director pid>
+                              --DataDir=../ImlightEmbeddedDatabase/ --ServerUrl=http://127.0.0.1:8080`
+
+### 8080 is not in the sample above, and the reason is a real property of the boot order:
+### the Director logs `SpiralDB loaded` and only then reaches
+### `Program.Main`'s `PlayerDatabase.Instance.Store` / `CreateEmbeddedDatabaseAccounts()`, which is
+### what binds 8080 — and the harness stops the Director as soon as its line appears. So a
+### single-boot sampler window sees 12500/12000/12333 (bound by `StartPatchServer`/`StartLoginServer`/
+### `StartGameServers`, before or around the line) and not 8080.
+###
+### 8080 attributed live, by ancestry, is in `p6-12-down-ledger.txt`: a harness run whose process was
+### killed by a broken pipe left the Director alive, and the next `probe` reported
+###   `8080  imlight  owned  1801139  port 8080 answers from pid 1801139
+###    (dotnet --fx-version 10.0.12 /…/tools/.imlight-run/RavenDBServer/Raven.Server…)`
+### — 1801139 is the RavenDB child, and the ledger holds its *parent* (the Director), so the
+### match is by ancestry. That is exactly why `classifyPort` walks `/proc/<pid>/stat`'s ppid chain.
