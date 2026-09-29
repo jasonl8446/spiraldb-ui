@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { mountPathFor, OBJECT_TYPES } from '../../../shared/objectTypes.js';
+import { mountPathFor, OBJECT_TYPES, type ObjectTypeConfig } from '../../../shared/objectTypes.js';
 import { getDb } from '../db.js';
 import { createActivityRouter } from './activity.js';
 import { createDashboardRouter } from './dashboard.js';
@@ -15,6 +15,8 @@ import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
 import { validateDropTableSave } from '../services/dropTables.js';
+import type { ObjectSaveValidator } from '../services/objects.js';
+import { SIMPLE_OBJECT_FIELDS, validateSimpleObjectSave } from '../services/simpleObjectLists.js';
 
 /**
  * `/api` router registry.
@@ -193,12 +195,29 @@ apiRouter.use('/npcs', (req, res, next) => {
  * **DropTable carries one extra**: task 4.2's four blocking rules
  * (`server/src/services/dropTables.ts`, the injection half of the shared engine), so a
  * direct POST of an invalid drop table is a **400 with a field map** rather than a write.
+ * The six "one key + one list" families carry the final-review F3 null-element guard
+ * (`server/src/services/simpleObjectLists.ts`) the same way, and
+ * {@link objectSaveValidatorFor} is the one place that decides which family gets which.
  */
 const objectRouters = new Map<string, Router>();
 
+/**
+ * The family's blocking validator, or `undefined` for the families that have none.
+ *
+ * One mapping rather than a hand-written choice at the mount, so a family cannot be mounted
+ * with the wrong rule (or silently with none) — and `SIMPLE_OBJECT_FIELDS` is the same table
+ * the guard itself reads, so "this family is guarded" and "this family has lists" cannot drift.
+ */
+function objectSaveValidatorFor(config: ObjectTypeConfig): ObjectSaveValidator | undefined {
+  if (config.fileType === 'droptable') {
+    return validateDropTableSave;
+  }
+  return config.fileType in SIMPLE_OBJECT_FIELDS ? validateSimpleObjectSave : undefined;
+}
+
 for (const config of OBJECT_TYPES) {
   const mountPath = mountPathFor(config);
-  const validate = config.fileType === 'droptable' ? validateDropTableSave : undefined;
+  const validate = objectSaveValidatorFor(config);
   apiRouter.use(mountPath, (req, res, next) => {
     let router = objectRouters.get(config.fileType);
     if (router === undefined) {

@@ -31,6 +31,12 @@ import {
 } from '@shared/dropTable/validation-messages';
 import { DEFAULT_SPIRALDB_PATH } from '@server/db';
 
+import {
+  dropTableBannerModel,
+  toDropTableValidationMessages,
+} from '../../client/src/lib/drop-table-validation';
+import type { FieldValidationMessage } from '../../client/src/lib/validation-message';
+
 /**
  * Story p4-02's model + rules test — plan task 4.2, docs/spec-domain-reference.md L77-91 and
  * L536-540.
@@ -457,6 +463,64 @@ describe('the messages and the 400 field map', () => {
     expect(
       dropTableBlockingSummary(validateDropTable({ ...validDocument(), RollChance: 2 }).findings),
     ).toContain('1 validation error');
+  });
+});
+
+/**
+ * The form-level banner agrees with its own count — the p4-02 banner read
+ * `1 validation error block saving` (the noun was singularised, the verb was not), while
+ * `quest-validation.ts`'s sibling had it right. The arms below pin **both** arms of each
+ * headline, and the plural strings are byte-for-byte what the pre-fix code produced (the fix
+ * may not move them).
+ */
+describe('the banner headline agrees with its count', () => {
+  /** The banner model for a document, through the real engine and the real mapper. */
+  function bannerFor(document: Record<string, unknown>): ReturnType<typeof dropTableBannerModel> {
+    return dropTableBannerModel(
+      toDropTableValidationMessages(validateDropTable(document, { otherNames: new Set() })),
+    );
+  }
+
+  it('reads `1 validation error blocks saving` for a single finding', () => {
+    const banner = bannerFor({ ...validDocument(), Name: '' });
+    expect(banner.errorCount).toBe(1);
+    expect(banner.errorHeadline).toBe(
+      '1 validation error blocks saving: Missing name. Fix them and Save enables again.',
+    );
+  });
+
+  it('reads `3 validation errors block saving` for several (the plural arm, byte-identical)', () => {
+    const banner = bannerFor({ ...validDocument(), Name: '', RollChance: 2, NoneChance: -1 });
+    expect(banner.errorCount).toBe(3);
+    expect(banner.errorHeadline).toBe(
+      '3 validation errors block saving: Missing name, Roll chance out of range and None chance out of range. ' +
+        'Fix them and Save enables again.',
+    );
+  });
+
+  it('says nothing when nothing is blocking', () => {
+    const banner = bannerFor(validDocument());
+    expect(banner.errorHeadline).toBeNull();
+    expect(banner.warningHeadline).toBeNull();
+  });
+
+  it('agrees with the warning count too (no DropTable rule warns today, so the arm is a fixture)', () => {
+    const warning = (kind: DropTableFindingKind): FieldValidationMessage => ({
+      severity: 'warning',
+      kind,
+      path: ['RollChance'],
+      field: 'RollChance',
+      text: 'a warning',
+    });
+    expect(dropTableBannerModel([warning('roll-chance-out-of-range')]).warningHeadline).toBe(
+      '1 warning does not block saving.',
+    );
+    expect(
+      dropTableBannerModel([
+        warning('roll-chance-out-of-range'),
+        warning('none-chance-out-of-range'),
+      ]).warningHeadline,
+    ).toBe('2 warnings do not block saving.');
   });
 });
 
