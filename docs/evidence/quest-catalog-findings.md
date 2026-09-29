@@ -51,7 +51,7 @@ Two header shapes exist, and a census must handle both:
 Handling only shape A undercounts `WizZoneData` **21 instead of 3,356** — a 160× error, and exactly the error that
 would have hidden the zone data this phase depends on.
 
-**Result: 183,676 object-property objects in 142 classes.**
+**Result: 183,676 object-property objects in 142 shape-class rows (**141 distinct classes** — corrected by the final-review pass; `WizZoneData` is in both shapes).**
 
 ```
 wads: 3589
@@ -74,7 +74,7 @@ The full 142-class table is reproduced by the command above. The families this p
 
 **Falsified by:** any WAD entry whose class hash is `276946680`. One such file would overturn the conclusion.
 
-**Known limit:** 14 of the 142 classes (10,274 objects) are not named by `ClientDump.json` — see *Unresolved
+**Known limit:** 14 of the 142 shape-class rows (**141 distinct classes** — corrected by the final-review pass; `WizZoneData` is in both shapes) (10,274 objects) are not named by `ClientDump.json` — see *Unresolved
 classes*, which task 6.10 completed: **7 of the 14 are now named** (6,890 of the 10,274 objects) by the
 **r806919 server-side** sources, and the other 7 are recorded with their site and their evidence. Classification is
 by hash, so none of this weakens the result: `QuestTemplate`'s hash is compared numerically, not by name.

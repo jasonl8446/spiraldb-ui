@@ -11,7 +11,7 @@
 
 **The purpose of this project is to build quest definitions, and the game files do not contain them.** That is
 measured, not assumed: an exact class census over every entry of all 3,589 WADs finds **183,676 object-property
-objects in 142 classes and zero `QuestTemplate`** — top-level or nested
+objects in 142 shape-class rows (**141 distinct classes** — corrected by the final-review pass; `WizZoneData` is in both shapes) and zero `QuestTemplate`** — top-level or nested
 ([findings](./evidence/quest-catalog-findings.md), reproduction
 [`scripts/wad-census.mjs`](../scripts/wad-census.mjs)). Quest documents are delivered over `QUEST_MESSAGES`
 (ServiceID 52), which is why the owner fork's 328 quests came from hand-recorded captures and why captures alone will
@@ -31,7 +31,7 @@ names API searches the label column only for six of its seven types.
 
 | Measurement | Result |
 |---|---|
-| Game objects, exactly censused (2 container shapes) | 183,676 in 142 classes |
+| Game objects, exactly censused (2 container shapes) | 183,676 in 142 shape-class rows (**141 distinct classes** — corrected by the final-review pass; `WizZoneData` is in both shapes) |
 | `QuestTemplate` objects | **0** |
 | `TutorialQuestTemplate` objects (loadable as-is) | 11 |
 | Quest names the world references | **1,447** (owner fork: 328 — 4.4×; the run's D17 clone: 322) |
@@ -226,7 +226,7 @@ the shipped `imcodec` CLI has no batch mode: one process per file measured **78 
 - Add `ProjectReference`s to `Imcodec.Wad` and `Imcodec.ObjectProperty` in this repo's csproj. The Imview submodule
   stays read-only.
 
-**Acceptance:** `census` reproduces 183,676 objects / 142 classes; `extract` emits all 6,733 rows in < 60 s; a
+**Acceptance:** `census` reproduces 183,676 objects / 142 shape-class rows (**141 distinct classes** — corrected by the final-review pass; `WizZoneData` is in both shapes); `extract` emits all 6,733 rows in < 60 s; a
 missing binary yields a typed `skipped` result rather than a failed sync, and every unit test injects a fake (CI has
 no .NET SDK — D55).
 

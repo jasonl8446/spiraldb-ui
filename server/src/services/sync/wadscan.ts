@@ -32,7 +32,7 @@ import { buildChildEnv } from '../extraction.js';
  *
  * | Command | Result |
  * |---|---|
- * | `census` | 3,589 WADs / 183,676 objects in 142 classes, 28.8 s |
+ * | `census` | 3,589 WADs / 183,676 objects in 141 distinct classes (142 shape-class rows — `WizZoneData` appears in both header shapes), 28.8 s |
  * | `extract --select gamedata.bin,triggers.xml` | **6,733 rows in 5.31 s** (the per-file `imcodec` CLI fallback: ≈22 min) |
  *
  * The timeout is headroom over those numbers, not a tuned value.

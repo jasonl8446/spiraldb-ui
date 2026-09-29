@@ -890,11 +890,15 @@ export function writeBreadth(options: WriteBreadthOptions): BreadthReport {
   // itself, so the row still carries what the game said rather than an empty string.
   for (const row of reconciliation.rows) {
     const resolved = row.display_key === null ? undefined : resolveKey(row.display_key);
+    // `||`, not `??`, for the humaniser rung: `humanizeZonePath` returns `''` for a path whose
+    // segments are all empty, and `??` would let that empty string end the ladder — the comment
+    // above promises the key is used "rather than an empty string". `display_key` is normalised to
+    // `null` at reconciliation (`row.display_key === '' ? null : …`), so the rung after it still
+    // falls through to `zone_path`.
     const displayName =
       resolved ??
       row.corpus_display_name ??
-      humanizeZonePath(row.zone_path) ??
-      row.display_key ??
+      (humanizeZonePath(row.zone_path) || row.display_key) ??
       row.zone_path;
     insertZone.run(row.zone_path, displayName, row.world);
   }

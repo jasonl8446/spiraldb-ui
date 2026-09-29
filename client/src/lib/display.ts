@@ -210,11 +210,13 @@ function textOrNull(value: string | null | undefined): string | null {
  * technical id is made findable instead of displayed (`?q=` matches the id column
  * for both, spec-api L59-67).
  *
- * The three families with **no** friendly source render the technical value alone
- * and say why — DropTable and GlobalRegistry permanently (`description` is NULL in
- * 316 of 317 rows; a registry key is a flag name) and CreatureSpellbook until task
- * 6.9 populates `decks` (spec-ui-design L65-69). That is a spec sentence, not a
- * humaniser: a humanised key reads as a name that does not exist.
+ * The three families that render the technical value alone and say why: DropTable and
+ * GlobalRegistry have no friendly source at all (`description` is NULL in 316 of 317
+ * rows; a registry key is a flag name), and CreatureSpellbook's source — `decks`,
+ * built from the 599 `DeckTemplate` objects — matches **0** of the clone's 134
+ * `DeckName` values, which name deck *items* instead (D121; spec-ui-design §Names).
+ * That is a spec sentence, not a humaniser: a humanised key reads as a name that does
+ * not exist.
  */
 export function formatNameRow(type: NamesType, row: NameRow): string {
   const friendly = friendlyNameOf(type, row);

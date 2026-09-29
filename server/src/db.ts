@@ -211,9 +211,11 @@ export function openDb(options: OpenDbOptions = {}): Db {
  * Idempotent by construction: 0001 and 0002 are `CREATE ... IF NOT EXISTS` only,
  * and 0002's four `ALTER TABLE` statements live in
  * {@link applyQuestCatalogColumnAdds}, which skips a column that already exists.
- * Running this repeatedly therefore leaves the same 14 tables, 1 view and 7
+ * Running this repeatedly therefore leaves the same 16 tables, 1 view and 8
  * indexes (see tests/unit/db.test.ts) — 0003_persona_index.sql (task 6.6) adds the
- * `persona_index` table and its one index, itself `CREATE ... IF NOT EXISTS` only.
+ * `persona_index` table and its one index, and 0004_breadth_catalog.sql (task 6.9)
+ * adds `recipes`, `decks` and `decks`' one index, itself `CREATE ... IF NOT EXISTS`
+ * only.
  */
 export function initSchema(db: Db): void {
   for (const file of MIGRATION_FILES) {

@@ -107,13 +107,15 @@ export interface ObjectListRow {
    * `null` has three distinct meanings, and the client renders the technical value
    * alone for all three (never a blank label, never a humaniser):
    *
-   * 1. the family has no friendly source at all (DropTable, GlobalRegistry, and
-   *    CreatureSpellbook until task 6.9 populates `decks`) — `config.friendlyNameNote`
-   *    carries the reason and is what the UI says;
+   * 1. the family has no friendly source at all (DropTable, GlobalRegistry) —
+   *    `config.friendlyNameNote` carries the reason and is what the UI says;
    * 2. the template is an **engine object** — the low-id client templates
    *    (`Player Object`, `GenericCinematicActor`, …), which are not characters;
-   * 3. the key simply has no row in the friendly table (5 corpus rows today:
-   *    `40448`, `164313`, `789125`, `1528509`, `1749527`).
+   * 3. the key simply has no row in the friendly table — the 5 corpus npc rows today
+   *    (`40448`, `164313`, `789125`, `1528509`, `1749527`) **and every
+   *    CreatureSpellbook key**: `decks` is built from the 599 `DeckTemplate` objects
+   *    and **0** of the clone's 134 distinct `DeckName` values is one of them (D121),
+   *    so that family has a source no corpus key reaches.
    */
   friendly_name: string | null;
   /** The source file's mtime, ISO 8601; `null` when it vanished before the stat. */
@@ -177,8 +179,9 @@ function statusFor(lookup: Map<string, string>, key: string): StatusValue {
 
 /**
  * `key → friendly name` for one family, or `null` when the family has no friendly
- * source (DropTable and GlobalRegistry permanently; CreatureSpellbook gained one in
- * task 6.9, when `decks` was populated).
+ * source (DropTable and GlobalRegistry). CreatureSpellbook **has** one — `decks`,
+ * populated in task 6.9 — but **0** of the clone's 134 `DeckName` values is a `decks`
+ * row, so every key misses (D121).
  *
  * Built from `FRIENDLY_SOURCE_SPECS` (`names.ts`) — one row per name, and the same
  * object `GET /api/names/:type` serves wherever that endpoint serves one — so the

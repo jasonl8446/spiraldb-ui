@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -50,11 +51,12 @@ export interface CloneAxes {
 
 /** The corpus shape: the number of `QuestTemplates/*.json` files in the clone. */
 export function questFileCount(): number {
-  return Number(
-    execFileSync('bash', ['-c', `ls ${CLONE}/QuestTemplates/*.json | wc -l`])
-      .toString()
-      .trim(),
-  );
+  // Read the directory rather than shelling out to `ls … | wc -l`: the path is source-derived, so
+  // interpolating it into a shell string was the one exec in the tree that could break on a space.
+  // The measurement is the harness's own (`snapshotClone`: `readdirSync` + `.endsWith('.json')`), so
+  // the two halves of "322" cannot drift.
+  return fs.readdirSync(path.join(CLONE, 'QuestTemplates')).filter((name) => name.endsWith('.json'))
+    .length;
 }
 
 /** Every axis at once, so "before" and "after" are the same measurement. */
