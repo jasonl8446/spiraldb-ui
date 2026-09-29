@@ -6,8 +6,9 @@ namespace WadScan;
 /// <summary>
 /// `wad-scan census` — the class census (task 6.2), reproducing the measurement in
 /// [docs/evidence/quest-catalog-findings.md](../../docs/evidence/quest-catalog-findings.md) and
-/// [scripts/wad-census.mjs](../../scripts/wad-census.mjs): **183,676 object-property objects in 142
-/// classes**, split by header shape.
+/// [scripts/wad-census.mjs](../../scripts/wad-census.mjs): **183,676 object-property objects in 141
+/// distinct classes** (142 shape-class rows — `WizZoneData` is the one class present in both shapes,
+/// 21 entries in A and 3,356 in B), split by header shape.
 ///
 /// Every one of the 550,616 WAD entries is read, and a payload is classified by the class hash at a
 /// **fixed** header offset. There is no substring search, so a count has no false-positive risk.
@@ -76,12 +77,16 @@ internal static class Census {
         var aCount = shapeA.Values.Sum();
         var bCount = shapeB.Values.Sum();
         var total = aCount + bCount;
-        var classes = shapeA.Count + shapeB.Count;
+        // The **union**, not the sum of the two per-shape counts: a class can appear in both shapes
+        // (`WizZoneData` does — 21 entries in A and 3,356 in B), so `shapeA.Count + shapeB.Count`
+        // counts it twice and the total reads one class high (142 against 141 distinct).
+        var shapeClassRows = shapeA.Count + shapeB.Count;
+        var distinctClasses = shapeA.Keys.Union(shapeB.Keys).Count();
 
         var lines = new List<string> {
             FormattableString.Invariant($"wads: {wads.Count}"),
             FormattableString.Invariant($"object entries: shape A (BINd) {aCount} in {shapeA.Count} classes; shape B (bare) {bCount} in {shapeB.Count} classes"),
-            FormattableString.Invariant($"object entries total: {total} in {classes} classes"),
+            FormattableString.Invariant($"object entries total: {total} in {distinctClasses} distinct classes ({shapeClassRows} shape-class rows)"),
             FormattableString.Invariant($"parse errors: {errors.Count}"),
             string.Empty,
             "class".PadRight(36) + " " + "count".PadLeft(6) + "  shape",
@@ -141,7 +146,11 @@ internal static class Census {
             ["shapeACount"] = aCount,
             ["shapeBCount"] = bCount,
             ["total"] = aCount + bCount,
-            ["classes"] = shapeA.Count + shapeB.Count,
+            // `classes` is the **distinct** count; `shapeClassRows` is the two per-shape counts added
+            // up. They differ by the classes present in both shapes (`WizZoneData`), and reporting
+            // only the sum as "classes" is what made the number read one high.
+            ["classes"] = shapeA.Keys.Union(shapeB.Keys).Count(),
+            ["shapeClassRows"] = shapeA.Count + shapeB.Count,
         };
 
         File.WriteAllText(path, JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));

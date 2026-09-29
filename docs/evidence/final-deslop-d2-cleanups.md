@@ -45,9 +45,17 @@ duplication (S5/S7/S9/S10, T1/T2/T6/T9/T10/T11, V3/V7/V9, C5/C6), then naming an
   (it answered nothing before). The path is **not** renamed — `p6-12-freshness.txt:42` and
   `p6-12.md:248` still quote it verbatim.
 - **S2 — the missing `count` exit arm.** The header now documents `6` as *the count did not rise by
-  exactly one* **or** *the clone did not restore*; `prove-count` gained
-  `if (!run.proof.ok) { … process.exit(6) }` after the evidence file is written and after service
-  cleanup. **Before:** a failed count proof printed `verdict FAIL` and exited **0**.
+  exactly one* **or** *the clone did not restore*. **Before:** a failed count proof exited **5** —
+  the generic fall-through for a `count` code the mapping had no arm for — and **never** printed
+  `verdict FAIL`, because that line lives in the report block a **thrown** proof never reaches.
+  *(Corrected in place by the Phase-6 final-review writer: this bullet previously claimed the
+  "before" behaviour "printed `verdict FAIL` and exited **0**", which does not reproduce.)* The arm
+  this pass added — `if (!run.proof.ok) { … process.exit(6) }`, described above as running "after
+  the evidence file is written and after service cleanup" — was **also dead by construction**: the
+  harness evaluates the proof itself and throws `HarnessError('count')`, so a failed proof never
+  returns and a failed count proof still exited `5`. `6` is now reachable because the code map
+  (`harnessExitCode`, `server/src/services/imlightHarness.ts`) has the `count` arm and the CLI's
+  catch routes through it; the unreachable guard is gone.
 - **S3 — unknown flags refused.** `parseFlags` validates each parsed key against a new `KNOWN_FLAGS`
   list and calls `usage()` (rc=2), naming the flag. **Before:** any `--key` was stored, so a typo'd
   `--restore-clonee` skipped the clone restore **and exited 0**, leaving the D17 clone dirty.

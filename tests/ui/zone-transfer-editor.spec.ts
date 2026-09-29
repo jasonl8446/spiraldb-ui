@@ -120,7 +120,11 @@ interface MockRecorded {
   savePosts: Array<Record<string, unknown>>;
   /** The document the detail endpoint currently serves (a test may replace one). */
   served: Record<string, unknown>;
-  /** Every zone id the client asked for individually (the dropdown's fallback lookups). */
+  /**
+   * Every zone id the client asked for individually. **Either** surface could issue one — the
+   * dropdown's fallback lookup or the detail header's pair resolution — which is why the AC1 test
+   * below exercises the dropdown instead of trusting this count to attribute the request.
+   */
   zoneLookups: string[];
 }
 
@@ -310,6 +314,23 @@ test.describe('AC1 — the ZoneName key and its humanized dropdown', () => {
     // rule, and the reason the assertion below still finds the key verbatim.
     expect(recorded.zoneLookups).toEqual(['WizardCity/WC_Hub']);
     await expect(main(page).getByText('WizardCity/WC_Hub', { exact: true }).first()).toBeVisible();
+
+    // **Which surface issued it.** The count above cannot tell the header's one lookup from a
+    // dropdown that regressed to per-id lookups — either would record exactly one entry for the
+    // current value. So the dropdown is exercised for real: every per-id lookup in this mock is a
+    // 404, so an option that still shows the pair can only have come from the bulk list, and the
+    // count must not move.
+    await trigger.click();
+    const search = page.getByRole('combobox', { name: 'Search zones', exact: true });
+    await expect(search).toBeVisible();
+    await search.fill('Wizard');
+    await expect(
+      page.getByRole('option', { name: 'Wizard City / WC Hub (WizardCity/WC_Hub)', exact: true }),
+    ).toBeVisible();
+    expect(
+      recorded.zoneLookups,
+      'the dropdown must not fall back to a per-id lookup — this mock 404s every one',
+    ).toEqual(['WizardCity/WC_Hub']);
   });
 
   test('writes the chosen zone_path verbatim, slashes and all', async ({ page }) => {

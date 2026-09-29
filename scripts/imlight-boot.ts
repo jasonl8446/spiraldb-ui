@@ -43,10 +43,14 @@ import {
   bootFailure,
   classifyPort,
   compareCloneAxes,
+  describeDirtyClone,
+  describeWriteRootDivergence,
   evaluateFreshness,
   forgetOwned,
   HarnessError,
+  harnessExitCode,
   HARNESS_PORTS,
+  leftoverIsOwned,
   NON_QUEST_FAMILIES,
   parseSpiralDbLoadLines,
   PORT_SERVICE,
@@ -799,6 +803,8 @@ async function bootImlightOnce(options: {
     );
   }
   const identity = readProcIdentity(pid);
+  /** What this harness started, as `/proc` reported it — the only thing a leftover may be matched to. */
+  const directorIdentity: ProcIdentity = identity ?? { pid, cmdline: dll, starttime: '' };
   rememberOwned({
     pid,
     starttime: identity?.starttime ?? '',
@@ -848,14 +854,38 @@ async function bootImlightOnce(options: {
   await stopProcessGroup(pid, `Director (${options.label})`);
   forgetPid(pid);
   const stillBound = await waitForFreePorts([12500, 12000, 12333, 8080], 20_000);
+  // A listener that outlived the group kill is stopped and *reported*: tolerating it would make the
+  // next boot fail to bind, which reads as a flaky harness instead of a cleanup bug. But only a
+  // listener this harness can prove it started may be signalled — ownership follows the starter
+  // (D114/D122), and `stopProcessGroup`'s only guard is `isAlive`. A stranger is reported and the
+  // run fails; killing it would take down a process this run never owned.
+  const strangers: string[] = [];
   for (const port of stillBound) {
-    // A listener that outlived the group kill is stopped and *reported*: tolerating it would make
-    // the next boot fail to bind, which reads as a flaky harness instead of a cleanup bug.
-    const leftover = attr(port);
-    if (leftover !== undefined) {
-      console.log(`[harness] port ${port} still bound by pid ${leftover} — stopping it too`);
-      await stopProcessGroup(leftover, `leftover on ${port}`);
+    const leftoverPid = attr(port);
+    if (leftoverPid === undefined) {
+      strangers.push(`port ${port} is still bound, and ss names no owning pid`);
+      continue;
     }
+    const ancestry = readAncestry(leftoverPid);
+    const self = ancestry[0] ?? { pid: leftoverPid, cmdline: '(unreadable)', starttime: '' };
+    const listener: Listener = { ...self, ancestry };
+    if (!leftoverIsOwned({ listener, director: directorIdentity })) {
+      strangers.push(
+        `port ${port} is bound by pid ${leftoverPid} (${self.cmdline.trim() || 'cmdline unreadable'})` +
+          `, which is neither the Director this harness started (pid ${pid}) nor one of its descendants`,
+      );
+      continue;
+    }
+    console.log(`[harness] port ${port} still bound by pid ${leftoverPid} — stopping it too`);
+    await stopProcessGroup(leftoverPid, `leftover on ${port}`);
+  }
+  if (strangers.length > 0) {
+    throw new HarnessError(
+      `refusing to signal ${strangers.length} listener(s) this harness does not own — ` +
+        strangers.map((stranger) => `\n  - ${stranger}`).join('') +
+        `\nStop the offending process(es) and try again.`,
+      'port-foreign',
+    );
   }
   if (stillBound.length > 0) {
     const stubborn = await waitForFreePorts(stillBound, 10_000);
@@ -1048,7 +1078,8 @@ function usage(): never {
       `  --build <dir>         (freshness) the prebuilt Imlight output to date-check\n` +
       `  --name <QUEST_NAME>   (prove-count) the catalog quest to scaffold; required\n` +
       `  --db <file>           (prove-count) the catalog database; required (never guessed)\n` +
-      `  --spiraldb <dir>      (prove-count) the SpiralDB root; defaults to the D17 clone\n` +
+      `  --spiraldb <dir>      (prove-count) the SpiralDB root; defaults to the D17 clone, and any\n` +
+      `                        other value is refused — the boot reads and the restore covers the clone\n` +
       `  --timeout <seconds>   (boot, prove-count) per-boot deadline; default 900\n` +
       `  --evidence-dir <dir>  (prove-count) where the raw logs and the report are written\n` +
       `  --prefix <name>       (prove-count) evidence filename prefix; default p6-12\n` +
@@ -1248,6 +1279,13 @@ async function main(): Promise<void> {
       console.error('[harness] prove-count needs --name <QUEST_NAME> and --db <file>');
       usage();
     }
+    // Fail closed, before anything is started: a write root that is not the clone the boot reads
+    // and the snapshot/restore cover cannot raise the count and would be left dirty (finding 3 —
+    // D116's class one level up). The refusal names both paths.
+    const writeRootDivergence = describeWriteRootDivergence(spiraldb, config.clone);
+    if (writeRootDivergence !== null) {
+      throw new HarnessError(`refusing: ${writeRootDivergence}`, 'usage');
+    }
     const evidenceDir = flagString(flags, 'evidence-dir') ?? config.evidenceDir;
     const prefix = flagString(flags, 'prefix') ?? 'p6-12';
     const timeoutMs = Number(flagString(flags, 'timeout') ?? '900') * 1000;
@@ -1258,11 +1296,11 @@ async function main(): Promise<void> {
     console.log(renderPortVerdicts(verdicts));
     assertStartable(verdicts, mode);
 
-    await auroriumUp(verdicts);
-    prepareImlightRunDir({ clean: flags['clean'] === true });
-
     // The scaffold writes one file into the clone, so the clone is snapshotted first — and that
-    // snapshot, not a constant, is what the restore is driven by.
+    // snapshot, not a constant, is what the restore is driven by. It is taken **before anything is
+    // started** so that an already-dirty clone refuses the run here, rather than after `auroriumUp`
+    // (which would leave a started Aurorium behind) or, worse, after `restoreClone` has already
+    // erased somebody else's work (finding 5).
     const snapshot = snapshotClone();
     console.log('');
     console.log('=== the D17 clone, before the scaffold (the restore snapshot) ===');
@@ -1281,6 +1319,13 @@ async function main(): Promise<void> {
         ['branches', snapshot.branches.join(' ')],
       ]),
     );
+    const dirtyClone = describeDirtyClone(snapshot.porcelain);
+    if (dirtyClone !== null) {
+      throw new HarnessError(`refusing: ${dirtyClone}`, 'usage');
+    }
+
+    await auroriumUp(verdicts);
+    prepareImlightRunDir({ clean: flags['clean'] === true });
 
     const run = await proveCountRisesByExactlyOne({
       questName: name,
@@ -1413,10 +1458,11 @@ async function main(): Promise<void> {
     } else {
       await stopOwnedAurorium();
     }
-    if (!run.proof.ok) {
-      console.error(`[harness] the count proof failed: ${run.proof.detail}`);
-      process.exit(6);
-    }
+    // No `!run.proof.ok` check here: `proveCountRisesByExactlyOne` evaluates the proof itself and
+    // **throws** `HarnessError('count')` on a failure, so a failed proof never returns and this line
+    // is unreachable-as-false. The exit code comes from `harnessExitCode()` in the catch below — the
+    // one home for the header's contract. A second, unreachable guard here would only look like the
+    // place where `6` is produced.
     return;
   }
 
@@ -1427,15 +1473,7 @@ async function main(): Promise<void> {
 main().catch((error: unknown) => {
   if (error instanceof HarnessError) {
     console.error(`[harness] ${error.code}: ${error.message}`);
-    process.exit(
-      error.code === 'stale'
-        ? 4
-        : error.code === 'port-foreign'
-          ? 3
-          : error.code === 'usage'
-            ? 2
-            : 5,
-    );
+    process.exit(harnessExitCode(error.code));
   }
   console.error(error);
   process.exit(1);

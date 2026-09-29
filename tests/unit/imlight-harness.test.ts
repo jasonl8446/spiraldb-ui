@@ -8,9 +8,15 @@ import {
   bootFailure,
   classifyPort,
   compareCloneAxes,
+  describeDirtyClone,
+  describeWriteRootDivergence,
   evaluateFreshness,
   forgetOwned,
+  HarnessError,
+  HARNESS_EXIT_CODES,
+  harnessExitCode,
   HARNESS_PORTS,
+  leftoverIsOwned,
   parseSpiralDbLoadLines,
   PORT_SERVICE,
   portDecisions,
@@ -636,5 +642,214 @@ describe('p6-12 — the port table names every port, its service and its status'
     for (const port of HARNESS_PORTS) {
       expect(PORT_SERVICE[port]).toMatch(/aurorium|imlight/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The exit-code contract the header documents (the S2 defect of gate 1's deslop pass)
+// ---------------------------------------------------------------------------
+
+describe('p6-12 — the header’s exit codes have one home, and `6` is reachable', () => {
+  it('maps every code, including the `count` arm the header promises as 6', () => {
+    // The regression lock: before this arm existed a failed count proof fell through to the
+    // generic `5` — the code reserved for "the Director did not produce its log line" — while the
+    // header promised `6`. Both count failures (the scaffold refusal and the failed proof) throw
+    // `HarnessError('count')`, so this map is the only place `6` can come from.
+    expect(harnessExitCode('count')).toBe(6);
+    expect(new HarnessError('the count proof failed: 0 not 1', 'count').code).toBe('count');
+    expect(harnessExitCode(new HarnessError('x', 'count').code)).toBe(6);
+  });
+
+  it('keeps the whole documented table, so a new code cannot silently inherit 5', () => {
+    expect(HARNESS_EXIT_CODES).toEqual({
+      usage: 2,
+      'port-foreign': 3,
+      stale: 4,
+      'boot-failed': 5,
+      'log-line-missing': 5,
+      count: 6,
+    });
+  });
+
+  it('routes the CLI’s catch through that map, and keeps no second, unreachable guard', () => {
+    const cli = codeOf(
+      readFileSync(
+        fileURLToPath(new URL('../../scripts/imlight-boot.ts', import.meta.url)),
+        'utf8',
+      ),
+    );
+    // The positive partner: the map is used, so it is not a second dead home for the contract.
+    expect(cli).toMatch(/process\.exit\(harnessExitCode\(error\.code\)\)/);
+    expect(cli, 'the mapping must not live inline in the CLI again').not.toMatch(
+      /error\.code === 'port-foreign'/,
+    );
+    // The negative partner: the unreachable `!run.proof.ok` guard the harness makes dead must not
+    // come back — a guard that cannot fire reads as the place `6` is produced and hides the throw.
+    expect(cli).not.toMatch(/if \(!run\.proof\.ok\)/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The scaffold's write root (the SHOULD-FIX of the Phase-6 independent review)
+// ---------------------------------------------------------------------------
+
+describe('p6-12 — the scaffold writes only into the clone the boot reads and the restore covers', () => {
+  it('refuses a write root that is not the clone, naming both paths and which side each is', () => {
+    const refusal = describeWriteRootDivergence('/owner/fork-with-328', '/clone-with-322');
+    expect(refusal).not.toBeNull();
+    expect(refusal).toContain('/owner/fork-with-328');
+    expect(refusal).toContain('/clone-with-322');
+    // D116's style: which one is written, and which one is read/restored.
+    expect(refusal).toMatch(/scaffold would write into/);
+    expect(refusal).toMatch(/boot reads and the snapshot\/restore cover/);
+    expect(refusal).toMatch(/cannot raise the count proof/);
+  });
+
+  it('is silent when the write root is the clone — the default when --spiraldb is omitted', () => {
+    expect(describeWriteRootDivergence('/clone-with-322', '/clone-with-322')).toBeNull();
+  });
+
+  it('is wired into prove-count as a refusal, before anything is started', () => {
+    const cli = codeOf(
+      readFileSync(
+        fileURLToPath(new URL('../../scripts/imlight-boot.ts', import.meta.url)),
+        'utf8',
+      ),
+    );
+    expect(cli).toMatch(/describeWriteRootDivergence\(spiraldb, config\.clone\)/);
+    expect(cli).toMatch(/throw new HarnessError\(`refusing: \$\{writeRootDivergence\}`, 'usage'\)/);
+    // A refusal, not a warning printed past the point where the write happens.
+    expect(cli).not.toMatch(/console\.warn\([^)]*writeRootDivergence/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The leftover listener after the Director is stopped (the SHOULD-FIX of the review)
+// ---------------------------------------------------------------------------
+
+describe('p6-12 — a leftover listener is signalled only when this harness started it', () => {
+  const director = {
+    pid: 900,
+    cmdline: '/nix/store/x/share/dotnet/dotnet Imlight.Director.dll ',
+    starttime: '1000',
+  };
+  const raven = {
+    pid: 901,
+    cmdline:
+      '/run/RavenDBServer/Raven.Server.dll --Embedded.ParentProcessId=900 --ServerUrl=http://127.0.0.1:8080 ',
+    starttime: '1001',
+  };
+  const init = { pid: 1, cmdline: '/sbin/init', starttime: '1' };
+
+  it('owns the Director itself — it survived the stop, and the pid matches', () => {
+    expect(leftoverIsOwned({ listener: { ...director, ancestry: [director] }, director })).toBe(
+      true,
+    );
+  });
+
+  it('owns a descendant through the ancestry chain (the Director is still an ancestor)', () => {
+    expect(leftoverIsOwned({ listener: { ...raven, ancestry: [raven, director] }, director })).toBe(
+      true,
+    );
+  });
+
+  it('owns a reparented RavenDB through its own marker — ancestry alone would not see it', () => {
+    // The surviving-RavenDB case the leftover loop exists for: by the time the port is re-checked the
+    // Director has been stopped, so the child's ancestry is [raven, init] and no longer holds him.
+    const noMarker = {
+      ...raven,
+      cmdline: '/run/RavenDBServer/Raven.Server.dll --ServerUrl=http://127.0.0.1:8080 ',
+    };
+    expect(
+      leftoverIsOwned({ listener: { ...noMarker, ancestry: [noMarker, init] }, director }),
+    ).toBe(false); // reparented with nothing naming the Director: not ours
+    expect(leftoverIsOwned({ listener: { ...raven, ancestry: [raven, init] }, director })).toBe(
+      true,
+    ); // the marker owns it
+  });
+
+  it('refuses a recycled pid: same number, different starttime is a stranger', () => {
+    const recycled = { pid: 900, cmdline: '/usr/bin/something-else ', starttime: '9999' };
+    expect(leftoverIsOwned({ listener: { ...recycled, ancestry: [recycled] }, director })).toBe(
+      false,
+    );
+  });
+
+  it('refuses a stranger with neither ancestry nor marker, whatever its pid', () => {
+    const stranger = { pid: 4242, cmdline: '/usr/bin/caddy run ', starttime: '5000' };
+    expect(
+      leftoverIsOwned({ listener: { ...stranger, ancestry: [stranger, init] }, director }),
+    ).toBe(false);
+  });
+
+  it('does not read a marker for a DIFFERENT director pid as ownership', () => {
+    const otherRun = { ...raven, cmdline: raven.cmdline.replace('=900', '=1234') };
+    expect(
+      leftoverIsOwned({ listener: { ...otherRun, ancestry: [otherRun, init] }, director }),
+    ).toBe(false);
+  });
+
+  it('is wired into the boot cleanup, before anything is signalled', () => {
+    const cli = codeOf(
+      readFileSync(
+        fileURLToPath(new URL('../../scripts/imlight-boot.ts', import.meta.url)),
+        'utf8',
+      ),
+    );
+    expect(cli).toMatch(/leftoverIsOwned\(\{ listener, director: directorIdentity \}\)/);
+    // The old form signalled `attr(port)` directly, with `isAlive` as its only guard.
+    expect(cli, 'the unguarded leftover stop must not come back').not.toMatch(
+      /stopProcessGroup\(leftover,/,
+    );
+    expect(cli).toMatch(
+      /refusing to signal \$\{strangers\.length\} listener\(s\) this harness does not own/,
+    );
+    expect(cli).toMatch(
+      /directorIdentity: ProcIdentity = identity \?\? \{ pid, cmdline: dll, starttime: '' \}/,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A dirty clone refuses the run before the restore can erase it (the review's finding 5)
+// ---------------------------------------------------------------------------
+
+describe('p6-12 — a clone that is already dirty refuses the run before the restore', () => {
+  it('names the files and says what the restore would do to them', () => {
+    const refusal = describeDirtyClone([
+      '?? QuestTemplates/SOMEONE-ELSES-WORK.json',
+      ' M QuestTemplates/WC-CYCLOPS-MAIN-002.json',
+    ]);
+    expect(refusal).not.toBeNull();
+    expect(refusal).toContain('QuestTemplates/SOMEONE-ELSES-WORK.json');
+    expect(refusal).toContain('QuestTemplates/WC-CYCLOPS-MAIN-002.json');
+    expect(refusal).toContain('2 uncommitted change(s)');
+    expect(refusal).toMatch(/checkout -f \+ reset --hard/);
+    expect(refusal).toMatch(/without a record/);
+  });
+
+  it('is silent on a clean clone — the state every recorded run measured', () => {
+    expect(describeDirtyClone([])).toBeNull();
+  });
+
+  it('is checked before anything is started, and before the scaffold writes', () => {
+    const cli = codeOf(
+      readFileSync(
+        fileURLToPath(new URL('../../scripts/imlight-boot.ts', import.meta.url)),
+        'utf8',
+      ),
+    );
+    expect(cli).toMatch(/describeDirtyClone\(snapshot\.porcelain\)/);
+    expect(cli).toMatch(/throw new HarnessError\(`refusing: \$\{dirtyClone\}`, 'usage'\)/);
+    // The order is the fix: the snapshot and its refusal must precede the first side effect
+    // (`auroriumUp`) and, above all, the scaffold write the restore is meant to undo. Scoped to the
+    // prove-count block, because `up` mode also calls `auroriumUp`.
+    const block = cli.slice(cli.indexOf("if (mode === 'prove-count')"));
+    const refusalAt = block.indexOf('describeDirtyClone(snapshot.porcelain)');
+    const auroriumAt = block.indexOf('await auroriumUp(verdicts)');
+    const proveAt = block.indexOf('proveCountRisesByExactlyOne({');
+    expect(refusalAt).toBeGreaterThan(-1);
+    expect(refusalAt).toBeLessThan(auroriumAt);
+    expect(auroriumAt).toBeLessThan(proveAt);
   });
 });

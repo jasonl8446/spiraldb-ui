@@ -60,16 +60,45 @@ export const PORT_ROLE: Readonly<Record<HarnessPort, string>> = {
   8080: 'Imlight embedded RavenDB (bound by a child of the Director)',
 };
 
+/** Every refusal the harness can hand to a caller. */
+export type HarnessErrorCode =
+  'port-foreign' | 'boot-failed' | 'log-line-missing' | 'count' | 'stale' | 'usage';
+
 /** A harness refusal. `detail` is written for the log, not for a stack trace. */
 export class HarnessError extends Error {
   constructor(
     message: string,
-    readonly code:
-      'port-foreign' | 'boot-failed' | 'log-line-missing' | 'count' | 'stale' | 'usage',
+    readonly code: HarnessErrorCode,
   ) {
     super(message);
     this.name = 'HarnessError';
   }
+}
+
+/**
+ * The exit-code contract `scripts/imlight-boot.ts` documents in its header, in **one home**: the
+ * map is a `Record` over `HarnessErrorCode`, so adding a code without giving it an exit code is a
+ * compile error rather than a silent fall-through to the generic `5`.
+ *
+ * `count` is the arm that mattered: the header promises `6` for *the count did not rise by exactly
+ * one **or** the clone did not restore*, and both count failures **throw** (`HarnessError('count')`
+ * at the scaffold refusal and at the failed proof), so they reach this map rather than the CLI's
+ * own `run.proof.ok` check — which is unreachable by construction, because the proof is evaluated
+ * inside the harness and a failed one never returns. Before this arm existed the header's `6` was
+ * reachable only from the clone restore and a failed count proof exited `5`, the code reserved for
+ * "the Director did not produce its log line".
+ */
+export const HARNESS_EXIT_CODES: Readonly<Record<HarnessErrorCode, number>> = {
+  usage: 2,
+  'port-foreign': 3,
+  stale: 4,
+  'boot-failed': 5,
+  'log-line-missing': 5,
+  count: 6,
+};
+
+export function harnessExitCode(code: HarnessErrorCode): number {
+  return HARNESS_EXIT_CODES[code];
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +201,36 @@ export function serviceOfProcess(listener: Listener): PortService | undefined {
 /** The ledger entry that accounts for this listener, if any ancestor pid was one we started. */
 export function ownedBy(listener: Listener, ledger: OwnershipLedger): OwnedProcess | undefined {
   return ledger.processes.find((entry) => listener.ancestry.some((proc) => proc.pid === entry.pid));
+}
+
+/**
+ * RavenDB's own way of naming the Director it belongs to: the Director passes
+ * `--Embedded.ParentProcessId=<its own pid>` to the child it spawns. Used as the second half of
+ * {@link leftoverIsOwned}'s descendant test, because the marker survives the **reparenting** that
+ * happens when the Director dies — which is exactly the surviving-RavenDB case the leftover loop
+ * exists for. The ancestry check alone would not see it there.
+ */
+function directorMarker(directorPid: number): RegExp {
+  return new RegExp(`--Embedded\\.ParentProcessId=${directorPid}(?:\\s|$)`);
+}
+
+/**
+ * May the harness signal the listener that outlived its own Director's stop?
+ *
+ * Ownership follows **the starter** (D114/D122), which is why a bare pid is not enough: pids are
+ * recycled, and `stopProcessGroup`'s only guard is `isAlive`. A leftover is ours only when it **is**
+ * the Director this harness started (same pid **and** the same `/proc` starttime) or is a
+ * **descendant** of it — proved either through the ancestry chain or through RavenDB's
+ * `--Embedded.ParentProcessId=<director pid>` marker. Everything else is a stranger: the caller
+ * reports it and fails rather than signalling a process this harness did not start.
+ */
+export function leftoverIsOwned(input: { listener: Listener; director: ProcIdentity }): boolean {
+  const isDirector = (proc: ProcIdentity): boolean =>
+    proc.pid === input.director.pid && proc.starttime === input.director.starttime;
+  if (isDirector(input.listener) || input.listener.ancestry.some(isDirector)) {
+    return true;
+  }
+  return directorMarker(input.director.pid).test(input.listener.cmdline);
 }
 
 export type PortStatus = 'free' | 'owned' | 'sibling' | 'foreign';
@@ -719,6 +778,30 @@ export async function proveCountRisesByExactlyOne(deps: {
 // ---------------------------------------------------------------------------
 
 /**
+ * The scaffold's write root must be the clone the boot reads and the snapshot/restore covers.
+ *
+ * **D116's class, one level up**: a `--spiraldb` that differs from the clone leaves three halves
+ * individually valid and the whole silently wrong. The boot pins Imlight's `SpiralDBLocalPath` to
+ * `config.clone`; the snapshot and the restore cover `config.clone`; only the scaffold writes to the
+ * `--spiraldb` root. A file written elsewhere therefore **cannot raise the count** the proof reads,
+ * and the run leaves a written repository that was neither verified nor restored. Unlike the sync's
+ * own override — where warning is right because the caller may mean it — here there is no useful
+ * experiment to protect, so this is a **refusal**, and it names both paths and says which side each
+ * one is. `null` when they agree, which is the default (`--spiraldb` omitted).
+ */
+export function describeWriteRootDivergence(writeRoot: string, clone: string): string | null {
+  if (writeRoot === clone) {
+    return null;
+  }
+  return (
+    `the scaffold would write into ${writeRoot}, but the boot reads and the snapshot/restore cover ` +
+    `${clone} — Imlight's SpiralDBLocalPath is pinned to the clone, so a file written into ` +
+    `${writeRoot} cannot raise the count proof's number and would be left neither verified nor ` +
+    `restored. Omit --spiraldb (it defaults to the clone) or pass ${clone}.`
+  );
+}
+
+/**
  * The D17 clone's state on the five axes the restore is judged by, plus the corpus shape.
  *
  * `branches` and `remotes` are here because of D76(b): a reset that restores the commit but leaves
@@ -781,6 +864,29 @@ export interface CloneAxisRow {
   expected: string;
   actual: string;
   ok: boolean;
+}
+
+/**
+ * Refuse to run the destructive restore against a clone that was **already dirty**.
+ *
+ * `restoreClone` runs `git checkout -f` + `git reset --hard` unconditionally, and the axis
+ * comparison that would complain about dirt pins `git status --porcelain` to **empty**
+ * ({@link compareCloneAxes}) — so it can only ever report dirt **after** the restore has already
+ * erased it, and the run looks green while somebody's uncommitted work is gone. The suites' own
+ * readiness predicate refuses exactly this case ("has uncommitted changes (refusing to reset
+ * them)"); the harness must refuse **before** the scaffold writes, not report after the fact.
+ *
+ * `null` when the clone is clean, which is the state every recorded run measured.
+ */
+export function describeDirtyClone(porcelain: readonly string[]): string | null {
+  if (porcelain.length === 0) {
+    return null;
+  }
+  return (
+    `the D17 clone has ${porcelain.length} uncommitted change(s) and this run's restore would ` +
+    `destroy them with checkout -f + reset --hard, without a record: ${porcelain.join(' | ')}. ` +
+    `Commit or stash them, or point the run at a clean clone.`
+  );
 }
 
 /**

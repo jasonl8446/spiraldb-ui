@@ -27,7 +27,8 @@ import {
  * **Not one test in this suite spawns the real binary**, because CI has no .NET SDK (D55): every
  * run injects a fake `exec`, and the "missing tool" cases inject a fake `fileExists` so not even a
  * probe touches the filesystem. The real binary is exercised against the 19 GB tree by the story's
- * evidence runs (`census` 183,676 objects / 142 classes; `extract` 6,733 rows in 5.31 s).
+ * evidence runs (`census` 183,676 objects / 141 distinct classes — 142 shape-class rows, because
+ * `WizZoneData` appears in both header shapes; `extract` 6,733 rows in 5.31 s).
  */
 
 const GAMEDATA = '/aurorium/data/V_r806919.Wizard_1_610/Data/GameData';
