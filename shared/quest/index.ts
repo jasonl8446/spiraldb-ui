@@ -14,6 +14,7 @@
  * | `./goals.js` | the 5-goal discriminated union on `$type` + the 24 shared base fields |
  * | `./questTemplate.js` | `QuestTemplate` (36 top-level fields) + `GoalLogicEntry` |
  * | `./request.js` | the `POST /api/quests` body schema + issue formatting |
+ * | `./scaffold.js` | the corpus's 36-key order + the minimal scaffold document (task 6.8) |
  *
  * Usage is the same on the server and in the client:
  *
@@ -36,3 +37,4 @@ export * from './dialog.js';
 export * from './goals.js';
 export * from './questTemplate.js';
 export * from './request.js';
+export * from './scaffold.js';

@@ -328,6 +328,14 @@ Quest metadata format:
 }
 ```
 
+**`Description` carries the tool's own provenance** (added by p6-09, plan task 6.8). It is the only
+free-text field of this fixed seven-key shape, so it is where a *creating* flow states how the
+object came to exist — the extraction save already does (`Quest extracted from packet capture.`),
+and a scaffold-from-catalog save writes
+`Scaffolded from the quest catalog (link_kind: {direct|inferred|none}; title {key} | no title …)`,
+naming the link kind and whether an `m_questTitle` key was written. No eighth key is added: a
+new key would break the shape every reader and `QUEST_METADATA_KEYS` pin.
+
 ## Git Branch Strategy
 
 On first save in a session:

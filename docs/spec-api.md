@@ -263,6 +263,7 @@ CRUD endpoints for each SpiralDB object type. All follow the same pattern.
 | GET | `/api/quests` | List all quests (from SpiralDB files) |
 | GET | `/api/quests/:name` | Single quest JSON |
 | POST | `/api/quests` | Save new/update quest (writes file + metadata + git commit) |
+| POST | `/api/quests/scaffold` | Create the minimal skeleton for a catalog quest (Phase 6, P6-5/P6-6) |
 | GET | `/api/quests/coverage` | Catalog coverage, both denominators (Phase 6, D110) |
 | GET | `/api/quests/:name/evidence` | Per-quest evidence (Phase 6, P6-8/P6-10) |
 | GET | `/api/quest-ids/:id/evidence` | Evidence for the id tier (Phase 6, P6-3) |
@@ -392,6 +393,51 @@ present in the request**:
   status.
 - A `source` that is not a string → `400`, like a non-string `notes`.
 - Response shape unchanged: `source` is not echoed.
+
+**Added by Phase 6 (P6-5/P6-6, task 6.8): `POST /api/quests/scaffold`.** Creates the
+`QuestTemplates/<name>.json` file for a **catalog row with `has_definition = 0`** through the
+same save pipeline every other save uses — template + companion metadata + one commit, status
+`extracted` — and returns the document it wrote, which is what the Catalog view's **Create
+quest** action opens the editor on. There is **no draft lifecycle**: the file is real from the
+moment it is written (D100), and it is a **minimal skeleton into which nothing inferred is ever
+written** (D101).
+
+Request: `{ "quest_name": "LM-NIGHT-MAIN-009", "notes": "optional commit body" }`.
+
+```json
+{
+  "quest_name": "LM-NIGHT-MAIN-009",
+  "link_kind": "inferred",
+  "title_key": null,
+  "has_definition_before": 0,
+  "outcome": "created",
+  "action": "create",
+  "file": "QuestTemplates/questtemplates_LM-NIGHT-MAIN-009.json",
+  "metadata": "QuestMetadatas/questmetadata_LM-NIGHT-MAIN-009.json",
+  "commit": "daa4e7cca209e4fd2d5584ebc8d502008572f482",
+  "branch": "content/2026-09-27",
+  "commit_message": "spiraldb: create quest LM-NIGHT-MAIN-009",
+  "quest": { "m_questName": "LM-NIGHT-MAIN-009", "…": "the 36 keys, corpus order" }
+}
+```
+
+- The document is the **36 keys in the corpus's own order** (`shared/quest/scaffold.ts` is the
+  single home of that order; it is *not* the schema's declaration order), the name, the linked
+  title **only for a direct link**, `m_questNameID: 0` (the corpus's value in 322 of 322 files —
+  the id lives in the `m_questTitle` key), and empty goals/results/dialog.
+- `title_key` is non-null only when the link is `direct` **and** the catalog could resolve one
+  `QuestTitle_*` key (`quest_ids.title_key`, else a unique reverse lookup of `quests.title`).
+  When two keys share the title text the field is `null`: the scaffold never guesses identity,
+  and it never writes inferred material.
+- `has_definition_before` is the column **as read before the write**. The column belongs to the
+  sync and flips to 1 on its next run, because the file now exists; the editor is opened from
+  `quest`, never from a column this call would have to guess.
+- The companion metadata's `Description` records the provenance
+  ([data model](./spec-data-model.md#metadata-files)).
+- **Status codes**: `404` when the catalog holds no such name, `409` when the quest already has a
+  file (scaffolding over an authored quest would blank every field it does not carry, D45(1)),
+  `400` for a body without a usable `quest_name` or a name that would write outside
+  `QuestTemplates/`, `409` for a dirty SpiralDB tree (D14), `500` for any other pipeline failure.
 
 **Added by Phase 6 (P6-15/D110): `GET /api/quests/coverage`.** Serves the `coverage` view
 ([data model](./spec-data-model.md)) so the Quests-page header and the Catalog view read **one

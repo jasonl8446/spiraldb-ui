@@ -1,0 +1,98 @@
+Newtonsoft.Json 13.0.0.0
+QuestTemplate from Imcodec.ObjectProperty 1.0.0.0
+
+=== 1. the two candidate skeletons, exactly as a scaffold could write them ===
+  candidate A (p6-09's skeleton: corpus scalars, nulls where the corpus has nulls): LOADED
+    m_questName     = DM-GRAVE-MAIN-008
+    m_questNameID   = 0
+    m_questTitle    = QuestTitle_1ED8D
+    m_questLevel    = 0
+    m_questRepeat   = 0
+    m_prepAlways    = False
+    m_isHidden      = False
+    m_mainline      = False
+    m_activityType  = ACTIVITY_NotActivity
+    m_onStartQuestScript = 
+    m_goals.Count   = 0
+    m_goalLogic.Count = 0
+    m_startResults  = object
+    m_endResults    = object
+    m_dialogList    = resolved type ActorDialogList
+    m_requirements  = null
+    m_clientTags    = null
+    m_behaviors     = null
+  candidate B (D101 read literally: null in every non-name/non-title/non-container key): LOADED
+    m_questName     = DM-GRAVE-MAIN-008
+    m_questNameID   = 0
+    m_questTitle    = QuestTitle_1ED8D
+    m_questLevel    = 0
+    m_questRepeat   = 0
+    m_prepAlways    = False
+    m_isHidden      = False
+    m_mainline      = False
+    m_activityType  = ACTIVITY_NotActivity
+    m_onStartQuestScript = null
+    m_goals.Count   = 0
+    m_goalLogic.Count = 0
+    m_startResults  = object
+    m_endResults    = object
+    m_dialogList    = resolved type ActorDialogList
+    m_requirements  = null
+    m_clientTags    = null
+    m_behaviors     = null
+
+=== 2. does m_dialogList need its $type? (a NON-empty list, read back reflectively) ===
+  with $type   : LOADED, resolved type = ActorDialogList, m_dialogs.Count = 1
+  without $type: LOADED, resolved type = ActorDialogListBase, m_dialogs.Count = <no m_dialogs property>
+
+=== 3. one JSON null per member type, against the real QuestTemplate ===
+  m_questName (string)             null -> LOADED, value = null   {"m_questName": null}
+  m_questNameID (uint)             null -> LOADED, value = 0   {"m_questNameID": null}
+  m_questTitle (string)            null -> LOADED, value = null   {"m_questTitle": null}
+  m_questLevel (int)               null -> LOADED, value = 0   {"m_questLevel": null}
+  m_questRepeat (int)              null -> LOADED, value = 0   {"m_questRepeat": null}
+  m_prepAlways (bool)              null -> LOADED, value = False   {"m_prepAlways": null}
+  m_isHidden (bool)                null -> LOADED, value = False   {"m_isHidden": null}
+  m_mainline (bool)                null -> LOADED, value = False   {"m_mainline": null}
+  m_activityType (enum)            null -> LOADED, value = ACTIVITY_NotActivity   {"m_activityType": null}
+  m_clientTags (List<string>)      null -> LOADED, value = null   {"m_clientTags": null}
+  m_goals (List<...>)              null -> LOADED, value = null   {"m_goals": null}
+  m_goalLogic (List<...>)          null -> LOADED, value = null   {"m_goalLogic": null}
+  m_startResults (class)           null -> LOADED, value = null   {"m_startResults": null}
+  m_dialogList (class)             null -> LOADED, value = null   {"m_dialogList": null}
+  m_requirements (class)           null -> LOADED, value = null   {"m_requirements": null}
+  m_questName absent               null -> LOADED, value = null   {}
+  m_questNameID absent             null -> LOADED, value = 0   {}
+
+=== 4. the empty containers, against the real QuestTemplate ===
+  m_goals: []                                      LOADED
+  m_goalLogic: []                                  LOADED
+  m_startGoals: []                                 LOADED
+  m_startResults: {m_results: []}                  LOADED
+  m_endResults: {m_results: []}                    LOADED
+  m_dialogList: {$type, m_dialogs: []}             LOADED
+  m_dialogList: {m_dialogs: []} (no $type)         LOADED
+  m_requirements: null                             LOADED
+  m_prepRequirements: null                         LOADED
+
+=== 5. the control: the corpus's own minimal file (WC-TUT-C03-002) ===
+  WC-TUT-C03-002 (verbatim): LOADED
+    m_questName     = WC-TUT-C03-002
+    m_questNameID   = 0
+    m_questTitle    = 
+    m_questLevel    = 0
+    m_questRepeat   = 0
+    m_prepAlways    = False
+    m_isHidden      = True
+    m_mainline      = False
+    m_activityType  = ACTIVITY_NotActivity
+    m_onStartQuestScript = 
+    m_goals.Count   = 0
+    m_goalLogic.Count = 0
+    m_startResults  = object
+    m_endResults    = object
+    m_dialogList    = resolved type ActorDialogList
+    m_requirements  = null
+    m_clientTags    = null
+    m_behaviors     = null
+  candidate A is byte-identical to the corpus file except for the values listed above: False

@@ -1,0 +1,141 @@
+
+=== 1. key orders — 322 QuestTemplates/*.json in /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates ===
+distinct key orders: 2
+   320 files × 36 keys
+     2 files × 18 keys
+
+canonical order (36 keys), as emitted by p6-09's scaffold:
+   1. m_questName
+   2. m_questNameID
+   3. m_questTitle
+   4. m_questInfo
+   5. m_questPrep
+   6. m_questUnderway
+   7. m_questComplete
+   8. m_startGoals
+   9. m_goals
+  10. m_startResults
+  11. m_endResults
+  12. m_requirements
+  13. m_prepRequirements
+  14. m_pruneRequirements
+  15. m_prepAlways
+  16. m_clientTags
+  17. m_goalLogic
+  18. m_questLevel
+  19. m_questRepeat
+  20. m_onStartQuestScript
+  21. m_onEndQuestScript
+  22. m_dialogList
+  23. m_missionDoors
+  24. m_dynaMods
+  25. m_isHidden
+  26. m_outdated
+  27. m_noQuestHelper
+  28. m_mainline
+  29. m_defaultDialogAnimation
+  30. m_skipQHAutoSelect
+  31. m_questEffectInfoList
+  32. m_forceInteraction
+  33. m_checkInventoryForCrafting
+  34. m_playAsYourPetNPC
+  35. m_activityType
+  36. m_behaviors
+
+files that do NOT carry the canonical order (2):
+  questtemplates_WC-CYCLOPS-MAIN-002.json: 18 keys -> m_questName,m_questNameID,m_questTitle,m_startGoals,m_goals,m_prepAlways,m_questLevel,m_questRepeat,m_dialogList,m_isHidden,m_outdated,m_noQuestHelper,m_mainline,m_skipQHAutoSelect,m_forceInteraction,m_checkInventoryForCrafting,m_playAsYourPetNPC,m_activityType
+  questtemplates_WC-UNICORN-MAIN-004.json: 18 keys -> m_questName,m_questNameID,m_questTitle,m_startGoals,m_goals,m_prepAlways,m_questLevel,m_questRepeat,m_dialogList,m_isHidden,m_outdated,m_noQuestHelper,m_mainline,m_skipQHAutoSelect,m_forceInteraction,m_checkInventoryForCrafting,m_playAsYourPetNPC,m_activityType
+
+=== 2. per-key value profile over the 320 canonical files ===
+  m_questName                    "DS-ACAD-C01-001" ×1  "DS-ACAD-C01-002" ×1  "DS-ACAD-C01-003" ×1
+  m_questNameID                  0 ×320
+  m_questTitle                   "" ×7  "QuestTitle_298DE" ×1  "QuestTitle_1ED89" ×1
+  m_questInfo                    null ×320
+  m_questPrep                    null ×320
+  m_questUnderway                null ×320
+  m_questComplete                null ×320
+  m_startGoals                   array[1] ×289  array[0] ×15  array[2] ×6
+  m_goals                        array[2] ×123  array[1] ×81  array[3] ×54
+  m_startResults                 object ×320
+  m_endResults                   object ×320
+  m_requirements                 object ×312  null ×8
+  m_prepRequirements             null ×320
+  m_pruneRequirements            null ×320
+  m_prepAlways                   false ×320
+  m_clientTags                   null ×320
+  m_goalLogic                    array[2] ×123  array[1] ×79  array[3] ×54
+  m_questLevel                   1 ×285  0 ×14  19 ×5
+  m_questRepeat                  0 ×320
+  m_onStartQuestScript           "" ×320
+  m_onEndQuestScript             "" ×320
+  m_dialogList                   object ×320
+  m_missionDoors                 null ×320
+  m_dynaMods                     null ×320
+  m_isHidden                     false ×313  true ×7
+  m_outdated                     false ×320
+  m_noQuestHelper                false ×320
+  m_mainline                     true ×304  false ×16
+  m_defaultDialogAnimation       null ×320
+  m_skipQHAutoSelect             false ×320
+  m_questEffectInfoList          null ×320
+  m_forceInteraction             false ×320
+  m_checkInventoryForCrafting    false ×320
+  m_playAsYourPetNPC             false ×320
+  m_activityType                 "ACTIVITY_NotActivity" ×320
+  m_behaviors                    null ×320
+
+=== 3. the corpus's own zero-goal files (the "empty goals/results/dialog" precedent) ===
+count: 11
+  questtemplates_KT-HUB-C15-001.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_KT-HUB-C16-001.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_KT-HUB-C17-001.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_KT-HUB-C18-001.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_KT-PYM3-C03-001.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_MB-XTRA-C12-001.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_WC-COMMONS-SIDE-002.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_WC-OLDE-SIDE-002.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [1]} requirements={$type: string, m_applyNOT: boolean, m_operator: string, m_requirements: [1]}
+      dialogList={$type: string, m_dialogs: [1]} questNameID=0 questLevel=1 isHidden=false activityType="ACTIVITY_NotActivity"
+  questtemplates_WC-TUT-C03-002.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [0]} requirements=null
+      dialogList={$type: string, m_dialogs: [0]} questNameID=0 questLevel=0 isHidden=true activityType="ACTIVITY_NotActivity"
+  questtemplates_WC-TUT-C09-014.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [0]} requirements=null
+      dialogList={$type: string, m_dialogs: [0]} questNameID=0 questLevel=0 isHidden=true activityType="ACTIVITY_NotActivity"
+  questtemplates_WC-TUT-C09-016.json
+      startGoals=[0] goals=[0] goalLogic=[0]
+      startResults={m_results: [0]} endResults={m_results: [0]} requirements=null
+      dialogList={$type: string, m_dialogs: [0]} questNameID=0 questLevel=0 isHidden=true activityType="ACTIVITY_NotActivity"
+
+=== 4. direct-link title-key recovery — 285 link_kind = 'direct' rows in /home/jason/Documents/git-projects/spiraldb-ui/data/__test-scratch__/p6-09-catalog.db ===
+  via quest_ids.title_key          : 170
+  via a UNIQUE reverse value lookup: 105
+  AMBIGUOUS (2+ keys share the text): 10
+  NOT RECOVERABLE                  : 0
+  recoverable total                : 275 / 285
+  ambiguous: [{"name":"DM-BLACK-SIDE-002","title":"The Great Escapery","keys":["QuestTitle_00002152","QuestTitle_00002208"]},{"name":"DM-GRAVE-MAIN-007","title":"Scholomari Parley","keys":["QuestTitle_00002163","QuestTitle_00002164"]},{"name":"KT-WEAVE-DEATH-003","title":"Diving for Death","keys":["QuestTitle_00002103","QuestTitle_00002107"]},{"name":"KT-WEAVE-FIRE-002","title":"Smoke and Memories","keys":["QuestTitle_00002105","QuestTitle_18EFE6"]},{"name":"KT-WEAVE-FIRE-003","title":"Fire Bad?","keys":["QuestTitle_00002106","QuestTitle_18EFE8"]}]
+  duplicate non-empty QuestTitle values in string_table: [{"value":"Advanced Combat Tutorial hidden quest","c":14},{"value":"Hall of the Bear","c":10},{"value":"The Play's the Thing","c":6},{"value":"Tosh Him Back","c":5},{"value":"Hedging Bets","c":5}]

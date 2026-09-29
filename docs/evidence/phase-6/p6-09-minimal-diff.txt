@@ -1,0 +1,27 @@
+# The scaffolded document vs the corpus's own minimal file (WC-TUT-C03-002)
+# command: npx tsx data/__test-scratch__/p6-09-minimal-diff.mts
+# left  = the scaffold for LM-NIGHT-MAIN-009 (an INFERRED link whose catalog resolved
+#         QuestTitle_173223 — deliberately not written)
+# right = the corpus's own minimal file, verbatim
+
+--- /tmp/p6-09-scaffold.json
++++ /tmp/p6-09-corpus.json
+@@ -1,7 +1,7 @@
+ {
+-  "m_questName": "LM-NIGHT-MAIN-009",
++  "m_questName": "WC-TUT-C03-002",
+   "m_questNameID": 0,
+-  "m_questTitle": null,
++  "m_questTitle": "",
+   "m_questInfo": null,
+   "m_questPrep": null,
+   "m_questUnderway": null,
+@@ -30,7 +30,7 @@
+   },
+   "m_missionDoors": null,
+   "m_dynaMods": null,
+-  "m_isHidden": false,
++  "m_isHidden": true,
+   "m_outdated": false,
+   "m_noQuestHelper": false,
+   "m_mainline": false,

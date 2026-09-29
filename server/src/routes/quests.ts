@@ -5,6 +5,11 @@ import { readSettings, type Db } from '../db.js';
 import { DirtyRepoError } from '../services/git.js';
 import { questEvidenceByName } from '../services/questEvidence.js';
 import { listQuests, QuestRequestError, readQuest, saveQuest } from '../services/quests.js';
+import {
+  parseScaffoldRequest,
+  QuestScaffoldError,
+  scaffoldQuest,
+} from '../services/questScaffold.js';
 import { createSavePipeline, type SavePipeline } from '../services/savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbIndex.js';
 
@@ -15,6 +20,7 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  * - `GET  /api/quests/:name`           one quest's full JSON, via the D19 content-keyed index
  * - `GET  /api/quests/:name/evidence`  the per-quest evidence surface (task 6.6)
  * - `POST /api/quests`                 save `{ quest, notes?, source? }` through the task 2.4 pipeline
+ * - `POST /api/quests/scaffold`        create the minimal skeleton for a catalog quest (task 6.8)
  *
  * The spec fixes no response shape ("List all quests" / "Single quest JSON"), so
  * the shapes the client will consume are documented on the service types
@@ -31,6 +37,10 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  *                            (docs/spec-api.md L420-492; `services/questEvidence.ts` documents the shape)
  * POST /api/quests        → { quest_name, outcome, action, commit, branch, commit_message,
  *                             file, metadata, metadata_outcome, status, warnings }
+ * POST /api/quests/scaffold → { quest_name, link_kind, title_key, has_definition_before,
+ *                            outcome, action, file, metadata, commit, branch, commit_message, quest }
+ *                            (`services/questScaffold.ts` documents the shape; task 6.10's
+ *                            Catalog view navigates to `/quests/<quest_name>` on success)
  * ```
  *
  * **Status codes** (spec-silent, chosen here and reported to the lead):
@@ -41,6 +51,9 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  * | a schema failure (task 3.1) or a **blocking rule finding** (task 3.9) | 400 |
  * | `settings.spiraldb_path` not configured      | 400    |
  * | unknown quest name (GET `/:name`)            | 404    |
+ * | `POST /scaffold` with a name the catalog does not hold | 404 |
+ * | `POST /scaffold` with a name that would write outside `QuestTemplates/` (ac3) | 400 |
+ * | `POST /scaffold` for a quest that already has a file | 409 |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14) | 409 |
  * | anything else thrown by the pipeline         | 500    |
  *
@@ -126,6 +139,13 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       } satisfies ApiError & { fields?: Record<string, string[]> });
       return;
     }
+    if (error instanceof QuestScaffoldError) {
+      // Task 6.8: the scaffold's own refusals carry the status the service chose (400 for a
+      // name or path the caller can fix, 404 for a name the catalog does not hold, 409 for a
+      // quest that already has a file). They are the actionable messages verbatim.
+      res.status(error.status).json({ error: error.message } satisfies ApiError);
+      return;
+    }
     if (error instanceof DirtyRepoError) {
       res.status(409).json({ error: error.message } satisfies ApiError);
       return;
@@ -199,6 +219,31 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
         return;
       }
       res.json(detail.quest);
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `POST /api/quests/scaffold` — task 6.8 / story p6-09.
+   *
+   * Body `{ quest_name, notes? }`. The service owns the rules (the target-path guard,
+   * the catalog row, the direct-link title, the schema pass) and its own status codes;
+   * this handler only reads `settings.spiraldb_path` and hands over the shared runtime.
+   */
+  router.post('/scaffold', async (req, res) => {
+    const root = spiraldbRoot(res);
+    if (root === undefined) {
+      return;
+    }
+    try {
+      const { name, notes } = parseScaffoldRequest(req.body);
+      const { index, pipeline } = runtimeFor(root);
+      // The catalog row and the string table are read from the database; the index must
+      // reflect disk so the pipeline's create/update decision is not made against a stale
+      // scan (the same reason `saveQuest` refreshes both families).
+      index.rebuildType('questtemplates');
+      res.json(await scaffoldQuest({ db, index, pipeline, name, notes }));
     } catch (error) {
       fail(res, error);
     }

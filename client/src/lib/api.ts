@@ -1035,3 +1035,48 @@ export function saveQuest(body: SaveQuestBody): Promise<SaveQuestResult> {
     body: JSON.stringify(body),
   });
 }
+
+/* ------------------------------------------------------- quests (scaffold) */
+
+/**
+ * `POST /api/quests/scaffold` success body (task 6.8 / story p6-09, D100/D101).
+ *
+ * `quest` is the skeleton that was written — what the editor is opened on. `link_kind`
+ * and `title_key` say what the catalog link contributed: `title_key` is non-null **only**
+ * for a direct link that resolved to exactly one `QuestTitle_*` key, so a caller can show
+ * the inferred badge without re-deriving anything.
+ *
+ * `has_definition_before` is the column **as read before the write**: the sync flips it to
+ * 1 on its next run, which is why it is named `before` rather than echoed as `true`.
+ */
+export interface ScaffoldQuestResult {
+  quest_name: string;
+  link_kind: EvidenceTitleSource;
+  title_key: string | null;
+  has_definition_before: 0 | 1;
+  outcome: 'created';
+  action: string;
+  file: string;
+  metadata: string | null;
+  commit: string;
+  branch: string;
+  commit_message: string;
+  quest: QuestObject;
+}
+
+/**
+ * `POST /api/quests/scaffold` — create the minimal `QuestTemplates/` file for a catalog
+ * quest with `has_definition = 0`, through the same save pipeline every other save uses
+ * (template + companion metadata + one commit, D100). There is no draft lifecycle.
+ *
+ * The route's refusals are actionable and typed by status: `404` when the catalog holds no
+ * such name, `409` when the quest already has a file, `400` for a name that would write
+ * outside `QuestTemplates/`. The **caller** (task 6.10's Catalog view) is the one that
+ * navigates to the editor on success — this function only writes.
+ */
+export function scaffoldQuest(questName: string): Promise<ScaffoldQuestResult> {
+  return apiFetch<ScaffoldQuestResult>('/api/quests/scaffold', {
+    method: 'POST',
+    body: JSON.stringify({ quest_name: questName }),
+  });
+}
