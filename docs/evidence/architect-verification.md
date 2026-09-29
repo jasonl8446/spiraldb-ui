@@ -9,20 +9,31 @@ below is the one this run earned.
 
 **`SIGN-OFF APPROVED`** — third of three attempts. The first two **refused**, and both refusals were
 **scoped to the durable record, not the software**: every product/acceptance claim the verifier sampled
-reproduced exactly, all seven gates behaved as recorded, and both pins held. What it would not accept was
-where the run wrote its own history:
+reproduced exactly, every gate story behaved as recorded (**8** of them: `gate-1`–`gate-4`, `gate-6`,
+`final-deslop`, `final-review`, `final-verify`), and both pins held. Every finding below — the one the
+review gate raised and the ones the two refusals raised — was about where the run wrote its own history,
+not about the software:
 
-1. **Refusal 1** found that `p6-07` had **no committed evidence artifact** while its ledger row cited a
-   report not in the repo (a **D92** violation), plus two harness gaps found later by the review gates.
-   Fixed by committing the lead's own live captures as `p6-07.md`, each quote **pinned by sha256 + byte
-   size**.
-2. **Refusal 2** found the four merges **not tabulated** (my Phase-6 row had landed in the *2-column*
-   milestone table instead of the 6-column phase log — where its extra cells would not even render), a
-   **duplicated `D117–D123` tail** with a second `## Related Documentation`, and **my own "14 named
-   deviations" against an artifact with 15 rows**. Fixed; the re-verification then showed the rows were
-   *relocated* rather than fixed, and that my "142 classes" annotation had been **injected inside three
-   quoted stdout lines**, breaking the transcripts' verbatim status (**D92** again).
-3. **Refusal 3 → approval.** The two refused items were re-checked with the predecessor's own instruments,
+1. **The `final-review` gate — not a refusal — found the `p6-07` gap.** Its fresh-context code review
+   (PR #11, `37d7ca0`) reported that `p6-07` had **no committed evidence artifact** while its ledger row
+   cited a report not in the repo: **finding #1, blocking**, in `docs/evidence/final-review.md` — its
+   findings table is the raw, and the same document credits the gap to that review. The only `p6-*` story
+   resting on prose, and a **D92** violation. The same review found **four harness defects** (its findings
+   #2–#5). All five were fixed before the close-out verification began: the lead's own live captures were
+   committed as `p6-07.md`, each quote **pinned by sha256 + byte size**, and each harness defect was
+   resolved with a **negative control**.
+2. **Refusal 1** (the first close-out verifier) found the four merges **not tabulated** — my Phase-6 row
+   had landed in the *3-column* "Document" table, a malformed 6-cell row where its extra cells would not
+   even render, and PRs #10–#12 appeared nowhere under `docs/` — a **duplicated `D117–D123` tail** with a
+   second `## Related Documentation` and D124 stranded outside the list, and **my own "14 named
+   deviations" against an artifact with 15 rows**. Fixed.
+3. **Refusal 2** (the focused re-verification) found the merge rows were **relocated rather than fixed** —
+   appended after the file's *last* row, which was the 2-column "Milestone exit criteria" table, not the
+   6-column phase log — the `D117–D124` block still sitting **outside `## Cross-cutting decisions`**, and
+   my "142 classes" annotation **injected inside three quoted stdout lines** of `p6-03.md`, breaking the
+   transcripts' verbatim status (**D92** again); the deviations count was re-read a second time and its two
+   immutable homes recorded rather than glossed. Fixed.
+4. **Attempt 3 → approval.** The two refused items were re-checked with the predecessor's own instruments,
    and the approval paragraph below is the verifier's own, quoted.
 
 ## The approval, recorded raw (the verifier's paragraph)
