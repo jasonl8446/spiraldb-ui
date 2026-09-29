@@ -57,7 +57,12 @@ const ENV_VAR_BY_KEY: Record<SettingKey, string> = {
  * **Adding a file here is load-bearing**: a new `.sql` file on disk is never
  * applied until it is listed (task 6.4's measured trap).
  */
-const MIGRATION_FILES = ['0001_init.sql', '0002_quest_catalog.sql', '0003_persona_index.sql'];
+const MIGRATION_FILES = [
+  '0001_init.sql',
+  '0002_quest_catalog.sql',
+  '0003_persona_index.sql',
+  '0004_breadth_catalog.sql',
+];
 
 /** The migration whose `quests` column adds are applied by a guarded step (see below). */
 const QUEST_CATALOG_MIGRATION = '0002_quest_catalog.sql';

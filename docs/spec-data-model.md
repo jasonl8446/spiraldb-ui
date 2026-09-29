@@ -229,6 +229,48 @@ after the first sync, later syncs merge the same rows. If `tools/bin/wad-scan` i
 recorded as `skipped` with a message and the sync still succeeds (D55's CI has no .NET SDK), leaving
 the corpus rows' `has_definition` correct.
 
+### Breadth Tables (Phase 6, migration `0004_breadth_catalog.sql`)
+
+The breadth stage (task 6.9) fills two families the client ships but the corpus never names, plus the real
+zone data that replaces D21's corpus-derived fallback. **All three carry the D35 manifest id.**
+
+```sql
+CREATE TABLE IF NOT EXISTS recipes (
+  template_id INTEGER PRIMARY KEY,  -- from TemplateManifest_deser.json, joined via source_path
+  name TEXT NOT NULL,
+  source_path TEXT NOT NULL         -- the manifest's own path key, e.g. '|Recipes|WorldData|ObjectData/…'
+);
+CREATE TABLE IF NOT EXISTS decks (
+  template_id INTEGER PRIMARY KEY,
+  deck_name TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  source_path TEXT NOT NULL
+);
+```
+
+- **`recipes` (12,402)** comes from **`RecipeTemplate`** objects, which live in **`Recipes-WorldData.wad`** —
+  a wad the sync's `runUnpack` never unpacks — so the stage extracts them with the 6.2 tool over a scoped
+  archive list rather than from the unpack tree. Measured: 12,402 rows, 12,402 distinct `template_id`, 0
+  empty `source_path`.
+- **`decks` (599)** comes from **`DeckTemplate`**, which *is* in Root.wad's tree. Measured: 599 rows, 599
+  distinct `template_id`, 599 distinct `deck_name`. **A `DeckTemplate`'s only name is its own key** (586 of
+  599), so a row of a family paired against `decks` would render the degenerate `X (X)` — see the note on
+  CreatureSpellbook in [spec-ui-design.md](./spec-ui-design.md).
+- **Neither family carries an `m_templateID`** (0 of 12,402 and 0 of 599), so the manifest is their
+  **identity**, not a cross-check. The manifest keys world-wad templates under a `|WadStem|` prefix
+  (`|Recipes|WorldData|ObjectData/…`), and 36 recipe entries need a repair: their manifest keys carry two
+  leading NUL bytes and an `.xml` truncated to `.x`.
+- **`zones` is reconciled, not replaced.** The stage unions the real `WizZoneData` names (3,356) with the
+  corpus-derived rows, keeping a corpus path the new source does not cover (`Karamelle/KM_Z06_Mines`) so no
+  dropdown regresses: measured **1,241 → 3,357**, and all **149** distinct corpus `m_destinationZone` values
+  resolve afterwards (112 before). `sync_history.zones_count` records the reconciled table's count.
+- **`m_zoneDisplayName` is a `string_table` KEY**, not display text (`WizardZone_00000485` → "Garden Of
+  Hesperides"; all 1,108 distinct values are keys — 1,099 `WizardZone_*` plus 9 `Zone_*`/`Housing_*`), so the
+  stage resolves it through a ladder inside the transaction: **resolved value → the humanised path (what
+  every row showed before this story) → the raw key**. Measured: 3,339 of 3,357 labels are real game labels,
+  **0 are bare keys**, 18 fall back to the humanised path. Storing the key verbatim would have replaced
+  `Aquila / AQ Z00 Hub` with `WizardZone_00000485`.
+
 ### Persona Index (Phase 6, migration `0003_persona_index.sql`)
 
 The speaker ladder an evidence response needs (`m_nameOverride` → composed `m_nameSTKey` → the persona's template

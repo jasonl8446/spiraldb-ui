@@ -58,15 +58,18 @@ matches either** value (spec-api.md's widened `?q=`). Per family:
 | QuestTemplate | `m_questName` | `quests.title` (title key) | yes |
 | NpcInventory, NpcSpellInventory, NpcDropTable, TreasureCardInventory | `TemplateID` | `npcs.name` | **only when the template is an NPC** |
 | ZoneTransfer | `ZoneName` | `zones.display_name` / humanizer | yes |
-| CreatureSpellbook | `DeckName` | `decks.name` (task 6.9) | **not yet** — technical value alone until task 6.9 populates `decks` |
+| CreatureSpellbook | `DeckName` | none — its keys name deck **items**, not `DeckTemplate` rows | **no** (falsified by measurement in task 6.9) |
 | DropTable | `Name` | none — `description` is NULL in 316 of 317 rows; the key *is* the name | **no** |
 | GlobalRegistry | dictionary key | none | **no** |
 
 **A family with no friendly source renders the technical value alone and says why** — it never gets a
-humaniser, because a humanised key reads as a name that does not exist. **Three families are in that
-state today** (p6-06-ac1): DropTable and GlobalRegistry permanently, and **CreatureSpellbook until
-task 6.9 populates `decks`** — so a pair assertion for CreatureSpellbook must not be written before
-then, and its row must say which of the two states it is in rather than rendering a blank label.
+humaniser, because a humanised key reads as a name that does not exist. **Three families are permanently in
+that state**: DropTable, GlobalRegistry, and **CreatureSpellbook** — the last one *was* promised a pair
+"until task 6.9 populates `decks`", and **task 6.9 falsified that promise by measurement**: `decks` is built
+from `DeckTemplate` (599 objects) while the corpus's 134 `CreatureSpellbook.DeckName` values match **0** of
+them, naming deck **items** under `ObjectData/Decks/**` instead (114 of 134, whose only name *is* the
+technical value). So the family keeps the technical value alone **and says why**, and a pair assertion for it
+must not be written.
 
 **`npcs` is not a roster.** Its 23,033 rows are client *object templates* with no type classification
 (D33): the low ids are engine objects (`Player Object`, `PetObject`, `GenericCinematicActor`,

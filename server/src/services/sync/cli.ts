@@ -239,6 +239,8 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('drop_tables', n(result.counts.drop_tables)),
       field('string_table', n(result.counts.string_table)),
       field('persona_index', `${n(result.counts.persona_index)} persona object names`),
+      field('recipes', n(result.counts.recipes)),
+      field('decks', n(result.counts.decks)),
       // Manifest id provenance (D35 / task 1.4h). Always printed, including the
       // zeroes: "0 dropped" is the acceptance criterion, so it must be visible.
       field('manifest entries', `${n(result.manifest.entries)} ids`),
@@ -272,10 +274,85 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('sync_history', `success row written at ${result.timestamp}`),
     );
     lines.push(...formatCatalogSummary(result));
+    lines.push(...formatBreadthSummary(result));
   } else {
     lines.push(field('error', result.errorMessage ?? '(no message)'));
     lines.push(field('sync_history', `failed row written at ${result.timestamp}`));
     lines.push(...formatCatalogSummary(result));
+    lines.push(...formatBreadthSummary(result));
+  }
+
+  return lines;
+}
+
+/**
+ * The breadth stage's own numbers (task 6.9): the three families, their D35 join, and every row
+ * the insert did **not** keep — because "0 dropped" is an acceptance criterion and a criterion
+ * has to be readable off the run, not inferred from a total.
+ *
+ * `zones` prints the **old and the new count side by side** (ac2's "reconciled explicitly"): the
+ * corpus scan's own row count is the left number, the reconciled table's is the right one.
+ */
+export function formatBreadthSummary(result: RunSyncResult): string[] {
+  const breadth = result.breadth;
+  const lines = [field('breadth status', breadth.status.toUpperCase())];
+
+  if (breadth.status === 'ok') {
+    const dropped = breadth.dropped;
+    lines.push(
+      field(
+        'zones',
+        `old ${n(breadth.zones.corpus)} (corpus ZoneTransfer) -> new ${n(breadth.zones.new)} ` +
+          `(WizZoneData ${n(breadth.zones.wiz)}, +${n(breadth.zones.corpus_only)} corpus-only kept, ` +
+          `${n(breadth.zones.relabelled)} relabelled)`,
+      ),
+      field(
+        'zones corpus-only',
+        breadth.zones.corpus_only === 0
+          ? 'none — every corpus zone path is a WizZoneData m_zoneName'
+          : breadth.zones.corpus_only_samples.join('; '),
+      ),
+      field(
+        'recipes',
+        `${n(breadth.recipes)} rows kept of ${n(breadth.raw.recipes)} read ` +
+          `(dropped ${n(dropped.recipes)}: no manifest entry ${n(dropped.recipes_missing_id)}, ` +
+          `duplicate id ${n(dropped.recipes_duplicate_id)})`,
+      ),
+      field(
+        'decks',
+        `${n(breadth.decks)} rows kept of ${n(breadth.raw.decks)} read ` +
+          `(dropped ${n(dropped.decks)}: no manifest entry ${n(dropped.decks_missing_id)}, ` +
+          `duplicate id ${n(dropped.decks_duplicate_id)}, duplicate deck_name ${n(
+            dropped.decks_duplicate_name,
+          )})`,
+      ),
+      field(
+        'manifest join (D35)',
+        `recipes ${n(breadth.manifest.recipes.exact)} exact + ${n(
+          breadth.manifest.recipes.repaired,
+        )} repaired + ${n(breadth.manifest.recipes.missing)} missing; decks ${n(
+          breadth.manifest.decks.exact,
+        )} exact + ${n(breadth.manifest.decks.repaired)} repaired + ${n(
+          breadth.manifest.decks.missing,
+        )} missing (repair collisions ${n(breadth.manifest.recipes.repair_collisions)})`,
+      ),
+    );
+    for (const run of breadth.runs) {
+      lines.push(field('breadth run', `${run.select} on ${run.gamedata} — ${run.stderr}`));
+    }
+    if (breadth.dropped_samples.length > 0) {
+      const rest = dropped.recipes + dropped.decks - breadth.dropped_samples.length;
+      lines.push(
+        field(
+          'breadth dropped',
+          rest > 0
+            ? `${breadth.dropped_samples.join('; ')}; +${n(rest)} more`
+            : breadth.dropped_samples.join('; '),
+        ),
+      );
+    }
+  } else if (breadth.message !== null) {
+    lines.push(field(breadth.reason ?? 'skipped', breadth.message));
   }
 
   return lines;

@@ -131,6 +131,35 @@ export const NAMES_TYPE_SPECS: Record<NamesType, NamesTypeSpec> = {
   },
 };
 
+/**
+ * The friendly source of one object family (`shared/objectTypes.ts`'s `friendlyNamesType`) —
+ * `NAMES_TYPE_SPECS` plus the rows the names API deliberately does not serve.
+ *
+ * **Why a second map exists at all.** D112 freezes `spec-api.md` L13's seven types and
+ * `tests/unit/names.test.ts` with them, so `decks` (task 6.9) must not join `NAMES_TYPE_SPECS`.
+ * The object list's `friendly_name` and the search arm's name join still need one home for
+ * "where does this family's name live", so this map is that home: its `npcs`/`zones`/`quests`
+ * entries are **the very same objects** `NAMES_TYPE_SPECS` holds (referentially, asserted by a
+ * unit test), and `decks` is the one extra row. A second *spelling* of `npcs`/`zones` cannot
+ * appear here without failing that assertion.
+ */
+export type ObjectFriendlySourceType = 'npcs' | 'zones' | 'decks';
+
+export const FRIENDLY_SOURCE_SPECS: Record<ObjectFriendlySourceType, NamesTypeSpec> = {
+  npcs: NAMES_TYPE_SPECS.npcs,
+  zones: NAMES_TYPE_SPECS.zones,
+  // `deck_name` is the technical value `CreatureSpellbook.DeckName` holds (`DeckTemplate`'s
+  // `m_name`), so it is the join key; `name` is the label the pair is built from.
+  decks: {
+    table: 'decks',
+    idColumn: 'deck_name',
+    selectColumns: ['deck_name', 'name'],
+    labelColumn: 'name',
+    searchColumns: ['deck_name', 'name'],
+    idKind: 'text',
+  },
+};
+
 /** One response row: the column names above, verbatim. */
 export type NamesRow = Record<string, unknown>;
 

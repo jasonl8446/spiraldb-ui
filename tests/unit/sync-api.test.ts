@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { createSyncRouter } from '@server/routes/sync';
 import type { RunSyncResult, SyncRunner } from '@server/services/sync/execute';
+import { ZERO_BREADTH_REPORT } from '@server/services/sync/breadth';
 import { notRunQuestCatalogReport } from '@server/services/sync/questCatalog';
 
 /**
@@ -42,6 +43,8 @@ const SUCCESS: RunSyncResult = {
     drop_tables: 7,
     string_table: 8,
     persona_index: 9,
+    recipes: 11,
+    decks: 10,
   },
   deduplicated: { items: 0, spells: 0, npcs: 0 },
   manifest: {
@@ -60,6 +63,7 @@ const SUCCESS: RunSyncResult = {
   timings: { unpackMs: 17, scanMs: 2, writeMs: 3 },
   // The catalog stage always reports; this stub is the "not built here" outcome (task 6.4).
   catalog: notRunQuestCatalogReport('not-run', 'the catalog stage did not run in this stub'),
+  breadth: { ...ZERO_BREADTH_REPORT },
 };
 
 function setup(runner?: SyncRunner): { db: Db; app: Express } {

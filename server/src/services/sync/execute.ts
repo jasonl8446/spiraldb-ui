@@ -3,6 +3,16 @@ import path from 'node:path';
 
 import { readSettings, type Db } from '../../db.js';
 import {
+  collectBreadth,
+  reconcileZones,
+  writeBreadth,
+  NOT_COLLECTED_BREADTH,
+  type CollectedBreadth,
+  type BreadthReport,
+  type DeckRow,
+  type CollectedRecipe,
+} from './breadth.js';
+import {
   buildDropTableRows,
   buildQuestRows,
   buildZoneRows,
@@ -90,6 +100,10 @@ export interface SyncCounts {
   string_table: number;
   /** Rows written to `persona_index` (task 6.6) — the speaker ladder's index. */
   persona_index: number;
+  /** Rows written to `recipes` (task 6.9). */
+  recipes: number;
+  /** Rows written to `decks` (task 6.9). */
+  decks: number;
 }
 
 export const ZERO_SYNC_COUNTS: SyncCounts = {
@@ -101,6 +115,8 @@ export const ZERO_SYNC_COUNTS: SyncCounts = {
   drop_tables: 0,
   string_table: 0,
   persona_index: 0,
+  recipes: 0,
+  decks: 0,
 };
 
 export type SyncStatus = 'success' | 'failed';
@@ -182,6 +198,12 @@ export interface SyncDeps {
    * Injected so no unit test builds or spawns a .NET binary (task 6.4).
    */
   collectQuestCatalog: typeof collectQuestCatalog;
+  /**
+   * The breadth stage's process half: three scoped `wad-scan extract` runs (task 6.9).
+   * Injected so no unit test builds or spawns a .NET binary — and so the skipped path
+   * (no tool) is exercised without one.
+   */
+  collectBreadth: typeof collectBreadth;
 }
 
 export const defaultSyncDeps: SyncDeps = {
@@ -194,6 +216,7 @@ export const defaultSyncDeps: SyncDeps = {
   buildZoneRows,
   buildDropTableRows,
   collectQuestCatalog,
+  collectBreadth,
 };
 
 export interface RunSyncOptions {
@@ -262,6 +285,8 @@ export interface RunSyncResult {
   timings: SyncTimings;
   /** The catalog stage's outcome, counts and sync-time hold-out (task 6.4). Always present. */
   catalog: QuestCatalogReport;
+  /** The breadth stage's outcome, raw counts and dropped rows (task 6.9). Always present. */
+  breadth: BreadthReport;
   /**
    * Set when this run's corpus override differs from `settings.spiraldb_path`, so the
    * summary can say the tables and the app's reads name different corpora
@@ -301,6 +326,8 @@ const REPLACED_TABLES = [
   'npcs',
   'quests',
   'zones',
+  'decks',
+  'recipes',
   'drop_tables',
 ] as const;
 
@@ -312,6 +339,9 @@ interface SyncRows {
   quests: QuestRow[];
   zones: ZoneRow[];
   drop_tables: DropTableRow[];
+  /** D35-keyed rows `writeBreadth` inserts inside the same transaction (task 6.9). */
+  recipes: CollectedRecipe[];
+  decks: DeckRow[];
 }
 
 /**
@@ -335,7 +365,8 @@ function replaceTables(
   catalog: CollectedQuestCatalog,
   corpusPath: string | null,
   personaRows: readonly PersonaIndexRow[],
-): QuestCatalogReport {
+  breadth: CollectedBreadth,
+): { catalog: QuestCatalogReport; breadth: BreadthReport } {
   const insertString = db.prepare(
     'INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)',
   );
@@ -347,9 +378,6 @@ function replaceTables(
        (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
      VALUES (?, ?, ?, ?, 1, 'none', 'none', 0)`,
   );
-  const insertZone = db.prepare(
-    'INSERT INTO zones (zone_path, display_name, world) VALUES (?, ?, ?)',
-  );
   const insertDropTable = db.prepare('INSERT INTO drop_tables (name, description) VALUES (?, ?)');
   // The speaker ladder's index (task 6.6): one row per persona object name, written inside the
   // same transaction as the `npcs` rows it resolves against.
@@ -357,6 +385,9 @@ function replaceTables(
     `INSERT INTO persona_index (object_name, template_id, first_key, last_key, title_key)
      VALUES (?, ?, ?, ?, ?)`,
   );
+  // `zones_count` records the rows the reconciled `zones` table ends up with (task 6.9), not the
+  // corpus scan's own row count — the two are different numbers once the WizZoneData names are
+  // merged in, and a count that names a table must be that table's count.
   const insertHistory = db.prepare(
     `INSERT INTO sync_history
        (sync_timestamp, revision, items_count, spells_count, npcs_count, quests_count, zones_count, status, error_message)
@@ -364,6 +395,7 @@ function replaceTables(
   );
 
   let catalogReport = notRunQuestCatalogReport('not-run', 'the catalog stage did not run');
+  let breadthReport: BreadthReport = breadth.report;
   const replace = db.transaction(() => {
     for (const table of REPLACED_TABLES) {
       db.prepare(`DELETE FROM ${table}`).run();
@@ -382,9 +414,6 @@ function replaceTables(
     }
     for (const row of rows.quests) {
       insertQuest.run(row.quest_name, row.title, row.level, row.is_mainline ? 1 : 0);
-    }
-    for (const row of rows.zones) {
-      insertZone.run(row.zone_path, row.display_name, row.world);
     }
     for (const row of rows.drop_tables) {
       insertDropTable.run(row.name, row.description);
@@ -406,6 +435,9 @@ function replaceTables(
       corpusRows: rows.quests,
       corpus: corpusPath,
     });
+    // Also after `string_table`: a recipe's label is a string-table lookup of its `m_displayKey`.
+    // `writeBreadth` owns the reconciled `zones` insert (the corpus rows are its other half).
+    breadthReport = writeBreadth({ db, collected: breadth, corpusZones: rows.zones });
     insertHistory.run(
       timestamp,
       revision,
@@ -413,12 +445,12 @@ function replaceTables(
       rows.spells.length,
       rows.npcs.length,
       rows.quests.length,
-      rows.zones.length,
+      breadthReport.zones.new,
     );
   });
 
   replace();
-  return catalogReport;
+  return { catalog: catalogReport, breadth: breadthReport };
 }
 
 /**
@@ -481,6 +513,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
   let deduplicated: SyncDedupe = { ...ZERO_SYNC_DEDUPE };
   let manifestReport: ManifestIdReport = ZERO_MANIFEST_REPORT;
   let catalog: QuestCatalogReport | null = null;
+  let breadth: CollectedBreadth = NOT_COLLECTED_BREADTH;
   let corpusOverrideWarning: string | null = null;
 
   try {
@@ -554,6 +587,13 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     const zones = await deps.buildZoneRows({
       zoneTransferDir: path.join(spiraldbPath, 'ZoneTransfer'),
     });
+    // Task 6.9: the zone/recipe/deck breadth, through the same 6.2 tool. A missing binary is a
+    // typed `skipped` result (p6-03-ac4 / D55), and the caller then writes `zones` from the corpus
+    // rows alone — the D21 behaviour, so a machine that never built the tool loses nothing.
+    const collectedBreadth = await deps.collectBreadth({
+      gamedataDir: path.dirname(resolved.rootWadPath),
+      manifest,
+    });
     const dropTables = await deps.buildDropTableRows({
       dropTablesDir: path.join(spiraldbPath, 'DropTables'),
     });
@@ -581,7 +621,10 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       quests: quests.rows,
       zones: zones.rows,
       drop_tables: dropTables.rows,
+      recipes: collectedBreadth.recipes,
+      decks: collectedBreadth.decks,
     };
+    breadth = collectedBreadth;
 
     // The speaker ladder's index (task 6.6). Built here, not in `replaceTables`, because both
     // halves need data this scope already holds: the manifest's id space (filtered to the ids
@@ -597,10 +640,13 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       spells: rows.spells.length,
       npcs: rows.npcs.length,
       quests: rows.quests.length,
-      zones: rows.zones.length,
+      // The rows `zones` ends up with, not the corpus scan's own count (see `insertHistory`).
+      zones: reconcileZones(zones.rows, collectedBreadth.wizZones).new,
       drop_tables: rows.drop_tables.length,
       string_table: rows.string_table.length,
       persona_index: personaRows.length,
+      recipes: rows.recipes.length,
+      decks: rows.decks.length,
     };
 
     // The catalog stage's process half: the game tree the resolved revision names —
@@ -613,7 +659,19 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
 
     const timestamp = formatSyncTimestamp(now());
     const writeStarted = Date.now();
-    catalog = replaceTables(db, rows, revision, timestamp, collected, spiraldbPath, personaRows);
+    const written = replaceTables(
+      db,
+      rows,
+      revision,
+      timestamp,
+      collected,
+      spiraldbPath,
+      personaRows,
+      collectedBreadth,
+    );
+    catalog = written.catalog;
+    breadth = collectedBreadth;
+    const breadthReport = written.breadth;
     timings.writeMs = Date.now() - writeStarted;
 
     return {
@@ -628,6 +686,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       treeDir,
       timings,
       catalog,
+      breadth: breadthReport,
       corpusOverrideWarning,
     };
   } catch (error) {
@@ -654,6 +713,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       catalog:
         catalog ??
         notRunQuestCatalogReport('not-run', `the sync failed before the catalog stage: ${message}`),
+      breadth: breadth.report,
       corpusOverrideWarning,
       errorMessage: message,
     };

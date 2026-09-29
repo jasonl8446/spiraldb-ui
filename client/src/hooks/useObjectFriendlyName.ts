@@ -16,17 +16,30 @@ import { friendlyNameOf, type NameRow, type NamesType } from '../lib/display';
  * disagree about what "the friendly name" of a key is.
  *
  * **A miss is not an error.** `null` is returned for a family with no friendly source
- * (DropTable, GlobalRegistry, CreatureSpellbook until task 6.9), for a key the names
- * table does not hold (an engine-object template) and for a failed/absent lookup — in
- * every one of those cases the header renders the technical value alone, which is
- * exactly the documented fallback. `retry: false` because a 404 is the *expected*
- * answer for those keys, not a transient failure.
+ * (DropTable and GlobalRegistry), for a key the names table does not hold (an
+ * engine-object template, and — measured in task 6.9 — **every** corpus
+ * `CreatureSpellbook.DeckName`, none of which equals a `DeckTemplate` name), and for a
+ * failed/absent lookup — in every one of those cases the header renders the technical
+ * value alone, which is exactly the documented fallback. `retry: false` because a 404 is
+ * the *expected* answer for those keys, not a transient failure.
+ *
+ * **`decks` is asked of nobody** (task 6.9): D112 freezes `GET /api/names/:type` at its
+ * seven types, so a `decks` lookup would be a guaranteed 404. It is skipped rather than
+ * issued — and it costs nothing, because a `DeckTemplate`'s only name *is* the
+ * `DeckName` the header already renders, so the pair would be `X (X)`.
  *
  * `staleTime: Infinity` mirrors the names cache: a sync invalidates the `['names']`
  * prefix (D8), and a header is a read-only label.
  */
+/** The names-API types — the subset of `friendlyNamesType` the frozen seven-type endpoint serves. */
+const NAMES_API_TYPES: readonly string[] = ['npcs', 'zones'];
+
 export function useObjectFriendlyName(config: ObjectTypeConfig, objectKey: string): string | null {
-  const type: NamesType | null = config.friendlyNamesType;
+  const source = config.friendlyNamesType;
+  // A source the names API does not serve (`decks`, D112's frozen seven) is a deliberate miss,
+  // never a request that can only 404.
+  const type: NamesType | null =
+    source !== null && NAMES_API_TYPES.includes(source) ? (source as NamesType) : null;
   const query = useQuery({
     queryKey: nameLookupQueryKey(type ?? 'strings', objectKey),
     queryFn: () => getName(type as NamesType, objectKey),

@@ -928,6 +928,12 @@ function seedNpc(db: Db, templateId: number, name: string): void {
 }
 
 /** Inserts one `zones` row (ZoneTransfer's friendly source). */
+function seedDeck(db: Db, deckName: string, name: string): void {
+  db.prepare(
+    'INSERT INTO decks (template_id, deck_name, name, source_path) VALUES (?, ?, ?, ?)',
+  ).run(deckName.length, deckName, name, `Decks/${deckName}.xml`);
+}
+
 function seedZone(db: Db, zonePath: string, displayName: string): void {
   db.prepare('INSERT INTO zones (zone_path, display_name) VALUES (?, ?)').run(
     zonePath,
@@ -950,7 +956,7 @@ function rowsOf(h: Harness, fileType: Parameters<typeof objectTypeConfig>[0]) {
  * `tests/unit/display-single-home.test.ts`).
  */
 describe('friendly_name — resolved server-side from the family’s own names table', () => {
-  it('resolves npcs for the four TemplateID families and zones for ZoneTransfer', () => {
+  it('resolves npcs for the four TemplateID families, zones for ZoneTransfer and decks for CreatureSpellbook', () => {
     const h = harness();
     // Corpus-shaped ids (≥ the engine floor): the fork's own measured keys, so nothing
     // here rides the engine-block exception.
@@ -1040,13 +1046,56 @@ describe('friendly_name — resolved server-side from the family’s own names t
     expect(resolved[String(ENGINE_OBJECT_TEMPLATE_MAX_ID + 1)]).toBe('Lydia Greyrose');
   });
 
-  it('never humanises the three families with no friendly source, and says why', () => {
+  it('pairs CreatureSpellbook from `decks`, and renders technical-only when the deck is absent', () => {
+    // Story p6-10 (task 6.9). The pairing key is the object's own `DeckName`, which the
+    // `decks` table carries as `deck_name` (a `DeckTemplate`'s `m_name`) — so a row whose
+    // deck the table holds pairs, and a row whose deck it does not hold degrades to the
+    // technical value alone through the same miss every other family uses.
+    const h = harness();
+    seedDeck(h.db, 'Polymorph Gobbler', 'Polymorph Gobbler');
+    seedDeck(h.db, 'MDeck-B-BG-Polymorph-Colossus-A-01', 'MDeck-B-BG-Polymorph-Colossus-A-01');
+    const file = (key: string): void =>
+      writeRepoFile(
+        h.repo,
+        `CreatureSpellbook/CreatureSpellbooks_${key}-A.json`,
+        JSON.stringify({ DeckName: key, SpellTemplateIds: [] }),
+      );
+    file('Polymorph Gobbler');
+    file('MDeck-B-BG-Polymorph-Colossus-A-01');
+    // A real corpus deck name — the deck *items* under `ObjectData/Decks/**`, measured to be
+    // the namespace `CreatureSpellbook.DeckName` actually draws from (114 of 134 corpus keys
+    // are exactly such a basename). `decks` holds `DeckTemplate` objects (task 6.9's 599), so
+    // this key is absent and the row keeps its technical value.
+    file('Mdeck-D-R2');
+
+    const rows = Object.fromEntries(
+      rowsOf(h, 'creaturespellbook').map((row) => [row.key, row.friendly_name] as const),
+    );
+    expect(rows['Polymorph Gobbler']).toBe('Polymorph Gobbler');
+    expect(rows['MDeck-B-BG-Polymorph-Colossus-A-01']).toBe('MDeck-B-BG-Polymorph-Colossus-A-01');
+    // The absent-deck case: a key `decks` does not hold is `null`, never a humanised guess.
+    expect(rows['Mdeck-D-R2']).toBeNull();
+    // Data, never a formatter.
+    for (const row of rowsOf(h, 'creaturespellbook')) {
+      expect(row.title, row.key).toBe(row.key);
+    }
+    // …and the family is no longer in the "no friendly source" state: it has a source, so the
+    // note explains the *miss* (why a real corpus key does not reach it) rather than a missing
+    // table. A row with no pair therefore still says why, which is spec-ui-design L65-69.
+    expect(objectTypeConfig('creaturespellbook').friendlyNamesType).toBe('decks');
+    expect(objectTypeConfig('creaturespellbook').friendlyNameNote).toContain(
+      '0 of the 134 corpus DeckName values',
+    );
+  });
+
+  it('never humanises the two families with no friendly source, and says why', () => {
     const h = harness();
     // Seed the tables anyway: a family with no `friendlyNamesType` must ignore them.
     seedNpc(h.db, 1, 'Player Object');
     seedZone(h.db, 'WizardCity/WC_Hub', 'Wizard City Commons');
+    seedDeck(h.db, 'Mdeck-D-R2', 'Mdeck-D-R2');
 
-    for (const fileType of ['droptable', 'creaturespellbook', 'globalregistry'] as const) {
+    for (const fileType of ['droptable', 'globalregistry'] as const) {
       const config = objectTypeConfig(fileType);
       expect(config.friendlyNamesType, fileType).toBeNull();
       expect(config.friendlyNameNote, `${fileType} says why`).not.toBeNull();
@@ -1057,7 +1106,7 @@ describe('friendly_name — resolved server-side from the family’s own names t
       }
     }
 
-    // The two paired families carry no note (they are not in the "no source" state).
+    // The paired families carry no note (they are not in the "no source" state).
     expect(objectTypeConfig('npcinventory').friendlyNameNote).toBeNull();
     expect(objectTypeConfig('zonetransfer').friendlyNameNote).toBeNull();
   });

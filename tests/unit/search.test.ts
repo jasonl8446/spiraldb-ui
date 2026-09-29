@@ -676,9 +676,10 @@ function group(result: SearchResult, type: string) {
 
 /**
  * `SEARCH_GROUPS` gains a `nameJoin` for every family that has a friendly source — the
- * four `TemplateID` families (`npcs`) and ZoneTransfer (`zones`) — and for no other
- * family, because the join is *derived* from `shared/objectTypes.ts`'s
- * `friendlyNamesType` rather than hand-listed (spec-api L769-785).
+ * four `TemplateID` families (`npcs`), ZoneTransfer (`zones`) and CreatureSpellbook
+ * (`decks`, added by task 6.9) — and for no other family, because the join is *derived*
+ * from `shared/objectTypes.ts`'s `friendlyNamesType` rather than hand-listed
+ * (spec-api L769-785).
  */
 describe('the join table is the friendly-name table, per family', () => {
   it('is non-null exactly for the families whose friendlyNamesType is set', () => {
@@ -696,13 +697,14 @@ describe('the join table is the friendly-name table, per family', () => {
         );
       }
     }
-    // Hand-typed: quest (joined since p5-02) plus the five Phase 6 joins — and the three
-    // families deliberately left out (drop_table, creature_spellbook, and the unkeyed
-    // global_registry, which has no search group at all).
+    // Hand-typed: quest (joined since p5-02) plus the six Phase 6 joins — CreatureSpellbook's
+    // `decks` join arrived with task 6.9 — and the families deliberately left out (drop_table,
+    // and the unkeyed global_registry, which has no search group at all).
     const joined = SEARCH_GROUPS.filter(
       (group) => group.kind === 'object' && group.nameJoin !== null,
     ).map((group) => group.type);
     expect(joined.sort()).toEqual([
+      'creature_spellbook',
       'npc_drop_table',
       'npc_inventory',
       'npc_spell_inventory',
@@ -797,7 +799,7 @@ describe('the join table is the friendly-name table, per family', () => {
     expect(zoneByName?.results[0]?.object_key).toBe('DragonSpire/DS_A2_Battle/DS_A2Z3_Detention');
   });
 
-  it('gives drop_table and creature_spellbook no name arm, on purpose', () => {
+  it('gives drop_table no name arm, on purpose, and CreatureSpellbook one from `decks`', () => {
     const db = memoryDb();
     // A drop table whose key is its name — `description` is NULL in 316 of 317 rows, so a
     // name arm over the key could only duplicate the key arm (spec-api L781-783).
@@ -811,12 +813,24 @@ describe('the join table is the friendly-name table, per family', () => {
       group(searchAll(db, { q: 'WC-UNICORN', limit: 20 }), 'drop_table')?.results,
     ).toHaveLength(1);
 
-    // CreatureSpellbook's friendly source is a `decks` table task 6.9 populates; until
-    // then a name query cannot reach it, and its row carries no `name` at all.
+    // CreatureSpellbook joins `decks` (task 6.9). The deck name arm is the only way a row
+    // whose `DeckName` is not the whole label becomes findable by name…
+    seedEntry(db, 'creature_spellbook', 'Polymorph Gobbler');
+    db.prepare(
+      'INSERT INTO decks (template_id, deck_name, name, source_path) VALUES (?, ?, ?, ?)',
+    ).run(
+      4242,
+      'Polymorph Gobbler',
+      'Polymorph Gobbler',
+      'Decks/Polymorph Decks/Polymorph Gobbler.xml',
+    );
+    const deck = group(searchAll(db, { q: 'Polymorph', limit: 20 }), 'creature_spellbook');
+    expect(deck?.results[0]?.name).toBe('Polymorph Gobbler');
+    // …and the deck arm is what a key-only row still answers to.
     seedEntry(db, 'creature_spellbook', 'Mdeck-D-R2');
-    const deck = group(searchAll(db, { q: 'Mdeck-D', limit: 20 }), 'creature_spellbook');
-    expect(deck?.results[0]?.name).toBeNull();
-    expect(deck?.results[0]?.matched_on).toBe('key');
+    const unmapped = group(searchAll(db, { q: 'Mdeck-D', limit: 20 }), 'creature_spellbook');
+    expect(unmapped?.results[0]?.name).toBeNull();
+    expect(unmapped?.results[0]?.matched_on).toBe('key');
   });
 });
 

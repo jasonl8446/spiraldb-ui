@@ -24,6 +24,7 @@ import {
   scaffoldMetadataDescription,
   scaffoldQuest,
 } from '@server/services/questScaffold';
+import { NOT_COLLECTED_BREADTH } from '@server/services/sync/breadth';
 import { NOT_COLLECTED } from '@server/services/sync/questCatalog';
 import { runSync, type SyncDeps } from '@server/services/sync/execute';
 import { serializeDoc } from '@shared/document';
@@ -746,6 +747,13 @@ function corpusSyncDeps(): Partial<SyncDeps> {
       ...NOT_COLLECTED,
       message: 'p6-09 test: the catalog stage is skipped (no .NET in CI, D55)',
     })) as unknown as SyncDeps['collectQuestCatalog'],
+    // Task 6.9's breadth stage is skipped for the same reason — and its absence must be
+    // *harmless*: `zones` is then written from the corpus rows alone (the D21 behaviour), and
+    // this arm's fake tree has no real `Data/GameData` to scope a WAD run to anyway.
+    collectBreadth: (async () => ({
+      ...NOT_COLLECTED_BREADTH,
+      message: 'p6-09 test: the breadth stage is skipped (no .NET in CI, D55)',
+    })) as unknown as SyncDeps['collectBreadth'],
   };
 }
 

@@ -54,8 +54,9 @@ import { isStatusValue, type StatusObjectType, type StatusValue } from './status
  *   key (the fork names each quest's drop table after the quest), so it could only
  *   duplicate arm 1 — and for the same reason the family has no friendly source in the
  *   per-family table (spec-ui-design L62);
- * - `creature_spellbook` gains none either: its friendly source is a `decks` table that
- *   task 6.9 populates, so until then the row is its technical value alone.
+ * - `creature_spellbook` joins **`decks`** on `deck_name` (task 6.9 populated that table
+ *   from the 599 `DeckTemplate` objects), so a `DeckTemplate` `m_name` finds the row whose
+ *   technical value arm 1 already matches only when it is the whole key.
  *
  * **The `npc` group is not a `npcs` name list** (P6-17/D112): it is the alias-keyed NPC
  * **namespace** (`services/npcNames.ts`), so `Gretta` and `Gretta Darkkettle` — one
@@ -197,6 +198,17 @@ const ZONE_NAME_JOIN: SearchNameJoin = {
 };
 
 /**
+ * CreatureSpellbook's friendly table (task 6.9) — `decks.deck_name` is the `DeckTemplate`
+ * `m_name` the object's own `DeckName` holds, so both sides are TEXT.
+ */
+const DECK_NAME_JOIN: SearchNameJoin = {
+  table: 'decks',
+  keyColumn: 'deck_name',
+  nameColumn: 'name',
+  keyIsInteger: false,
+};
+
+/**
  * The join a family's row carries, from the **same** `friendlyNamesType` the object
  * list resolves `friendly_name` from (`shared/objectTypes.ts`) — so the search arm
  * and the list row cannot be given different friendly sources, and a family that gains
@@ -208,6 +220,8 @@ function nameJoinFor(config: ObjectTypeConfig): SearchNameJoin | null {
       return NPC_NAME_JOIN;
     case 'zones':
       return ZONE_NAME_JOIN;
+    case 'decks':
+      return DECK_NAME_JOIN;
     default:
       return null;
   }

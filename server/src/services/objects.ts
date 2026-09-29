@@ -26,7 +26,7 @@ import {
   type SavePipeline,
 } from './savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from './spiraldbIndex.js';
-import { NAMES_TYPE_SPECS } from './names.js';
+import { FRIENDLY_SOURCE_SPECS } from './names.js';
 import { ENGINE_OBJECT_TEMPLATE_MAX_ID } from './npcNames.js';
 import { isStatusValue, listStatus, type StatusSummary, type StatusValue } from './status.js';
 import { isPlainObject } from './sync/json.js';
@@ -177,23 +177,29 @@ function statusFor(lookup: Map<string, string>, key: string): StatusValue {
 
 /**
  * `key → friendly name` for one family, or `null` when the family has no friendly
- * source (DropTable, GlobalRegistry, CreatureSpellbook until task 6.9).
+ * source (DropTable and GlobalRegistry permanently; CreatureSpellbook gained one in
+ * task 6.9, when `decks` was populated).
  *
- * Built from the **same** `NAMES_TYPE_SPECS` row `GET /api/names/:type` serves, so
- * the list row's `friendly_name` and the names API's own label cannot come from two
- * different columns. One query per list request (23,033 + 1,241 rows worst case) —
+ * Built from `FRIENDLY_SOURCE_SPECS` (`names.ts`) — one row per name, and the same
+ * object `GET /api/names/:type` serves wherever that endpoint serves one — so the
+ * list row's `friendly_name` and the names API's own label cannot come from two
+ * different columns. One query per list request (23,033 + 3,357 rows worst case) —
  * the list already scans and parses ~2,000 corpus files per request (D12), so this
  * is a rounding error, and caching it would go stale silently after a sync.
  *
  * NpcInv/Spell/DropTable/TreasureCard keys are `ULong.toKey` strings, so the map is
- * keyed by the decimal text of `template_id`; a zone key is the path verbatim.
+ * keyed by the decimal text of `template_id`; a zone key is the path verbatim; a
+ * CreatureSpellbook key is the `DeckTemplate` `m_name` verbatim.
  */
 function friendlyNameLookup(db: Db, config: ObjectTypeConfig): Map<string, string> | null {
   const type = config.friendlyNamesType;
   if (type === null) {
     return null;
   }
-  const spec = NAMES_TYPE_SPECS[type];
+  // `FRIENDLY_SOURCE_SPECS`, not `NAMES_TYPE_SPECS`: `decks` (task 6.9) is a friendly source the
+  // names API deliberately does not serve (D112's frozen seven), and both maps share one row per
+  // name they do serve.
+  const spec = FRIENDLY_SOURCE_SPECS[type];
   const rows = db
     .prepare<[], { id: unknown; name: unknown }>(
       `SELECT ${spec.idColumn} AS id, ${spec.labelColumn} AS name FROM ${spec.table}`,

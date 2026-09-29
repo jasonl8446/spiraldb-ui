@@ -4,6 +4,7 @@ import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { formatSyncSummary, parseSyncArgs, runSyncCli } from '@server/services/sync/cli';
 import type { RunSyncOptions, RunSyncResult } from '@server/services/sync/execute';
 import { describeCorpusOverride } from '@server/services/sync/execute';
+import { ZERO_BREADTH_REPORT, type BreadthReport } from '@server/services/sync/breadth';
 import {
   ZERO_QUEST_CATALOG_COUNTS,
   type QuestCatalogReport,
@@ -29,6 +30,43 @@ function memoryDb(): Db {
 }
 
 /** The catalog stage's report, as the real one reads on the owner tree (task 6.4). */
+/**
+ * A breadth report with the measured shape (task 6.9): 12,402 recipes / 599 decks read, 0
+ * dropped, and the zone reconciliation's two counts side by side.
+ */
+const BREADTH_OK: BreadthReport = {
+  ...ZERO_BREADTH_REPORT,
+  status: 'ok',
+  raw: { zones: 3356, decks: 599, recipes: 12402 },
+  dropped: {
+    recipes: 0,
+    recipes_missing_id: 0,
+    recipes_duplicate_id: 0,
+    decks: 0,
+    decks_missing_id: 0,
+    decks_duplicate_id: 0,
+    decks_duplicate_name: 0,
+  },
+  zones: {
+    corpus: 1241,
+    wiz: 3356,
+    corpus_only: 1,
+    corpus_only_samples: ['Karamelle/KM_Z06_Mines'],
+    relabelled: 1240,
+    new: 3357,
+  },
+  recipes: 12402,
+  decks: 599,
+  runs: [
+    {
+      select: 'gamedata.bin',
+      gamedata: '/aurorium/GameData',
+      rows: 3356,
+      stderr: 'extract: 3356 row(s)',
+    },
+  ],
+};
+
 const CATALOG_OK: QuestCatalogReport = {
   status: 'ok',
   reason: null,
@@ -120,6 +158,8 @@ const SUCCESS: RunSyncResult = {
     drop_tables: 6,
     string_table: 217394,
     persona_index: 9,
+    recipes: 11,
+    decks: 10,
   },
   deduplicated: { items: 0, spells: 0, npcs: 0 },
   manifest: {
@@ -137,6 +177,7 @@ const SUCCESS: RunSyncResult = {
   treeDir: '/tmp/wad-spike',
   timings: { unpackMs: 0, scanMs: 4100, writeMs: 3000 },
   catalog: CATALOG_OK,
+  breadth: BREADTH_OK,
 };
 
 interface Capture {
@@ -242,6 +283,43 @@ describe('formatSyncSummary', () => {
       'hold-out            : 78.0% (neighbour-midpoint; 168 cases, 131 hits) on /home/jason/Documents/git-projects/spiraldb',
     );
     expect(text).toContain('catalog timing      : 5.3 s extract + 4.2 s read + 900 ms write');
+  });
+
+  it('prints the breadth lines: both zone counts, the D35 join and the dropped rows', () => {
+    const text = formatSyncSummary(SUCCESS).join('\n');
+
+    expect(text).toContain('  recipes             : 12,402');
+    expect(text).toContain('  decks               : 599');
+    expect(text).toContain('  breadth status      : OK');
+    expect(text).toContain(
+      '  zones               : old 1,241 (corpus ZoneTransfer) -> new 3,357 (WizZoneData 3,356, ' +
+        '+1 corpus-only kept, 1,240 relabelled)',
+    );
+    expect(text).toContain('  zones corpus-only   : Karamelle/KM_Z06_Mines');
+    expect(text).toContain(
+      '  recipes             : 12,402 rows kept of 12,402 read (dropped 0: no manifest entry 0, ' +
+        'duplicate id 0)',
+    );
+    expect(text).toContain(
+      '  decks               : 599 rows kept of 599 read (dropped 0: no manifest entry 0, ' +
+        'duplicate id 0, duplicate deck_name 0)',
+    );
+    expect(text).toContain('  breadth run         : gamedata.bin on /aurorium/GameData');
+  });
+
+  it('prints the skipped breadth stage with its own message', () => {
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      breadth: {
+        ...ZERO_BREADTH_REPORT,
+        status: 'skipped',
+        reason: 'binary-missing',
+        message: 'no tool',
+      },
+    }).join('\n');
+
+    expect(text).toContain('  breadth status      : SKIPPED');
+    expect(text).toContain('  binary-missing      : no tool');
   });
 
   it('prints the skipped catalog stage with its own message', () => {

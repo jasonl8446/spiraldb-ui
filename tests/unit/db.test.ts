@@ -44,6 +44,7 @@ import {
 
 /** Independently re-typed from the spec — deliberately not imported from db.ts. */
 const EXPECTED_TABLES = [
+  'decks',
   'drop_tables',
   'entry_status',
   'items',
@@ -52,6 +53,7 @@ const EXPECTED_TABLES = [
   'quest_catalog_refs',
   'quest_ids',
   'quests',
+  'recipes',
   'settings',
   'spells',
   'status_history',
@@ -61,6 +63,7 @@ const EXPECTED_TABLES = [
 ];
 
 const EXPECTED_INDEXES = [
+  'idx_decks_deck_name',
   'idx_entry_status_key',
   'idx_entry_status_status',
   'idx_entry_status_type',
@@ -149,17 +152,17 @@ afterEach(() => {
 });
 
 describe('schema introspection', () => {
-  it('creates exactly the 14 tables from the spec (11 + migrations 0002/0003), on a fresh database', () => {
+  it('creates exactly the 16 tables from the spec (11 + migrations 0002/0003/0004), on a fresh database', () => {
     const db = open();
 
-    expect(listTables(db)).toHaveLength(14);
+    expect(listTables(db)).toHaveLength(16);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
   });
 
-  it('creates the 7 named indexes from the spec (3 + migrations 0002/0003)', () => {
+  it('creates the 8 named indexes from the spec (3 + migrations 0002/0003/0004)', () => {
     const db = open();
 
-    expect(listIndexes(db)).toHaveLength(7);
+    expect(listIndexes(db)).toHaveLength(8);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
   });
 
@@ -448,17 +451,17 @@ describe('settings override precedence', () => {
 });
 
 describe('idempotency', () => {
-  it('re-running initSchema keeps 14 tables, 1 view, 7 indexes and the seeded rows', () => {
+  it('re-running initSchema keeps 16 tables, 1 view, 8 indexes and the seeded rows', () => {
     const db = open();
     seedSettings(db, { env: {}, now: FIXED_NOW, repoRoot: '/repo' });
 
     expect(() => initSchema(db)).not.toThrow();
     expect(() => initSchema(db)).not.toThrow();
 
-    expect(listTables(db)).toHaveLength(14);
+    expect(listTables(db)).toHaveLength(16);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
     expect(listViews(db)).toEqual(EXPECTED_VIEWS);
-    expect(listIndexes(db)).toHaveLength(7);
+    expect(listIndexes(db)).toHaveLength(8);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
     expect(readSettings(db)).toEqual({
       aurorium_path: DEFAULT_AURORIUM_PATH,
