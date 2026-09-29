@@ -93,6 +93,10 @@ pointer-drag arm the run had fixed at gate-6 did not reproduce at all), i.e. env
 4. `settings.user_name` was seeded (`DeepSeek Harness (phase-6 run)`) because the save pipeline rejects an
    empty author; and the owner's **dev server was stopped** during the p6-05 incident (a worker killed the
    watcher) — restarting it is the first item owed back to them.
+5. **`docs/plan-overview.md`'s decision list is out of order** — pre-existing, and recorded here rather than
+   reordered, because it is unrelated to the close-out diff. The append history reads: D1…D43, D50, D92–D95,
+   D88, D89, D91, D90, D87, then descending D86…D51, D49…D44, then D96…D124. All **124** ids are present
+   exactly once (no duplicates, no gaps), so the order carries no meaning about status or completeness.
 
 ## Evidence index
 
