@@ -87,6 +87,22 @@ export type ObjectRouteType =
  */
 export type ObjectAuditMode = 'embedded' | 'none';
 
+/**
+ * The **friendly source** that carries a family's friendly names, per spec-ui-design
+ * §Names L56-63 (D105/P6-16), or `null` when the family has no friendly source.
+ *
+ * One string rather than two loose column names: the server resolves
+ * `friendly_name` from exactly one specification per name, so the list row, the
+ * search row and a detail header cannot disagree about where a name lives.
+ *
+ * `npcs` and `zones` are rows of `NAMES_TYPE_SPECS` (`GET /api/names/:type` serves
+ * them unchanged). **`decks` is deliberately not a names type**: D112 freezes
+ * `spec-api.md` L13's seven types and `tests/unit/names.test.ts` with them, so the
+ * `decks` row lives in the same table without joining the endpoint's vocabulary —
+ * task 6.9 populated `decks`, and CreatureSpellbook's `friendlyNamesType` is it.
+ */
+export type ObjectFriendlyNamesType = 'npcs' | 'zones' | 'decks';
+
 export interface ObjectTypeConfig {
   readonly fileType: ObjectFileType;
   /** Base path with the `/api` prefix (docs/spec-api.md L310-319). */
@@ -103,6 +119,29 @@ export interface ObjectTypeConfig {
   readonly keyField: string | null;
   readonly keyType: ObjectKeyType;
   readonly audit: ObjectAuditMode;
+  /**
+   * The names table holding this family's friendly names, or `null` when none
+   * exists (spec-ui-design §Names L56-63, D105/P6-16). Drives the server's
+   * `ObjectListRow.friendly_name` and the client's single lookup on a detail
+   * header — one mapping, both surfaces.
+   */
+  readonly friendlyNamesType: ObjectFriendlyNamesType | null;
+  /**
+   * **Why a row of this family has no pair**, in one sentence — `null` when a family
+   * that pairs cannot have an unpaired row.
+   *
+   * It rides to the UI as the key cell's tooltip (`ObjectTable`) on exactly the rows whose
+   * `friendly_name` is `null`, so a row with no pair says which state it is in
+   * (spec-ui-design L65-69) instead of leaving the reader to guess. It is deliberately a
+   * sentence *about the data* rather than a humanised key: a humanised key reads as a name
+   * that does not exist.
+   *
+   * Two families set it. DropTable/GlobalRegistry have no `friendlyNamesType` at all, and
+   * **CreatureSpellbook** (task 6.9) does have one but no corpus key reaches it — measured
+   * 0 of 134 `DeckName` values against the 599 `decks` rows — so its note explains the miss
+   * rather than a missing table.
+   */
+  readonly friendlyNameNote: string | null;
 }
 
 /**
@@ -121,6 +160,9 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'Name',
     keyType: 'string',
     audit: 'embedded',
+    friendlyNamesType: null,
+    friendlyNameNote:
+      'No friendly source: DropTable.description is NULL in 316 of 317 corpus rows, so the key is the name.',
   },
   {
     fileType: 'npcinventory',
@@ -132,6 +174,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'npcspellinventory',
@@ -143,6 +187,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'creaturespellbook',
@@ -154,6 +200,16 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'DeckName',
     keyType: 'string',
     audit: 'none',
+    friendlyNamesType: 'decks',
+    // Task 6.9 populated `decks` from the 599 `DeckTemplate` objects, so the family is no longer
+    // in the "no source" state — but **no corpus key reaches it**: measured, 0 of the 134
+    // `CreatureSpellbook.DeckName` values equals a `DeckTemplate` `m_name`. Those 134 name deck
+    // *items* (`ObjectData/Decks/**` basenames, 114 of them; `ObjectData/MinionDeck-*.xml`, 15;
+    // 5 exist nowhere in the tree), and those items carry no display name of their own
+    // (`m_displayName` is `''`, `m_objectName` **is** the id). So a corpus row renders
+    // technical-only, and this note is what says why.
+    friendlyNameNote:
+      'No paired name for this key: 0 of the 134 corpus DeckName values is a row of decks (the 599 DeckTemplate objects), and the deck items those values name carry no display name of their own — the key is the label.',
   },
   {
     fileType: 'npcdroptable',
@@ -165,6 +221,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'treasurecardinventory',
@@ -176,6 +234,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'TemplateID',
     keyType: 'ulong',
     audit: 'none',
+    friendlyNamesType: 'npcs',
+    friendlyNameNote: null,
   },
   {
     fileType: 'zonetransfer',
@@ -187,6 +247,8 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: 'ZoneName',
     keyType: 'string',
     audit: 'none',
+    friendlyNamesType: 'zones',
+    friendlyNameNote: null,
   },
   {
     fileType: 'globalregistry',
@@ -198,6 +260,9 @@ export const OBJECT_TYPES: readonly ObjectTypeConfig[] = [
     keyField: null,
     keyType: 'string',
     audit: 'none',
+    friendlyNamesType: null,
+    friendlyNameNote:
+      'No friendly source: a GlobalRegistry key is a flag name, and the dictionary has no id/label split.',
   },
 ];
 

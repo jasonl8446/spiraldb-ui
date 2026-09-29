@@ -15,6 +15,7 @@ import {
   searchPaletteState,
   searchResultHref,
   searchResultKey,
+  searchResultLabel,
   searchResultSecondary,
   SEARCH_DESCRIPTION,
   SEARCH_IDLE_MESSAGE,
@@ -243,7 +244,7 @@ function SearchResultItem({
       ) : (
         <StatusDot status={row.status} />
       )}
-      <span className="truncate font-mono text-sm text-zinc-100">{row.label}</span>
+      <span className="truncate font-mono text-sm text-zinc-100">{searchResultLabel(row)}</span>
       {secondary === null ? null : (
         <span className="truncate text-xs text-zinc-400">{secondary}</span>
       )}

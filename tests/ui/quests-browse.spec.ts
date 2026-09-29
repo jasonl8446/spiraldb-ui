@@ -70,6 +70,14 @@ function firstRowName(page: Page): Locator {
   return firstRow(page).locator('td').nth(1);
 }
 
+/**
+ * The Quest Name cell of the fixture's **first** row, which is the one row whose
+ * `title_source` is `resolved` (story p6-06 / D105/P6-16): a resolved title is a name,
+ * so the cell renders the QuestTemplate pair. Every other fixture row is `rawKey` — a
+ * lookup that missed, where the key is not a name — and renders its quest name alone.
+ */
+const FIRST_ROW_PAIR = 'Title DS-ACAD1-C01-001 (DS-ACAD1-C01-001)';
+
 /** The first row's Level badge cell. */
 function firstRowLevel(page: Page): Locator {
   return firstRow(page).locator('td').nth(2);
@@ -178,7 +186,7 @@ test.describe('search', () => {
     // The two DS-ACAD1 names match on the quest name itself.
     await expect(rows(page)).toHaveCount(2);
     await expect(page.getByText('Showing 1-2 of 2')).toBeVisible();
-    await expect(firstRowName(page)).toHaveText('DS-ACAD1-C01-001');
+    await expect(firstRowName(page)).toHaveText(FIRST_ROW_PAIR);
 
     // The resolved title is searched too — spec-silent, but the tile the user read
     // on the detail page has to find its row.
@@ -208,7 +216,7 @@ test.describe('sorting', () => {
     // Default: name ascending. The first row is the alphabetically first fixture,
     // and page 1 ends at the 50th name of 322 — the W-prefixed name is last in the
     // whole set, so it lives on page 7; the descending assertion below proves that.
-    await expect(firstRowName(page)).toHaveText('DS-ACAD1-C01-001');
+    await expect(firstRowName(page)).toHaveText(FIRST_ROW_PAIR);
     await expect(page.locator('tbody tr').last().locator('td').nth(1)).toHaveText('QUEST-051');
 
     const header = columnHeader(page, 'Quest Name');
@@ -219,7 +227,7 @@ test.describe('sorting', () => {
     // A third click removes the sort and the page falls back to its default.
     await header.getByRole('button').click();
     await expect(header).toHaveAttribute('aria-sort', 'ascending');
-    await expect(firstRowName(page)).toHaveText('DS-ACAD1-C01-001');
+    await expect(firstRowName(page)).toHaveText(FIRST_ROW_PAIR);
   });
 
   test('the Level header sorts numerically, and the level shows as a badge', async ({ page }) => {

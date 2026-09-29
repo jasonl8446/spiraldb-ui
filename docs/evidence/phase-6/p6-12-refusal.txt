@@ -1,0 +1,80 @@
+=== the refusal arm: decoys this harness must not accept (12369 = Aurorium's port, 12500 = Imlight's) ===
+
+$ cat /tmp/p6-12-decoy.mjs   (a trivial HTTP listener answering 200 to everything)
+// A decoy that is NOT Aurorium and NOT Imlight — the D93 shape: it answers, so a readiness probe
+// would pass. Its command line must not be mistaken for either sibling service.
+import { createServer } from 'node:http';
+const port = Number(process.argv[2]);
+createServer((req, res) => { res.writeHead(200, { 'content-type': 'text/html' }); res.end('<html>not aurorium</html>'); })
+  .listen(port, '127.0.0.1', () => console.log(`decoy listening on ${port} pid ${process.pid}`));
+$ node /tmp/p6-12-decoy.mjs 12369 & node /tmp/p6-12-decoy.mjs 12500 &
+decoy listening on 12369 pid 1807476
+decoy listening on 12500 pid 1807477
+
+$ ss -lptnH 'sport = :12369' / 'sport = :12500'
+LISTEN 0      511    127.0.0.1:12369 0.0.0.0:* users:(("MainThread",pid=1807476,fd=21))
+LISTEN 0      511    127.0.0.1:12500 0.0.0.0:* users:(("MainThread",pid=1807477,fd=21))
+
+$ npm run imlight:boot -- probe
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts probe
+
+port   role      status   pid      detail
+12369  aurorium  foreign  1807476  port 12369 answers from pid 1807476 (node /tmp/p6-12-decoy.mjs 12369), which is not the aurorium this port must serve (Aurorium HTTP — the patch source Imlight downloads Root.wad from) — its command line names neither sibling service
+12500  imlight   foreign  1807477  port 12500 answers from pid 1807477 (node /tmp/p6-12-decoy.mjs 12500), which is not the imlight this port must serve (Imlight patch server (TCP)) — its command line names neither sibling service
+12000  imlight   free     -        port 12000 is free — the harness may bind it
+12333  imlight   free     -        port 12333 is free — the harness may bind it
+8080   imlight   free     -        port 8080 is free — the harness may bind it
+
+start  : 12000, 12333, 8080
+reuse  : (none)
+refused: 12369, 12500
+[harness] refusing to start: 2 port(s) answer from a process this harness does not own — 
+  - port 12369 answers from pid 1807476 (node /tmp/p6-12-decoy.mjs 12369), which is not the aurorium this port must serve (Aurorium HTTP — the patch source Imlight downloads Root.wad from) — its command line names neither sibling service
+  - port 12500 answers from pid 1807477 (node /tmp/p6-12-decoy.mjs 12500), which is not the imlight this port must serve (Imlight patch server (TCP)) — its command line names neither sibling service
+Stop the offending process(es), or move the run to a free port, and try again.
+probe rc=3
+
+$ npm run imlight:boot -- boot   (it must refuse BEFORE starting anything)
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts boot
+
+[harness] refusing to start: 2 port(s) answer from a process this harness does not own — 
+  - port 12369 answers from pid 1807476 (node /tmp/p6-12-decoy.mjs 12369), which is not the aurorium this port must serve (Aurorium HTTP — the patch source Imlight downloads Root.wad from) — its command line names neither sibling service
+  - port 12500 answers from pid 1807477 (node /tmp/p6-12-decoy.mjs 12500), which is not the imlight this port must serve (Imlight patch server (TCP)) — its command line names neither sibling service
+Stop the offending process(es), or move the run to a free port, and try again.
+boot rc=3
+
+$ the decoys are still the only things on those ports: the harness started nothing
+LISTEN 0      511    127.0.0.1:12369 0.0.0.0:* users:(("MainThread",pid=1807476,fd=21))
+LISTEN 0      511    127.0.0.1:12500 0.0.0.0:* users:(("MainThread",pid=1807477,fd=21))
+
+$ kill <decoy pids>   (the decoys are cleaned up)
+
+$ npm run imlight:boot -- probe
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts probe
+
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+
+start  : 12369, 12500, 12000, 12333, 8080
+reuse  : (none)
+refused: (none)
+probe rc=0
+
+$ for p in 12369 12500 12000 12333 8080; do TCP connect; done
+  12369: free
+  12500: free
+  12000: free
+  12333: free
+  8080: free
+
+  (no decoy process remains)

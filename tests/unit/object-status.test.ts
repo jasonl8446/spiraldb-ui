@@ -42,16 +42,25 @@ function listBody(): ObjectListResponse {
       {
         key: 'DS-ACAD1-C01-001',
         title: 'DS-ACAD1-C01-001',
+        // DropTable has no friendly source, so every row's half is null (p6-06).
+        friendly_name: null,
         modified_at: null,
         status: 'extracted',
       },
       {
         key: 'DS-ACAD1-C01-002',
         title: 'DS-ACAD1-C01-002',
+        friendly_name: null,
         modified_at: null,
         status: 'extracted',
       },
-      { key: 'DS-ACAD1-C01-003', title: 'DS-ACAD1-C01-003', modified_at: null, status: 'verified' },
+      {
+        key: 'DS-ACAD1-C01-003',
+        title: 'DS-ACAD1-C01-003',
+        friendly_name: null,
+        modified_at: null,
+        status: 'verified',
+      },
     ],
     summary: { total: 3, extracted: 2, reviewed: 0, verified: 1 },
     skipped: [],
@@ -104,7 +113,13 @@ describe('applyOptimisticObjectStatus: the dot and the tab counts move together'
     const key = objectStatusScope(GLOBAL_REGISTRY).listQueryKey;
     client.setQueryData<ObjectListResponse>(key, {
       objects: [
-        { key: 'globalregistry', title: 'globalregistry', modified_at: null, status: null },
+        {
+          key: 'globalregistry',
+          title: 'globalregistry',
+          friendly_name: null,
+          modified_at: null,
+          status: null,
+        },
       ],
       summary: null,
       skipped: [],

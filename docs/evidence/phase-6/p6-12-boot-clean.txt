@@ -1,0 +1,33 @@
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts boot --clean --keep-services
+
+[harness] 12369 is free — starting the workspace Aurorium
+[harness] [patch] endpoint 127.0.0.1:1 verified refused (nothing to fetch from)
+[harness] Aurorium identity: GET /latest returned the expected revision V_r806919.Wizard_1_610
+[harness] Aurorium pid 1808370 recorded as OWNED (log -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run/boot.txt)
+[harness] freshness: code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+[harness] freshness inputs: dll 2026-09-27T14:32:58.321Z, 14 commit(s) in the 14-day window
+[harness] --clean: removing /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] copying the prebuilt output /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0 -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] run directory /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run (866M	/home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run)
+[harness] config pins: SpiralDBLocalPath=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb SpiralDBDisableRemote=true PlayerDatabaseUrl=(empty) ports 12500/12000/12333/8080
+[harness] boot "single": pid 1808400, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "single" console -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run/boot.txt (16594 bytes)
+[harness] stopped Director (single) pid 1808400
+
+=== Imlight's own log line (the process under test) ===
+  SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2274
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            322
+zone data entries          1205
+[harness] raw console: /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run/boot.txt
+[harness] --keep-services: leaving the Aurorium it started running

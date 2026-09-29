@@ -25,6 +25,22 @@ import {
   searchRows,
 } from './object-list';
 
+/**
+ * The friendly half of a quest row's pair — the D105/P6-16 rule applied to
+ * `QuestListRow`, which is the one place the QuestTemplate family is *not* a plain
+ * `{ id, label }` row.
+ *
+ * `QuestListRow.title` is "the string-table resolved title, the raw `m_questTitle` key,
+ * or `m_questName`" (spec-api), and only the **resolved** case is a name: a raw key is a
+ * lookup that missed and `m_questName` is the technical value itself. Returning `null`
+ * for those two is what keeps the browse cell, the mobile card and the detail header
+ * rendering the quest name alone instead of `QuestTitle_1625CA (WC-UNICORN-MAIN-004)` —
+ * a "friendly" half that is not a name is the humaniser this phase forbids.
+ */
+export function questFriendlyTitle(row: QuestListRow): string | null {
+  return row.title_source === 'resolved' ? row.title : null;
+}
+
 /* -------------------------------------------------------------- the columns */
 
 /** The seven column ids of the browse table, in spec order (L254-262). */
@@ -359,6 +375,87 @@ export const JSON_WRAP_LABEL = 'Wrap';
 export const JSON_WRAP_ON_TOOLTIP =
   'Wrap long values in the panel (pressing it scrolls sideways instead)';
 export const JSON_WRAP_OFF_TOOLTIP = 'Wrap long values in the panel instead of scrolling sideways';
+
+/* ------------------------------------------------- evidence panel (p6-08) */
+
+/**
+ * The right rail's two tabs (docs/spec-ui-design.md L417-421): the rail is **one** `<aside>` with
+ * two tabs rather than two panels competing for the same 400px, because the form plus two rails
+ * does not fit at the 1280px breakpoint.
+ */
+export type QuestRailTab = 'evidence' | 'json';
+
+/** The tab labels, in the spec's own order (`Evidence │ JSON`). */
+export const EVIDENCE_TAB_LABEL = 'Evidence';
+export const JSON_TAB_LABEL = 'JSON';
+
+/**
+ * The `?panel=` values, named so the catalog row's link (task 6.10) and
+ * {@link railTabFromParam} cannot spell the same tab two ways.
+ */
+export const RAIL_TAB_EVIDENCE: QuestRailTab = 'evidence';
+export const RAIL_TAB_JSON: QuestRailTab = 'json';
+
+/**
+ * The `?panel=` resolver: `'evidence'` / `'json'` open that tab, anything else leaves the rail
+ * closed. One home for the mapping, so a catalog row's link (p6-10) and the page cannot disagree,
+ * and a typo opens nothing rather than a guess.
+ */
+export function railTabFromParam(value: string | null): QuestRailTab | null {
+  return value === RAIL_TAB_EVIDENCE || value === RAIL_TAB_JSON ? value : null;
+}
+
+/** The tab strip's accessible name. */
+export const QUEST_RAIL_TABLIST_LABEL = 'Quest detail panels';
+
+/** The evidence affordance in the header (the spec's "the evidence affordance opens it on the Evidence tab"). */
+export const EVIDENCE_PANEL_LABEL = 'Toggle evidence panel';
+
+/** The evidence panel's accessible name — the rail's name while the Evidence tab is active. */
+export const EVIDENCE_PANEL_TITLE = 'Quest evidence';
+
+/** A catalog entry links straight to the open panel with this query parameter (p6-10's entry point). */
+export const RAIL_TAB_QUERY_PARAM = 'panel';
+
+/** The sections' headings (spec L425-433's own words, plus the references section 6.6 answers). */
+export const EVIDENCE_USED_HEADING = 'Used by this file';
+export const EVIDENCE_AVAILABLE_HEADING = 'Available';
+export const EVIDENCE_DIALOGUE_HEADING = 'Dialogue';
+export const EVIDENCE_GATES_HEADING = 'World gates';
+export const EVIDENCE_REFERENCES_HEADING = 'References';
+export const EVIDENCE_WARNINGS_HEADING = 'Warnings';
+
+/** The empty states — an empty section says it is empty rather than disappearing (spec L453-454). */
+export const EVIDENCE_USED_EMPTY =
+  'No row of this quest’s own table is referenced by this file yet.';
+export const EVIDENCE_AVAILABLE_EMPTY = 'Every row of this quest’s own table is already used.';
+export const EVIDENCE_DIALOGUE_EMPTY = 'This file records no dialog entry.';
+export const EVIDENCE_GATES_EMPTY = 'No world object gates this quest.';
+export const EVIDENCE_REFERENCES_EMPTY = 'This file declares no reference field.';
+export const EVIDENCE_WARNINGS_EMPTY = 'No evidence miss was counted for this quest.';
+
+/** The panel's own states. */
+export const EVIDENCE_LOADING = 'Loading evidence…';
+export const EVIDENCE_LOAD_ERROR = 'Could not load this quest’s evidence.';
+
+/** The focus line: what the next insert will write, or that nothing is focused. */
+export const EVIDENCE_TARGET_LABEL = 'Insert into';
+export const EVIDENCE_TARGET_NONE = 'nothing focused';
+
+/** The insert button's accessible-name prefix; each row appends its own key. */
+export const EVIDENCE_INSERT_LABEL = 'Insert';
+
+/**
+ * The insert confirmation. It deliberately says what did **not** happen: an insert edits the
+ * in-memory document (D58), and only Save writes the file — the same "warn, never write" posture
+ * the panel keeps (D72).
+ */
+export const EVIDENCE_INSERTED_MESSAGE =
+  'Inserted into the focused field — Save to write it to the file.';
+
+/** The title line's own labels (the API's `title_source` is shown as a badge for `inferred` only). */
+export const EVIDENCE_TITLE_LABEL = 'Title';
+export const EVIDENCE_NO_TITLE = 'no catalog title';
 
 /* ------------------------------------------------------------- row readers */
 

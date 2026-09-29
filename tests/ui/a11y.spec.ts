@@ -303,6 +303,48 @@ async function mockA11yApi(page: Page): Promise<Mocked> {
     }
 
     // 5. The quests list + one bare quest document (docs/spec-api.md L190-208, D49).
+    //
+    // Story p6-11's two static reads are matched **before** the `/:key` prefix below, because
+    // `/api/quests/coverage` and `/api/quests/catalog` start with the same prefix and would
+    // otherwise be answered as a quest document — which is not a coverage payload at all.
+    if (path === '/api/quests/coverage') {
+      return json({
+        nameable: 1717,
+        id_space: 4823,
+        defined: 322,
+        missing: 1395,
+        references: 2855,
+        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
+      });
+    }
+    if (path === '/api/quests/catalog') {
+      const catalogRows = [
+        {
+          quest_name: 'DS-ACAD1-C01-001',
+          title: 'Wizard Tours',
+          title_source: 'inferred',
+          has_definition: 1,
+          reference_count: 6,
+        },
+        {
+          quest_name: 'DM-GRAVE-MAIN-008',
+          title: 'Stakes and Stones',
+          title_source: 'direct',
+          has_definition: 0,
+          reference_count: 19,
+        },
+      ];
+      const missingOnly = url.searchParams.get('missing_only') === '1';
+      const quests = missingOnly
+        ? catalogRows.filter((row) => row.has_definition === 0)
+        : catalogRows;
+      return json({
+        quests,
+        total: quests.length,
+        missing_only: missingOnly,
+        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
+      });
+    }
     if (path === '/api/quests') {
       const rows = mockQuestRows();
       return json({

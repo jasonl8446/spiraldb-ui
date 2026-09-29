@@ -1,17 +1,23 @@
 import { collapseAllNested, darkStyles, JsonView } from 'react-json-view-lite';
 import type { Props as JsonViewProps } from 'react-json-view-lite';
-import { useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 import {
+  EVIDENCE_PANEL_TITLE,
+  EVIDENCE_TAB_LABEL,
   JSON_COPIED_MESSAGE,
   JSON_COPY_ERROR,
   JSON_COPY_LABEL,
   JSON_PANEL_GLYPH,
   JSON_PANEL_TITLE,
+  JSON_TAB_LABEL,
   JSON_WRAP_LABEL,
   JSON_WRAP_OFF_TOOLTIP,
   JSON_WRAP_ON_TOOLTIP,
+  QUEST_RAIL_TABLIST_LABEL,
+  type QuestRailTab,
 } from '../../lib/quests';
+import { nextTabIndex } from '../../lib/tablist';
 import { notifyError, notifySuccess } from '../../lib/notify';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
@@ -50,6 +56,17 @@ import 'react-json-view-lite/dist/index.css';
  * the container class this file already owns — so the toggle swaps
  * `whitespace-pre-wrap break-words overflow-x-hidden` for `whitespace-pre overflow-x-auto`, i.e.
  * wrapped text versus a horizontal scrollbar. It is a real control, not a disabled one.
+ *
+ * **One right rail, two tabs (story p6-08, spec L417-421).** This `<aside>` *is* the rail the
+ * evidence panel shares: the spec's own reason is that "the JSON side panel above already owns the
+ * 400px right rail, and the form plus two rails does not fit at the 1280px desktop breakpoint", so
+ * the rail carries an `Evidence │ JSON` tab strip instead of two panels competing for the space.
+ * The tabs are **opt-in** (`tab` / `onTabChange` / `children`): the quest detail page passes them,
+ * the Phase-4 generic detail layout does not, and a host that omits them gets today's JSON-only
+ * panel with the same classes, the same DOM shape and the same accessible name. The header's `{ }`
+ * toggle opens the rail on the JSON tab and the header's evidence affordance opens it on
+ * `Evidence` — one rail, one `<aside>`, one set of width classes (`tests/ui/responsive.spec.ts`
+ * still measures this element).
  */
 
 /**
@@ -186,6 +203,132 @@ export interface QuestJsonPanelProps {
    * The component renders any document either way — only this name differs.
    */
   title?: string;
+  /**
+   * The rail's active tab (story p6-08's `Evidence │ JSON` rail, spec L417-421). Omitted — the
+   * Phase-4 hosts — renders exactly the JSON-only panel they already mount: no tab strip, no
+   * second body, the same classes and the same accessible name.
+   */
+  tab?: QuestRailTab;
+  /** Selects a tab; required for the strip to render at all. */
+  onTabChange?: (tab: QuestRailTab) => void;
+  /**
+   * The **Evidence** tab's body (the quest detail page passes its `EvidencePanel`). Rendered
+   * instead of the JSON toolbar + tree when {@link tab} is `'evidence'`.
+   */
+  children?: ReactNode;
+}
+
+/** The rail's two tabs, in the spec's order. */
+const RAIL_TABS: readonly QuestRailTab[] = ['evidence', 'json'];
+
+/**
+ * The `Evidence │ JSON` tab strip (spec L417-421) — the rail is one `<aside>` carrying two tabs
+ * rather than two panels competing for the same 400px, because the form plus two rails does not fit
+ * at the 1280px breakpoint.
+ *
+ * It is a real APG tablist: `role="tablist"`/`role="tab"`/`aria-selected`, automatic activation, and
+ * the Arrow/Home/End keys through `lib/tablist.ts`'s one rule — the same model `QuestPreview` and
+ * the list pages' filter tabs already implement (plan task 5.5 AC#8).
+ */
+function QuestRailTabs({
+  tab,
+  onTabChange,
+  panelId,
+}: {
+  tab: QuestRailTab;
+  onTabChange: (tab: QuestRailTab) => void;
+  panelId: string;
+}): JSX.Element {
+  return (
+    <div
+      role="tablist"
+      aria-label={QUEST_RAIL_TABLIST_LABEL}
+      className="flex items-center gap-1 border-b border-zinc-800 px-3 pt-2"
+    >
+      {RAIL_TABS.map((name, index) => {
+        const selected = name === tab;
+        const domId = `${panelId}-tab-${name}`;
+        return (
+          <button
+            key={name}
+            type="button"
+            role="tab"
+            id={domId}
+            aria-selected={selected}
+            aria-controls={`${panelId}-panel-${name}`}
+            onClick={() => onTabChange(name)}
+            onKeyDown={(event) => {
+              const next = nextTabIndex(event.key, index, RAIL_TABS.length);
+              if (next === null) {
+                return;
+              }
+              event.preventDefault();
+              const target = RAIL_TABS[next] ?? name;
+              onTabChange(target);
+              document.getElementById(`${panelId}-tab-${target}`)?.focus();
+            }}
+            className={cn(
+              'border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+              selected
+                ? 'border-blue-500 font-medium text-zinc-50'
+                : 'border-transparent text-zinc-400 hover:text-zinc-200',
+            )}
+          >
+            {name === 'evidence' ? EVIDENCE_TAB_LABEL : JSON_TAB_LABEL}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The rail body for the active tab: the caller's evidence body, or the JSON toolbar + tree.
+ *
+ * With the tab strip (`panelId` set) the body is a real `tabpanel` whose id pairs with the tab's
+ * `aria-controls`/`aria-labelledby`. Without it — the Phase-4 hosts, which mount a JSON-only panel —
+ * the JSON is rendered **directly** rather than inside an orphan `tabpanel` role, which is what
+ * keeps those hosts' DOM and their specs unchanged.
+ */
+function QuestRailBody({
+  tab,
+  panelId,
+  quest,
+  wrap,
+  onToggleWrap,
+  children,
+}: {
+  tab: QuestRailTab;
+  panelId: string | null;
+  quest: QuestJsonData;
+  wrap: boolean;
+  onToggleWrap: () => void;
+  children?: ReactNode;
+}): JSX.Element {
+  const json = (
+    <>
+      <QuestJsonToolbar
+        quest={quest}
+        wrap={wrap}
+        onToggleWrap={onToggleWrap}
+        className="border-b border-zinc-800 px-3 py-2"
+      />
+      <QuestJsonBody quest={quest} wrap={wrap} />
+    </>
+  );
+  if (panelId === null) {
+    return <>{json}</>;
+  }
+  return (
+    <div
+      role="tabpanel"
+      id={`${panelId}-panel-${tab}`}
+      aria-labelledby={`${panelId}-tab-${tab}`}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      {tab === 'evidence' ? (children ?? null) : json}
+    </div>
+  );
 }
 
 /**
@@ -198,23 +341,36 @@ export interface QuestJsonPanelProps {
  * `lib/quests.ts`'s `JSON_PANEL_TABLET_WIDTH_PX` / `JSON_PANEL_WIDTH_PX`, and
  * `tests/ui/responsive.spec.ts` asserts the rendered box against both at both tiers.
  */
-export function QuestJsonPanel({ quest, className, title }: QuestJsonPanelProps): JSX.Element {
+export function QuestJsonPanel({
+  quest,
+  className,
+  title,
+  tab,
+  onTabChange,
+  children,
+}: QuestJsonPanelProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
+  const panelId = useId();
+  const active: QuestRailTab = tab ?? 'json';
+  const withTabs = tab !== undefined && onTabChange !== undefined;
   return (
     <aside
-      aria-label={title ?? JSON_PANEL_TITLE}
+      aria-label={title ?? (active === 'evidence' ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE)}
       className={cn(
         'flex w-[300px] shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right xl:w-[400px]',
         className,
       )}
     >
-      <QuestJsonToolbar
+      {withTabs ? <QuestRailTabs tab={active} onTabChange={onTabChange} panelId={panelId} /> : null}
+      <QuestRailBody
+        tab={active}
+        panelId={withTabs ? panelId : null}
         quest={quest}
         wrap={wrap}
         onToggleWrap={() => setWrap((current) => !current)}
-        className="border-b border-zinc-800 px-3 py-2"
-      />
-      <QuestJsonBody quest={quest} wrap={wrap} />
+      >
+        {children}
+      </QuestRailBody>
     </aside>
   );
 }
@@ -227,35 +383,52 @@ export interface QuestJsonOverlayProps {
   title?: string;
   /** The dialog's visually hidden description; defaults to the quest wording. */
   description?: string;
+  /** The active tab (see {@link QuestJsonPanelProps.tab}) — the mobile overlay is the same rail. */
+  tab?: QuestRailTab;
+  /** Selects a tab; omitted by the Phase-4 hosts, which get the JSON-only overlay. */
+  onTabChange?: (tab: QuestRailTab) => void;
+  /** The **Evidence** tab's body. */
+  children?: ReactNode;
 }
 
-/** The mobile full-screen overlay (< 768px) carrying the same toolbar + tree. */
+/** The mobile full-screen overlay (< 768px) carrying the same tabs, toolbar and tree. */
 export function QuestJsonOverlay({
   open,
   onOpenChange,
   quest,
   title,
   description,
+  tab,
+  onTabChange,
+  children,
 }: QuestJsonOverlayProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
+  const panelId = useId();
+  const active: QuestRailTab = tab ?? 'json';
+  const withTabs = tab !== undefined && onTabChange !== undefined;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="inset-0 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 p-0 sm:rounded-none">
         <DialogHeader className="border-b border-zinc-800 p-3 pr-12">
           <DialogTitle className="font-mono text-sm font-semibold text-zinc-50">
-            {title ?? JSON_PANEL_TITLE}
+            {title ?? (active === 'evidence' ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE)}
           </DialogTitle>
           <DialogDescription className="sr-only">
             {description ?? 'Read-only JSON of this quest.'}
           </DialogDescription>
         </DialogHeader>
-        <QuestJsonToolbar
+        {withTabs ? (
+          <QuestRailTabs tab={active} onTabChange={onTabChange} panelId={panelId} />
+        ) : null}
+        <QuestRailBody
+          tab={active}
+          panelId={withTabs ? panelId : null}
           quest={quest}
           wrap={wrap}
           onToggleWrap={() => setWrap((current) => !current)}
-          className="border-b border-zinc-800 px-3 py-2"
-        />
-        <QuestJsonBody quest={quest} wrap={wrap} />
+        >
+          {children}
+        </QuestRailBody>
       </DialogContent>
     </Dialog>
   );

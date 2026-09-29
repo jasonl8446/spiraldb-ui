@@ -24,8 +24,14 @@ import type { ObjectStatusSummary } from './object-list';
 export interface ObjectListRow {
   /** The key in its canonical text form (`ULong.toKey` for a `TemplateID` family). */
   key: string;
-  /** Display title: the key itself for all eight families today. */
+  /** Display title: equal to `key` for all eight families — the pair is `friendly_name`. */
   title: string;
+  /**
+   * The family's friendly name, resolved **server-side** from `npcs`/`zones`
+   * (D105/P6-16), or `null` when there is none. The client pairs it with `key`
+   * through `display.ts`'s one rule — the server emits data and never formats.
+   */
+  friendly_name: string | null;
   modified_at: string | null;
   /** `null` for a family with no lifecycle (GlobalRegistry, Q1). */
   status: StatusValue | null;

@@ -1,0 +1,183 @@
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts prove-count --clean --name AQ-GARD-SIS-001 --db data/__test-scratch__/p6-12.db --restore-clone
+
+=== the five owned ports, before anything starts ===
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+[harness] 12369 is free — starting the workspace Aurorium
+[harness] [patch] endpoint 127.0.0.1:1 verified refused (nothing to fetch from)
+[harness] Aurorium identity: GET /latest returned the expected revision V_r806919.Wizard_1_610
+[harness] Aurorium pid 1802056 recorded as OWNED (log -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run/boot.txt)
+[harness] freshness: code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+[harness] freshness inputs: dll 2026-09-27T14:32:58.321Z, 14 commit(s) in the 14-day window
+[harness] --clean: removing /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] copying the prebuilt output /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0 -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] run directory /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run (866M	/home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run)
+[harness] config pins: SpiralDBLocalPath=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb SpiralDBDisableRemote=true PlayerDatabaseUrl=(empty) ports 12500/12000/12333/8080
+
+=== the D17 clone, before the scaffold (the restore snapshot) ===
+axis                   value
+branch                 content/2026-09-27
+HEAD                   18dc92477d54b1e911796960407ce7710e703697
+main ref               f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+rev-list --count HEAD  42
+status --porcelain     (empty)
+QuestTemplates/*.json  322
+branches               content/2026-09-26 content/2026-09-27 main
+[harness] boot 1 of 2 — the baseline, before any scaffold
+[harness] boot "baseline": pid 1802098, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "baseline" console -> /home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-6/p6-12-imlight-boot-baseline.txt (16595 bytes)
+[harness] stopped Director (baseline) pid 1802098
+[harness] baseline: SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+[harness] scaffolding "AQ-GARD-SIS-001" (p6-09's own command)
+[harness] boot 2 of 2 — the same run directory, after the scaffold
+[harness] boot "after": pid 1802248, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "after" console -> /home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-6/p6-12-imlight-boot-after.txt (15936 bytes)
+[harness] stopped Director (after) pid 1802248
+[harness] after   : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+
+=== BASELINE — Imlight's own log line, before the scaffold ===
+  SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2274
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            322
+zone data entries          1205
+
+=== the scaffold (p6-09's own command, verbatim) ===
+  NODE_ENV=test SPIRALDB_UI_DB=data/__test-scratch__/p6-12.db npm run scaffold:quest -- --name AQ-GARD-SIS-001 --spiraldb /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+
+
+> spiraldb-ui@0.1.0 scaffold:quest
+> tsx scripts/scaffold-quest.ts --name AQ-GARD-SIS-001 --db data/__test-scratch__/p6-12.db --spiraldb /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+
+[spiraldb-ui] scaffold database at data/__test-scratch__/p6-12.db
+[spiraldb-ui] SpiralDB root       at /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+[spiraldb-ui] author              p6-12-harness
+[spiraldb-ui] git_branch setting   content/2026-09-27
+[spiraldb-ui] working tree branch  content/2026-09-27
+
+=== scaffolded ===
+  quest_name            : AQ-GARD-SIS-001
+  link_kind             : direct
+  title_key written     : QuestTitle_19BE33
+  m_questTitle          : "QuestTitle_19BE33"
+  has_definition (before): 0 (the next sync flips it to 1)
+  file                  : QuestTemplates/questtemplates_AQ-GARD-SIS-001.json
+  metadata              : QuestMetadatas/questmetadata_AQ-GARD-SIS-001.json
+  commit                : f5bb8bf3d248d8df71dea7099efc60a44f961e3a
+  branch                : content/2026-09-27
+  commit message        : spiraldb: create quest AQ-GARD-SIS-001
+  key count             : 36
+  key order             : m_questName, m_questNameID, m_questTitle, m_questInfo, m_questPrep, m_questUnderway, m_questComplete, m_startGoals, m_goals, m_startResults, m_endResults, m_requirements, m_prepRequirements, m_pruneRequirements, m_prepAlways, m_clientTags, m_goalLogic, m_questLevel, m_questRepeat, m_onStartQuestScript, m_onEndQuestScript, m_dialogList, m_missionDoors, m_dynaMods, m_isHidden, m_outdated, m_noQuestHelper, m_mainline, m_defaultDialogAnimation, m_skipQHAutoSelect, m_questEffectInfoList, m_forceInteraction, m_checkInventoryForCrafting, m_playAsYourPetNPC, m_activityType, m_behaviors
+
+=== the companion metadata Description (the catalog provenance) ===
+  Scaffolded from the quest catalog (link_kind: direct; title QuestTitle_19BE33).
+
+=== the file, verbatim ===
+{
+  "m_questName": "AQ-GARD-SIS-001",
+  "m_questNameID": 0,
+  "m_questTitle": "QuestTitle_19BE33",
+  "m_questInfo": null,
+  "m_questPrep": null,
+  "m_questUnderway": null,
+  "m_questComplete": null,
+  "m_startGoals": [],
+  "m_goals": [],
+  "m_startResults": {
+    "m_results": []
+  },
+  "m_endResults": {
+    "m_results": []
+  },
+  "m_requirements": null,
+  "m_prepRequirements": null,
+  "m_pruneRequirements": null,
+  "m_prepAlways": false,
+  "m_clientTags": null,
+  "m_goalLogic": [],
+  "m_questLevel": 0,
+  "m_questRepeat": 0,
+  "m_onStartQuestScript": "",
+  "m_onEndQuestScript": "",
+  "m_dialogList": {
+    "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",
+    "m_dialogs": []
+  },
+  "m_missionDoors": null,
+  "m_dynaMods": null,
+  "m_isHidden": false,
+  "m_outdated": false,
+  "m_noQuestHelper": false,
+  "m_mainline": false,
+  "m_defaultDialogAnimation": null,
+  "m_skipQHAutoSelect": false,
+  "m_questEffectInfoList": null,
+  "m_forceInteraction": false,
+  "m_checkInventoryForCrafting": false,
+  "m_playAsYourPetNPC": false,
+  "m_activityType": "ACTIVITY_NotActivity",
+  "m_behaviors": null
+}
+
+=== AFTER — Imlight's own log line, after the scaffold ===
+  SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2275
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            323
+zone data entries          1205
+
+=== the count proof (p6-12-ac2) ===
+  baseline line : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+  scaffold      : AQ-GARD-SIS-001 — exit 0, one file into /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  after line    : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+  arithmetic    : 322 + 1 = 323
+  delta         : 1 (expected 1)
+  verdict       : PASS — rises by exactly one
+  detail        : quest templates rose by exactly 1 across the scaffold of "AQ-GARD-SIS-001": 322 + 1 = 323; the other seven families are unchanged (spellbooks, dropTables, npcInventories, npcSpellInventories, npcDropTables, treasureCardInventories, zoneData)
+  baseline readings inside the one process: 3 reading(s), all identical
+  after readings inside the one process   : 3 reading(s), all identical
+  files counter : baseline 2274 -> after 2275 (delta 1)
+  seven non-quest families: spellbooks 134, dropTables 317, npcInventories 215, npcSpellInventories 77, npcDropTables 0, treasureCardInventories 1, zoneData 1205
+
+=== the clone restore plan (D76(b): a reset that leaves a branch behind is not a restore) ===
+  git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb checkout -f content/2026-09-27
+  git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb reset --hard 18dc92477d54b1e911796960407ce7710e703697
+  (no branch appeared during the run, so no branch is deleted)
+[harness] git checkout -f content/2026-09-27
+[harness] git reset --hard 18dc92477d54b1e911796960407ce7710e703697
+
+=== the clone after the restore (five axes + the corpus shape) ===
+axis                       expected                                    actual                                      ok
+branch                     content/2026-09-27                          content/2026-09-27                          ok
+HEAD                       18dc92477d54b1e911796960407ce7710e703697    18dc92477d54b1e911796960407ce7710e703697    ok
+main ref                   f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    ok
+git rev-list --count HEAD  42                                          42                                          ok
+git status --porcelain     (empty)                                     (empty)                                     ok
+QuestTemplates/*.json      322                                         322                                         ok
+local branches (set)       content/2026-09-26 content/2026-09-27 main  content/2026-09-26 content/2026-09-27 main  ok
+
+  branches now: content/2026-09-26 content/2026-09-27 main
+  remotes now : origin origin/main
+  every axis matches — the clone is restored
+[harness] evidence: /home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-6/p6-12-imlight-boot-baseline.txt, /home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-6/p6-12-imlight-boot-after.txt, /home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-6/p6-12-count.txt
+[harness] stopped Aurorium pid 1802056

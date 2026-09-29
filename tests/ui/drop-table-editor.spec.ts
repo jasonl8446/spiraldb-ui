@@ -360,7 +360,9 @@ test.describe('AC2: an item row’s requirement tree', () => {
     const search = page.getByRole('combobox', { name: 'Search quests', exact: true });
     await expect(search).toBeVisible();
     await search.fill(QUEST_NAME);
-    await page.getByRole('option', { name: QUEST_TITLE, exact: true }).click();
+    // The option is the QuestTemplate pair (D105/P6-16): `formatNameRow('quests')` pairs
+    // the resolved title with the quest name it belongs to.
+    await page.getByRole('option', { name: `${QUEST_TITLE} (${QUEST_NAME})`, exact: true }).click();
     await card.getByLabel('NOT', { exact: true }).check();
 
     // The live document, byte-shaped through the panel: the wrapper is untyped, the leaf is

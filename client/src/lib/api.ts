@@ -14,6 +14,13 @@
 
 import { reportRequestFailure, reportRequestSuccess } from './connection';
 import type { NameRow, NameRowMap, NamesType } from './display';
+import {
+  catalogRequestPath,
+  COVERAGE_PATH,
+  type CatalogFilter,
+  type QuestCatalogResult,
+  type QuestCoverage,
+} from './quest-catalog';
 import type { SyncCounts } from './toast';
 
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
@@ -511,6 +518,11 @@ export interface SearchResultRow {
   /** `null` for a routeless row — which is exactly when the dot is absent. */
   status: StatusValue | null;
   matched_on: 'key' | 'name';
+  /**
+   * The NPC group's name strings, one entity per row (P6-17/D112) — both `["Gretta",
+   * "Gretta Darkkettle"]` for the one NPC they belong to. Absent for every other group.
+   */
+  aliases?: string[];
 }
 
 /** One `groups[]` element: a type, the heading to render, and its rows. */
@@ -860,6 +872,115 @@ export function getQuest(name: string): Promise<QuestObject> {
   return apiFetch<QuestObject>(`/api/quests/${encodeURIComponent(name)}`);
 }
 
+/* ---------------------------------------------------------- quests (evidence) */
+
+/**
+ * The **catalog link's** provenance (task 6.6, docs/spec-api.md L486-489) — `quests.title_source`
+ * / `quest_ids.link_kind`. It is **not** the quests list endpoint's per-file `title_source`
+ * (`resolved | rawKey | missing`, spec-data-model L209-214): the two fields share a name and answer
+ * different questions, and `lib/evidence-insert.ts`'s badge is keyed on this enum only.
+ */
+export type EvidenceTitleSource = 'direct' | 'inferred' | 'none';
+
+/** Which rung of the speaker ladder answered for one dialogue line. */
+export type EvidenceSpeakerSource = 'override' | 'composed' | 'template' | 'raw';
+
+export interface QuestEvidenceHeader {
+  /** `null` on the id tier: an id with no linked catalog name has no name. */
+  quest_name: string | null;
+  quest_id: number | null;
+  has_definition: boolean;
+  link_kind: EvidenceTitleSource;
+  title: string | null;
+  title_source: EvidenceTitleSource;
+  /** `quest_ids.inference_basis` when the link is inferred — an inferred link never travels alone. */
+  inference_basis: string | null;
+}
+
+/** One row of the quest's **own** `WizQst<id>_*` table. */
+export interface QuestEvidenceTextRow {
+  key: string;
+  value: string;
+  category: string;
+  used_by_this_file: boolean;
+  /** The path of the file value that references this key (a formatted `DocPath`), or `null`. */
+  field: string | null;
+}
+
+export interface QuestEvidenceGoalRef {
+  wad: string;
+  entry: string;
+  class: string;
+}
+
+export interface QuestEvidenceGoalGate {
+  goal_name: string;
+  required_status: string | null;
+  refs: QuestEvidenceGoalRef[];
+}
+
+export interface QuestEvidenceSpeaker {
+  name: string;
+  source: EvidenceSpeakerSource;
+  persona: string;
+  override_key: string | null;
+  st_key: string | null;
+}
+
+/** One `NPCDialogEntry` the quest file records. */
+export interface QuestEvidenceDialogue {
+  index: number;
+  /** The entry's path (a formatted `DocPath`). */
+  field: string;
+  /** The `WizQst<id>_*` key the entry's `m_dialog` names, when it names one. */
+  dialog_key: string | null;
+  /** `true` when {@link dialog_key} is a row of **this quest's own** table. */
+  own_table: boolean;
+  text: string | null;
+  speaker: QuestEvidenceSpeaker;
+  portrait: string | null;
+  sound: string | null;
+  /** `m_cameraName`, verbatim — a display hint, never the speaker's name. */
+  camera_name: string | null;
+  actor_template_id: number | null;
+}
+
+/** One field `REFERENCE_FIELDS` declares as a reference, resolved against the synced tables. */
+export interface QuestEvidenceReference {
+  field: string;
+  value: unknown;
+  key: string;
+  sources: string[];
+  kind: string | null;
+  /** The friendly half and the single display rule's rendering, or `null` on a miss. */
+  resolved: { label: string; display: string } | null;
+}
+
+/** `GET /api/quests/:name/evidence` — the one shape both evidence endpoints answer. */
+export interface QuestEvidence {
+  quest: QuestEvidenceHeader;
+  text_rows: QuestEvidenceTextRow[];
+  goal_gates: QuestEvidenceGoalGate[];
+  dialogue: QuestEvidenceDialogue[];
+  references: QuestEvidenceReference[];
+  /** Misses are counted here, never dropped (spec-api L481-482, L453-454). */
+  warnings: string[];
+}
+
+/** TanStack Query key for one quest's evidence read (the name is part of the key). */
+export function evidenceQueryKey(name: string): readonly [string, string] {
+  return ['quest-evidence', name] as const;
+}
+
+/**
+ * `GET /api/quests/:name/evidence` — task 6.6's per-quest evidence surface, read by the evidence
+ * panel (story p6-08). A resolved live join over the indexed tables: there is no materialised
+ * evidence table, so an unknown name 404s exactly like the detail read.
+ */
+export function getQuestEvidence(name: string): Promise<QuestEvidence> {
+  return apiFetch<QuestEvidence>(`/api/quests/${encodeURIComponent(name)}/evidence`);
+}
+
 /* ------------------------------------------------------------- quests (save) */
 
 /**
@@ -920,4 +1041,88 @@ export function saveQuest(body: SaveQuestBody): Promise<SaveQuestResult> {
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/* ------------------------------------------------------- quests (scaffold) */
+
+/**
+ * `POST /api/quests/scaffold` success body (task 6.8 / story p6-09, D100/D101).
+ *
+ * `quest` is the skeleton that was written — what the editor is opened on. `link_kind`
+ * and `title_key` say what the catalog link contributed: `title_key` is non-null **only**
+ * for a direct link that resolved to exactly one `QuestTitle_*` key, so a caller can show
+ * the inferred badge without re-deriving anything.
+ *
+ * `has_definition_before` is the column **as read before the write**: the sync flips it to
+ * 1 on its next run, which is why it is named `before` rather than echoed as `true`.
+ */
+export interface ScaffoldQuestResult {
+  quest_name: string;
+  link_kind: EvidenceTitleSource;
+  title_key: string | null;
+  has_definition_before: 0 | 1;
+  outcome: 'created';
+  action: string;
+  file: string;
+  metadata: string | null;
+  commit: string;
+  branch: string;
+  commit_message: string;
+  quest: QuestObject;
+}
+
+/**
+ * `POST /api/quests/scaffold` — create the minimal `QuestTemplates/` file for a catalog
+ * quest with `has_definition = 0`, through the same save pipeline every other save uses
+ * (template + companion metadata + one commit, D100). There is no draft lifecycle.
+ *
+ * The route's refusals are actionable and typed by status: `404` when the catalog holds no
+ * such name, `409` when the quest already has a file, `400` for a name that would write
+ * outside `QuestTemplates/`. The **caller** (task 6.10's Catalog view) is the one that
+ * navigates to the editor on success — this function only writes.
+ */
+export function scaffoldQuest(questName: string): Promise<ScaffoldQuestResult> {
+  return apiFetch<ScaffoldQuestResult>('/api/quests/scaffold', {
+    method: 'POST',
+    body: JSON.stringify({ quest_name: questName }),
+  });
+}
+
+/* ------------------------------------------------- quests (coverage + catalog) */
+
+/**
+ * TanStack Query key for the coverage read (`GET /api/quests/coverage`).
+ *
+ * One key for one definition: the Quests page's header and the Catalog view share it, so a
+ * refetch after a scaffold moves both (the invalidation is the caller's, as everywhere else).
+ */
+export const QUEST_COVERAGE_QUERY_KEY = ['quest-coverage'] as const;
+
+/**
+ * `GET /api/quests/coverage` — the `coverage` view's five axes plus the corpus they were
+ * measured against (task 6.10, spec-api.md L442-464).
+ *
+ * The types live in `lib/quest-catalog.ts` beside the header builder, so the sentence and the
+ * numbers it is built from are one unit. The header is built from this response and never from
+ * a constant — the plan's 1,447 is a different quantity (see `coverageHeadline`).
+ */
+export function getQuestCoverage(): Promise<QuestCoverage> {
+  return apiFetch<QuestCoverage>(COVERAGE_PATH);
+}
+
+/** TanStack Query key for one catalog read; the filter is part of the key, so the two lists
+ * (all rows, missing-only rows) are separate cache entries rather than one that lies. */
+export function questCatalogQueryKey(missingOnly: boolean): readonly [string, boolean] {
+  return ['quest-catalog', missingOnly] as const;
+}
+
+/**
+ * `GET /api/quests/catalog` — the worklist, with `?missing_only=1` applied by the server (task
+ * 6.10). The query comes from `catalogQuery`, the pure builder the unit test pins, so the filter
+ * is never re-derived on the client.
+ */
+export function listQuestCatalog(
+  filter: CatalogFilter = { missingOnly: false },
+): Promise<QuestCatalogResult> {
+  return apiFetch<QuestCatalogResult>(catalogRequestPath(filter));
 }

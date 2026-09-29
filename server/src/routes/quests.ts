@@ -3,16 +3,33 @@ import { Router, type Response } from 'express';
 import type { ApiError } from '../../../shared/index.js';
 import { readSettings, type Db } from '../db.js';
 import { DirtyRepoError } from '../services/git.js';
+import { questEvidenceByName } from '../services/questEvidence.js';
+import {
+  listQuestCatalog,
+  MISSING_ONLY_PARAM,
+  parseMissingOnly,
+  QuestCatalogQueryError,
+  readCoverage,
+} from '../services/questCoverage.js';
 import { listQuests, QuestRequestError, readQuest, saveQuest } from '../services/quests.js';
+import {
+  parseScaffoldRequest,
+  QuestScaffoldError,
+  scaffoldQuest,
+} from '../services/questScaffold.js';
 import { createSavePipeline, type SavePipeline } from '../services/savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbIndex.js';
 
 /**
  * Quests API — task 2.5, the three endpoints of docs/spec-api.md L164-180:
  *
- * - `GET  /api/quests`        list the corpus (D12: scan + JSON5 parse per request)
- * - `GET  /api/quests/:name`  one quest's full JSON, via the D19 content-keyed index
- * - `POST /api/quests`        save `{ quest, notes?, source? }` through the task 2.4 pipeline
+ * - `GET  /api/quests`                 list the corpus (D12: scan + JSON5 parse per request)
+ * - `GET  /api/quests/:name`           one quest's full JSON, via the D19 content-keyed index
+ * - `GET  /api/quests/coverage`        the `coverage` view, both denominators + the corpus (task 6.10)
+ * - `GET  /api/quests/catalog`         the catalog worklist, `?missing_only=` narrowing to has_definition = 0 (task 6.10)
+ * - `GET  /api/quests/:name/evidence`  the per-quest evidence surface (task 6.6)
+ * - `POST /api/quests`                 save `{ quest, notes?, source? }` through the task 2.4 pipeline
+ * - `POST /api/quests/scaffold`        create the minimal skeleton for a catalog quest (task 6.8)
  *
  * The spec fixes no response shape ("List all quests" / "Single quest JSON"), so
  * the shapes the client will consume are documented on the service types
@@ -24,9 +41,20 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  *                            level, goal_count, is_mainline, modified_at, status} ],
  *                             summary: {total, extracted, reviewed, verified},
  *                             skipped: [ {file, message} ] }          (skipped = unparsable files)
+ * GET  /api/quests/coverage → { nameable, id_space, defined, missing, references,
+ *                            corpus: { spiraldb_path, quest_files } }  (task 6.10)
+ * GET  /api/quests/catalog → { quests: [ {quest_name, title, title_source, has_definition,
+ *                            reference_count} ], total, missing_only,
+ *                            corpus: { spiraldb_path, quest_files } }  (task 6.10)
  * GET  /api/quests/:name  → the parsed quest object itself (exactly what POST round-trips)
+ * GET  /api/quests/:name/evidence → { quest, text_rows, goal_gates, dialogue, references, warnings }
+ *                            (docs/spec-api.md L420-492; `services/questEvidence.ts` documents the shape)
  * POST /api/quests        → { quest_name, outcome, action, commit, branch, commit_message,
  *                             file, metadata, metadata_outcome, status, warnings }
+ * POST /api/quests/scaffold → { quest_name, link_kind, title_key, has_definition_before,
+ *                            outcome, action, file, metadata, commit, branch, commit_message, quest }
+ *                            (`services/questScaffold.ts` documents the shape; task 6.10's
+ *                            Catalog view navigates to `/quests/<quest_name>` on success)
  * ```
  *
  * **Status codes** (spec-silent, chosen here and reported to the lead):
@@ -37,6 +65,10 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbInd
  * | a schema failure (task 3.1) or a **blocking rule finding** (task 3.9) | 400 |
  * | `settings.spiraldb_path` not configured      | 400    |
  * | unknown quest name (GET `/:name`)            | 404    |
+ * | `POST /scaffold` with a name the catalog does not hold | 404 |
+ * | `POST /scaffold` with a name that would write outside `QuestTemplates/` (ac3) | 400 |
+ * | `POST /scaffold` for a quest that already has a file | 409 |
+ * | malformed `?missing_only=` (not 1/0/true/false) | 400 |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14) | 409 |
  * | anything else thrown by the pipeline         | 500    |
  *
@@ -122,6 +154,13 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       } satisfies ApiError & { fields?: Record<string, string[]> });
       return;
     }
+    if (error instanceof QuestScaffoldError) {
+      // Task 6.8: the scaffold's own refusals carry the status the service chose (400 for a
+      // name or path the caller can fix, 404 for a name the catalog does not hold, 409 for a
+      // quest that already has a file). They are the actionable messages verbatim.
+      res.status(error.status).json({ error: error.message } satisfies ApiError);
+      return;
+    }
     if (error instanceof DirtyRepoError) {
       res.status(409).json({ error: error.message } satisfies ApiError);
       return;
@@ -139,6 +178,81 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
     }
     try {
       res.json(await listQuests({ db, spiraldbPath: root }));
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `GET /api/quests/coverage` — task 6.10 / story p6-11 (docs/spec-api.md L442-464).
+   *
+   * Serves the `coverage` **view** so the Quests-page header and the Catalog view read one
+   * definition. Registered **before** `/:name`, which would otherwise capture `coverage` as a
+   * quest name — the spec states that ordering as part of the contract (spec-api.md L444-445).
+   *
+   * Unlike the list it needs **no** SpiralDB root: the five axes live in the database, and the
+   * corpus block reports the resolved path plus the file count it just measured. A machine with
+   * no clone therefore still renders the header (with `quest_files: 0`) instead of a 400.
+   */
+  router.get('/coverage', (_req, res) => {
+    try {
+      res.json(readCoverage(db));
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `GET /api/quests/catalog` — task 6.10 / story p6-11: the worklist behind the Catalog view.
+   *
+   * `?missing_only=1` narrows to `has_definition = 0` **in SQL** — the filter is a predicate over
+   * the catalog, not a client-side re-derivation of `nameable - defined` (which would be a second
+   * definition of "missing" and would silently disagree on a filtered read). A malformed value is
+   * the 400 above, never a silent clamp.
+   *
+   * Registered before `/:name` for the same reason as `/coverage`; the spec already accepts that a
+   * quest literally named `catalog` is unreachable by its detail route (spec-api.md L1023-1027).
+   */
+  router.get('/catalog', (req, res) => {
+    try {
+      const missingOnly = parseMissingOnly(req.query[MISSING_ONLY_PARAM]);
+      res.json(listQuestCatalog(db, { missingOnly }));
+    } catch (error) {
+      if (error instanceof QuestCatalogQueryError) {
+        res.status(400).json({ error: error.message } satisfies ApiError);
+        return;
+      }
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `GET /api/quests/:name/evidence` — task 6.6.
+   *
+   * Declared before `/:name` so the two-nearest-segment path is unambiguous to a reader (Express
+   * already distinguishes them — `/:name` matches one segment — but the order makes the intent
+   * explicit). The name must be in the **catalog** (`quests`); a name nothing names is the spec's
+   * 404 with its exact text.
+   */
+  router.get('/:name/evidence', (req, res) => {
+    const root = spiraldbRoot(res);
+    if (root === undefined) {
+      return;
+    }
+    try {
+      const { index } = runtimeFor(root);
+      // The file behind the name is read fresh: its own string values decide `used_by_this_file`,
+      // and a file edited outside the tool must not be judged against a stale scan.
+      index.rebuildType('questtemplates');
+
+      const result = questEvidenceByName({ db, index }, req.params.name);
+      if (result.kind === 'unknown') {
+        res.status(404).json({
+          error: `Unknown quest "${req.params.name}"`,
+        } satisfies ApiError);
+        return;
+      }
+      res.json(result.evidence);
     } catch (error) {
       fail(res, error);
     }
@@ -163,6 +277,31 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
         return;
       }
       res.json(detail.quest);
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `POST /api/quests/scaffold` — task 6.8 / story p6-09.
+   *
+   * Body `{ quest_name, notes? }`. The service owns the rules (the target-path guard,
+   * the catalog row, the direct-link title, the schema pass) and its own status codes;
+   * this handler only reads `settings.spiraldb_path` and hands over the shared runtime.
+   */
+  router.post('/scaffold', async (req, res) => {
+    const root = spiraldbRoot(res);
+    if (root === undefined) {
+      return;
+    }
+    try {
+      const { name, notes } = parseScaffoldRequest(req.body);
+      const { index, pipeline } = runtimeFor(root);
+      // The catalog row and the string table are read from the database; the index must
+      // reflect disk so the pipeline's create/update decision is not made against a stale
+      // scan (the same reason `saveQuest` refreshes both families).
+      index.rebuildType('questtemplates');
+      res.json(await scaffoldQuest({ db, index, pipeline, name, notes }));
     } catch (error) {
       fail(res, error);
     }

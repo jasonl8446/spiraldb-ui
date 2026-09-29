@@ -134,6 +134,173 @@ CREATE TABLE string_table (
 );
 ```
 
+### Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)
+
+Migration `0002_quest_catalog.sql`. The game files hold **no quest definitions** (D96: 183,676
+objects censused, zero `QuestTemplate`), so the quest *catalog* is a derived table set: which quests
+the world names, which ids the client holds text for, and what references each one. It is derived
+from the WADs by the sync and is **never hand-maintained**.
+
+`quests` gains four columns; its `quest_name` primary key is unchanged, and the table now holds
+**two row kinds** — corpus rows (a `QuestTemplates/` file exists → `has_definition = 1`) and
+catalog-only rows (the world names it, no file yet → `has_definition = 0`). **This amends D21**
+(P6-4): the `quests` table is no longer a corpus mirror; it is the catalog, and the corpus is the
+subset of it that has definitions.
+
+```sql
+-- quests: the catalog. `quest_name` is the operational key (the world gates quests by name).
+ALTER TABLE quests ADD COLUMN has_definition INTEGER NOT NULL DEFAULT 0;  -- 1 = a QuestTemplates/ file exists
+ALTER TABLE quests ADD COLUMN link_kind TEXT;      -- 'direct' | 'inferred' | 'none' (how the title/id link was established)
+ALTER TABLE quests ADD COLUMN title_source TEXT;   -- 'direct' | 'inferred' | 'none' (P6-11 provenance of that link)
+ALTER TABLE quests ADD COLUMN reference_count INTEGER NOT NULL DEFAULT 0;  -- referencing {wad, entry} pairs
+
+-- World evidence per quest: what referenced it, where, and the goal gate it carries.
+CREATE TABLE IF NOT EXISTS quest_catalog_refs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quest_name TEXT NOT NULL REFERENCES quests(quest_name),
+  wad TEXT NOT NULL,             -- WAD file path (repo-relative)
+  entry TEXT NOT NULL,           -- entry name inside the WAD
+  class TEXT NOT NULL,           -- the NDJSON row's class ('WizZoneData' | 'WizZoneTriggers'); the nested
+                                 -- requirement nodes carry no `$type` (measured: 0 of 5,282), so the
+                                 -- requirement class is recorded per-row separately by the extractor
+  goal_name TEXT,                -- the goal gate's name, when the reference carries one
+  required_status TEXT,          -- that gate's m_requiredStatus, when present
+  UNIQUE(quest_name, wad, entry, class, goal_name)
+);
+CREATE INDEX IF NOT EXISTS idx_quest_catalog_refs_quest ON quest_catalog_refs(quest_name);
+CREATE INDEX IF NOT EXISTS idx_quest_catalog_refs_wad ON quest_catalog_refs(wad, entry);
+
+-- The second tier (P6-3): the ~4,830-quest id space the client holds text for. Never a work item.
+CREATE TABLE IF NOT EXISTS quest_ids (
+  quest_id INTEGER PRIMARY KEY,  -- the numeric id in QuestTitle_<id> / WizQst<id>_*
+  title_key TEXT,                -- 'QuestTitle_1ED8D' when a key exists
+  title TEXT,                    -- resolved title text
+  text_rows INTEGER NOT NULL DEFAULT 0,  -- rows in the quest's own WizQst<id>_* tables
+  matched_quest_name TEXT,       -- the catalog name this id belongs to, when linked
+  link_kind TEXT,                -- 'direct' | 'inferred' | 'none'
+  inference_basis TEXT           -- why an 'inferred' link was accepted (P6-11) — never a bare claim
+);
+CREATE INDEX IF NOT EXISTS idx_quest_ids_matched ON quest_ids(matched_quest_name);
+
+-- One definition of "how much of the catalog is built", so the UI never hard-codes a number.
+CREATE VIEW IF NOT EXISTS coverage AS
+SELECT
+  (SELECT count(*) FROM quests)                          AS nameable,   -- catalog tier (>= 1,447 world-named)
+  (SELECT count(*) FROM quest_ids)                       AS id_space,   -- second tier (~4,830 ids with text)
+  (SELECT count(*) FROM quests WHERE has_definition = 1) AS defined,    -- corpus rows in the corpus under test
+  (SELECT count(*) FROM quests WHERE has_definition = 0) AS missing,
+  (SELECT count(*) FROM quest_catalog_refs)              AS "references";  -- quoted: REFERENCES is a SQLite keyword
+```
+
+**Note (added by p6-05): `references` is a SQLite keyword and must be quoted as `"references"`.** Written bare — as this
+block first did — the view does not parse (`near "references": syntax error`, reproduced independently). Quoting keeps
+every column name, and therefore the view's contract, identical to what the API and UI read. The four `quests` column
+adds are *also* not expressible as idempotent DDL: SQLite has no `ADD COLUMN IF NOT EXISTS` and the runner re-executes
+every migration file on each open, so they are applied by a `PRAGMA table_info`-guarded step in `server/src/db.ts` that
+issues only the missing ALTERs — a data-driven check, not error-swallowing, so a real duplicate-column failure still
+throws loudly.
+
+**Reading the `coverage` view.** `nameable` and `id_space` are the two honest denominators (P6-15/
+D110): "`defined` of `nameable` nameable of `id_space` quests the client holds text for". `defined`
+reads **322** against the D17 clone and **328** against the owner's fork — the corpus is always named
+with its number, never one quoted for the other. `nameable` is `count(*)` on `quests`, so it is
+**≥ 1,447** (a corpus quest the world does not name is still a row); the UI reads it from the view.
+
+**Name collision, stated so no reader conflates them.** The `quests.title_source` *column* is the
+catalog link's provenance (`direct` | `inferred` | `none`, P6-11). The quests **list** endpoint's
+`title_source` *field* (see [spec-api.md](./spec-api.md)) is the per-file title resolution
+(`resolved` | `rawKey` | `missing`) and is unchanged by Phase 6; the evidence endpoint's
+`title_source` is the column. Same name, two meanings, two homes — a reader who assumes one will
+mis-read the other.
+
+**An inferred link never travels alone.** `quest_ids.inference_basis` records what the interpolation
+rested on — the anchored neighbours either side of the gap — **and** the two conditions the candidate
+had to pass: a `QuestTitle_*` key exists *and* its `WizQst` table is non-empty (P6-11). That is the
+column p6-04-ac2 means by "the row carries `link=inferred` **plus its basis**": labelling a guess
+without recording its basis would make an inferred title indistinguishable from a verified one, and
+the run's own rule is that inferred material is shown, labelled, and **never written** into a
+loadable file (P6-6). The evidence endpoint surfaces the basis beside the label.
+
+**Sync staging (inside the existing transaction, P6-4 keeps the transactional replace).** Corpus
+rows are written first (the D19 scan the sync already performs), then catalog rows are merged, then
+`quest_catalog_refs` and `quest_ids` are replaced, then `has_definition`/`link_kind`/`title_source`/
+`reference_count` are recomputed from what was merged. The stage is **additive** and idempotent:
+after the first sync, later syncs merge the same rows. If `tools/bin/wad-scan` is absent the stage is
+recorded as `skipped` with a message and the sync still succeeds (D55's CI has no .NET SDK), leaving
+the corpus rows' `has_definition` correct.
+
+### Breadth Tables (Phase 6, migration `0004_breadth_catalog.sql`)
+
+The breadth stage (task 6.9) fills two families the client ships but the corpus never names, plus the real
+zone data that replaces D21's corpus-derived fallback. **All three carry the D35 manifest id.**
+
+```sql
+CREATE TABLE IF NOT EXISTS recipes (
+  template_id INTEGER PRIMARY KEY,  -- from TemplateManifest_deser.json, joined via source_path
+  name TEXT NOT NULL,
+  source_path TEXT NOT NULL         -- the manifest's own path key, e.g. '|Recipes|WorldData|ObjectData/…'
+);
+CREATE TABLE IF NOT EXISTS decks (
+  template_id INTEGER PRIMARY KEY,
+  deck_name TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  source_path TEXT NOT NULL
+);
+```
+
+- **`recipes` (12,402)** comes from **`RecipeTemplate`** objects, which live in **`Recipes-WorldData.wad`** —
+  a wad the sync's `runUnpack` never unpacks — so the stage extracts them with the 6.2 tool over a scoped
+  archive list rather than from the unpack tree. Measured: 12,402 rows, 12,402 distinct `template_id`, 0
+  empty `source_path`.
+- **`decks` (599)** comes from **`DeckTemplate`**, which *is* in Root.wad's tree. Measured: 599 rows, 599
+  distinct `template_id`, 599 distinct `deck_name`. **A `DeckTemplate`'s only name is its own key** (586 of
+  599), so a row of a family paired against `decks` would render the degenerate `X (X)` — see the note on
+  CreatureSpellbook in [spec-ui-design.md](./spec-ui-design.md).
+- **Neither family carries an `m_templateID`** (0 of 12,402 and 0 of 599), so the manifest is their
+  **identity**, not a cross-check. The manifest keys world-wad templates under a `|WadStem|` prefix
+  (`|Recipes|WorldData|ObjectData/…`), and 36 recipe entries need a repair: their manifest keys carry two
+  leading NUL bytes and an `.xml` truncated to `.x`.
+- **`zones` is reconciled, not replaced.** The stage unions the real `WizZoneData` names (3,356) with the
+  corpus-derived rows, keeping a corpus path the new source does not cover (`Karamelle/KM_Z06_Mines`) so no
+  dropdown regresses: measured **1,241 → 3,357**, and all **149** distinct corpus `m_destinationZone` values
+  resolve afterwards (112 before). `sync_history.zones_count` records the reconciled table's count.
+- **`m_zoneDisplayName` is a `string_table` KEY**, not display text (`WizardZone_00000485` → "Garden Of
+  Hesperides"; all 1,108 distinct values are keys — 1,099 `WizardZone_*` plus 9 `Zone_*`/`Housing_*`), so the
+  stage resolves it through a ladder inside the transaction: **resolved value → the humanised path (what
+  every row showed before this story) → the raw key**. Measured: 3,339 of 3,357 labels are real game labels,
+  **0 are bare keys**, 18 fall back to the humanised path. Storing the key verbatim would have replaced
+  `Aquila / AQ Z00 Hub` with `WizardZone_00000485`.
+
+### Persona Index (Phase 6, migration `0003_persona_index.sql`)
+
+The speaker ladder an evidence response needs (`m_nameOverride` → composed `m_nameSTKey` → the persona's template
+name) cannot be a pure request-time join: `m_persona` structs are **inline structs, not templates**, so they are
+absent from the manifest's id space, and `loadTemplateManifest` deliberately does not retain its 17 MB document.
+The sync therefore persists the two facts the ladder needs, and the request path joins against them.
+
+```sql
+-- One row per persona object name; an INDEX over the client's own strings, not a materialised evidence table.
+CREATE TABLE IF NOT EXISTS persona_index (
+  object_name TEXT PRIMARY KEY,  -- 'WC-RAV-NPC02' (the persona name minus a trailing '_Persona')
+  template_id INTEGER,           -- from the manifest's basename→id map, kept only when `npcs` can name it
+  first_key TEXT,                -- the persona struct's `m_firstName` string-table KEY ('WC-NPCs_00000083')
+  last_key TEXT,                 -- its `m_lastName` key ('WC-NPCs_00000084')
+  title_key TEXT
+);
+```
+
+**Built by the sync**, inside the existing run: `buildManifestPersonaRows` filters the manifest it already loads to
+the ids `npcs` can name, and `scanPersonaStructs` walks the unpack tree's **`Cinematics/`** root for the
+`m_firstName`/`m_lastName` components. Measured on `V_r806919.Wizard_1_610`: **23,003** persona object names, of
+which **3** carry components — the components are rare because most speakers resolve by template name or override.
+`WC-RAV-NPC02` carries `WC-NPCs_00000083` = "Cyrus" / `WC-NPCs_00000084` = "Drake", which is what composes "Cyrus
+Drake" for `WC-CYCLOPS-MAIN-002`.
+
+**Two rules for readers.** (a) The **adjacent-key heuristic must not be used**: `WC-NPCs_00000082` = "Cyrus Drake"
+sits next to `_83` = "Cyrus" and `_84` = "Drake", but of 1,149 multi-word `WC-NPCs` rows whose neighbours both
+exist only **167 (15%)** follow that convention — a coincidence, not a rule. (b) `Persona,First` / `Persona,Last`
+(78 / 57 rows) are an **unrelated roster** and do not hold these components; do not compose from them.
+
 ### Sync Metadata
 
 ```sql
@@ -202,6 +369,14 @@ Quest metadata format:
   "ModifiedBy": "{current user}"
 }
 ```
+
+**`Description` carries the tool's own provenance** (added by p6-09, plan task 6.8). It is the only
+free-text field of this fixed seven-key shape, so it is where a *creating* flow states how the
+object came to exist — the extraction save already does (`Quest extracted from packet capture.`),
+and a scaffold-from-catalog save writes
+`Scaffolded from the quest catalog (link_kind: {direct|inferred|none}; title {key} | no title …)`,
+naming the link kind and whether an `m_questTitle` key was written. No eighth key is added: a
+new key would break the shape every reader and `QUEST_METADATA_KEYS` pin.
 
 ## Git Branch Strategy
 

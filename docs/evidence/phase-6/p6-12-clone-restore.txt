@@ -1,0 +1,13 @@
+=== the D17 clone after the restore (five axes + the corpus shape) ===
+axis                       expected                                    actual                                      ok
+branch                     content/2026-09-27                          content/2026-09-27                          ok
+HEAD                       18dc92477d54b1e911796960407ce7710e703697    18dc92477d54b1e911796960407ce7710e703697    ok
+main ref                   f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    ok
+git rev-list --count HEAD  42                                          42                                          ok
+git status --porcelain     (empty)                                     (empty)                                     ok
+QuestTemplates/*.json      322                                         322                                         ok
+local branches (set)       content/2026-09-26 content/2026-09-27 main  content/2026-09-26 content/2026-09-27 main  ok
+
+  branches now: content/2026-09-26 content/2026-09-27 main
+  remotes now : origin origin/main
+  verdict     : restored

@@ -1,0 +1,75 @@
+p6-08 (story) / plan task 6.7 — tier-2 clone restore proof: the LIVE stack's own save
+date: 2026-09-28T19:20:19-04:00
+stack: PORT=3191 VITE_API_PORT=3191 VITE_PORT=5191 SPIRALDB_UI_DB=/tmp/p608.db
+       SPIRALDB_PATH=$PWD/data/test-spiraldb GIT_BRANCH=content/2026-09-27 (PUT /api/settings)
+corpus: the D17 clone (data/test-spiraldb) — 322 QuestTemplates/*.json
+
+=== the LIVE UI's insert + Save: the raw git diff of the save commit ===
+eeeb3c4 spiraldb: update quest WC-CYCLOPS-MAIN-002
+18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+
+diff --git a/QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json b/QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
+index 0d64c8a..69ef5b7 100644
+--- a/QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
++++ b/QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
+@@ -3,7 +3,7 @@
+   "Name": "WC-CYCLOPS-MAIN-002",
+   "Description": "Quest extracted from packet capture.",
+   "CreatedAt": "2026-09-26T12:42:36.380Z",
+-  "ModifiedAt": "2026-09-26T12:42:36.380Z",
++  "ModifiedAt": "2026-09-28T23:19:56.990Z",
+   "CreatedBy": "Lead Verify",
+-  "ModifiedBy": "Lead Verify"
++  "ModifiedBy": "P6-08 Tier-2"
+ }
+diff --git a/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json b/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+index a7ccb18..97f6654 100644
+--- a/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
++++ b/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+@@ -34,7 +34,7 @@
+                 "m_guiDisplay": "",
+                 "m_maxTimeSeconds": -1,
+                 "m_invisible": false,
+-                "m_dialog": "WizQst17318F_00000006",
++                "m_dialog": "WizQst17318E_00000006",
+                 "m_picture": "GUI/NpcPortraits/Portrait_Human_Drake_A_NPC.dds",
+                 "m_soundFile": "|Sound_Dialogue_005|WorldData|Sound/Dialogue/CyrusDrake_005_01.mp3",
+                 "m_action": "",
+=== changed files (exactly the quest file and its companion metadata) ===
+QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
+QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+
+=== BEFORE the restore ===
+branch            : content/2026-09-27
+HEAD              : eeeb3c42af2e8067b391252d66065f7db8d65c9f
+main ref          : f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+git rev-list --count HEAD : 43
+git status --porcelain    : ''
+QuestTemplates/*.json     : 322
+local refs:
+18dc92477d54b1e911796960407ce7710e703697 refs/heads/content/2026-09-26
+eeeb3c42af2e8067b391252d66065f7db8d65c9f refs/heads/content/2026-09-27
+f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 refs/heads/main
+
+$ git -C data/test-spiraldb reset --hard 18dc924
+HEAD is now at 18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+
+=== AFTER the restore: the five axes + the corpus shape ===
+branch            : content/2026-09-27
+HEAD              : 18dc92477d54b1e911796960407ce7710e703697
+main ref          : f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+git rev-list --count HEAD : 42
+git status --porcelain    : ''
+QuestTemplates/*.json     : 322
+local refs:
+18dc92477d54b1e911796960407ce7710e703697 refs/heads/content/2026-09-26
+18dc92477d54b1e911796960407ce7710e703697 refs/heads/content/2026-09-27
+f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 refs/heads/main
+
+refs md5 after                  : 45b4157b0132ecec1a6e6b6dc964c1c5
+refs md5 before this run (19:0x): 45b4157b0132ecec1a6e6b6dc964c1c5
+D76(b)'s shape (a branch left behind by reset --hard) is absent: the local ref list is
+byte-identical and content/2026-09-27 is back at 18dc924.
+
+=== the quest file is back to HEAD (empty diff) ===
+(no output above = the file is byte-identical to HEAD again)

@@ -1,0 +1,29 @@
+### the fix for the one write the first version made into the Aurorium tree
+### (SQLite opened the sibling's live DB read-only; that bumped aurorium.db-shm's mtime)
+
+$ stat -c '%n mtime=%y' ... before
+/home/jason/Documents/git-projects/Aurorium/aurorium.db  mtime=2026-09-24 10:19:08.458452448 -0400
+/home/jason/Documents/git-projects/Aurorium/aurorium.db-wal  mtime=2026-09-24 10:19:11.673503945 -0400
+/home/jason/Documents/git-projects/Aurorium/aurorium.db-shm  mtime=2026-09-29 00:04:18.861509119 -0400
+
+$ npm run imlight:boot -- boot --clean   (the DB copy now goes through a cp + a staging copy)
+
+> spiraldb-ui@0.1.0 imlight:boot
+> tsx scripts/imlight-boot.ts boot --clean
+
+[harness] 12369 is free — starting the workspace Aurorium
+[harness] [patch] endpoint 127.0.0.1:1 verified refused (nothing to fetch from)
+[harness] Aurorium identity: GET /latest returned the expected revision V_r806919.Wizard_1_610
+[harness] Aurorium pid 1801051 recorded as OWNED (log -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run/boot.txt)
+[harness] freshness: code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+[harness] freshness inputs: dll 2026-09-27T14:32:58.321Z, 14 commit(s) in the 14-day window
+[harness] --clean: removing /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] copying the prebuilt output /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0 -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+
+$ stat -c '%n mtime=%y' ... after
+/home/jason/Documents/git-projects/Aurorium/aurorium.db  mtime=2026-09-24 10:19:08.458452448 -0400
+/home/jason/Documents/git-projects/Aurorium/aurorium.db-wal  mtime=2026-09-24 10:19:11.673503945 -0400
+/home/jason/Documents/git-projects/Aurorium/aurorium.db-shm  mtime=2026-09-29 00:04:18.861509119 -0400
+
+the workspace copy still holds the right revision:
+  revisions: [{"revision_name":"V_r806919.Wizard_1_610","number":806919}] assets: 3825

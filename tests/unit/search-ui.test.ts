@@ -15,6 +15,7 @@ import {
   searchPaletteState,
   searchResultHref,
   searchResultKey,
+  searchResultLabel,
   searchResultSecondary,
   SEARCH_IDLE_MESSAGE,
   SEARCH_LOADING_MESSAGE,
@@ -127,17 +128,62 @@ describe('searchResultHref — the existing D4 mapping, not a second one', () =>
   });
 });
 
+describe('searchResultLabel — the pair, through the one display rule', () => {
+  it('pairs the row’s name with its key, and collapses the identity case', () => {
+    // A navigable row: the friendly name and the key it belongs to (D105/P6-16).
+    expect(searchResultLabel(row())).toBe('Wizard Tours (DS-ACAD-C01-001)');
+    // A TemplateID-family row matched on its NPC's name: the key is the template id.
+    expect(
+      searchResultLabel(
+        row({
+          object_type: 'npc_inventory',
+          object_key: '38168',
+          label: '38168',
+          name: 'Merle Ambrose',
+        }),
+      ),
+    ).toBe('Merle Ambrose (38168)');
+    // No name: the label alone, never `X ()`.
+    expect(searchResultLabel(row({ name: null }))).toBe('DS-ACAD-C01-001');
+    // A routeless name row whose label *is* its name: no `Obsidian Amulet (Obsidian Amulet)`.
+    expect(nameEqualsLabel()).toBe('Obsidian Amulet');
+  });
+});
+
 describe('searchResultSecondary', () => {
-  it('shows the friendly title beside the key, and nothing when it would repeat the label', () => {
-    expect(searchResultSecondary(row())).toBe('Wizard Tours');
-    expect(searchResultSecondary(row({ name: null }))).toBeNull();
-    expect(researchSecondaryNameEqualsLabel()).toBeNull();
+  it('carries an NPC row’s other name strings, and nothing for a single-name row', () => {
+    // One NPC, two measured granularities (P6-17/D112): `Gretta` and `Gretta Darkkettle`.
+    expect(
+      searchResultSecondary(
+        row({
+          object_type: null,
+          object_key: null,
+          label: 'Gretta Darkkettle',
+          name: 'Gretta Darkkettle',
+          aliases: ['Gretta', 'Gretta Darkkettle'],
+        }),
+      ),
+    ).toBe('Gretta');
+    // The alias that *is* the label is not repeated.
+    expect(
+      searchResultSecondary(
+        row({
+          object_type: null,
+          object_key: null,
+          label: 'Merle Ambrose',
+          name: 'Merle Ambrose',
+          aliases: ['Merle Ambrose'],
+        }),
+      ),
+    ).toBeNull();
+    // Every other group carries its one name in the pair itself.
+    expect(searchResultSecondary(row())).toBeNull();
   });
 });
 
 /** The routeless-name case, written as its own function so the assertion reads plainly. */
-function researchSecondaryNameEqualsLabel(): string | null {
-  return searchResultSecondary(
+function nameEqualsLabel(): string {
+  return searchResultLabel(
     row({ object_type: null, object_key: null, label: 'Obsidian Amulet', name: 'Obsidian Amulet' }),
   );
 }

@@ -3,6 +3,16 @@ import path from 'node:path';
 
 import { readSettings, type Db } from '../../db.js';
 import {
+  collectBreadth,
+  reconcileZones,
+  writeBreadth,
+  NOT_COLLECTED_BREADTH,
+  type CollectedBreadth,
+  type BreadthReport,
+  type DeckRow,
+  type CollectedRecipe,
+} from './breadth.js';
+import {
   buildDropTableRows,
   buildQuestRows,
   buildZoneRows,
@@ -18,6 +28,19 @@ import {
   loadTemplateManifest,
   type ManifestIdReport,
 } from './manifest.js';
+import {
+  collectQuestCatalog,
+  notRunQuestCatalogReport,
+  writeQuestCatalog,
+  type CollectedQuestCatalog,
+  type QuestCatalogReport,
+} from './questCatalog.js';
+import {
+  buildManifestPersonaRows,
+  mergePersonaStructs,
+  scanPersonaStructs,
+  type PersonaIndexRow,
+} from './personaIndex.js';
 import { resolveRevision } from './revision.js';
 import { buildStringTableRows, type StringTableRow } from './stringtable.js';
 import { scanTemplateTree, type ItemRow, type NpcRow, type SpellRow } from './templates.js';
@@ -35,7 +58,9 @@ import { runUnpack, UnpackError } from './unpack.js';
  * settings → resolveRevision → runUnpack → loadTemplateManifest → scanLangDir ┐
  *                                        ↘ scanTemplateTree(manifest)
  *                                        ↘ buildQuest/Zone/DropTableRows
- *                                        → ONE transaction: DELETE ×7 + bulk INSERT + sync_history
+ *                                        ↘ collectQuestCatalog (wad-scan extract, temp NDJSON)
+ *                                        → ONE transaction: DELETE ×9 + bulk INSERT
+ *                                          + the quest catalog stage + sync_history
  * ```
  *
  * ## Id provenance (D35)
@@ -47,11 +72,12 @@ import { runUnpack, UnpackError } from './unpack.js';
  *
  * ## Transaction contract
  *
- * All seven friendly-name tables and the `success` `sync_history` row are
- * replaced in **one** better-sqlite3 transaction. Any throw rolls the whole thing
- * back — the previous contents of the seven tables survive untouched — and a
- * **separate** transaction then writes a `failed` `sync_history` row with
- * `error_message`, so `GET /api/sync/status` reports the failure.
+ * All seven friendly-name tables, **both catalog tables** (task 6.4) and the
+ * `success` `sync_history` row are replaced in **one** better-sqlite3 transaction.
+ * Any throw rolls the whole thing back — the previous contents of those tables
+ * survive untouched — and a **separate** transaction then writes a `failed`
+ * `sync_history` row with `error_message`, so `GET /api/sync/status` reports the
+ * failure.
  *
  * `status` is `'success'` or `'failed'` only. `'partial'` (the schema's third
  * value) is deliberately not produced: a sync is all-or-nothing per the
@@ -72,6 +98,12 @@ export interface SyncCounts {
   zones: number;
   drop_tables: number;
   string_table: number;
+  /** Rows written to `persona_index` (task 6.6) — the speaker ladder's index. */
+  persona_index: number;
+  /** Rows written to `recipes` (task 6.9). */
+  recipes: number;
+  /** Rows written to `decks` (task 6.9). */
+  decks: number;
 }
 
 export const ZERO_SYNC_COUNTS: SyncCounts = {
@@ -82,6 +114,9 @@ export const ZERO_SYNC_COUNTS: SyncCounts = {
   zones: 0,
   drop_tables: 0,
   string_table: 0,
+  persona_index: 0,
+  recipes: 0,
+  decks: 0,
 };
 
 export type SyncStatus = 'success' | 'failed';
@@ -158,6 +193,17 @@ export interface SyncDeps {
   buildQuestRows: typeof buildQuestRows;
   buildZoneRows: typeof buildZoneRows;
   buildDropTableRows: typeof buildDropTableRows;
+  /**
+   * The catalog stage's process half: `wad-scan extract` over the revision's `Data/GameData`.
+   * Injected so no unit test builds or spawns a .NET binary (task 6.4).
+   */
+  collectQuestCatalog: typeof collectQuestCatalog;
+  /**
+   * The breadth stage's process half: three scoped `wad-scan extract` runs (task 6.9).
+   * Injected so no unit test builds or spawns a .NET binary — and so the skipped path
+   * (no tool) is exercised without one.
+   */
+  collectBreadth: typeof collectBreadth;
 }
 
 export const defaultSyncDeps: SyncDeps = {
@@ -169,6 +215,8 @@ export const defaultSyncDeps: SyncDeps = {
   buildQuestRows,
   buildZoneRows,
   buildDropTableRows,
+  collectQuestCatalog,
+  collectBreadth,
 };
 
 export interface RunSyncOptions {
@@ -198,6 +246,25 @@ export interface SyncTimings {
   writeMs: number;
 }
 
+/**
+ * A `--spiraldb` / `SPIRALDB_PATH` override changes which corpus the **tables** are built
+ * from, but not the persisted `settings.spiraldb_path` that the app's own reads (the quests
+ * list, the evidence endpoints) use. The two can then name different corpora, and joining
+ * across them is **silent**: measured during p6-07, a first live run reported 26 used / 4
+ * available instead of the true 22 / 8 because the tables came from the D17 clone while the
+ * quest file came from the owner fork. Warn — never mutate the setting, because an override
+ * is the caller's stated intent and persisting it would be a surprise.
+ */
+export function describeCorpusOverride(
+  effective: string,
+  setting: string | undefined,
+): string | null {
+  if (effective === '' || setting === undefined || setting === '' || setting === effective) {
+    return null;
+  }
+  return `corpus override: the tables are built from ${effective}, but settings.spiraldb_path is ${setting} — the app's own reads use the setting, so a request can join two corpora. Set the same path in Settings before trusting a live result.`;
+}
+
 export interface RunSyncResult {
   status: SyncStatus;
   /** Resolved revision, or `null` when resolution itself failed. */
@@ -216,6 +283,16 @@ export interface RunSyncResult {
   /** The unpack tree used (`null` when resolution failed before one existed). */
   treeDir: string | null;
   timings: SyncTimings;
+  /** The catalog stage's outcome, counts and sync-time hold-out (task 6.4). Always present. */
+  catalog: QuestCatalogReport;
+  /** The breadth stage's outcome, raw counts and dropped rows (task 6.9). Always present. */
+  breadth: BreadthReport;
+  /**
+   * Set when this run's corpus override differs from `settings.spiraldb_path`, so the
+   * summary can say the tables and the app's reads name different corpora
+   * ({@link describeCorpusOverride}). Optional, so result fixtures need not carry it.
+   */
+  corpusOverrideWarning?: string | null;
   errorMessage?: string;
 }
 
@@ -231,14 +308,26 @@ export function formatSyncTimestamp(date: Date): string {
  */
 export type SyncRunner = (options: RunSyncOptions) => Promise<RunSyncResult>;
 
-/** Every table the transactional replace owns, in insert order. */
+/**
+ * Every table the transactional replace owns, in delete order.
+ *
+ * `quest_catalog_refs` and `quest_ids` lead the list (task 6.4): the refs carry a foreign key to
+ * `quests(quest_name)` with no `ON DELETE` clause and `openDb` switches `foreign_keys` on, so a
+ * refs row still present when `quests` is deleted would fail the whole transaction. Both are
+ * replaced on every sync — including the `skipped` path, where they end up empty.
+ */
 const REPLACED_TABLES = [
+  'quest_catalog_refs',
+  'quest_ids',
+  'persona_index',
   'string_table',
   'items',
   'spells',
   'npcs',
   'quests',
   'zones',
+  'decks',
+  'recipes',
   'drop_tables',
 ] as const;
 
@@ -250,17 +339,34 @@ interface SyncRows {
   quests: QuestRow[];
   zones: ZoneRow[];
   drop_tables: DropTableRow[];
+  /** D35-keyed rows `writeBreadth` inserts inside the same transaction (task 6.9). */
+  recipes: CollectedRecipe[];
+  decks: DeckRow[];
 }
 
 /**
- * Replaces the seven friendly-name tables plus the `success` history row inside
- * one transaction. Throws (and therefore rolls back) on the first bad row.
+ * Replaces the seven friendly-name tables (plus the two catalog tables) and writes the `success`
+ * history row inside one transaction, then stages the quest catalog in the same transaction.
+ * Throws (and therefore rolls back) on the first bad row.
  *
  * Prepared once per run: the bulk `string_table` insert is ~217k rows, so the
  * statement is compiled once and reused, with no per-row string building beyond
  * the key the builder already produced.
+ *
+ * The corpus quest rows go in first, each with `has_definition = 1` — they are the subset of the
+ * catalog that has a file (spec L144-148) — then {@link writeQuestCatalog} merges the catalog
+ * rows, replaces the refs and ids, and recomputes the four derived columns from what it merged.
  */
-function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: string): void {
+function replaceTables(
+  db: Db,
+  rows: SyncRows,
+  revision: string,
+  timestamp: string,
+  catalog: CollectedQuestCatalog,
+  corpusPath: string | null,
+  personaRows: readonly PersonaIndexRow[],
+  breadth: CollectedBreadth,
+): { catalog: QuestCatalogReport; breadth: BreadthReport } {
   const insertString = db.prepare(
     'INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)',
   );
@@ -268,18 +374,28 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
   const insertSpell = db.prepare('INSERT INTO spells (template_id, name, school) VALUES (?, ?, ?)');
   const insertNpc = db.prepare('INSERT INTO npcs (template_id, name, npc_type) VALUES (?, ?, ?)');
   const insertQuest = db.prepare(
-    'INSERT INTO quests (quest_name, title, level, is_mainline) VALUES (?, ?, ?, ?)',
-  );
-  const insertZone = db.prepare(
-    'INSERT INTO zones (zone_path, display_name, world) VALUES (?, ?, ?)',
+    `INSERT INTO quests
+       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
+     VALUES (?, ?, ?, ?, 1, 'none', 'none', 0)`,
   );
   const insertDropTable = db.prepare('INSERT INTO drop_tables (name, description) VALUES (?, ?)');
+  // The speaker ladder's index (task 6.6): one row per persona object name, written inside the
+  // same transaction as the `npcs` rows it resolves against.
+  const insertPersona = db.prepare(
+    `INSERT INTO persona_index (object_name, template_id, first_key, last_key, title_key)
+     VALUES (?, ?, ?, ?, ?)`,
+  );
+  // `zones_count` records the rows the reconciled `zones` table ends up with (task 6.9), not the
+  // corpus scan's own row count — the two are different numbers once the WizZoneData names are
+  // merged in, and a count that names a table must be that table's count.
   const insertHistory = db.prepare(
     `INSERT INTO sync_history
        (sync_timestamp, revision, items_count, spells_count, npcs_count, quests_count, zones_count, status, error_message)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'success', NULL)`,
   );
 
+  let catalogReport = notRunQuestCatalogReport('not-run', 'the catalog stage did not run');
+  let breadthReport: BreadthReport = breadth.report;
   const replace = db.transaction(() => {
     for (const table of REPLACED_TABLES) {
       db.prepare(`DELETE FROM ${table}`).run();
@@ -299,12 +415,29 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
     for (const row of rows.quests) {
       insertQuest.run(row.quest_name, row.title, row.level, row.is_mainline ? 1 : 0);
     }
-    for (const row of rows.zones) {
-      insertZone.run(row.zone_path, row.display_name, row.world);
-    }
     for (const row of rows.drop_tables) {
       insertDropTable.run(row.name, row.description);
     }
+    for (const row of personaRows) {
+      insertPersona.run(
+        row.object_name,
+        row.template_id,
+        row.first_key,
+        row.last_key,
+        row.title_key,
+      );
+    }
+    // Inside the same transaction, after `string_table` is written: the catalog's id links are
+    // resolved against it (see questCatalog.ts).
+    catalogReport = writeQuestCatalog({
+      db,
+      collected: catalog,
+      corpusRows: rows.quests,
+      corpus: corpusPath,
+    });
+    // Also after `string_table`: a recipe's label is a string-table lookup of its `m_displayKey`.
+    // `writeBreadth` owns the reconciled `zones` insert (the corpus rows are its other half).
+    breadthReport = writeBreadth({ db, collected: breadth, corpusZones: rows.zones });
     insertHistory.run(
       timestamp,
       revision,
@@ -312,11 +445,12 @@ function replaceTables(db: Db, rows: SyncRows, revision: string, timestamp: stri
       rows.spells.length,
       rows.npcs.length,
       rows.quests.length,
-      rows.zones.length,
+      breadthReport.zones.new,
     );
   });
 
   replace();
+  return { catalog: catalogReport, breadth: breadthReport };
 }
 
 /**
@@ -378,6 +512,9 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
   let counts: SyncCounts = { ...ZERO_SYNC_COUNTS };
   let deduplicated: SyncDedupe = { ...ZERO_SYNC_DEDUPE };
   let manifestReport: ManifestIdReport = ZERO_MANIFEST_REPORT;
+  let catalog: QuestCatalogReport | null = null;
+  let breadth: CollectedBreadth = NOT_COLLECTED_BREADTH;
+  let corpusOverrideWarning: string | null = null;
 
   try {
     // Inside the try: a missing `settings` table (an un-migrated database) must
@@ -386,6 +523,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     const auroriumPath = options.overrides?.auroriumPath ?? settings.aurorium_path ?? '';
     const imcodecPath = options.overrides?.imcodecPath ?? settings.imcodec_path ?? '';
     const spiraldbPath = options.overrides?.spiraldbPath ?? settings.spiraldb_path ?? '';
+    corpusOverrideWarning = describeCorpusOverride(spiraldbPath, settings.spiraldb_path);
 
     if (auroriumPath === '') {
       throw new Error(
@@ -449,6 +587,13 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     const zones = await deps.buildZoneRows({
       zoneTransferDir: path.join(spiraldbPath, 'ZoneTransfer'),
     });
+    // Task 6.9: the zone/recipe/deck breadth, through the same 6.2 tool. A missing binary is a
+    // typed `skipped` result (p6-03-ac4 / D55), and the caller then writes `zones` from the corpus
+    // rows alone — the D21 behaviour, so a machine that never built the tool loses nothing.
+    const collectedBreadth = await deps.collectBreadth({
+      gamedataDir: path.dirname(resolved.rootWadPath),
+      manifest,
+    });
     const dropTables = await deps.buildDropTableRows({
       dropTablesDir: path.join(spiraldbPath, 'DropTables'),
     });
@@ -476,21 +621,57 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       quests: quests.rows,
       zones: zones.rows,
       drop_tables: dropTables.rows,
+      recipes: collectedBreadth.recipes,
+      decks: collectedBreadth.decks,
     };
+    breadth = collectedBreadth;
+
+    // The speaker ladder's index (task 6.6). Built here, not in `replaceTables`, because both
+    // halves need data this scope already holds: the manifest's id space (filtered to the ids
+    // `npcs` can name) and the persona structs the tree scan found. The parse of the 17 MB
+    // manifest is already gone by now, so only the two maps are walked.
+    const personaRows = mergePersonaStructs(
+      buildManifestPersonaRows(manifest, new Set(rows.npcs.map((row) => row.template_id))),
+      await scanPersonaStructs(treeDir),
+    );
 
     counts = {
       items: rows.items.length,
       spells: rows.spells.length,
       npcs: rows.npcs.length,
       quests: rows.quests.length,
-      zones: rows.zones.length,
+      // The rows `zones` ends up with, not the corpus scan's own count (see `insertHistory`).
+      zones: reconcileZones(zones.rows, collectedBreadth.wizZones).new,
       drop_tables: rows.drop_tables.length,
       string_table: rows.string_table.length,
+      persona_index: personaRows.length,
+      recipes: rows.recipes.length,
+      decks: rows.decks.length,
     };
+
+    // The catalog stage's process half: the game tree the resolved revision names —
+    // `Data/GameData`, derived from the Root.wad path the resolver already validated.
+    // A missing `wad-scan` is a typed `skipped` result, never a throw (p6-03-ac4); a run
+    // that happened and failed does throw, and then this sync fails loudly.
+    const collected = await deps.collectQuestCatalog({
+      gamedataDir: path.dirname(resolved.rootWadPath),
+    });
 
     const timestamp = formatSyncTimestamp(now());
     const writeStarted = Date.now();
-    replaceTables(db, rows, revision, timestamp);
+    const written = replaceTables(
+      db,
+      rows,
+      revision,
+      timestamp,
+      collected,
+      spiraldbPath,
+      personaRows,
+      collectedBreadth,
+    );
+    catalog = written.catalog;
+    breadth = collectedBreadth;
+    const breadthReport = written.breadth;
     timings.writeMs = Date.now() - writeStarted;
 
     return {
@@ -504,6 +685,9 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       reused,
       treeDir,
       timings,
+      catalog,
+      breadth: breadthReport,
+      corpusOverrideWarning,
     };
   } catch (error) {
     // An unpack that failed after creating its tree leaves it behind
@@ -526,6 +710,11 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       reused,
       treeDir,
       timings,
+      catalog:
+        catalog ??
+        notRunQuestCatalogReport('not-run', `the sync failed before the catalog stage: ${message}`),
+      breadth: breadth.report,
+      corpusOverrideWarning,
       errorMessage: message,
     };
   } finally {

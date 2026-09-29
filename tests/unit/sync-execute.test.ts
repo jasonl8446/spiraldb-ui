@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { scanLangDir, type ScanLangDirResult } from '@server/services/sync/lang';
 import { parseTemplateManifest, type ManifestIdReport } from '@server/services/sync/manifest';
+import { NOT_COLLECTED_BREADTH } from '@server/services/sync/breadth';
+import { NOT_COLLECTED } from '@server/services/sync/questCatalog';
+import { QuestRefsCollector, type QuestRefSourceRow } from '@server/services/sync/questRefs';
 import { runSync, type SyncDeps, type RunSyncResult } from '@server/services/sync/execute';
 
 /**
@@ -165,6 +168,13 @@ function fakeDeps(overrides: Partial<SyncDeps> = {}): SyncDeps {
       files: 1,
       parseErrors: [],
     }),
+    // The catalog stage's process half: `skipped` by default, so no test spawns a .NET binary
+    // and the seven-table expectations below keep their existing meaning (task 6.4).
+    collectQuestCatalog: async () => ({ ...NOT_COLLECTED, message: FAKE_SKIP_MESSAGE }),
+    // The breadth stage's process half (task 6.9): `skipped` by default for the same reason —
+    // no test spawns a .NET binary — which leaves `zones` written from the corpus rows alone,
+    // i.e. exactly the D21 behaviour these expectations were written against.
+    collectBreadth: async () => ({ ...NOT_COLLECTED_BREADTH, message: FAKE_SKIP_MESSAGE }),
     ...overrides,
   };
 }
@@ -174,6 +184,10 @@ const OVERRIDES = {
   imcodecPath: '/imcodec/imcodec',
   spiraldbPath: '/spiraldb',
 };
+
+/** What the real invoker reports when `tools/bin/wad-scan` has not been built (p6-03-ac4). */
+const FAKE_SKIP_MESSAGE =
+  'WAD batch tool not found at /repo/tools/bin/wad-scan. Build it with: npm run build:wadscan';
 
 function run(db: Db, deps: SyncDeps = fakeDeps()): Promise<RunSyncResult> {
   return runSync({
@@ -240,6 +254,13 @@ describe('runSync — success path', () => {
       zones: 1,
       drop_tables: 1,
       string_table: 4,
+      // Task 6.9: the breadth stage reported `skipped`, so both new tables are empty and the
+      // reconciled `zones` count is the corpus scan's own row count.
+      recipes: 0,
+      decks: 0,
+      // Task 6.6's persona index: the fake tree has no `Cinematics/` and the fake manifest is
+      // empty, so the index is empty — and it is still reported, so a silent zero is visible.
+      persona_index: 0,
     });
     for (const table of SEVEN_TABLES) {
       expect(count(db, table)).toBe(result.counts[table]);
@@ -339,6 +360,12 @@ describe('runSync — success path', () => {
         level: 5,
         is_mainline: 1,
         updated_at: expect.any(String),
+        // Migration 0002's four columns: a corpus row is defined, unlinked, and its
+        // reference_count is recomputed by the catalog stage (0 with the tool absent).
+        has_definition: 1,
+        link_kind: 'none',
+        title_source: 'none',
+        reference_count: 0,
       },
       {
         quest_name: 'WC-PreCel-MAIN-002',
@@ -346,6 +373,10 @@ describe('runSync — success path', () => {
         level: 6,
         is_mainline: 0,
         updated_at: expect.any(String),
+        has_definition: 1,
+        link_kind: 'none',
+        title_source: 'none',
+        reference_count: 0,
       },
     ]);
     expect(db.prepare('SELECT zone_path, display_name, world FROM zones').get()).toEqual({
@@ -356,6 +387,200 @@ describe('runSync — success path', () => {
     expect(db.prepare('SELECT name, description FROM drop_tables').get()).toEqual({
       name: 'DS-ACAD1-C01-001',
       description: null,
+    });
+  });
+});
+
+describe('runSync — the quest catalog stage, inside the same transaction (task 6.4)', () => {
+  /** A direct pair plus a goal gate whose `(quest, wad, entry, class, goal)` tuple repeats. */
+  const CATALOG_ROWS: QuestRefSourceRow[] = [
+    {
+      wad: 'a.wad',
+      entry: 'gamedata.bin',
+      class: 'WizZoneData',
+      object: {
+        $values: [
+          { m_entryName: 'WC-PreCel-MAIN-001_Complete', m_displayName: 'QuestTitle_1ED8A' },
+        ],
+      },
+    },
+    {
+      wad: 'a.wad',
+      entry: 'triggers.xml',
+      class: 'WizZoneTriggers',
+      object: {
+        $values: [
+          { m_questName: 'WC-PreCel-MAIN-001', m_goalName: 'g1', m_requiredStatus: 'Complete' },
+          { m_questName: 'WC-PreCel-MAIN-001', m_goalName: 'g1', m_requiredStatus: 'Complete' },
+        ],
+      },
+    },
+  ];
+
+  function catalogDeps(rows: QuestRefSourceRow[] = CATALOG_ROWS): Partial<SyncDeps> {
+    const collector = new QuestRefsCollector();
+    for (const row of rows) {
+      collector.add(row);
+    }
+    return {
+      collectQuestCatalog: async () => ({
+        status: 'ok',
+        reason: null,
+        message: null,
+        binaryPath: '/fake/tools/bin/wad-scan',
+        collector,
+        rows: rows.length,
+        extractMs: 7,
+        collectMs: 3,
+        ndjsonPath: '/tmp/p605-fake.ndjson',
+      }),
+    };
+  }
+
+  it('merges the catalog, replaces the refs, and recomputes link_kind/reference_count', async () => {
+    const db = memoryDb();
+
+    const result = await run(db, fakeDeps(catalogDeps()));
+
+    expect(result.status).toBe('success');
+    expect(result.catalog.status).toBe('ok');
+    expect(result.catalog.counts).toMatchObject({
+      corpus_rows: 2,
+      catalog_rows: 1,
+      merged_rows: 1,
+      catalog_only_rows: 0,
+      quests_rows: 2,
+      has_definition_rows: 2,
+      reference_rows_raw: 2,
+      references: 1,
+      duplicate_references: 1,
+      distinct_reference_keys: 1,
+      ids: 0,
+      ids_linked: 0,
+      // `QuestTitle_1ED8A` carries no `WizQst` rows in the fake `.lang`, so its link is outside
+      // the text tier — the measured 117-link shape on the real clone, in miniature.
+      linked_ids_without_text: 1,
+    });
+
+    expect(
+      db
+        .prepare(
+          'SELECT quest_name, has_definition, link_kind, title_source, reference_count FROM quests ORDER BY quest_name',
+        )
+        .all(),
+    ).toEqual([
+      {
+        quest_name: 'WC-PreCel-MAIN-001',
+        has_definition: 1,
+        link_kind: 'direct',
+        title_source: 'direct',
+        // One distinct referencing object — the second raw row was absorbed by the UNIQUE.
+        reference_count: 1,
+      },
+      {
+        quest_name: 'WC-PreCel-MAIN-002',
+        has_definition: 1,
+        link_kind: 'none',
+        title_source: 'none',
+        reference_count: 0,
+      },
+    ]);
+    expect(
+      db
+        .prepare(
+          'SELECT quest_name, wad, entry, class, goal_name, required_status FROM quest_catalog_refs',
+        )
+        .all(),
+    ).toEqual([
+      {
+        quest_name: 'WC-PreCel-MAIN-001',
+        wad: 'a.wad',
+        entry: 'triggers.xml',
+        class: 'WizZoneTriggers',
+        goal_name: 'g1',
+        required_status: 'Complete',
+      },
+    ]);
+    expect(db.prepare('SELECT * FROM coverage').get()).toEqual({
+      nameable: 2,
+      id_space: 0,
+      defined: 2,
+      missing: 0,
+      references: 1,
+    });
+  });
+
+  /**
+   * ac3 at unit level, and the FK trap: the second run deletes `quests` while refs still point at
+   * it, so the delete order is only correct because the refs go first.
+   */
+  it('is idempotent across two consecutive runs, refs and all', async () => {
+    const db = memoryDb();
+
+    const first = await run(db, fakeDeps(catalogDeps()));
+    const second = await run(db, fakeDeps(catalogDeps()));
+
+    expect(second.catalog.counts).toEqual(first.catalog.counts);
+    expect(second.counts).toEqual(first.counts);
+    expect(count(db, 'quest_catalog_refs')).toBe(1);
+    expect(count(db, 'quest_ids')).toBe(0);
+    expect(count(db, 'quests')).toBe(2);
+    expect(db.prepare('SELECT * FROM coverage').get()).toEqual(
+      db.prepare('SELECT * FROM coverage').get(),
+    );
+  });
+
+  /** The stage runs in the same transaction: its failure rolls back the whole replace. */
+  it('rolls the whole replace back when the catalog stage throws', async () => {
+    const db = memoryDb();
+    const before = seedSentinels(db);
+
+    const result = await run(
+      db,
+      fakeDeps({
+        collectQuestCatalog: async () => ({
+          ...NOT_COLLECTED,
+          status: 'ok',
+          collector: {
+            add: () => undefined,
+            finish: () => {
+              throw new Error('catalog exploded');
+            },
+          } as unknown as QuestRefsCollector,
+        }),
+      }),
+    );
+
+    expect(result.status).toBe('failed');
+    expect(result.errorMessage).toBe('catalog exploded');
+    expect(result.catalog.status).toBe('not-run');
+    expect(result.catalog.message).toContain('catalog exploded');
+    for (const table of SEVEN_TABLES) {
+      expect(count(db, table)).toBe(before[table]);
+    }
+    expect(count(db, 'quest_catalog_refs')).toBe(0);
+    expect(count(db, 'quest_ids')).toBe(0);
+  });
+
+  it('reports the skipped tool on the result and still commits the corpus rows', async () => {
+    const db = memoryDb();
+
+    const result = await run(db);
+
+    expect(result.status).toBe('success');
+    expect(result.catalog.status).toBe('skipped');
+    expect(result.catalog.reason).toBe('not-run');
+    expect(result.catalog.message).toBe(FAKE_SKIP_MESSAGE);
+    expect(result.catalog.counts).toMatchObject({
+      corpus_rows: 2,
+      catalog_rows: 0,
+      references: 0,
+      ids: 0,
+      quests_rows: 2,
+      has_definition_rows: 2,
+    });
+    expect(db.prepare('SELECT count(*) AS c FROM quests WHERE has_definition = 1').get()).toEqual({
+      c: 2,
     });
   });
 });

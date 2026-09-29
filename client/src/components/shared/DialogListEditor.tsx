@@ -50,6 +50,7 @@ import {
 } from '../../lib/quest-dialog';
 import { shouldLookupStringKey } from '../../lib/quest-info';
 import { cn } from '../../lib/utils';
+import { useEvidenceCardFocus } from '../quest/EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { FieldMessages, useFieldMessages, type FieldValidationMessage } from './FieldValidation';
@@ -304,11 +305,20 @@ function DialogEntryCard({
   state: DialogListDocumentState;
   view: DialogEntryView;
 }): JSX.Element {
+  /**
+   * The evidence panel's focus channel (story p6-08): focusing anything in this card reports the
+   * entry as focused, so an evidence dialogue row's insert writes **this** entry's `m_dialog` —
+   * the plan's "dialogue into the focused `m_dialog`". The entry is the right granularity (that is
+   * what a user focuses), and the target follows from its own path. No provider is mounted in a
+   * unit render or a Phase-4 host, and the channel is a no-op there.
+   */
+  const evidenceCardFocus = useEvidenceCardFocus([...view.path, 'm_dialog']);
   return (
     <li className="min-w-0">
       <article
         aria-label={`Entry ${view.index + 1} ${view.address}`}
         className="min-w-0 rounded-md border border-zinc-800 bg-zinc-900/40 p-3"
+        {...evidenceCardFocus}
       >
         <header className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-zinc-400">{view.ordinal}</span>

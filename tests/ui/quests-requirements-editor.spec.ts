@@ -324,7 +324,11 @@ async function setQuest(page: Page, address: string, questName: string): Promise
   const search = page.getByRole('combobox', { name: 'Search quests', exact: true });
   await expect(search).toBeVisible();
   await search.fill(questName);
-  await page.getByRole('option', { name: REFERENCED_TITLE, exact: true }).click();
+  // The option label is the pair — `Second Quest (DS-ACAD1-C01-002)` — because
+  // `formatNameRow('quests')` pairs the resolved title with the quest name (D105/P6-16).
+  await page
+    .getByRole('option', { name: `${REFERENCED_TITLE} (${REFERENCED_QUEST})`, exact: true })
+    .click();
 }
 
 /**

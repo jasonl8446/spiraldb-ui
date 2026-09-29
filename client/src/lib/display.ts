@@ -86,6 +86,43 @@ export function humanizeZone(raw: string): string {
 }
 
 /**
+ * **The pair rule — the one home of `"Name (ID)"`** (D105/P6-16, spec-ui-design
+ * §Names L45-81).
+ *
+ * Every surface that shows a friendly name beside its technical value renders it
+ * through this function: `npcDisplayName` is it with a numeric id, `formatNameRow`
+ * is it for the names API's rows, and the object list's key cell is it with the
+ * server's `friendly_name`. A second construction of `friendly (technical)`
+ * anywhere in the client is a defect, and `tests/unit/display-single-home.test.ts`
+ * scans for one (with its own negative control).
+ *
+ * A missing/blank friendly name degrades to the **technical value alone** — never
+ * an empty pair of parentheses, and never a humanised guess (spec-ui-design L65-66:
+ * "a humanised key reads as a name that does not exist").
+ */
+export function namePair(friendlyName: string | null | undefined, technical: string): string {
+  return hasText(friendlyName) ? `${friendlyName} (${technical})` : technical;
+}
+
+/**
+ * The pair rule with the **identity case collapsed**: when the friendly name *is* the
+ * technical value, printing `X (X)` says nothing, so the value stands alone.
+ *
+ * That case is real and measured: a quest whose title fell back to its own name
+ * (`title_source: 'none'` — `QuestListRow.title` is "the resolved title, the raw
+ * `m_questTitle` key, or `m_questName`") and a drop table whose `Name` is its key. One
+ * guard, one place — {@link namePair} still owns the construction.
+ */
+export function namePairDistinct(
+  friendlyName: string | null | undefined,
+  technical: string,
+): string {
+  return hasText(friendlyName) && friendlyName !== technical
+    ? namePair(friendlyName, technical)
+    : technical;
+}
+
+/**
  * NPCs always render as `"Name (TemplateID)"` uniformly — NPCs are a flat list
  * with no type classification (spec-domain-reference L696-698).
  *
@@ -96,45 +133,109 @@ export function npcDisplayName(
   name: string | null | undefined,
   templateId: string | number,
 ): string {
-  const id = String(templateId);
-  return hasText(name) ? `${name} (${id})` : id;
+  return namePair(name, String(templateId));
 }
 
 /**
- * The display label for one row, per type (lead decision 5 / D8):
- * items & spells & drop_tables show `name`; NPCs add the template id; quests show
- * the resolved title; zones show the humanized path; strings show the value.
+ * **The friendly half of a row's label** — the left side of the pair — or `null` when
+ * the row has none (a NULL/blank column, a blank zone label with no path to humanise).
+ *
+ * This is the one definition of "the friendly name of a names row", and it is what the
+ * subject's three consumers share: `formatNameRow` pairs it with the technical value,
+ * `toNameOptions` labels an option with that pair, and an object **detail header** asks
+ * the single lookup (`GET /api/names/:type/:id`) for the same half and pairs it with the
+ * object key through the same rule. Two notions of "the friendly name" would let a
+ * dropdown and a header disagree about the same row.
  */
-export function formatNameRow(type: NamesType, row: NameRow): string {
+export function friendlyNameOf(type: NamesType, row: NameRow): string | null {
+  // **A body that is not a row is a miss, never a crash.** The single lookup is
+  // documented to answer the bare row or 404 (spec-api L32-44), but a 200 carrying
+  // anything else — a list envelope, an error object, an empty body — must degrade to
+  // "the technical value alone" like every other miss. Measured: a mock that answered
+  // every `/api/names/*` path with the seven-table envelope white-screened the
+  // ZoneTransfer detail page (`humanizeZone(undefined)`), which is the Tier-1 §1 sweep's
+  // 20-routes arm and the reason this guard is here rather than assumed.
+  if (row === null || typeof row !== 'object') {
+    return null;
+  }
   switch (type) {
     case 'items':
-      return orFallback(
-        (row as NameRowMap['items']).name,
-        String((row as NameRowMap['items']).gid),
-      );
-    case 'spells': {
-      const spell = row as NameRowMap['spells'];
-      return orFallback(spell.name, String(spell.template_id));
-    }
-    case 'npcs': {
-      const npc = row as NameRowMap['npcs'];
-      return npcDisplayName(npc.name, npc.template_id);
-    }
-    case 'quests': {
-      const quest = row as NameRowMap['quests'];
-      return orFallback(quest.title, quest.quest_name);
-    }
+      return textOrNull((row as NameRowMap['items']).name);
+    case 'spells':
+      return textOrNull((row as NameRowMap['spells']).name);
+    case 'npcs':
+      return textOrNull((row as NameRowMap['npcs']).name);
+    case 'quests':
+      return textOrNull((row as NameRowMap['quests']).title);
     case 'zones': {
+      // The synced label wins; a blank one falls back to the path's humanised form
+      // (`zones.display_name` is NOT NULL in the schema today, so this is the
+      // documented ladder rather than a live branch).
       const zone = row as NameRowMap['zones'];
       if (hasText(zone.display_name)) {
         return zone.display_name;
       }
-      return humanizeZone(zone.zone_path);
+      return typeof zone.zone_path === 'string' ? humanizeZone(zone.zone_path) : null;
     }
     case 'drop_tables':
-      return orFallback((row as NameRowMap['drop_tables']).name, '');
+      return textOrNull((row as NameRowMap['drop_tables']).name);
     case 'strings':
-      return orFallback((row as NameRowMap['strings']).value, (row as NameRowMap['strings']).key);
+      return textOrNull((row as NameRowMap['strings']).value);
+  }
+}
+
+/** Non-empty text, else `null`. */
+function textOrNull(value: string | null | undefined): string | null {
+  return hasText(value) ? value : null;
+}
+
+/**
+ * The display label for one row, per type (lead decision 5 / D8, extended by
+ * D105/P6-16).
+ *
+ * The per-family table of spec-ui-design §Names L56-63 decides which types pair:
+ *
+ * | type                  | friendly source            | pair                                      |
+ * |-----------------------|----------------------------|-------------------------------------------|
+ * | `quests` (QuestTemplate) | `title`                 | **yes** — `Wizard Tours (DS-ACAD-C01-001)` |
+ * | `npcs` (the four `TemplateID` families) | `name`     | **yes** — `Merle Ambrose (38168)`          |
+ * | `zones` (ZoneTransfer) | `display_name`/humanizer  | **yes** — `Wizard City / WC Hub (WizardCity/WC_Hub)` |
+ * | `items`, `spells`     | `name`                     | **no** — see below                         |
+ * | `drop_tables`         | none: the key *is* the name | **no**                                    |
+ * | `strings`             | `value`                    | **no** — a string table has no id to show  |
+ *
+ * `items`/`spells` are the friendly-name **sources** the object families reference
+ * (a `TreasureCardInventory` names a spell; a `DropTable` names items). They are not
+ * families of the §Names table, and the row already shows the only name it has; the
+ * technical id is made findable instead of displayed (`?q=` matches the id column
+ * for both, spec-api L59-67).
+ *
+ * The three families with **no** friendly source render the technical value alone
+ * and say why — DropTable and GlobalRegistry permanently (`description` is NULL in
+ * 316 of 317 rows; a registry key is a flag name) and CreatureSpellbook until task
+ * 6.9 populates `decks` (spec-ui-design L65-69). That is a spec sentence, not a
+ * humaniser: a humanised key reads as a name that does not exist.
+ */
+export function formatNameRow(type: NamesType, row: NameRow): string {
+  const friendly = friendlyNameOf(type, row);
+  switch (type) {
+    case 'items':
+      return orFallback(friendly, String((row as NameRowMap['items']).gid));
+    case 'spells':
+      return orFallback(friendly, String((row as NameRowMap['spells']).template_id));
+    case 'npcs':
+      // `npcDisplayName` is the pair with a numeric id; a missing name is the bare id.
+      return npcDisplayName(friendly, (row as NameRowMap['npcs']).template_id);
+    case 'quests':
+      return namePair(friendly, (row as NameRowMap['quests']).quest_name);
+    case 'zones':
+      return namePair(friendly, (row as NameRowMap['zones']).zone_path);
+    case 'drop_tables':
+      // No pair and no humaniser: the key *is* the name (316 of 317 rows carry a
+      // NULL `description`), so the technical value is the whole label.
+      return orFallback(friendly, '');
+    case 'strings':
+      return orFallback(friendly, (row as NameRowMap['strings']).key);
   }
 }
 

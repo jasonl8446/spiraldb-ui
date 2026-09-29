@@ -3,6 +3,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MEMORY_DB, openDb, type Db } from '@server/db';
 import { formatSyncSummary, parseSyncArgs, runSyncCli } from '@server/services/sync/cli';
 import type { RunSyncOptions, RunSyncResult } from '@server/services/sync/execute';
+import { describeCorpusOverride } from '@server/services/sync/execute';
+import { ZERO_BREADTH_REPORT, type BreadthReport } from '@server/services/sync/breadth';
+import {
+  ZERO_QUEST_CATALOG_COUNTS,
+  type QuestCatalogReport,
+} from '@server/services/sync/questCatalog';
 
 /**
  * `npm run sync` logic (task 1.4g) — flags, summary formatting and exit codes,
@@ -23,6 +29,123 @@ function memoryDb(): Db {
   return db;
 }
 
+/** The catalog stage's report, as the real one reads on the owner tree (task 6.4). */
+/**
+ * A breadth report with the measured shape (task 6.9): 12,402 recipes / 599 decks read, 0
+ * dropped, and the zone reconciliation's two counts side by side.
+ */
+const BREADTH_OK: BreadthReport = {
+  ...ZERO_BREADTH_REPORT,
+  status: 'ok',
+  raw: { zones: 3356, decks: 599, recipes: 12402 },
+  dropped: {
+    recipes: 0,
+    recipes_missing_id: 0,
+    recipes_duplicate_id: 0,
+    decks: 0,
+    decks_missing_id: 0,
+    decks_duplicate_id: 0,
+    decks_duplicate_name: 0,
+  },
+  zones: {
+    corpus: 1241,
+    wiz: 3356,
+    corpus_only: 1,
+    corpus_only_samples: ['Karamelle/KM_Z06_Mines'],
+    relabelled: 1240,
+    new: 3357,
+  },
+  recipes: 12402,
+  decks: 599,
+  runs: [
+    {
+      select: 'gamedata.bin',
+      gamedata: '/aurorium/GameData',
+      rows: 3356,
+      stderr: 'extract: 3356 row(s)',
+    },
+  ],
+};
+
+const CATALOG_OK: QuestCatalogReport = {
+  status: 'ok',
+  reason: null,
+  message: null,
+  binary_path: '/repo/tools/bin/wad-scan',
+  rows_read: 6733,
+  extract_ms: 5310,
+  collect_ms: 4200,
+  write_ms: 900,
+  counts: {
+    ...ZERO_QUEST_CATALOG_COUNTS,
+    corpus_rows: 328,
+    catalog_rows: 1449,
+    catalog_only_rows: 2,
+    merged_rows: 1447,
+    quests_rows: 1450,
+    has_definition_rows: 328,
+    reference_rows_raw: 3003,
+    references: 2855,
+    duplicate_references: 148,
+    distinct_reference_keys: 2796,
+    distinct_wad_entry_pairs: 2400,
+    ids: 4823,
+    ids_linked: 175,
+    linked_ids_without_text: 115,
+    id_collision_names: 2,
+    id_collision_ids: 2,
+    links_lost_direct: 1,
+    links_lost_inferred: 1,
+    id_collision_samples: [
+      'NV-PostWL-MAIN-002 (direct) lost id 1608203 to LM-PostWL-MAIN-001',
+      'LM-HEAP-MAIN-009 (inferred) lost id 1524782 to LM-HEAP-MAIN-007',
+    ],
+  },
+  quests: {
+    corpus: '/home/jason/Documents/git-projects/spiraldb',
+    distinct_quest_names: 1447,
+    catalog_rows: 1449,
+    direct_links: 286,
+    inferred_links: 6,
+    no_link: 1157,
+    with_goal_names: 873,
+    references: 3003,
+    reference_keys: 2796,
+    duplicate_references: 207,
+    rows_without_provenance: 0,
+    registry_checks: {
+      total: 2279,
+      empty_quest_name: 1754,
+      absent_quest_name: 525,
+      with_entry_name: 2274,
+    },
+    nodes_scanned: 5282,
+    direct_candidates: 423,
+    direct_pairs: 313,
+    link_only_names: 2,
+    anchored_names: 602,
+    inference_gaps: 24,
+    inference_rejected: 18,
+    link_conflicts: 0,
+    holdout: null,
+  },
+  holdout: {
+    corpus: '/home/jason/Documents/git-projects/spiraldb',
+    method: 'neighbour-midpoint',
+    pairs: 321,
+    groups: 59,
+    groups_with_gap: 51,
+    groups_ascending: 51,
+    groups_contiguous: 38,
+    cases: 168,
+    hits: 131,
+    misses: 37,
+    accuracy: 131 / 168,
+    accepted_cases: 136,
+    accepted_hits: 131,
+  },
+};
+
 const SUCCESS: RunSyncResult = {
   status: 'success',
   revision: 'V_r806919.Wizard_1_610',
@@ -34,6 +157,9 @@ const SUCCESS: RunSyncResult = {
     zones: 5,
     drop_tables: 6,
     string_table: 217394,
+    persona_index: 9,
+    recipes: 11,
+    decks: 10,
   },
   deduplicated: { items: 0, spells: 0, npcs: 0 },
   manifest: {
@@ -50,6 +176,8 @@ const SUCCESS: RunSyncResult = {
   reused: true,
   treeDir: '/tmp/wad-spike',
   timings: { unpackMs: 0, scanMs: 4100, writeMs: 3000 },
+  catalog: CATALOG_OK,
+  breadth: BREADTH_OK,
 };
 
 interface Capture {
@@ -123,6 +251,98 @@ describe('formatSyncSummary', () => {
     }).join('\n');
 
     expect(text).toContain('dropped (PK)        : 13,006 rows (items 1, spells 13,003, npcs 2)');
+  });
+
+  it('prints the catalog stage, its counts and the sync-time hold-out (task 6.4)', () => {
+    const text = formatSyncSummary(SUCCESS).join('\n');
+
+    expect(text).toContain('catalog status      : OK');
+    expect(text).toContain('catalog rows        : 1,449 (merged 1,447, new 2)');
+    expect(text).toContain('quests rows         : 1,450 (has_definition = 1: 328)');
+    expect(text).toContain(
+      'catalog refs        : 2,855 rows kept (3,003 raw rows; 148 not inserted by the UNIQUE)',
+    );
+    expect(text).toContain(
+      "reference keys      : 2,796 distinct (quest, wad, entry, class, goal) with a NULL goal_name read as '' — SQLite's UNIQUE keeps a NULL goal_name distinct, so the table holds 59 more rows",
+    );
+    expect(text).toContain(
+      'quest ids           : 4,823 (linked 175; 115 links outside the text tier; 2 losing names on 2 ids)',
+    );
+    // The extracted-vs-recorded reconciliation: 286 − 1 = 285 direct, 6 − 1 = 5 inferred.
+    expect(text).toContain(
+      "links extracted     : 286 direct, 6 inferred, 1,157 none (the extractor's own count, catalog rows only)",
+    );
+    expect(text).toContain(
+      'links lost          : 1 direct + 1 inferred name(s) claimed an id another name owns; a loser keeps link_kind = none',
+    );
+    // A collision is named and its unit is stated: the two tables must never disagree.
+    expect(text).toContain(
+      'id collisions       : NV-PostWL-MAIN-002 (direct) lost id 1608203 to LM-PostWL-MAIN-001; LM-HEAP-MAIN-009 (inferred) lost id 1524782 to LM-HEAP-MAIN-007',
+    );
+    expect(text).toContain(
+      'hold-out            : 78.0% (neighbour-midpoint; 168 cases, 131 hits) on /home/jason/Documents/git-projects/spiraldb',
+    );
+    expect(text).toContain('catalog timing      : 5.3 s extract + 4.2 s read + 900 ms write');
+  });
+
+  it('prints the breadth lines: both zone counts, the D35 join and the dropped rows', () => {
+    const text = formatSyncSummary(SUCCESS).join('\n');
+
+    expect(text).toContain('  recipes             : 12,402');
+    expect(text).toContain('  decks               : 599');
+    expect(text).toContain('  breadth status      : OK');
+    expect(text).toContain(
+      '  zones               : old 1,241 (corpus ZoneTransfer) -> new 3,357 (WizZoneData 3,356, ' +
+        '+1 corpus-only kept, 1,240 relabelled)',
+    );
+    expect(text).toContain('  zones corpus-only   : Karamelle/KM_Z06_Mines');
+    expect(text).toContain(
+      '  recipes             : 12,402 rows kept of 12,402 read (dropped 0: no manifest entry 0, ' +
+        'duplicate id 0)',
+    );
+    expect(text).toContain(
+      '  decks               : 599 rows kept of 599 read (dropped 0: no manifest entry 0, ' +
+        'duplicate id 0, duplicate deck_name 0)',
+    );
+    expect(text).toContain('  breadth run         : gamedata.bin on /aurorium/GameData');
+  });
+
+  it('prints the skipped breadth stage with its own message', () => {
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      breadth: {
+        ...ZERO_BREADTH_REPORT,
+        status: 'skipped',
+        reason: 'binary-missing',
+        message: 'no tool',
+      },
+    }).join('\n');
+
+    expect(text).toContain('  breadth status      : SKIPPED');
+    expect(text).toContain('  binary-missing      : no tool');
+  });
+
+  it('prints the skipped catalog stage with its own message', () => {
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      catalog: {
+        ...CATALOG_OK,
+        status: 'skipped',
+        reason: 'binary-missing',
+        message:
+          'WAD batch tool not found at /repo/tools/bin/wad-scan. Build it with: npm run build:wadscan',
+        counts: { ...CATALOG_OK.counts, catalog_rows: 0, references: 0, ids: 0 },
+        quests: null,
+        holdout: null,
+      },
+    }).join('\n');
+
+    expect(text).toContain('catalog status      : SKIPPED');
+    expect(text).toContain(
+      'binary-missing      : WAD batch tool not found at /repo/tools/bin/wad-scan',
+    );
+    expect(text).toContain('npm run build:wadscan');
+    expect(text).not.toContain('hold-out');
   });
 
   it('prints the error and no counts for a failed run', () => {
@@ -226,5 +446,42 @@ describe('runSyncCli', () => {
     expect(code).toBe(0);
     expect(calls).toBe(0);
     expect(io.lines.join('\n')).toContain('Usage: npm run sync');
+  });
+});
+
+/**
+ * The corpus-override warning added after p6-07: `--spiraldb`/`SPIRALDB_PATH` changes which corpus the
+ * **tables** are built from but not the persisted `settings.spiraldb_path` the app's reads use, so the
+ * two can silently name different corpora — measured during p6-07, where a first live run reported
+ * 26 used / 4 available instead of the true 22 / 8 for exactly that reason.
+ */
+describe('describeCorpusOverride', () => {
+  it('says nothing when the override is the setting, or when there is no setting', () => {
+    expect(describeCorpusOverride('/corpus', '/corpus')).toBeNull();
+    expect(describeCorpusOverride('/corpus', undefined)).toBeNull();
+    expect(describeCorpusOverride('/corpus', '')).toBeNull();
+    expect(describeCorpusOverride('', '/corpus')).toBeNull();
+  });
+
+  it('names BOTH paths when they differ, and says which one a request will join', () => {
+    const warning = describeCorpusOverride('/tmp/clone-with-322', '/owner/fork-with-328');
+
+    expect(warning).toContain('/tmp/clone-with-322');
+    expect(warning).toContain('/owner/fork-with-328');
+    expect(warning).toContain('settings.spiraldb_path');
+    expect(warning).toContain('two corpora');
+  });
+
+  it('is printed by the summary when present, and absent when not (the SUCCESS fixture has none)', () => {
+    expect(formatSyncSummary(SUCCESS).join('\n')).not.toContain('WARNING —');
+
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      corpusOverrideWarning: describeCorpusOverride('/a', '/b'),
+    }).join('\n');
+
+    expect(text).toContain('WARNING — corpus override:');
+    expect(text).toContain('/a');
+    expect(text).toContain('/b');
   });
 });

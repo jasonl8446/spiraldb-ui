@@ -72,6 +72,7 @@ import {
 import { withValidationBorder } from '../../lib/quest-validation';
 import { prefersReducedMotion } from '../../lib/reduced-motion';
 import { cn } from '../../lib/utils';
+import { useEvidenceCardFocus, useEvidenceFieldFocus } from './EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -252,6 +253,14 @@ function GoalCard({
   // The finding about the goal itself (its own path), not its fields: `goal-unreachable` is the
   // only rule whose subject is the node, and this card is the node's surface.
   const nodeMessages = useFieldMessages([GOALS_PATH, index]);
+  /**
+   * The evidence panel's focus channel (story p6-08): focusing anything in this card reports the
+   * **goal** as focused, which is the plan's "goal text into the focused goal" — the insert writes
+   * `m_goals[i].m_goalText` (a field no corpus goal carries yet, so the insert adds it). The card
+   * reports on **capture** and the `m_locationName` control below reports on **bubble**, so the
+   * innermost reporter wins and focusing the location name targets that field instead.
+   */
+  const evidenceCardFocus = useEvidenceCardFocus([GOALS_PATH, index, 'm_goalText']);
 
   // dnd-kit hands its sort animation back as an inline `transition` string. That is the one
   // animation a stylesheet cannot gate by class alone (it needs `!important` to beat an
@@ -265,7 +274,10 @@ function GoalCard({
 
   return (
     <li ref={setNodeRef} style={style} className={cn(isDragging && 'opacity-70')}>
-      <article className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3">
+      <article
+        className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3"
+        {...evidenceCardFocus}
+      >
         <header className="flex flex-wrap items-center gap-2">
           {/*
             The drag handle is the only element carrying dnd-kit's listeners and
@@ -410,6 +422,13 @@ function GoalFieldControl({
   // path). `<GoalFieldMessages>` renders them below the control.
   const messages = useFieldMessages(path);
   const messagesId = `${GOALS_PATH}-${index}-${field.key}-messages`;
+  /**
+   * The evidence panel's second target (story p6-08): only `m_locationName` is an insert target of
+   * its own — a location name goes into the field that holds one — so only that control reports,
+   * and it reports on the **bubble** phase so it beats the card's capture report. Every other field
+   * belongs to the card's `m_goalText` report, which is the plan's "goal text into the focused goal".
+   */
+  const evidenceFieldFocus = useEvidenceFieldFocus(field.key === 'm_locationName' ? path : null);
   const inputClass = withValidationBorder(
     'min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
     messages,
@@ -533,6 +552,7 @@ function GoalFieldControl({
           type="text"
           value={goalScalarText(value)}
           className={inputClass}
+          {...evidenceFieldFocus}
           onChange={(event) =>
             state.edit(goalTextFieldEdit(index, field.key, present, event.target.value))
           }

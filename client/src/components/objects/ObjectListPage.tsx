@@ -7,7 +7,7 @@ import type { ObjectTypeConfig } from '@shared/objectTypes';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useStatusFilter } from '../../hooks/useStatusFilter';
-import { relativeTime } from '../../lib/display';
+import { namePair, relativeTime } from '../../lib/display';
 import { serverMessage } from '../../lib/extract';
 import {
   DEFAULT_OBJECT_SORT,
@@ -139,7 +139,8 @@ export default function ObjectListPage({
         searchRows(
           filterByStatus(rows, filter, (row) => row.status ?? 'extracted'),
           search,
-          (row) => [row.key, row.title],
+          // Search either: the technical key *and* the server's friendly name.
+          (row) => [row.key, row.friendly_name ?? ''],
         ),
         sort,
         (row, key) => (key === 'key' ? row.key : key === 'status' ? row.status : row.modified_at),
@@ -300,7 +301,7 @@ export default function ObjectListPage({
           ) : isMobile ? (
             <ObjectCardList
               rows={current.items}
-              title={(row) => row.title}
+              title={(row) => namePair(row.friendly_name, row.key)}
               status={(row) => (row.status === null ? null : <StatusBadge status={row.status} />)}
               modified={(row) => relativeTime(row.modified_at)}
               href={href}
@@ -315,6 +316,7 @@ export default function ObjectListPage({
               sort={sort}
               onSortChange={setSort}
               onRowActivate={activateRow}
+              keyTitleNote={config.friendlyNameNote}
               extraColumns={extraColumns}
             />
           )}

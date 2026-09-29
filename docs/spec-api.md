@@ -43,6 +43,35 @@ GET /api/names/items/4808
 { "gid": 4808, "name": "Twice Stitched Boots" }
 ```
 
+**List extensions (implemented by p1-07; widened by P6-16 / story p6-05).** A bare URL is
+byte-identical to the shape above. Two optional query parameters sit on top of it and change neither
+the envelope nor the single-lookup body:
+
+- `?q=<substring>` — case-insensitive substring filter (ASCII case folding, `LIKE` metacharacters
+  escaped) over the type's **search columns**.
+- `?limit=<n>` — row cap. Malformed `q`/`limit` → `400`; a value that cannot be valid for the type
+  → `404`, by the same ladder as the single lookup.
+
+**Phase 6 widens `searchColumns` from the label column to the id column as well** (D105/P6-16:
+"every search matches either the friendly or the technical value"). Typing `12` therefore finds the
+item whose `gid` is 12 *and* an item named "12…":
+
+| type | id column | label column | search columns after Phase 6 |
+|---|---|---|---|
+| `items` | `gid` | `name` | `gid`, `name` |
+| `spells` | `template_id` | `name` | `template_id`, `name` |
+| `npcs` | `template_id` | `name` | `template_id`, `name` |
+| `quests` | `quest_name` | `title` | `quest_name`, `title` |
+| `zones` | `zone_path` | `display_name` | `zone_path`, `display_name` |
+| `drop_tables` | `name` | `name` | `name` (the id *is* the label — no new column to add) |
+| `strings` | `key` | `value` | `key`, `value` (already widened in Phase 1) |
+
+**The seven types stay seven** (P6-17/G7). `tests/unit/names.test.ts` re-types them from the
+`**Types:**` line above and builds the unknown-type `404` message from them, so Phase 6 adds no
+eighth type here. An NPC's identity is **dual** (a template id *and* a persona name) while a
+name-list row is single-id, so NPCs are served by the aggregate view in
+[NPC View](#npc-view-phase-6--d112), not by an extra row type.
+
 ---
 
 ## Verification Status
@@ -234,6 +263,11 @@ CRUD endpoints for each SpiralDB object type. All follow the same pattern.
 | GET | `/api/quests` | List all quests (from SpiralDB files) |
 | GET | `/api/quests/:name` | Single quest JSON |
 | POST | `/api/quests` | Save new/update quest (writes file + metadata + git commit) |
+| POST | `/api/quests/scaffold` | Create the minimal skeleton for a catalog quest (Phase 6, P6-5/P6-6) |
+| GET | `/api/quests/coverage` | Catalog coverage, both denominators (Phase 6, D110) |
+| GET | `/api/quests/catalog` | Catalog worklist; `?missing_only=1` narrows to `has_definition = 0` (Phase 6, task 6.10) |
+| GET | `/api/quests/:name/evidence` | Per-quest evidence (Phase 6, P6-8/P6-10) |
+| GET | `/api/quest-ids/:id/evidence` | Evidence for the id tier (Phase 6, P6-3) |
 
 **Implemented response shapes** (task 2.5 / story p2-06). This table above is the
 spec's complete contract — it fixes no shapes — so the shapes below are the
@@ -361,6 +395,279 @@ present in the request**:
 - A `source` that is not a string → `400`, like a non-string `notes`.
 - Response shape unchanged: `source` is not echoed.
 
+**Added by Phase 6 (P6-5/P6-6, task 6.8): `POST /api/quests/scaffold`.** Creates the
+`QuestTemplates/<name>.json` file for a **catalog row with `has_definition = 0`** through the
+same save pipeline every other save uses — template + companion metadata + one commit, status
+`extracted` — and returns the document it wrote, which is what the Catalog view's **Create
+quest** action opens the editor on. There is **no draft lifecycle**: the file is real from the
+moment it is written (D100), and it is a **minimal skeleton into which nothing inferred is ever
+written** (D101).
+
+Request: `{ "quest_name": "LM-NIGHT-MAIN-009", "notes": "optional commit body" }`.
+
+```json
+{
+  "quest_name": "LM-NIGHT-MAIN-009",
+  "link_kind": "inferred",
+  "title_key": null,
+  "has_definition_before": 0,
+  "outcome": "created",
+  "action": "create",
+  "file": "QuestTemplates/questtemplates_LM-NIGHT-MAIN-009.json",
+  "metadata": "QuestMetadatas/questmetadata_LM-NIGHT-MAIN-009.json",
+  "commit": "daa4e7cca209e4fd2d5584ebc8d502008572f482",
+  "branch": "content/2026-09-27",
+  "commit_message": "spiraldb: create quest LM-NIGHT-MAIN-009",
+  "quest": { "m_questName": "LM-NIGHT-MAIN-009", "…": "the 36 keys, corpus order" }
+}
+```
+
+- The document is the **36 keys in the corpus's own order** (`shared/quest/scaffold.ts` is the
+  single home of that order; it is *not* the schema's declaration order), the name, the linked
+  title **only for a direct link**, `m_questNameID: 0` (the corpus's value in 322 of 322 files —
+  the id lives in the `m_questTitle` key), and empty goals/results/dialog.
+- `title_key` is non-null only when the link is `direct` **and** the catalog could resolve one
+  `QuestTitle_*` key (`quest_ids.title_key`, else a unique reverse lookup of `quests.title`).
+  When two keys share the title text the field is `null`: the scaffold never guesses identity,
+  and it never writes inferred material.
+- `has_definition_before` is the column **as read before the write**. The column belongs to the
+  sync and flips to 1 on its next run, because the file now exists; the editor is opened from
+  `quest`, never from a column this call would have to guess.
+- The companion metadata's `Description` records the provenance
+  ([data model](./spec-data-model.md#metadata-files)).
+- **Status codes**: `404` when the catalog holds no such name, `409` when the quest already has a
+  file (scaffolding over an authored quest would blank every field it does not carry, D45(1)),
+  `400` for a body without a usable `quest_name` or a name that would write outside
+  `QuestTemplates/`, `409` for a dirty SpiralDB tree (D14), `500` for any other pipeline failure.
+
+**Added by Phase 6 (P6-15/D110): `GET /api/quests/coverage`.** Serves the `coverage` view
+([data model](./spec-data-model.md)) so the Quests-page header and the Catalog view read **one
+definition** instead of recomputing one. The route is registered **before** `/api/quests/:name`,
+which would otherwise capture `coverage` as a quest name.
+
+```json
+{
+  "nameable": 1447,
+  "id_space": 4830,
+  "defined": 322,
+  "missing": 1125,
+  "references": 1177,
+  "corpus": { "spiraldb_path": "/…/data/test-spiraldb", "quest_files": 322 }
+}
+```
+
+- `nameable` (the catalog tier) and `id_space` (the id tier) are the **two honest denominators**
+  (D97/D98); `defined` is `count(*)` of `quests` rows with `has_definition = 1`. The headline reads
+  "*defined* defined of *nameable* nameable of *id_space* quests the client holds text for" — never a
+  hard-coded 1,447.
+- **The response names its corpus.** `defined` reads **322** against the D17 clone and **328** against
+  the owner's fork, so `corpus` echoes the resolved `settings.spiraldb_path` and the quest-file count
+  it just measured. Neither number may be quoted for the other (D80(c) keeps the clone frozen).
+
+**Added by story p6-11 (plan task 6.10): `GET /api/quests/catalog` — the worklist the Catalog view
+reads.** The view's rows are not in the coverage payload, so the read is named here (and its shape
+recorded, under the same "the table fixes no shapes" rule as every other quest endpoint) instead of
+living implicitly in the client. It is registered **before** `/api/quests/:name`, for the same reason as
+`coverage` — and the same consequence the frontend table already accepts: a quest literally named
+`catalog` is unreachable by its detail route (L1026-1030).
+
+```json
+{
+  "quests": [
+    { "quest_name": "DM-GRAVE-MAIN-008", "title": "Stakes and Stones",
+      "title_source": "direct", "has_definition": 0, "reference_count": 19 }
+  ],
+  "total": 1395,
+  "missing_only": true,
+  "corpus": { "spiraldb_path": "/…/data/test-spiraldb", "quest_files": 322 }
+}
+```
+
+- **The missing-only filter is this request's `?missing_only=`**, applied in SQL (`has_definition = 0`).
+  `1`/`true` turns it on, `0`/`false`/absent leaves it off, and anything else is a **`400`** — a
+  malformed query parameter is refused rather than clamped (the same ladder as `?limit=`). The client
+  never re-derives "missing" from the coverage numbers: the filtered `total` **equals** the view's
+  `missing`, reached two ways.
+- Rows are ordered `reference_count DESC, quest_name ASC` — most-gated first, the order the Catalog
+  view's ASCII draws — so a re-read cannot reorder the worklist.
+- `has_definition` is `0 | 1`; the row's action follows it (evidence link when 1, scaffold when 0).
+
+**Added by Phase 6 (P6-8/P6-10/D105): the evidence endpoints.** `GET /api/quests/:name/evidence` and
+`GET /api/quest-ids/:id/evidence` return **one shape**, resolved as a live join over the indexed
+tables — there is **no materialised evidence table**:
+
+```json
+{
+  "quest": {
+    "quest_name": "WC-CYCLOPS-MAIN-002",
+    "quest_id": 126861,
+    "has_definition": true,
+    "link_kind": "direct",
+    "title": "…",
+    "title_source": "direct"
+  },
+  "text_rows": [
+    {
+      "key": "WizQst126861_Goal1Text",
+      "value": "…",
+      "category": "WizQst126861",
+      "used_by_this_file": true,
+      "field": "m_goals[0].m_goalText"
+    }
+  ],
+  "goal_gates": [
+    {
+      "goal_name": "DM-HOWL-MAIN-001_Complete",
+      "required_status": "Completed",
+      "refs": [{ "wad": "…", "entry": "…", "class": "ReqHasQuest" }]
+    }
+  ],
+  "dialogue": [
+    {
+      "index": 0,
+      "text": "…",
+      "speaker": { "name": "Cyrus Drake", "source": "composed", "persona": "…" },
+      "portrait": "…",
+      "sound": "…"
+    }
+  ],
+  "references": [
+    {
+      "field": "m_goals[0].m_goalTarget",
+      "value": 12,
+      "kind": "item",
+      "resolved": { "label": "Twice Stitched Boots", "display": "Twice Stitched Boots (12)" }
+    }
+  ],
+  "warnings": []
+}
+```
+
+- `text_rows` is **every row of the quest's own table**, each marked `used_by_this_file` (P6-8). The
+  split is computed per row by testing the row's key against the keys this file's own string-valued
+  fields reference — measured material: 2,602 rows available, 1,303 used (~50% unused).
+- `goal_gates` carries the world gate name, its `m_requiredStatus` and the **referencing objects**, so
+  a row can never be shown without provenance. A `ReqHasEntry` row with an empty `m_questName` is a
+  registry check, counted as such and never as a quest reference.
+- `dialogue[].speaker` follows the **client's own precedence**, not a single lookup: `m_nameOverride`
+  (a string-table key in any category) → else `m_nameSTKey` composed through `NPCFormats_First_Last` /
+  `NPCFormats_First_Only` against the persona's first/last components → else the persona's template
+  name via the manifest. `m_cameraName` is a display hint and is never the name. A persona missing
+  from the manifest (8/288 measured) falls back to the **raw string** and is counted in `warnings` —
+  never dropped.
+- `references` covers every field `REFERENCE_FIELDS` (`shared/quest/validation.ts`) declares as a
+  reference (P6-10) — that table stays the single home for "which field references what" — resolved
+  from the synced tables and rendered through the one display rule (`formatNameRow`).
+- `title_source` here is the **catalog link's** provenance (`direct` | `inferred` | `none`, P6-11) —
+  the `quests.title_source` column. It is **not** the list endpoint's per-file `title_source`
+  (`resolved` | `rawKey` | `missing`); see the collision note in
+  [spec-data-model.md](./spec-data-model.md).
+- The id-tier endpoint answers for an id with no linked catalog name: `quest.quest_name` is `null`,
+  `has_definition` is `false`, and `title_source` stays honest about it.
+- Unknown quest or id → `404 {"error": "Unknown quest \"…\""}`.
+
+**Shipped shape, as implemented by p6-07 (the fields the example above does not name).** The example fixes the
+sections; these are the additions the implementation made and the response now guarantees, so a consumer can rely
+on them rather than on a sample:
+
+- `quest.inference_basis` — the basis travels **beside** the `title_source: 'inferred'` label (the
+  `quest_ids.inference_basis` column), so a labelled guess always arrives with its reasoning.
+- `text_rows[].field` — the document path that references the row **when it is used**, and `null` when it is
+  available. `used_by_this_file` is a **per-row computed predicate**: the file's own string values are collected,
+  and a row is used iff its **key is one of those whole strings** — no prefix test, no naming convention.
+- `dialogue[].field`, `dialogue[].dialog_key`, `dialogue[].own_table`, `dialogue[].camera_name`,
+  **`dialogue[].field` points at the dialog ENTRY, not at the `m_dialog` leaf that holds the key** —
+  measured (`m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[0]`), and the distinction matters to an
+  insert: `text_rows[].field` names the value's own path, whereas a dialogue row's entry path must have
+  `.m_dialog` appended (or the field focused) before anything can be written there. A row's `field` is
+  `null` when nothing references it.
+  `dialogue[].actor_template_id` — the entry's path, its `m_dialog` key, and **whether that key belongs to *this*
+  quest's own table**. `own_table` is not decoration: a quest file legitimately carries a top-level `m_dialogList`
+  whose entries point at a **sibling** quest's table (measured on `WC-CYCLOPS-MAIN-002`: 27 entries, 22 under
+  `m_goals` pointing at `WizQst17318F_*` and 5 at `WizQst17318E_*`), and a consumer that cannot tell them apart
+  will read another quest's text as this one's. `camera_name` is echoed as **data** and is never the speaker;
+  `actor_template_id` is surfaced verbatim because the ladder below has no rung that uses it (see the note).
+- `dialogue[].speaker.override_key` / `.st_key` — which string-table key the override or the composition keyed on.
+- `warnings[]` carries the counted, never-dropped cases (the raw-persona fallback, and non-gate references).
+
+**The speaker ladder, and what it cannot do.** The order is `m_nameOverride` → `m_nameSTKey` composed through
+`NPCFormats_First_Last` / `NPCFormats_First_Only` → the persona's template name via the manifest; `m_cameraName` is
+**never** the name. Two consequences measured in p6-07: (i) `m_cameraName` frequently *contains* a plausible
+speaker name (`"Cinematic Camera - Cyrus Drake"`) while elsewhere it is `"LOCATION"`, so the ladder must be proven
+on the entries where the shortcut is wrong, and the response does not read it; (ii) entries exist with an **empty
+persona and a positive `m_actorTemplateID`** (1,377 corpus entries overall) that `npcs` *can* name — the ladder has
+no rung for them, so the id is surfaced as data and the miss is counted rather than an invented rung being added.
+
+**Request-time inputs the ladder needs are indexed, not materialised.** `persona_index` (migration `0003`) holds
+the persona's `template_id` and its first/last component **keys**, built by the sync from the manifest it already
+loads plus a scan of the unpack tree's `Cinematics/` root. It is an **index** — the thing the spec forbids is a
+materialised *evidence* table, not an index over the client's own strings.
+
+---
+
+## NPC View (Phase 6 — D112)
+
+### GET /api/npcs/:id
+
+The **NPC view** (P6-17): one NPC → its personas, dialogs, quests and NPC-keyed inventories. It
+exists because the corpus's dominant name reference is not `npcs` at all (`WC-NPCs_*` is referenced
+1,733 times and `m_nameOverride` stores a *key*, never literal text), and because an NPC's identity is
+**dual** — a template id *and* a persona name — which a single-id name row cannot express.
+
+The namespace is keyed **on the NPC, not on the name string**: one NPC legitimately carries several
+strings at different granularities (`WC-NPCs_00000003` = "Gretta Darkkettle", `WC-NPCs_00000009` =
+"Gretta", `NPCFormats_First_Last` → "Merle Ambrose", `NPCFormats_First_Only` → "Merle"), so keying on
+the string would split one NPC into four. **The strings are aliases; the persona/template is the
+identity.**
+
+`:id` is the NPC key in either of the two forms that resolve: the numeric **template id**, or an
+**alias-vocabulary key** (`WC-NPCs_00000027`, `NPCs_…`, `WizardNPC_…`, `Persona,First`/`Persona,Last`
+components) when no template id resolves. The response echoes which form answered.
+
+```json
+{
+  "npc": {
+    "npc_key": "WC-NPCs_00000003",
+    "template_id": 1234,
+    "display_name": "Gretta Darkkettle",
+    "aliases": ["Gretta Darkkettle", "Gretta"],
+    "personas": [{ "persona_key": "…", "first": "Gretta", "last": "Darkkettle" }],
+    "dialogs": [{ "quest_name": "…", "index": 0, "text": "…" }],
+    "quests": ["WC-CYCLOPS-MAIN-002"],
+    "inventories": { "npc_inventories": [], "npc_spell_inventories": [], "npc_drop_tables": [] },
+    "counts": { "aliases": 2, "personas": 1, "dialogs": 3, "quests": 1 }
+  }
+}
+```
+
+- The three source tables are `WC-NPCs` (2,641 rows), `NPCs` (2,450) and `WizardNPC` (1,237) — all
+  already in `string_table` — plus the `Persona,First` (78) / `Persona,Last` (57) components the
+  composition format consumes.
+- `counts` are the same aggregates the lists carry, so a caller never re-derives them; an
+  NPC-keyed inventory family with no rows answers with an empty array rather than omitting the key.
+- Unknown NPC → `404 {"error": "Unknown NPC \"…\""}`.
+- **Search entry**: `GET /api/search` gains an `npc` group whose rows match the NPC's aliases *or* its
+  template name and report `matched_on`, so searching `Gretta` finds **one** NPC carrying both
+  `Gretta` and `Gretta Darkkettle`, not two rows.
+- The **seven-type names contract stays frozen** (G7): this is an aggregate endpoint, not a name-list
+  row, so `GET /api/names/:type` is untouched.
+
+**Scope note (added by p6-06, measured).** The **namespace** and the `npc` search group ship in task 6.5 (the
+alias keying, the one-row-two-aliases result, and `npcEntityById` resolving both key forms are implemented and
+unit-tested there). **This view endpoint does not ship with task 6.5**, and the reason is a real dependency, not
+an omission: its `dialogs` and `quests` arms both need the **speaker ladder** (`m_nameOverride` → composed
+`nameSTKey` → template name) that task 6.6's evidence API builds, and serving those arms as empty arrays today
+would read as "this NPC has no dialogs" — a false claim. The view is therefore **carried to task 6.6**, which owns the ladder and the per-quest dialogue rows.
+
+**Status: shipped by p6-07 (task 6.6).** With the speaker ladder and `persona_index` in place the view serves
+`personas` / `dialogs` / `quests` / `inventories` with `counts`, and the counts were verified against direct
+queries (`GET /api/npcs/44169` → `{aliases: 2, personas: 1, dialogs: 4, quests: 1}`, matching the SQL). An arm
+that cannot be populated is **explained in `notes`** rather than returned as an empty array posing as an
+answer — e.g. `inventories.npc_drop_tables is empty because NpcDropTable/ does not exist in this corpus, not
+because no row matched` — and an alias-only entity says which arms could not be resolved and why.
+
+---
+
 ### Other Object Types
 
 Same pattern for each type:
@@ -380,6 +687,16 @@ Each supports:
 - `GET /` — List all entries
 - `GET /:key` — Single entry JSON
 - `POST /` — Save new/update (writes file + git commit)
+
+**Each `GET /` row carries `friendly_name: string | null`** (story p6-06, D105/P6-16). The server
+resolves the friendly **data** from the table the family's `friendlyNamesType` names — `npcs` for
+NpcInventory / NpcSpellInventory / NpcDropTable / TreasureCardInventory, `zones` for ZoneTransfer —
+and never formats it: `title` stays the key for all eight families, and the client builds the
+`Name (ID)` pair through `display.ts`'s one rule. `null` has three distinct meanings and the UI
+renders the technical value alone for all three: the family has no friendly source (DropTable,
+GlobalRegistry, and CreatureSpellbook until task 6.9 populates `decks` — `friendlyNameNote` carries
+the reason), the template is a client **engine object** (`Player Object`, `GenericCinematicActor`,
+… — every `TemplateID` at or below 4117, measured), or the key simply has no row in the names table.
 
 Save operations automatically:
 1. Write the JSON file to the correct SpiralDB subdirectory
@@ -583,13 +900,46 @@ legitimately matches two families):
   navigable, because `quests.quest_name` is the `entry_status.object_key` the quest detail route
   already takes; it comes back as a normal quest row with `matched_on: "name"`.
 
-`zones` and `drop_tables` are deliberately not searched by name: `drop_tables.name` repeats the
-`drop_table` object key verbatim, so a name arm over it could only duplicate the key arm.
+`zones` and `drop_tables` were deliberately not searched by name in Phase 5: `drop_tables.name`
+repeats the `drop_table` object key verbatim, so a name arm over it could only duplicate the key arm.
+**Phase 6 widens this** (D105/P6-16 — "every search matches either the friendly or the technical
+value"), and the widening is **selective, not blanket**:
+
+- **`zones` gains a name arm** over `zones.display_name`, because a zone's friendly name
+  (`Dragon Spire / DS A2 Battle / DS A2Z3 Detention`) is genuinely different text from its key
+  (`DragonSpire/DS_A2_Battle/DS_A2Z3_Detention`).
+- **The four TemplateID families gain a name join** (`npcs` for NpcInventory, NpcSpellInventory,
+  NpcDropTable and TreasureCardInventory) and **ZoneTransfer gains one** (`zones`), so a quest-giver's
+  name finds the rows keyed by his template id. Each such row is reported through the existing
+  `matched_on: "key" | "name"` field, and — being a real object key — it stays **navigable**.
+  A template that is an **engine object** (`Player Object`, `GenericCinematicActor`, …) has no NPC
+  name, so the join yields nothing and the row renders its technical value alone.
+- **`drop_tables` gains no name arm: the technical value *is* the name.** `description` is NULL in
+  316 of 317 rows, and a humaniser over the key would read as a name that does not exist — the
+  objection the per-family table in [spec-ui-design.md](./spec-ui-design.md) records.
+- **`npc` becomes a new group** ([NPC View](#npc-view-phase-6--d112)): matched on the NPC's aliases or
+  its template name, so an NPC carrying several name strings at different granularities is **one row**.
 
 `label` is the row's primary text — the object key for a navigable row, the friendly name for an
 informational one — and `name` is whichever friendly name is known for the row (a quest matched on
 its key still reports its title, or `null` when the `quests` table has none). `matched_on` is
 `"key"` or `"name"` and says which column matched.
+
+**An `npc` row additionally carries `aliases: string[]`** (story p6-06). It is the only field the
+group adds, and it is what makes "one row, several granularities" checkable from the wire rather
+than inferred: searching `Gretta` answers **one** row whose `aliases` are
+`["Gretta", "Gretta Darkkettle"]`, `label`/`name` are the full name, and `source_id` is the
+namespace's representative alias key (`WC-NPCs_00000003`, the category the corpus references most);
+a template with no alias row at all answers its template name alone with `source_id` = the template
+id. The row stays **informational** (`object_type`/`object_key`/`status` all `null`, counted in
+`unresolved`): the application has no `/npcs/:id` *page*, and the palette never invents a route.
+The group matches aliases and template names — **not** the template id, which is the four
+`TemplateID` families' join arm and `?q=` on the names API.
+
+**A joined row's `label` stays the object key**, so its friendly name reaches the palette through
+`name` and the pair is rendered client-side (`display.ts`'s one rule). The wire shape is unchanged
+from Phase 5 for that reason — `label` + `name` + `matched_on` already carried everything a
+`Wizard Tours (DS-ACAD-C01-001)` row needs.
 
 **`limit` is a per-group cap, not a response-wide one.** No group carries more than `limit`
 results; `total` is what the response actually carries (the sum over `groups`); and `truncated` is
@@ -644,7 +994,9 @@ unique). `limit` in the response echoes the cap that was applied, so a client ne
 
 **Groups** appear in this order — `quest`, the seven generic families in the order
 [Verification Status](#verification-status) uses, then `item`, `spell`, `npc` — and only groups that
-matched appear at all.
+matched appear at all. Phase 6 widens the `npc` group (D112): it matches the NPC's **aliases** as well
+as its template name, matching on the NPC rather than on the string, so several name strings for one
+NPC are one row. The group order does not change.
 
 **A blank `q` is a `200` with an empty envelope and no database work.** It is the state the palette
 is in the moment it opens, so it is not an error:
@@ -677,7 +1029,9 @@ React Router v6 with `<BrowserRouter>`. Layout component wraps all routes with s
 /                           → Dashboard
 /quests                     → Quest list/browse
 /quests/extract             → Quest extraction (upload + review)
+/quests/catalog             → Quest Catalog: coverage, worklist, scaffold (Phase 6, P6-15)
 /quests/:questName          → Quest detail/edit
+/npcs/:npcId                → NPC view: personas, dialogs, quests, inventories (Phase 6, D112)
 /drop-tables                → DropTable list
 /drop-tables/:name          → DropTable detail/edit
 /npc-inventories            → NpcInventory list
@@ -695,6 +1049,11 @@ React Router v6 with `<BrowserRouter>`. Layout component wraps all routes with s
 /global-registry            → GlobalRegistry editor
 /settings                   → Settings page (paths, user name, sync)
 ```
+
+**Order is part of the contract.** Static segments are listed before the dynamic patterns that could
+shadow them — `/quests/extract` and `/quests/catalog` both precede `/quests/:questName`, which is what
+`matchRoute` (`client/src/lib/routes.ts`) implements. A quest legitimately named `extract` or `catalog`
+is therefore unreachable by its detail route, exactly as it was before Phase 6.
 
 ## Related Documentation
 

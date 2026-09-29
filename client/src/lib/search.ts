@@ -1,5 +1,6 @@
 import type { SearchResponse, SearchResultRow } from './api';
 import { activityHref } from './dashboard';
+import { namePairDistinct } from './display';
 import { serverMessage } from './extract';
 
 /**
@@ -93,14 +94,28 @@ export function searchResultHref(
 }
 
 /**
- * The secondary text a row shows beside its label: the friendlier title when the endpoint
- * sent one, else nothing.
+ * The row's **primary text**: the friendly/technical pair when the endpoint sent both
+ * (`Wizard Tours (DS-ACAD-C01-001)`, `Felix Navidad (126809)`), else the label alone.
  *
- * `null` rather than the label itself, so a routeless name row (whose label *is* its name)
- * does not print the same string twice.
+ * This is `display.ts`'s one rule again — the palette holds the pair from the wire's own
+ * two fields (`name` + `label`) rather than re-deriving either. The two-field wire shape
+ * is unchanged: `label` stays the row's key (spec-api L787-790) and the *pair* is a
+ * client-side rendering of it, so p5-02's contract and the `data-search-result` value are
+ * untouched.
+ */
+export function searchResultLabel(row: SearchResultRow): string {
+  return namePairDistinct(row.name, row.label);
+}
+
+/**
+ * The text beside the primary one: an NPC row's **other name strings** — the aliases the
+ * namespace resolved (`Gretta` beside `Gretta Darkkettle`), so one NPC carrying several
+ * granularities shows them rather than looking like it lost one. `null` when there is
+ * nothing extra, which is every other group (their `name` is already in the pair).
  */
 export function searchResultSecondary(row: SearchResultRow): string | null {
-  return row.name !== null && row.name !== row.label ? row.name : null;
+  const extra = (row.aliases ?? []).filter((alias) => alias !== row.label);
+  return extra.length === 0 ? null : extra.join(' · ');
 }
 
 /* ------------------------------------------------------------------ the state */

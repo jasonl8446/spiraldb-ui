@@ -109,6 +109,100 @@ function n(value: number): string {
   return value.toLocaleString('en-US');
 }
 
+/** `78.0%` — the hold-out is reported with one decimal, like p6-04's own report. */
+function percent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+/**
+ * The catalog stage's lines (task 6.4).
+ *
+ * Every outcome is printed, including the `skipped` one — its message names the missing binary and
+ * the command that builds it, so a run on a machine without .NET says what happened instead of
+ * looking like an empty corpus (D55).
+ */
+export function formatCatalogSummary(result: RunSyncResult): string[] {
+  const catalog = result.catalog;
+  const lines = [field('catalog status', catalog.status.toUpperCase())];
+
+  if (catalog.status === 'ok') {
+    const counts = catalog.counts;
+    lines.push(
+      field(
+        'catalog rows',
+        `${n(counts.catalog_rows)} (merged ${n(counts.merged_rows)}, new ${n(counts.catalog_only_rows)})`,
+      ),
+      field(
+        'quests rows',
+        `${n(counts.quests_rows)} (has_definition = 1: ${n(counts.has_definition_rows)})`,
+      ),
+      field(
+        'catalog refs',
+        `${n(counts.references)} rows kept (${n(counts.reference_rows_raw)} raw rows; ` +
+          `${n(counts.duplicate_references)} not inserted by the UNIQUE)`,
+      ),
+      field(
+        'reference keys',
+        `${n(counts.distinct_reference_keys)} distinct (quest, wad, entry, class, goal) with a ` +
+          `NULL goal_name read as '' — SQLite's UNIQUE keeps a NULL goal_name distinct, so the ` +
+          `table holds ${n(counts.references - counts.distinct_reference_keys)} more rows`,
+      ),
+      field(
+        'quest ids',
+        `${n(counts.ids)} (linked ${n(counts.ids_linked)}; ` +
+          `${n(counts.linked_ids_without_text)} links outside the text tier; ` +
+          `${n(counts.id_collision_names)} losing names on ${n(counts.id_collision_ids)} ids)`,
+      ),
+    );
+    // The extractor's own link counts, so `direct/inferred extracted − recorded` is arithmetic a
+    // reader can check: the D73(e) rule — every measurement carries its unit and its population.
+    if (catalog.quests !== null) {
+      lines.push(
+        field(
+          'links extracted',
+          `${n(catalog.quests.direct_links)} direct, ${n(catalog.quests.inferred_links)} inferred, ` +
+            `${n(catalog.quests.no_link)} none (the extractor's own count, catalog rows only)`,
+        ),
+      );
+    }
+    if (counts.id_collision_names > 0) {
+      // A collision is a resolved conflict, so it is named and its unit is stated, not implied.
+      const shown = counts.id_collision_samples.join('; ');
+      const rest = counts.id_collision_names - counts.id_collision_samples.length;
+      lines.push(
+        field(
+          'links lost',
+          `${n(counts.links_lost_direct)} direct + ${n(counts.links_lost_inferred)} inferred ` +
+            `name(s) claimed an id another name owns; a loser keeps link_kind = none`,
+        ),
+        field('id collisions', rest > 0 ? `${shown}; +${n(rest)} more` : shown),
+      );
+    }
+    if (catalog.holdout !== null) {
+      const holdout = catalog.holdout;
+      lines.push(
+        field(
+          'hold-out',
+          `${percent(holdout.accuracy)} (${holdout.method}; ${n(holdout.cases)} cases, ` +
+            `${n(holdout.hits)} hits) on ${holdout.corpus ?? '(unnamed corpus)'}`,
+        ),
+      );
+    }
+    lines.push(
+      field(
+        'catalog timing',
+        `${formatDuration(catalog.extract_ms)} extract + ${formatDuration(
+          catalog.collect_ms,
+        )} read + ${formatDuration(catalog.write_ms)} write`,
+      ),
+    );
+  } else if (catalog.message !== null) {
+    lines.push(field(catalog.reason ?? 'skipped', catalog.message));
+  }
+
+  return lines;
+}
+
 /** Aligned `label : value` line. */
 function field(label: string, value: string): string {
   return `  ${label.padEnd(20)}: ${value}`;
@@ -131,6 +225,10 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
     ),
   ];
 
+  if (result.corpusOverrideWarning != null) {
+    lines.push('', `  WARNING — ${result.corpusOverrideWarning}`, '');
+  }
+
   if (result.status === 'success') {
     lines.push(
       field('items', n(result.counts.items)),
@@ -140,6 +238,9 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('zones', n(result.counts.zones)),
       field('drop_tables', n(result.counts.drop_tables)),
       field('string_table', n(result.counts.string_table)),
+      field('persona_index', `${n(result.counts.persona_index)} persona object names`),
+      field('recipes', n(result.counts.recipes)),
+      field('decks', n(result.counts.decks)),
       // Manifest id provenance (D35 / task 1.4h). Always printed, including the
       // zeroes: "0 dropped" is the acceptance criterion, so it must be visible.
       field('manifest entries', `${n(result.manifest.entries)} ids`),
@@ -172,9 +273,86 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
       field('total', formatDuration(result.durationMs)),
       field('sync_history', `success row written at ${result.timestamp}`),
     );
+    lines.push(...formatCatalogSummary(result));
+    lines.push(...formatBreadthSummary(result));
   } else {
     lines.push(field('error', result.errorMessage ?? '(no message)'));
     lines.push(field('sync_history', `failed row written at ${result.timestamp}`));
+    lines.push(...formatCatalogSummary(result));
+    lines.push(...formatBreadthSummary(result));
+  }
+
+  return lines;
+}
+
+/**
+ * The breadth stage's own numbers (task 6.9): the three families, their D35 join, and every row
+ * the insert did **not** keep — because "0 dropped" is an acceptance criterion and a criterion
+ * has to be readable off the run, not inferred from a total.
+ *
+ * `zones` prints the **old and the new count side by side** (ac2's "reconciled explicitly"): the
+ * corpus scan's own row count is the left number, the reconciled table's is the right one.
+ */
+export function formatBreadthSummary(result: RunSyncResult): string[] {
+  const breadth = result.breadth;
+  const lines = [field('breadth status', breadth.status.toUpperCase())];
+
+  if (breadth.status === 'ok') {
+    const dropped = breadth.dropped;
+    lines.push(
+      field(
+        'zones',
+        `old ${n(breadth.zones.corpus)} (corpus ZoneTransfer) -> new ${n(breadth.zones.new)} ` +
+          `(WizZoneData ${n(breadth.zones.wiz)}, +${n(breadth.zones.corpus_only)} corpus-only kept, ` +
+          `${n(breadth.zones.relabelled)} relabelled)`,
+      ),
+      field(
+        'zones corpus-only',
+        breadth.zones.corpus_only === 0
+          ? 'none — every corpus zone path is a WizZoneData m_zoneName'
+          : breadth.zones.corpus_only_samples.join('; '),
+      ),
+      field(
+        'recipes',
+        `${n(breadth.recipes)} rows kept of ${n(breadth.raw.recipes)} read ` +
+          `(dropped ${n(dropped.recipes)}: no manifest entry ${n(dropped.recipes_missing_id)}, ` +
+          `duplicate id ${n(dropped.recipes_duplicate_id)})`,
+      ),
+      field(
+        'decks',
+        `${n(breadth.decks)} rows kept of ${n(breadth.raw.decks)} read ` +
+          `(dropped ${n(dropped.decks)}: no manifest entry ${n(dropped.decks_missing_id)}, ` +
+          `duplicate id ${n(dropped.decks_duplicate_id)}, duplicate deck_name ${n(
+            dropped.decks_duplicate_name,
+          )})`,
+      ),
+      field(
+        'manifest join (D35)',
+        `recipes ${n(breadth.manifest.recipes.exact)} exact + ${n(
+          breadth.manifest.recipes.repaired,
+        )} repaired + ${n(breadth.manifest.recipes.missing)} missing; decks ${n(
+          breadth.manifest.decks.exact,
+        )} exact + ${n(breadth.manifest.decks.repaired)} repaired + ${n(
+          breadth.manifest.decks.missing,
+        )} missing (repair collisions ${n(breadth.manifest.recipes.repair_collisions)})`,
+      ),
+    );
+    for (const run of breadth.runs) {
+      lines.push(field('breadth run', `${run.select} on ${run.gamedata} — ${run.stderr}`));
+    }
+    if (breadth.dropped_samples.length > 0) {
+      const rest = dropped.recipes + dropped.decks - breadth.dropped_samples.length;
+      lines.push(
+        field(
+          'breadth dropped',
+          rest > 0
+            ? `${breadth.dropped_samples.join('; ')}; +${n(rest)} more`
+            : breadth.dropped_samples.join('; '),
+        ),
+      );
+    }
+  } else if (breadth.message !== null) {
+    lines.push(field(breadth.reason ?? 'skipped', breadth.message));
   }
 
   return lines;

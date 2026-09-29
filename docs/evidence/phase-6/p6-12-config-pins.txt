@@ -1,0 +1,67 @@
+=== ac1: the resolved run directory and the config copy's pins ===
+
+run directory  : /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run   (a copy of Imlight's 866 MB built output)
+its parent     : /home/jason/Documents/git-projects/spiraldb-ui/tools/   (in the workspace — what the cwd-relative paths need)
+Aurorium cwd   : /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run   (workspace cwd, per D114)
+DOTNET_ROOT    : /nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet
+
+--- Config/Imlight.ini in the copy: every pinned key, verbatim ---
+2:GameRevision = r806919.Wizard_1_610
+19:LoginServerPort = 12000
+30:GameServerPort = 12333
+78:PatchServerPort = 12500
+80:PatchServerInternalUrl = http://127.0.0.1:12369
+85:LocalWadCachePath = ./cache
+93:PlayerDatabaseUrl = 
+97:SpiralDBRemote = Revive101/spiraldb
+99:SpiralDBBranch = main
+101:SpiralDBLocalPath = /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+103:SpiralDBAutoFetch = false
+105:SpiralDBDisableRemote = true
+116:EmbeddedDatabaseDataDirectory = ../ImlightEmbeddedDatabase/
+118:EmbeddedDatabasePort = 8080
+
+--- the three pins the criterion names, restated ---
+  SpiralDBLocalPath      = /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  SpiralDBDisableRemote  = true
+  PlayerDatabaseUrl      = <> (empty)
+
+--- tools/.aurorium-run/config.toml, verbatim ---
+# Written by scripts/imlight-boot.ts (p6-12 / D114). Workspace-local on purpose:
+# Aurorium has no offline flag, so the [patch] host points at a refused endpoint and the poll
+# fails soft instead of downloading the retail revision.
+
+[server]
+endpoint = "127.0.0.1:12369"
+
+[fetcher]
+concurrent_downloads = 2
+# The existing 19 GB revision tree, read in place. Never copied; the refused [patch] host keeps
+# the fetcher off its write path entirely.
+save_directory = "/home/jason/Documents/git-projects/Aurorium/data"
+fetch_interval = 28800
+
+[patch]
+# A refused endpoint: 127.0.0.1:1 accepts nothing, so check_revision fails immediately and the one
+# warning is the whole cost. Verified refused before the boot, not assumed.
+host = "127.0.0.1"
+port = "1"
+
+[database]
+path = "aurorium.db"
+
+[debug]
+level = "info"
+file_logging = true
+
+--- the raw Aurorium boot log ---
+29.09.2026 00:08:16  INFO aurorium::db: Database aurorium.db initialized!
+29.09.2026 00:08:16  INFO aurorium: File server listening on 127.0.0.1:12369
+29.09.2026 00:08:16  INFO aurorium: Checking for a new revision @ 127.0.0.1:1
+29.09.2026 00:08:16  WARN aurorium: Revision check failed. Will retry next time. error=Failed to connect to the server
+
+--- the raw Imlight console: the SpiralDB line, verbatim ---
+### file: docs/evidence/phase-6/p6-12-imlight-boot-baseline.txt (the Director's own stdout+stderr)
+126:2026-09-29 00:08:21.243 INF SpiralDB.Load@L149                       : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries. 
+127:2026-09-29 00:08:21.243 INF SpiralDB.Load@L149                       : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries. 
+130:2026-09-29 00:08:21.249 INF SpiralDB.Load@L149                       : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries. 

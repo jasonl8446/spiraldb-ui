@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import QuestBrowseTable from '../components/quest/QuestBrowseTable';
+import CoverageHeader from '../components/quest/CoverageHeader';
 import QuestCardList from '../components/quest/QuestCardList';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import { Badge } from '../components/ui/badge';
@@ -107,6 +108,10 @@ export default function QuestsPage(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Task 6.10: the same coverage header the Catalog view mounts — one read of the
+          `coverage` view, so this page and the catalog cannot disagree about coverage. */}
+      <CoverageHeader />
+
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div
           role="tablist"

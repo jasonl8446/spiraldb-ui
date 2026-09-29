@@ -16,7 +16,7 @@ import type { ObjectListRow } from '../../lib/objects';
  */
 export interface ObjectCardListProps {
   rows: readonly ObjectListRow[];
-  /** The card's primary line: the key, or a friendlier title. */
+  /** The card's primary line — the family pair, from the server's `friendly_name`. */
   title: (row: ObjectListRow) => string;
   /** The status badge element; `null` for a family with no lifecycle. */
   status: (row: ObjectListRow) => ReactNode;

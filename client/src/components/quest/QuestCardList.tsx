@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 
 import type { QuestListRow } from '../../lib/api';
-import { relativeTime } from '../../lib/display';
-import { questStatus } from '../../lib/quests';
+import { namePairDistinct, relativeTime } from '../../lib/display';
+import { questFriendlyTitle, questStatus } from '../../lib/quests';
 import StatusBadge from '../StatusBadge';
 
 /**
@@ -33,7 +33,9 @@ export default function QuestCardList({ rows, className }: QuestCardListProps): 
             to={`/quests/${encodeURIComponent(row.quest_name)}`}
             className="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 transition-colors hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
-            <span className="truncate font-mono text-sm text-zinc-100">{row.quest_name}</span>
+            <span className="truncate font-mono text-sm text-zinc-100">
+              {namePairDistinct(questFriendlyTitle(row), row.quest_name)}
+            </span>
             <span className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-zinc-400">Level {row.level ?? '—'}</span>
               <StatusBadge status={questStatus(row)} />

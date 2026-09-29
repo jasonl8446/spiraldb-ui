@@ -1,0 +1,49 @@
+### the four static gates, on the frozen code (including the new evidence docs)
+
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+rc=0
+
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+rc=0
+
+$ npm run build:server
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 4 server asset(s) to server/dist/server/migrations: 0001_init.sql, 0002_quest_catalog.sql, 0003_persona_index.sql, 0004_breadth_catalog.sql
+rc=0
+
+$ npm run build:client
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2344 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-DGWIYd6n.css                  36.34 kB │ gzip:   7.60 kB
+dist/assets/QuestGoalLogicEditor-ByGNUkpL.js   293.61 kB │ gzip:  97.74 kB
+dist/assets/index-ChqE4afS.js                  791.93 kB │ gzip: 232.80 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.61s
+rc=0
+

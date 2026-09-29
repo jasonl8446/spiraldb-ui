@@ -1,8 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ArrowLeft, Braces, Pencil } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
+import { AlertTriangle, ArrowLeft, Braces, ListTree, Pencil } from 'lucide-react';
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
+import EvidencePanel from '../components/quest/EvidencePanel';
+import { EvidenceFocusProvider, useEvidenceFocus } from '../components/quest/EvidenceFocus';
 import QuestDialogEditor from '../components/quest/QuestDialogEditor';
 import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
 import QuestInfoEditor from '../components/quest/QuestInfoEditor';
@@ -19,6 +21,7 @@ import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonP
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import StatusBadge from '../components/StatusBadge';
+import { namePairDistinct } from '../lib/display';
 import UnsavedChangesDialog from '../components/quest/UnsavedChangesDialog';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -41,10 +44,13 @@ import { useUserNameGate } from '../hooks/useUserNameGate';
 const QuestGoalLogicEditor = lazy(() => import('../components/quest/QuestGoalLogicEditor'));
 import {
   getQuest,
+  getQuestEvidence,
+  evidenceQueryKey,
   listQuests,
   questDetailQueryKey,
   QUESTS_QUERY_KEY,
   saveQuest,
+  type QuestEvidence,
   type QuestListRow,
   type QuestObject,
   type SaveQuestResult,
@@ -55,12 +61,20 @@ import { notifyError, notifySuccess, notifyWarning } from '../lib/notify';
 import { UserNameCancelledError } from '../lib/user-name';
 import {
   BACK_TO_QUESTS_LABEL,
+  EVIDENCE_INSERTED_MESSAGE,
+  EVIDENCE_PANEL_LABEL,
+  EVIDENCE_PANEL_TITLE,
   isNotFoundError,
   JSON_PANEL_LABEL,
+  JSON_PANEL_TITLE,
+  RAIL_TAB_QUERY_PARAM,
   QUEST_LOAD_ERROR,
   QUEST_LOADING,
   QUEST_NOT_FOUND_TITLE,
+  questFriendlyTitle,
   questStatus,
+  railTabFromParam,
+  type QuestRailTab,
 } from '../lib/quests';
 import {
   DISCARD_LABEL,
@@ -76,6 +90,7 @@ import {
   STATUS_TRANSITIONS,
   type TransitionTarget,
 } from '../lib/status-transition';
+import type { EvidenceInsertAccepted } from '../lib/evidence-insert';
 import { cn } from '../lib/utils';
 
 /**
@@ -227,7 +242,18 @@ function LoadedQuest({
   row: QuestListRow | undefined;
 }): JSX.Element {
   const isMobile = useIsMobile();
-  const [jsonOpen, setJsonOpen] = useState(false);
+  /**
+   * The right rail's state (story p6-08): **one** rail with two tabs, so `null` means closed and a
+   * tab means open on that tab. The spec's own reason (L417-419) is that the JSON side panel already
+   * owns the 400px rail and the form plus two rails does not fit at 1280px.
+   *
+   * `?panel=evidence` opens it on the Evidence tab on the first paint — the entry point a catalog
+   * row links through (p6-10's link, `RAIL_TAB_QUERY_PARAM`), and the state the tier-1 spec drives.
+   */
+  const [searchParams] = useSearchParams();
+  const [railTab, setRailTab] = useState<QuestRailTab | null>(() =>
+    railTabFromParam(searchParams.get(RAIL_TAB_QUERY_PARAM)),
+  );
   /**
    * The view/edit mode (plan task 3.10). `QuestPreview`'s `panels` record **is** the mode:
    * present → the 3.3-3.8 editors, absent → the p2-07 read-only bodies, with no second copy of
@@ -257,6 +283,32 @@ function LoadedQuest({
   useEffect(() => {
     liveDocRef.current = document.doc;
   }, [document.doc]);
+
+  /**
+   * The evidence read (task 6.6's endpoint, story p6-08's panel). It is **lazy** — `enabled` only
+   * while the Evidence tab is open — for two reasons: the panel is the only consumer, and a
+   * hermetic tier-1 run whose spec never opens the rail must not reach the dev stack for a route
+   * it does not need (D40). A 404 is not retried: an unknown quest's evidence is not transient.
+   */
+  const evidence = useQuery({
+    queryKey: evidenceQueryKey(questName),
+    queryFn: () => getQuestEvidence(questName),
+    retry: false,
+    enabled: railTab === 'evidence',
+  });
+
+  /**
+   * The insert action the evidence panel calls (AC: "the panel never writes to the file").
+   *
+   * It is the **document state's own** `edit` — `useQuestDocument` → `lib/quest-edit.ts` →
+   * `shared/document.ts`'s `applyEdits` (D58) — so an insert is exactly one `set` of one path and
+   * the file is untouched until the user presses Save through the existing pipeline. The panel
+   * receives no writer and imports none.
+   */
+  const applyInsert = (plan: EvidenceInsertAccepted): void => {
+    document.edit(plan.edit);
+    notifySuccess(EVIDENCE_INSERTED_MESSAGE);
+  };
 
   /**
    * Save one quest: the identity gate (D38), then `POST /api/quests` — the Phase-2 pipeline
@@ -326,59 +378,137 @@ function LoadedQuest({
     : undefined;
 
   return (
-    // The two mode markers, so the state is observable without inferring it from the editors
-    // (a tier-1 spec and the browser evidence both read them).
-    <div className="flex flex-col gap-4" data-edit-mode={editMode} data-dirty={document.dirty}>
-      <QuestHeader
-        quest={quest}
-        questName={questName}
-        status={status}
-        jsonOpen={jsonOpen}
-        onToggleJson={() => setJsonOpen((open) => !open)}
-        transitionPending={transition.isPending}
-        onTransition={(target) => transition.request(questName, target)}
-        saveBlocked={validation.blocked}
-        onSave={() => save.mutate(document.doc as QuestObject)}
-        editMode={editMode}
-        onToggleEdit={() => setEditMode((on) => !on)}
-        dirty={document.dirty}
-        onDiscard={document.reset}
-      />
+    /**
+     * The evidence panel's focus channel wraps **both** the editor and the rail (story p6-08): the
+     * editors report the field they hold focus in, the rail reads it, and neither has to pass a prop
+     * through `QuestPreview`'s `panels` map. In view mode no editor reports, so the rail shows the
+     * view-mode explanation — which is the honest reason, since view mode has no editable document.
+     */
+    <EvidenceFocusProvider>
+      {/* The two mode markers, so the state is observable without inferring it from the editors
+          (a tier-1 spec and the browser evidence both read them). */}
+      <div className="flex flex-col gap-4" data-edit-mode={editMode} data-dirty={document.dirty}>
+        <QuestHeader
+          quest={quest}
+          questName={questName}
+          questTitle={row === undefined ? null : questFriendlyTitle(row)}
+          status={status}
+          railTab={railTab}
+          onToggleTab={(tab) => setRailTab((open) => (open === tab ? null : tab))}
+          transitionPending={transition.isPending}
+          onTransition={(target) => transition.request(questName, target)}
+          saveBlocked={validation.blocked}
+          onSave={() => save.mutate(document.doc as QuestObject)}
+          editMode={editMode}
+          onToggleEdit={() => setEditMode((on) => !on)}
+          dirty={document.dirty}
+          onDiscard={document.reset}
+        />
 
-      <QuestValidationBanner banner={validation.banner} />
+        <QuestValidationBanner banner={validation.banner} />
 
-      {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
-          map (D64/D65) — findings the client's engine cannot produce. */}
-      <ValidationSummary messages={serverValidation.messages} />
+        {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
+            map (D64/D65) — findings the client's engine cannot produce. */}
+        <ValidationSummary messages={serverValidation.messages} />
 
-      <div className="flex min-h-0 gap-4">
-        <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
-          <FieldValidationProvider messages={validation.messages}>
-            <QuestPreview quest={quest} className="h-[70vh]" panels={panels} />
-          </FieldValidationProvider>
+        <div className="flex min-h-0 gap-4">
+          <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
+            <FieldValidationProvider messages={validation.messages}>
+              <QuestPreview quest={quest} className="h-[70vh]" panels={panels} />
+            </FieldValidationProvider>
+          </div>
+          {/* Exactly one of the two rail surfaces is mounted (see `QuestJsonPanel`). */}
+          {railTab !== null && !isMobile ? (
+            <QuestRail
+              tab={railTab}
+              onTabChange={setRailTab}
+              quest={document.doc}
+              evidence={evidence}
+              editable={editMode}
+              onInsert={applyInsert}
+            />
+          ) : null}
         </div>
-        {/* Exactly one of the two JSON surfaces is mounted (see `QuestJsonPanel`). */}
-        {jsonOpen && !isMobile ? <QuestJsonPanel quest={document.doc} /> : null}
+
+        {isMobile ? (
+          <QuestJsonOverlay
+            open={railTab !== null}
+            onOpenChange={(open) => setRailTab(open ? (railTab ?? 'json') : null)}
+            quest={document.doc}
+            tab={railTab ?? 'json'}
+            onTabChange={setRailTab}
+          >
+            <EvidencePanel
+              evidence={evidence.data}
+              isLoading={railTab === 'evidence' && evidence.isPending}
+              isError={evidence.isError}
+              target={null}
+              editable={editMode}
+              doc={document.doc}
+              onInsert={applyInsert}
+            />
+          </QuestJsonOverlay>
+        ) : null}
+
+        <StatusHistoryPanel type="quests" objectKey={questName} noun="quest" />
+        <StatusNotesDialog {...transition.dialog} />
+        <UnsavedChangesDialog
+          open={guard.blocked}
+          onOpenChange={(open) => {
+            // Escape, the close button and an overlay click all mean "stay": only the dialog's own
+            // destructive button leaves, and it calls `guard.discard` directly.
+            if (!open) {
+              guard.stay();
+            }
+          }}
+          onDiscard={guard.discard}
+        />
       </div>
+    </EvidenceFocusProvider>
+  );
+}
 
-      {isMobile ? (
-        <QuestJsonOverlay open={jsonOpen} onOpenChange={setJsonOpen} quest={document.doc} />
-      ) : null}
-
-      <StatusHistoryPanel type="quests" objectKey={questName} noun="quest" />
-      <StatusNotesDialog {...transition.dialog} />
-      <UnsavedChangesDialog
-        open={guard.blocked}
-        onOpenChange={(open) => {
-          // Escape, the close button and an overlay click all mean "stay": only the dialog's own
-          // destructive button leaves, and it calls `guard.discard` directly.
-          if (!open) {
-            guard.stay();
-          }
-        }}
-        onDiscard={guard.discard}
+/**
+ * The right rail on desktop (≥768px): the one `<aside>` the JSON panel already owns, now carrying
+ * the spec's `Evidence │ JSON` tabs. It is a component of its own because it **consumes** the focus
+ * channel, and the channel's provider is inside this page — `LoadedQuest` itself sits outside it.
+ *
+ * The evidence body is passed straight to `EvidencePanel`; nothing here writes.
+ */
+function QuestRail({
+  tab,
+  onTabChange,
+  quest,
+  evidence,
+  editable,
+  onInsert,
+}: {
+  tab: QuestRailTab;
+  onTabChange: (tab: QuestRailTab) => void;
+  quest: unknown;
+  evidence: UseQueryResult<QuestEvidence>;
+  editable: boolean;
+  onInsert: (plan: EvidenceInsertAccepted) => void;
+}): JSX.Element {
+  const { target } = useEvidenceFocus();
+  const evidenceTab = tab === 'evidence';
+  return (
+    <QuestJsonPanel
+      quest={quest}
+      tab={tab}
+      onTabChange={onTabChange}
+      title={evidenceTab ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE}
+    >
+      <EvidencePanel
+        evidence={evidence.data}
+        isLoading={evidenceTab && evidence.isPending}
+        isError={evidence.isError}
+        target={target}
+        editable={editable}
+        doc={quest}
+        onInsert={onInsert}
       />
-    </div>
+    </QuestJsonPanel>
   );
 }
 
@@ -423,9 +553,10 @@ function BackLink(): JSX.Element {
 function QuestHeader({
   quest,
   questName,
+  questTitle,
   status,
-  jsonOpen,
-  onToggleJson,
+  railTab,
+  onToggleTab,
   transitionPending,
   onTransition,
   saveBlocked,
@@ -437,9 +568,17 @@ function QuestHeader({
 }: {
   quest: QuestObject;
   questName: string;
+  /**
+   * The resolved title from the list row, or `null` when the list has not answered or
+   * answered with a raw key / the name itself (`questFriendlyTitle` owns that rule). It is
+   * the friendly half of the QuestTemplate pair (D105/P6-16).
+   */
+  questTitle: string | null;
   status: StatusValue;
-  jsonOpen: boolean;
-  onToggleJson: () => void;
+  /** The rail's tab, or `null` when it is closed (story p6-08). */
+  railTab: QuestRailTab | null;
+  /** Opens the rail on a tab, or closes it when it is already open on that tab. */
+  onToggleTab: (tab: QuestRailTab) => void;
   transitionPending: boolean;
   onTransition: (target: TransitionTarget) => void;
   /** Story p3-09: the validation gate the Save affordance follows. */
@@ -454,7 +593,10 @@ function QuestHeader({
   /** Story p3-10: discard the edits and restore the loaded document byte for byte. */
   onDiscard: () => void;
 }): JSX.Element {
-  const displayName = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
+  const questKey = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
+  // The QuestTemplate pair: `Wizard Tours (DS-ACAD-C01-001)`, collapsed to the name
+  // alone when the title lookup fell back to the name itself (or has not answered).
+  const displayName = namePairDistinct(questTitle, questKey);
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-3">
       <BackLink />
@@ -547,14 +689,32 @@ function QuestHeader({
             />
           </>
         ) : null}
+        {/*
+          The two rail affordances (story p6-08, spec L419-420): `{ }` opens the one rail on the
+          JSON tab and the evidence affordance opens it on `Evidence`. Each is a labelled toggle
+          whose `aria-pressed` carries "the rail is open on my tab", so the two states stay
+          distinguishable and pressing the active one closes the rail.
+        */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={EVIDENCE_PANEL_LABEL}
+          aria-pressed={railTab === 'evidence'}
+          title={EVIDENCE_PANEL_LABEL}
+          className={cn(railTab === 'evidence' ? 'text-blue-300 hover:text-blue-200' : undefined)}
+          onClick={() => onToggleTab('evidence')}
+        >
+          <ListTree className="h-4 w-4" aria-hidden="true" />
+        </Button>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           aria-label={JSON_PANEL_LABEL}
-          aria-pressed={jsonOpen}
+          aria-pressed={railTab === 'json'}
           title={JSON_PANEL_LABEL}
-          onClick={onToggleJson}
+          onClick={() => onToggleTab('json')}
         >
           <Braces className="h-4 w-4" aria-hidden="true" />
         </Button>

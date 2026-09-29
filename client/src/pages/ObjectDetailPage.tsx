@@ -7,6 +7,7 @@ import type { ObjectTypeConfig } from '@shared/objectTypes';
 import { updateObjectBody } from '@shared/objectSave';
 
 import ObjectDetailLayout from '../components/objects/ObjectDetailLayout';
+import { useObjectFriendlyName } from '../hooks/useObjectFriendlyName';
 import { FieldValidationProvider } from '../components/shared/FieldValidation';
 import ValidationSummary from '../components/shared/ValidationSummary';
 import { Button } from '../components/ui/button';
@@ -313,6 +314,9 @@ function LoadedEntry({
   const client = useQueryClient();
   const state = useQuestDocument(source);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
+  // The header's friendly half, from the same single lookup the dropdowns use; `null`
+  // (no friendly source, an engine-object template, or a 404) renders the key alone.
+  const friendlyName = useObjectFriendlyName(config, objectKey);
 
   const { dirty } = state;
   const document = state.doc as Record<string, unknown>;
@@ -361,6 +365,7 @@ function LoadedEntry({
     <ObjectDetailLayout
       config={config}
       objectKey={objectKey}
+      friendlyName={friendlyName}
       status={status}
       noun={noun}
       backTo={backTo}
