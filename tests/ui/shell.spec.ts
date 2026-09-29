@@ -1,5 +1,7 @@
 import { expect, test as base, type Locator, type Page } from '@playwright/test';
 
+import { MOCK_COVERAGE } from './quests-mocks';
+
 /**
  * Tier-1 shell spec (plan task 1.10, decision D23 tier 1).
  *
@@ -239,18 +241,7 @@ async function mockShellApi(page: Page): Promise<void> {
   // `GET /api/quests/coverage`, plus a catalog worklist read. Both are registered **after** the
   // `**/api/quests/*` branch above, whose glob would otherwise answer them with a bare quest
   // document (D81: mock every endpoint the page reads, not only the ones the assertions name).
-  await page.route('**/api/quests/coverage', (route) =>
-    route.fulfill({
-      json: {
-        nameable: 1717,
-        id_space: 4823,
-        defined: 322,
-        missing: 1395,
-        references: 2855,
-        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
-      },
-    }),
-  );
+  await page.route('**/api/quests/coverage', (route) => route.fulfill({ json: MOCK_COVERAGE }));
   await page.route('**/api/quests/catalog*', (route) =>
     route.fulfill({
       json: {

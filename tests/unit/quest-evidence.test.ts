@@ -19,6 +19,7 @@ import { createSpiraldbIndex, type SpiraldbIndex } from '@server/services/spiral
 import { createNpcsRouter } from '@server/routes/npcs';
 import { createQuestIdsRouter } from '@server/routes/questIds';
 import { createQuestsRouter } from '@server/routes/quests';
+import { seedNpc, seedString } from '../helpers/seed';
 
 /**
  * Story p6-07 — the per-quest **evidence** surface and the **NPC view**
@@ -61,18 +62,6 @@ function memoryDb(): Db {
   const db = openDb({ file: MEMORY_DB });
   OPEN.push(db);
   return db;
-}
-
-function seedString(db: Db, key: string, value: string, category: string): void {
-  db.prepare('INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)').run(
-    key,
-    value,
-    category,
-  );
-}
-
-function seedNpc(db: Db, templateId: number, name: string): void {
-  db.prepare('INSERT INTO npcs (template_id, name) VALUES (?, ?)').run(templateId, name);
 }
 
 function seedPersona(
@@ -290,13 +279,11 @@ describe('the evidence shape (ac1/ac2 — committed fixtures)', () => {
       sources: ['zones'],
       kind: 'zones',
       resolved: {
-        label: 'Fixture City / Fix Zone',
         display: 'Fixture City / Fix Zone (FixtureCity/Fix_Zone)',
       },
     });
     // A spell id resolves as the friendly name alone: `formatNameRow('spells', …)` pairs nothing.
     expect(byField.get('m_results[0].m_templateID')?.resolved).toEqual({
-      label: 'Fixture Spell',
       display: 'Fixture Spell',
     });
     // `m_templateID` is the same key on two owners with different sources: `ResLearnSpell` is a
@@ -305,8 +292,9 @@ describe('the evidence shape (ac1/ac2 — committed fixtures)', () => {
     expect(byField.get('m_results[1].m_templateID')).toMatchObject({
       sources: ['npcs'],
       kind: 'npcs',
-      // `label` is the friendly half, `display` the one display rule's rendering of the pair.
-      resolved: { label: 'Fixture Villain', display: 'Fixture Villain (9001)' },
+      // `display` is the one display rule's rendering of the pair (V11 removed the second
+      // `label` half, which nothing read).
+      resolved: { display: 'Fixture Villain (9001)' },
     });
     // The miss is reported as a reference with no resolution *and* as a warning.
     expect(byField.get('m_goals[2].m_destinationZone')?.resolved).toBeNull();

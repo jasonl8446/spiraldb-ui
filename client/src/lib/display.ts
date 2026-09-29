@@ -227,7 +227,11 @@ export function formatNameRow(type: NamesType, row: NameRow): string {
       // `npcDisplayName` is the pair with a numeric id; a missing name is the bare id.
       return npcDisplayName(friendly, (row as NameRowMap['npcs']).template_id);
     case 'quests':
-      return namePair(friendly, (row as NameRowMap['quests']).quest_name);
+      // `namePairDistinct`, not `namePair`: the sync writes `title = record.quest_name` for a quest
+      // whose world named no title (only 286 of 1,447 carry a direct one), so an identity pair is
+      // the **common** catalog shape here, not an edge — and `X (X)` is forbidden (the module
+      // header's rule, and `namePairDistinct`'s own docstring names exactly this case).
+      return namePairDistinct(friendly, (row as NameRowMap['quests']).quest_name);
     case 'zones':
       return namePair(friendly, (row as NameRowMap['zones']).zone_path);
     case 'drop_tables':

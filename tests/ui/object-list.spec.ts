@@ -100,6 +100,15 @@ interface ObjectMockOptions {
   status?: 'extracted' | 'reviewed' | 'verified';
   /** Answers the detail route with this status instead (for the 404 case). */
   detailStatus?: number;
+  /**
+   * The **single-name** lookup's rows: `GET /api/names/npcs/:id` → `{ template_id, name }`.
+   *
+   * Registered after the list route on purpose — Playwright matches handlers in reverse order of
+   * registration, and `**\/api/names/npcs*` would otherwise answer the single-id read with the list
+   * envelope. Without this the detail header always falls back to the key, so D105's pair
+   * (`Name (key)`) was asserted nowhere at the rendered level.
+   */
+  singleNames?: Record<string, { template_id: number; name: string }>;
 }
 
 interface ObjectMockRecorded {
@@ -149,6 +158,16 @@ async function mockObjectsApi(
   );
   // The NPC friendly-name dropdown's list read (rendered as soon as Edit is pressed).
   await page.route('**/api/names/npcs*', (route) => route.fulfill({ json: { npcs: [] } }));
+  // …and the detail header's **single-id** read, registered afterwards so it wins for its own URL
+  // (Playwright matches in reverse registration order). Absent by default, as it is for a real miss.
+  const singleNames = options.singleNames ?? {};
+  await page.route('**/api/names/npcs/*', (route) => {
+    const id = route.request().url().split('/').pop() ?? '';
+    const row = singleNames[id];
+    return row === undefined
+      ? route.fulfill({ status: 404, json: { error: `no name for ${id}` } })
+      : route.fulfill({ json: row });
+  });
   // The Inventory multi-select's names table (story p4-03 replaced the raw-id chips with a
   // searchable multi-select over `items`, so this read now happens on mount). `160999` — the id
   // the Edit test adds — is deliberately absent, so that chip must show the raw id: the same
@@ -336,6 +355,24 @@ test.describe('the generic object detail (NpcInventory)', () => {
     ).toBeVisible();
     await expect(page.getByLabel('Add an item id')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  /**
+   * The header's friendly pair, at the rendered level (D105/P6-16, final-deslop T5/C4). The single
+   * name route answers a real row here; every other arm in this file leaves it 404ing, which is the
+   * documented miss. `namePair` (not `namePairDistinct`) is the object list's rule — an NPC's
+   * template name is never its template id.
+   */
+  test('the header pairs the resolved friendly name with the key', async ({ page }) => {
+    await mockObjectsApi(page, {
+      status: 'reviewed',
+      singleNames: { '2001': { template_id: 2001, name: 'Merle Ambrose' } },
+    });
+    await page.goto('/npc-inventories/2001');
+
+    await expect(
+      page.getByRole('main').getByText('Merle Ambrose (2001)', { exact: true }),
+    ).toBeVisible();
   });
 
   test('Edit → form → Save posts the live document, and the JSON panel follows it', async ({

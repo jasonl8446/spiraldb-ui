@@ -548,6 +548,9 @@ export function writeQuestCatalog(options: WriteQuestCatalogOptions): QuestCatal
   const { db, collected } = options;
   const started = Date.now();
 
+  /** One `count(*)`-shaped read. Declared once for both returns below. */
+  const scalar = (sql: string): number => (db.prepare(sql).get() as { value: number }).value;
+
   // Replaced unconditionally: a skipped stage must not leave rows pointing at quests that the
   // transaction is about to delete (the FK has no ON DELETE clause).
   db.prepare('DELETE FROM quest_catalog_refs').run();
@@ -556,7 +559,6 @@ export function writeQuestCatalog(options: WriteQuestCatalogOptions): QuestCatal
   if (collected.status !== 'ok' || collected.collector === null) {
     // The two denominators that describe what the transaction *did* write are still measured:
     // a skipped stage leaves every corpus row defined, which is a fact worth reporting.
-    const scalar = (sql: string): number => (db.prepare(sql).get() as { value: number }).value;
     return {
       status: 'skipped',
       reason: collected.reason,
@@ -672,7 +674,6 @@ export function writeQuestCatalog(options: WriteQuestCatalogOptions): QuestCatal
     );
   }
 
-  const scalar = (sql: string): number => (db.prepare(sql).get() as { value: number }).value;
   const tableReferences = scalar('SELECT count(*) AS value FROM quest_catalog_refs');
 
   return {

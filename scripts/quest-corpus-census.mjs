@@ -9,7 +9,8 @@
  *
  * Defaults: `--corpus $SPIRALDB_PATH/QuestTemplates` (falling back to the D17 clone
  * `data/test-spiraldb`) and `--db data/__test-scratch__/p6-09-catalog.db` (skipped when
- * absent). It measures, with no dependencies beyond node's own:
+ * absent; `better-sqlite3` — a runtime dependency — is imported optionally and only the
+ * catalog section needs it):
  *
  * 1. **the key orders in the corpus** — how many files share the canonical 36-key order and
  *    which files deviate (the two 18-key extractor-output files `WC-CYCLOPS-MAIN-002` and
@@ -26,7 +27,8 @@
  *    that decides whether a scaffold can write the corpus's own spelling (a key) without
  *    guessing.
  *
- * Exit code 0 always (it is a census, not a gate); a missing input is printed as a skip.
+ * Exit code 0 always (it is a census, not a gate); a missing input is printed as a skip, but a
+ * flag given **without a value** is refused (rc=2) rather than silently measuring the default.
  */
 
 import fs from 'node:fs';
@@ -39,9 +41,24 @@ try {
   Database = null;
 }
 
+/**
+ * One flag's value, or `undefined` when the flag is absent.
+ *
+ * A flag that is present **without** a value is refused rather than defaulted: `--corpus` as the
+ * last argument (or followed by another flag) used to read `undefined` and this script then measured
+ * the *default* corpus while the caller believed it had named one — a census reporting the wrong
+ * population, which is the one failure mode a census must not have.
+ */
 function argValue(flag) {
   const index = process.argv.indexOf(flag);
-  return index === -1 ? undefined : process.argv[index + 1];
+  if (index === -1) return undefined;
+  const value = process.argv[index + 1];
+  if (value === undefined || value.startsWith('--')) {
+    console.error(`Refusing to run: ${flag} was given without a value.`);
+    console.error('Usage: node scripts/quest-corpus-census.mjs [--corpus <dir>] [--db <file>]');
+    process.exit(2);
+  }
+  return value;
 }
 
 const repoRoot = path.resolve(new URL('..', import.meta.url).pathname);
@@ -54,7 +71,17 @@ const corpusDir =
 const dbFile =
   argValue('--db') ?? path.join(repoRoot, 'data', '__test-scratch__', 'p6-09-catalog.db');
 
-/** The corpus's legacy trailing commas — the same lenient read the app uses. */
+/**
+ * A lenient read of one corpus file: strict `JSON.parse`, then (only when that fails) a regex that
+ * drops the corpus's **legacy trailing commas** (`,\n}` → `\n}`).
+ *
+ * This is **not** the read the app uses. `server/src/services/sync/json.ts` recovers through
+ * **JSON5**, which accepts a strictly wider grammar; this script's regex covers only the trailing
+ * comma the corpus actually exhibits, so a file that is valid JSON5 for any other reason (comments,
+ * unquoted keys, `+`/hex numbers, single quotes) is reported here as `UNPARSABLE` while the app reads
+ * it fine. That is a deliberate scope choice for a dependency-free census, not an equivalence claim:
+ * an `UNPARSABLE` line means "this regex could not read it", not "the app cannot read it".
+ */
 function parseQuest(text) {
   try {
     return JSON.parse(text);

@@ -18,6 +18,14 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    /**
+     * `wad-index.test.ts` imports `scripts/wad-census.mjs` — its `parseIndex` is one half of the
+     * "the two readers agree byte for byte" claim, and the S8 arm compares the two readers field by
+     * field rather than trusting the prose. Without this flag that import is untyped (`TS7016`) and
+     * the comparison would be unchecked. `checkJs` stays off, so no `.js`/`.mjs` file is type-checked;
+     * this only lets TypeScript resolve one, and `include` still names only `**\/*.ts`.
+     */
+    "allowJs": true,
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["node", "vitest"],

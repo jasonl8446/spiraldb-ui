@@ -150,14 +150,28 @@ export function coverageHeadline(
 }
 
 /**
+ * `defined / nameable`, or `null` when a fraction would be a claim the data does not support
+ * (a non-finite or non-positive denominator).
+ *
+ * The **one** place that decides whether a coverage fraction is meaningful: the header's label and
+ * its bar both read this, so the `nameable > 0` guard cannot exist twice and drift (the bar used to
+ * re-derive it while the label went through its own copy).
+ */
+export function coverageRatio(defined: number, nameable: number): number | null {
+  if (!Number.isFinite(defined) || !Number.isFinite(nameable) || nameable <= 0) {
+    return null;
+  }
+  return defined / nameable;
+}
+
+/**
  * The header's progress label: `defined / nameable` as a one-decimal percentage, or an em dash
- * when the catalog is empty (a percentage of nothing is not a number). Text, like the counts.
+ * when {@link coverageRatio} says there is no ratio to show (a percentage of nothing is not a
+ * number). Text, like the counts.
  */
 export function coveragePercentLabel(defined: number, nameable: number): string {
-  if (!Number.isFinite(defined) || !Number.isFinite(nameable) || nameable <= 0) {
-    return '—';
-  }
-  return `${((defined / nameable) * 100).toFixed(1)}%`;
+  const ratio = coverageRatio(defined, nameable);
+  return ratio === null ? '—' : `${(ratio * 100).toFixed(1)}%`;
 }
 
 /* ------------------------------------------------------------ the filter (ac2) */
@@ -218,10 +232,18 @@ export function definedCellText(row: Pick<QuestCatalogRow, 'has_definition'>): s
   return row.has_definition === 1 ? CATALOG_DEFINED_TEXT : CATALOG_MISSING_TEXT;
 }
 
-/** The `Title` cell: the linked title, or the em-dash fallback when the world linked none. */
-export function catalogTitleText(row: Pick<QuestCatalogRow, 'title'>): string {
+/**
+ * The `Title` cell: the **linked** title, or the em-dash fallback when the world linked none.
+ *
+ * The identity case is collapsed for the same reason `display.ts` collapses it: the sync writes
+ * `title = record.quest_name` when a quest has no direct title, so an unlinked row's `title` *is*
+ * its name — printing both columns the same string, and leaving `CATALOG_NO_TITLE` unreachable,
+ * which is the one state it exists for. The cell is a column of the table (the spec's ASCII shows
+ * Name and Title separately), so "no linked title" has to be sayable.
+ */
+export function catalogTitleText(row: Pick<QuestCatalogRow, 'title' | 'quest_name'>): string {
   const title = row.title.trim();
-  return title === '' ? CATALOG_NO_TITLE : title;
+  return title === '' || title === row.quest_name ? CATALOG_NO_TITLE : title;
 }
 
 /** `true` when the row's title is an interpolated one and must carry the labelled badge (D106). */

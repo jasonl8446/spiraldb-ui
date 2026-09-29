@@ -447,17 +447,17 @@ which would otherwise capture `coverage` as a quest name.
 
 ```json
 {
-  "nameable": 1447,
-  "id_space": 4830,
-  "defined": 322,
-  "missing": 1125,
-  "references": 1177,
+  "nameable": 1717,          // count(*) on quests — NOT the 1,447 world-named sub-count; read it, never hard-code it
+  "id_space": 4823,           // count(*) on quest_ids
+  "defined": 322,             // has_definition = 1 (322 on the D17 clone, 328 on the owner fork)
+  "missing": 1395,            // has_definition = 0 — the catalog worklist
+  "references": 2855,         // count(*) on quest_catalog_refs: referencing OBJECTS, not D97's referencing FILES (1,177)
   "corpus": { "spiraldb_path": "/…/data/test-spiraldb", "quest_files": 322 }
 }
 ```
 
 - `nameable` (the catalog tier) and `id_space` (the id tier) are the **two honest denominators**
-  (D97/D98); `defined` is `count(*)` of `quests` rows with `has_definition = 1`. The headline reads
+  (D97/D98); `defined` is `count(*)` of `quests` rows with `has_definition = 1`; `missing` is `has_definition = 0`; `references` is `count(*)` on `quest_catalog_refs` — referencing **objects**, where D97's 1,177 counts referencing **files**, and the two must never be conflated. The headline reads
   "*defined* defined of *nameable* nameable of *id_space* quests the client holds text for" — never a
   hard-coded 1,447.
 - **The response names its corpus.** `defined` reads **322** against the D17 clone and **328** against

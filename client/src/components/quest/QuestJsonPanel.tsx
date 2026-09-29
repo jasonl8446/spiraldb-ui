@@ -15,6 +15,8 @@ import {
   JSON_WRAP_OFF_TOOLTIP,
   JSON_WRAP_ON_TOOLTIP,
   QUEST_RAIL_TABLIST_LABEL,
+  RAIL_TAB_EVIDENCE,
+  RAIL_TAB_JSON,
   type QuestRailTab,
 } from '../../lib/quests';
 import { nextTabIndex } from '../../lib/tablist';
@@ -219,7 +221,7 @@ export interface QuestJsonPanelProps {
 }
 
 /** The rail's two tabs, in the spec's order. */
-const RAIL_TABS: readonly QuestRailTab[] = ['evidence', 'json'];
+const RAIL_TABS: readonly QuestRailTab[] = [RAIL_TAB_EVIDENCE, RAIL_TAB_JSON];
 
 /**
  * The `Evidence │ JSON` tab strip (spec L417-421) — the rail is one `<aside>` carrying two tabs
@@ -274,7 +276,7 @@ function QuestRailTabs({
                 : 'border-transparent text-zinc-400 hover:text-zinc-200',
             )}
           >
-            {name === 'evidence' ? EVIDENCE_TAB_LABEL : JSON_TAB_LABEL}
+            {name === RAIL_TAB_EVIDENCE ? EVIDENCE_TAB_LABEL : JSON_TAB_LABEL}
           </button>
         );
       })}
@@ -326,7 +328,7 @@ function QuestRailBody({
       aria-labelledby={`${panelId}-tab-${tab}`}
       className="flex min-h-0 flex-1 flex-col"
     >
-      {tab === 'evidence' ? (children ?? null) : json}
+      {tab === RAIL_TAB_EVIDENCE ? (children ?? null) : json}
     </div>
   );
 }
@@ -351,11 +353,11 @@ export function QuestJsonPanel({
 }: QuestJsonPanelProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
   const panelId = useId();
-  const active: QuestRailTab = tab ?? 'json';
+  const active: QuestRailTab = tab ?? RAIL_TAB_JSON;
   const withTabs = tab !== undefined && onTabChange !== undefined;
   return (
     <aside
-      aria-label={title ?? (active === 'evidence' ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE)}
+      aria-label={title ?? (active === RAIL_TAB_EVIDENCE ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE)}
       className={cn(
         'flex w-[300px] shrink-0 animate-in flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 duration-200 slide-in-from-right xl:w-[400px]',
         className,
@@ -404,14 +406,14 @@ export function QuestJsonOverlay({
 }: QuestJsonOverlayProps): JSX.Element {
   const [wrap, setWrap] = useState(true);
   const panelId = useId();
-  const active: QuestRailTab = tab ?? 'json';
+  const active: QuestRailTab = tab ?? RAIL_TAB_JSON;
   const withTabs = tab !== undefined && onTabChange !== undefined;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="inset-0 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 p-0 sm:rounded-none">
         <DialogHeader className="border-b border-zinc-800 p-3 pr-12">
           <DialogTitle className="font-mono text-sm font-semibold text-zinc-50">
-            {title ?? (active === 'evidence' ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE)}
+            {title ?? (active === RAIL_TAB_EVIDENCE ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE)}
           </DialogTitle>
           <DialogDescription className="sr-only">
             {description ?? 'Read-only JSON of this quest.'}

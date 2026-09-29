@@ -18,6 +18,10 @@ tools/bin/
 tools/.obj/
 tools/.artifacts/
 tools/.nuget/
+# The `ArtifactsPath` `imlight-boot`'s rebuild remedy prints (it is a D18 flag combination, but the
+# path is a one-off the harness chose, so it needs its own line). The Imlight build output alone is
+# hundreds of MB, and D83 records a falsification break that `git add -A` committed.
+tools/.imlight-artifacts/
 
 # Playwright browsers (workspace-local per plan decision D23)
 tools/.playwright-browsers/

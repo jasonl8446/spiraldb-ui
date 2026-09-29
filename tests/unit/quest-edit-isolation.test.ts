@@ -1,7 +1,5 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -15,6 +13,8 @@ import { saveQuest } from '@server/services/quests';
 import { applyEdits, type DocEdit, type JsonDocument } from '@shared/document';
 import { DIALOG_LIST_KEY, setEntryNumberFieldEdit } from '../../client/src/lib/quest-dialog';
 import { goalNumberFieldEdit } from '../../client/src/lib/quest-goals';
+import { isPlainObject } from '../helpers/roundtrip-fidelity';
+import { CLONE, cloneGit as git, resetClone } from '../helpers/clone-fixture';
 
 /**
  * Story p3-10, AC1 — **real-quest edit isolation** (plan task 3.10; plan-phase-3 §3.10's
@@ -53,7 +53,6 @@ import { goalNumberFieldEdit } from '../../client/src/lib/quest-goals';
  * asserts the restore worked.
  */
 
-const CLONE = path.resolve(fileURLToPath(new URL('../../data/test-spiraldb/', import.meta.url)));
 const QUEST_NAME = 'DS-ACAD-C01-002';
 const QUEST_FILE = `QuestTemplates/questtemplates_${QUEST_NAME}.json`;
 const META_FILE = `QuestMetadatas/questmetadata_${QUEST_NAME}.json`;
@@ -72,11 +71,6 @@ const DIALOG_BEFORE = -1;
 const DIALOG_AFTER = 45;
 
 const DIFF_QUEST_PATH = `${QUEST_FILE}`;
-
-/** Runs git inside the clone and returns stdout (throwaway repository — never the fork). */
-function git(args: readonly string[]): string {
-  return execFileSync('git', ['-C', CLONE, ...args], { encoding: 'utf8' });
-}
 
 /**
  * `true` when the real-file half of this test can run at all: the clone exists, it is a git
@@ -120,11 +114,6 @@ interface LeafChange {
   kind: 'changed' | 'removed' | 'added';
   before: unknown;
   after: unknown;
-}
-
-/** `true` for a non-null, non-array object. */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -229,19 +218,8 @@ function unexplained(lines: readonly string[], other: readonly string[]): string
 /** The commit the clone was on when the test started, for the restore. */
 let restorePoint: string | null = null;
 
-function restoreClone(): void {
-  if (restorePoint === null) {
-    return;
-  }
-  git(['reset', '--hard', restorePoint]);
-  const porcelain = git(['status', '--porcelain']);
-  if (porcelain.trim() !== '') {
-    throw new Error(`the D17 clone is still dirty after reset: ${porcelain}`);
-  }
-}
-
 afterAll(() => {
-  restoreClone();
+  resetClone(restorePoint);
 });
 
 describe.skipIf(!READINESS.ok)('AC1 — real-quest edit isolation in the D17 clone', () => {
@@ -395,7 +373,7 @@ describe.skipIf(!READINESS.ok)('AC1 — real-quest edit isolation in the D17 clo
       }
     } finally {
       db.close();
-      restoreClone();
+      resetClone(restorePoint);
       restorePoint = null;
     }
 

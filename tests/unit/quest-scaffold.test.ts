@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 import express from 'express';
@@ -36,6 +35,14 @@ import {
   type QuestScaffoldLinkKind,
 } from '@shared/quest/scaffold';
 
+import {
+  CLONE,
+  CLONE_QUEST_FILES,
+  cloneAxes,
+  cloneGit as git,
+  resetClone,
+  type CloneAxes,
+} from '../helpers/clone-fixture';
 import { createTempGitRepo, removeTempGitRepo, repoFileExists } from '../helpers/temp-git-repo';
 
 /**
@@ -74,11 +81,6 @@ import { createTempGitRepo, removeTempGitRepo, repoFileExists } from '../helpers
  * leaves a branch behind). The restore is `git reset --hard <base>` in a `finally`, and
  * the five axes are compared before and after.
  */
-
-const CLONE = path.resolve(fileURLToPath(new URL('../../data/test-spiraldb/', import.meta.url)));
-
-/** The corpus is frozen at 322 by decision (D80(c)); a changed corpus must be re-measured knowingly. */
-const CLONE_QUEST_FILES = 322;
 
 /* ------------------------------------------------------------------ the document */
 
@@ -579,44 +581,10 @@ describe('p6-09 — the writer end to end', () => {
 /**
  * The corpus half. The clone is the run's save corpus (D17) and the only repository this
  * test writes to; `settings.spiraldb_path` never enters the picture because the pipeline is
- * handed the clone path directly.
+ * handed the clone path directly. `git` and `cloneAxes` come from
+ * `tests/helpers/clone-fixture.ts`; the readiness check below stays here because the files *it*
+ * needs are this suite's.
  */
-
-function git(args: readonly string[]): string {
-  return execFileSync('git', ['-C', CLONE, ...args], { encoding: 'utf8' });
-}
-
-/** The five axes a restore has to move back, plus the corpus shape and the local refs. */
-interface CloneAxes {
-  branch: string;
-  head: string;
-  main: string;
-  commitCount: string;
-  porcelain: string;
-  questFiles: number;
-  /** Every local branch, verbatim — the D76(b) check (`git reset --hard` can leave one). */
-  refs: string;
-}
-
-function questFileCount(): number {
-  return Number(
-    execFileSync('bash', ['-c', `ls ${CLONE}/QuestTemplates/*.json | wc -l`])
-      .toString()
-      .trim(),
-  );
-}
-
-function cloneAxes(): CloneAxes {
-  return {
-    branch: git(['rev-parse', '--abbrev-ref', 'HEAD']).trim(),
-    head: git(['rev-parse', 'HEAD']).trim(),
-    main: git(['rev-parse', 'main']).trim(),
-    commitCount: git(['rev-list', '--count', 'HEAD']).trim(),
-    porcelain: git(['status', '--porcelain']),
-    questFiles: questFileCount(),
-    refs: git(['show-ref', '--heads']),
-  };
-}
 
 function cloneReadiness(): { ok: boolean; reason: string } {
   if (!existsSync(path.join(CLONE, '.git'))) {
@@ -648,19 +616,8 @@ if (!READINESS.ok) {
 let axesBefore: CloneAxes | null = null;
 let restorePoint: string | null = null;
 
-function restoreClone(): void {
-  if (restorePoint === null) {
-    return;
-  }
-  git(['reset', '--hard', restorePoint]);
-  const porcelain = git(['status', '--porcelain']);
-  if (porcelain.trim() !== '') {
-    throw new Error(`the D17 clone is still dirty after reset: ${porcelain}`);
-  }
-}
-
 afterAll(() => {
-  restoreClone();
+  resetClone(restorePoint);
 });
 
 /** The measured title the real catalog links to the inferred quest this test scaffolds. */
@@ -930,7 +887,7 @@ describe.skipIf(!READINESS.ok)('p6-09 — the corpus (the frozen D17 clone)', ()
     db.close();
 
     // 4. Restore, then prove all five axes plus the corpus shape and the ref list.
-    restoreClone();
+    resetClone(restorePoint);
     const axesAfter = cloneAxes();
     expect(axesAfter).toEqual(axesBefore);
     expect(axesAfter.questFiles).toBe(CLONE_QUEST_FILES);

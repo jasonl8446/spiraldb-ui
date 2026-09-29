@@ -238,4 +238,58 @@ test.describe('the shell wiring', () => {
       '/settings',
     );
   });
+
+  /**
+   * The **filtered** empty state — the sibling of the arm above, and the one the page holds its
+   * second coverage query for: `nameable > 0` with an empty row set means "every catalog quest has
+   * a definition", not "there is no catalog". It was rendered by nothing until now, because the
+   * only empty-state arm also zeroed `coverage.nameable`.
+   */
+  test('a filter that matched nothing says so, and offers no sync (CATALOG_NO_MISSING)', async ({
+    page,
+  }) => {
+    const recorded = await mockQuestsApi(page, { catalogRows: [] });
+
+    await page.goto('/quests/catalog');
+    await page.getByRole('checkbox', { name: 'missing only' }).check();
+
+    // The read really was the filtered one, so this is the state being asserted.
+    await expect
+      .poll(() => recorded.catalogUrls[recorded.catalogUrls.length - 1])
+      .toBe('/api/quests/catalog?missing_only=1');
+    await expect(
+      page.getByText('Every catalog quest has a definition', { exact: false }),
+    ).toBeVisible();
+    // The sync action belongs to the empty **tier**, not to a filter that matched nothing.
+    await expect(page.getByRole('link', { name: 'Open Settings and sync' })).toHaveCount(0);
+  });
+
+  /**
+   * The **identity row** — a quest whose `title` fell back to its `quest_name`, the catalog's
+   * common shape for an unlinked quest. No shared fixture carries it (`MOCK_CATALOG_ROWS` is
+   * consumed by other specs and one of them pins its name set), so the row is declared here, in the
+   * arm that needs it. Name and Title are separate columns, so the Title cell must be the em dash
+   * rather than a second copy of the Name cell.
+   */
+  test('a row whose title fell back to its name shows the em dash in Title, not the name twice', async ({
+    page,
+  }) => {
+    await mockQuestsApi(page, {
+      catalogRows: [
+        {
+          quest_name: 'WC-UNICORN-MAIN-004',
+          title: 'WC-UNICORN-MAIN-004',
+          title_source: 'none',
+          has_definition: 1,
+          reference_count: 3,
+        },
+      ],
+    });
+
+    await page.goto('/quests/catalog');
+
+    const row = catalogRow(page, 'WC-UNICORN-MAIN-004');
+    await expect(row.locator('td').nth(0)).toHaveText('WC-UNICORN-MAIN-004');
+    await expect(row.locator('td').nth(1)).toHaveText('—');
+  });
 });

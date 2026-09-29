@@ -38,6 +38,7 @@ import { open, readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Extensions whose payloads can hold an object-property class hash.
@@ -414,10 +415,23 @@ async function main() {
   return 0;
 }
 
-main().then(
-  (code) => process.exit(code),
-  (error) => {
-    process.stderr.write(`${error.message}\n`);
-    process.exit(1);
-  },
-);
+/**
+ * Run only when this file **is** the process entry point.
+ *
+ * The guard is what makes the module importable: `wad-index.test.ts` imports `parseIndex` to
+ * compare it field-for-field against the app's `readWadIndex` (the "agree byte for byte" claim in
+ * `wadindex.ts`'s header), and without the guard that import would run the whole census against
+ * whatever `--gamedata` a test runner happens to have, or exit 1 when it has none.
+ */
+const invokedDirectly =
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly) {
+  main().then(
+    (code) => process.exit(code),
+    (error) => {
+      process.stderr.write(`${error.message}\n`);
+      process.exit(1);
+    },
+  );
+}

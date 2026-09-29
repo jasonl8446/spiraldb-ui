@@ -63,10 +63,10 @@ import {
   BACK_TO_QUESTS_LABEL,
   EVIDENCE_INSERTED_MESSAGE,
   EVIDENCE_PANEL_LABEL,
-  EVIDENCE_PANEL_TITLE,
   isNotFoundError,
   JSON_PANEL_LABEL,
-  JSON_PANEL_TITLE,
+  RAIL_TAB_EVIDENCE,
+  RAIL_TAB_JSON,
   RAIL_TAB_QUERY_PARAM,
   QUEST_LOAD_ERROR,
   QUEST_LOADING,
@@ -294,7 +294,7 @@ function LoadedQuest({
     queryKey: evidenceQueryKey(questName),
     queryFn: () => getQuestEvidence(questName),
     retry: false,
-    enabled: railTab === 'evidence',
+    enabled: railTab === RAIL_TAB_EVIDENCE,
   });
 
   /**
@@ -433,14 +433,14 @@ function LoadedQuest({
         {isMobile ? (
           <QuestJsonOverlay
             open={railTab !== null}
-            onOpenChange={(open) => setRailTab(open ? (railTab ?? 'json') : null)}
+            onOpenChange={(open) => setRailTab(open ? (railTab ?? RAIL_TAB_JSON) : null)}
             quest={document.doc}
-            tab={railTab ?? 'json'}
+            tab={railTab ?? RAIL_TAB_JSON}
             onTabChange={setRailTab}
           >
             <EvidencePanel
               evidence={evidence.data}
-              isLoading={railTab === 'evidence' && evidence.isPending}
+              isLoading={railTab === RAIL_TAB_EVIDENCE && evidence.isPending}
               isError={evidence.isError}
               target={null}
               editable={editMode}
@@ -491,14 +491,9 @@ function QuestRail({
   onInsert: (plan: EvidenceInsertAccepted) => void;
 }): JSX.Element {
   const { target } = useEvidenceFocus();
-  const evidenceTab = tab === 'evidence';
+  const evidenceTab = tab === RAIL_TAB_EVIDENCE;
   return (
-    <QuestJsonPanel
-      quest={quest}
-      tab={tab}
-      onTabChange={onTabChange}
-      title={evidenceTab ? EVIDENCE_PANEL_TITLE : JSON_PANEL_TITLE}
-    >
+    <QuestJsonPanel quest={quest} tab={tab} onTabChange={onTabChange}>
       <EvidencePanel
         evidence={evidence.data}
         isLoading={evidenceTab && evidence.isPending}
@@ -700,10 +695,12 @@ function QuestHeader({
           variant="ghost"
           size="icon"
           aria-label={EVIDENCE_PANEL_LABEL}
-          aria-pressed={railTab === 'evidence'}
+          aria-pressed={railTab === RAIL_TAB_EVIDENCE}
           title={EVIDENCE_PANEL_LABEL}
-          className={cn(railTab === 'evidence' ? 'text-blue-300 hover:text-blue-200' : undefined)}
-          onClick={() => onToggleTab('evidence')}
+          className={cn(
+            railTab === RAIL_TAB_EVIDENCE ? 'text-blue-300 hover:text-blue-200' : undefined,
+          )}
+          onClick={() => onToggleTab(RAIL_TAB_EVIDENCE)}
         >
           <ListTree className="h-4 w-4" aria-hidden="true" />
         </Button>
@@ -712,9 +709,9 @@ function QuestHeader({
           variant="ghost"
           size="icon"
           aria-label={JSON_PANEL_LABEL}
-          aria-pressed={railTab === 'json'}
+          aria-pressed={railTab === RAIL_TAB_JSON}
           title={JSON_PANEL_LABEL}
-          onClick={() => onToggleTab('json')}
+          onClick={() => onToggleTab(RAIL_TAB_JSON)}
         >
           <Braces className="h-4 w-4" aria-hidden="true" />
         </Button>

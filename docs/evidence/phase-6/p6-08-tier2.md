@@ -126,7 +126,7 @@ document is editable. Here is what that means in the shipped code:
    `simpleGit`, `applyEdits`, `setAtPath`, `fetch(`, … — and finds nothing; the same scanner over
    deliberately mutated copies reports `saveQuest`, `fetch(` and `applyEdits`, and over a comment
    naming a writer reports nothing. A scanner that could never fail is falsified there rather than
-   trusted (D89(c)).
+   trusted (D90(c)).
 2. **Render** (`renderToStaticMarkup`, node, no jsdom): rendering the panel — the one moment a
    component could write without a click — calls the `onInsert` spy **zero** times.
 3. **The runtime half** (tier-1): after every insert the mocked API has recorded **no**

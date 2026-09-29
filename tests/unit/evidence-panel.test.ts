@@ -28,7 +28,7 @@ import {
  * visible inferred badge and the used/available split (plan task 6.7; docs/spec-ui-design.md
  * L444-450).
  *
- * The claim is a *negative*, so one instrument cannot carry it (D89(c): an instrument's
+ * The claim is a *negative*, so one instrument cannot carry it (D90(c): an instrument's
  * insensitivity must be proven before its clean result is trusted). This file therefore runs three
  * independent ones and proves the strongest is sensitive:
  *
@@ -95,8 +95,12 @@ const WRITE_SURFACE: readonly string[] = [
  * `//` rule ignores a `://` so a URL in a string is not mistaken for a comment start, and the
  * control test below asserts both directions: a comment naming a writer is **not** a violation
  * while code naming one **is**.
+ *
+ * Local to this file (it was exported, and nothing imported it): the repo's shared home for this
+ * rule is `tests/helpers/source-text.ts`'s `codeOf`, whose `//` rule and negative control differ
+ * from this one's, so merging the two is a recorded disposition rather than a cleanup.
  */
-export function stripComments(source: string): string {
+function stripComments(source: string): string {
   const withoutBlocks = source.replace(/\/\*[\s\S]*?\*\//g, '');
   return withoutBlocks
     .split('\n')
@@ -108,7 +112,7 @@ export function stripComments(source: string): string {
 }
 
 /** Every write-surface name the source's **code** mentions. Pure, so the controls can call it. */
-export function panelWriteViolations(source: string): string[] {
+function panelWriteViolations(source: string): string[] {
   const code = stripComments(source);
   return WRITE_SURFACE.filter((name) => code.includes(name));
 }
@@ -385,7 +389,7 @@ describe('“the panel never writes” — the source-level assertion, with its 
 
   it('reports a violation in a deliberately mutated copy of the same source', () => {
     // The negative control: the same scanner, the same file, one injected writer. Without this,
-    // the empty result above could mean the scanner never fires (D89(c)).
+    // the empty result above could mean the scanner never fires (D90(c)).
     const imported = `${PANEL_SOURCE}\nimport { saveQuest } from '../../lib/api';\nvoid saveQuest;\n`;
     expect(panelWriteViolations(imported)).toEqual(['saveQuest']);
     const called = PANEL_SOURCE.replace(

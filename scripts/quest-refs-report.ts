@@ -31,6 +31,7 @@ import readline from 'node:readline';
 
 import Database from 'better-sqlite3';
 
+import { DEFAULT_SPIRALDB_PATH } from '../server/src/db.js';
 import { buildQuestRows } from '../server/src/services/sync/corpus.js';
 import {
   QuestRefsCollector,
@@ -122,7 +123,9 @@ const corpusDir =
   ((): string => {
     const row = db.prepare("SELECT value FROM settings WHERE key = 'spiraldb_path'").get() as
       { value: string } | undefined;
-    return row?.value ?? '/home/jason/Documents/git-projects/spiraldb';
+    // The same constant the boot seed uses (`server/src/db.ts`), so this fallback cannot drift
+    // from the owner's fork path the rest of the repo names.
+    return row?.value ?? DEFAULT_SPIRALDB_PATH;
   })();
 
 const started = Date.now();

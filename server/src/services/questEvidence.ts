@@ -5,16 +5,12 @@ import {
   type ReferenceFieldSpec,
   type ReferenceNamespace,
 } from '../../../shared/quest/validation.js';
-import {
-  formatNameRow,
-  friendlyNameOf,
-  type NameRow,
-  type NamesType,
-} from '../../../client/src/lib/display.js';
+import { formatNameRow, type NameRow, type NamesType } from '../../../client/src/lib/display.js';
 import type { Db } from '../db.js';
 import { readSpiraldbJson } from './spiraldbFiles.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
 import { parseQuestTitleKey, parseWizQstKey } from './sync/questRefs.js';
+import { isPlainObject } from './sync/json.js';
 
 /**
  * Per-quest **evidence** — task 6.6 ([plan-phase-6-quest-catalog.md] L321-331;
@@ -149,7 +145,7 @@ export interface EvidenceReference {
   /** The namespace that answered, or `null` when none did. */
   kind: ReferenceNamespace | null;
   /** The friendly half and the display rule's rendering, or `null` on a miss. */
-  resolved: { label: string; display: string } | null;
+  resolved: { display: string } | null;
 }
 
 export interface EvidenceQuestHeader {
@@ -183,11 +179,6 @@ export interface QuestEvidence {
 export type EvidenceResult = { kind: 'found'; evidence: QuestEvidence } | { kind: 'unknown' };
 
 /* ------------------------------------------------------------------ utilities */
-
-/** `true` for a non-null, non-array object. */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 /** A non-empty string member, else `null`. */
 function text(value: unknown): string | null {
@@ -417,12 +408,15 @@ interface SpeakerResolution {
 }
 
 /**
- * The client's own precedence for one dialog entry, with the rung that answered
- * recorded on the result.
+ * Resolves one dialogue row's speaker.
  *
- * Each fall-through is recorded rather than hidden: an override key the string table
- * does not hold, a composition the persona's components cannot fill, and a persona
- * absent from the manifest index are each one warning line naming the line.
+ * **Visibility is uneven, and this comment used to claim otherwise (D124).** Of the three
+ * fall-through classes, only the third is surfaced: a persona name that is not in the manifest
+ * index sets `missingPersona`, which the caller turns into an aggregate `warnings` entry. A
+ * missing override key, or a composition the persona's components cannot fill, leaves
+ * `source: 'template'` with no counter and no warning line — the raw value is used silently.
+ * A per-class counter is a response change and is recorded as a follow-up rather than smuggled
+ * into a cleanup pass; `warning` below is the seed of that fix and is currently unread.
  */
 function resolveSpeaker(options: {
   entry: Record<string, unknown>;
@@ -646,12 +640,9 @@ function collectReferences(
         resolved === null
           ? null
           : {
-              // Both halves come from the one display rule (`client/src/lib/display.ts`), imported
-              // rather than re-implemented, so no second construction of `friendly (technical)`
-              // can exist in the server either.
-              label:
-                friendlyNameOf(resolved.type, resolved.row) ??
-                formatNameRow(resolved.type, resolved.row),
+              // The display half comes from the one display rule (`client/src/lib/display.ts`),
+              // imported rather than re-implemented, so no second construction of
+              // `friendly (technical)` can exist in the server either.
               display: formatNameRow(resolved.type, resolved.row),
             },
     });
