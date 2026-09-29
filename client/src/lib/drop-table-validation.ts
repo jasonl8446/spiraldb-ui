@@ -52,7 +52,7 @@ export function toDropTableValidationMessages(
 
 /** The form-level banner's model: counts and kind labels, or `null`s when there is nothing to say. */
 export interface DropTableBannerModel {
-  /** `3 validation errors block saving: Duplicate name and Roll chance out of range.` */
+  /** `1 validation error blocks saving: Missing name.` / `3 validation errors block saving: …`. */
   errorHeadline: string | null;
   /** Always `null` today (no DropTable rule warns without blocking). */
   warningHeadline: string | null;
@@ -61,7 +61,15 @@ export interface DropTableBannerModel {
   errorKinds: string[];
 }
 
-/** The banner's headline — counts and kinds, never the per-field copy (that is the inline list's job). */
+/**
+ * The banner's headline — counts and kinds, never the per-field copy (that is the inline list's job).
+ *
+ * Both headlines are **count-agreeing**, the same shapes `quest-validation.ts`'s `bannerModel`
+ * builds: the singular arm carries the verb's `-s` (`1 validation error blocks saving`) and the
+ * plural arm does not (`3 validation errors block saving`). Only the noun was singularised
+ * before, so a single blocking finding read `1 validation error block saving` — the sentence a
+ * user reads when a save is blocked, inconsistent with the quest editor one page over.
+ */
 export function dropTableBannerModel(
   messages: readonly FieldValidationMessage[],
 ): DropTableBannerModel {
@@ -76,14 +84,15 @@ export function dropTableBannerModel(
       kinds.push(label);
     }
   }
-  const noun = errors.length === 1 ? 'validation error' : 'validation errors';
   return {
     errorHeadline:
       errors.length === 0
         ? null
-        : `${errors.length} ${noun} block saving: ${joinKinds(kinds)}. Fix them and Save enables again.`,
+        : `${errors.length} validation ${errors.length === 1 ? 'error blocks' : 'errors block'} saving: ${joinKinds(kinds)}. Fix them and Save enables again.`,
     warningHeadline:
-      warnings.length === 0 ? null : `${warnings.length} warnings do not block saving.`,
+      warnings.length === 0
+        ? null
+        : `${warnings.length} ${warnings.length === 1 ? 'warning does not' : 'warnings do not'} block saving.`,
     errorCount: errors.length,
     warningCount: warnings.length,
     errorKinds: kinds,

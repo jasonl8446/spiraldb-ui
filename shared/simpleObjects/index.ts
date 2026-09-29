@@ -24,6 +24,7 @@
  * | `./treasureCardInventory.js` | task 4.7: the `{TemplateID, TreasureCards[{SpellName, Price}]}` shape, **the object-list reader and its edit builders**, the `Price 0` hint as data, and the phase's first **warn-not-block** engine (the literal `spells.name` match), with the 1-file corpus facts and the `" TC"` suffix finding |
  * | `./zoneTransfer.js` | task 4.8 / story p4-06: the `{ZoneName, Teleports[{TriggerName, Teleport}]}` shape, **the first nested-object repeater's reader and edit builders**, the `m_destinationLoc` regex with its proven scientific-notation arm, the `m_teleportType` known-member/preserved-value decision, the `Events` drift guard and the raw-fields disclosure's data, with the 1,207-file corpus facts |
  * | `./globalRegistry.js` | task 4.9 / story p4-07: the `{GlobalRegistryValues: {key: value}}` wrapper, **the merge rule with an injected file order** (case-sensitive keys, later wins), the key→value **map** row model (key-addressed, not index-addressed), and the consolidation plan (which files one save replaces, D22), with the 1-file corpus facts and the `GlobalRegistryModels_1-A.json` legacy name |
+ * | `./listValidation.js` | the final-review F3 rule: a **null/absent element** in a list field blocks a save (API-only — the editors cannot produce the shape), as typed findings plus the 400 field map the server answers with |
  *
  * Usage is the same on both halves of the app, like `shared/dropTable/index.ts`:
  *
@@ -44,6 +45,11 @@
  * Neither module imports a `zod`: nothing here validates by schema. The other four modules remain
  * rule-free, and there is no zone-reference rule in either direction — 1,069 of 1,069 real
  * references resolve.)
+ *
+ * (Extended by final-review F3: `./listValidation.js` is a **fifth** rule module, and unlike the
+ * two above it is not a per-family engine — it is the one presence rule all six families are
+ * guarded by on the server, because a null list element is a shape only a direct POST can
+ * produce. The four rule-free modules therefore stay rule-free for their own fields.)
  */
 
 export * from './model.js';
@@ -54,3 +60,4 @@ export * from './npcDropTable.js';
 export * from './treasureCardInventory.js';
 export * from './zoneTransfer.js';
 export * from './globalRegistry.js';
+export * from './listValidation.js';
