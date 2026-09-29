@@ -18,6 +18,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ExtractionPage from './pages/ExtractionPage';
 import GlobalRegistryPage from './pages/GlobalRegistryPage';
 import QuestDetailPage from './pages/QuestDetailPage';
+import QuestCatalogPage from './pages/QuestCatalogPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
 import TreasureCardInventoryDetailPage from './pages/TreasureCardInventoryDetailPage';
@@ -111,6 +112,10 @@ function elementFor(route: AppRoute): JSX.Element {
       return <ExtractionPage />;
     case '/quests':
       return <QuestsPage />;
+    case '/quests/catalog':
+      // Task 6.10 / story p6-11: the worklist over the catalog. Its own route — matched
+      // before `/quests/:questName` by the static-before-dynamic rule in `lib/routes.ts`.
+      return <QuestCatalogPage />;
     case '/quests/:questName':
       return <QuestDetailPage />;
     case '/drop-tables':

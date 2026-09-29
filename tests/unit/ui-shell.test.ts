@@ -95,6 +95,10 @@ const SPEC_ROUTES = [
   '/',
   '/quests',
   '/quests/extract',
+  // Added deliberately by story p6-11: the Catalog view's route is in the spec's URL
+  // table (spec-api.md L1003) and in the sidebar spec (spec-ui-design.md L152), so this
+  // oracle moves with them rather than the route table moving alone.
+  '/quests/catalog',
   '/quests/:questName',
   '/drop-tables',
   '/drop-tables/:name',
@@ -132,6 +136,8 @@ describe('route table', () => {
     expect(phase('/')).toBe(5);
     expect(phase('/quests')).toBe(2);
     expect(phase('/quests/extract')).toBe(2);
+    // The Catalog view is task 6.10's own page (story p6-11), so it carries Phase 6.
+    expect(phase('/quests/catalog')).toBe(6);
     expect(phase('/quests/:questName')).toBe(2);
     for (const path of [
       '/drop-tables',
@@ -159,6 +165,7 @@ describe('route table', () => {
   it('orders static patterns before the dynamic ones that could shadow them', () => {
     const indexOf = (path: string): number => APP_ROUTES.findIndex((route) => route.path === path);
     expect(indexOf('/quests/extract')).toBeLessThan(indexOf('/quests/:questName'));
+    expect(indexOf('/quests/catalog')).toBeLessThan(indexOf('/quests/:questName'));
     expect(indexOf('/quests')).toBeLessThan(indexOf('/quests/:questName'));
   });
 
@@ -166,6 +173,8 @@ describe('route table', () => {
     expect(pageTitleForPath('/')).toBe('Dashboard');
     expect(pageTitleForPath('/settings')).toBe('Settings');
     expect(pageTitleForPath('/quests/extract')).toBe('Extract Quests');
+    // The static catalog route wins over `/quests/:questName` (spec-api.md L1023-1027).
+    expect(pageTitleForPath('/quests/catalog')).toBe('Quest Catalog');
     expect(pageTitleForPath('/quests/DS-ACAD1-C01-001')).toBe('Quest Detail');
     expect(pageTitleForPath('/npc-spell-inventories/12345')).toBe('NPC Spell Inventory Detail');
     expect(pageTitleForPath('/zone-transfers/Aquila%2FAQ_Z00_Hub')).toBe('Zone Transfer Detail');
@@ -193,6 +202,8 @@ describe('route table', () => {
 const PROBE_PATHS = [
   '/quests/extract',
   '/quests/extract/',
+  '/quests/catalog',
+  '/quests/catalog/',
   '/quests/',
   '/quests/DS-ACAD-C01-001',
   '/quests/DS-ACAD-C01-001/',
@@ -242,7 +253,7 @@ describe('navigation table', () => {
     );
 
     expect(byGroup.OVERVIEW).toEqual(['Dashboard']);
-    expect(byGroup.QUESTS).toEqual(['Extract Quests', 'Browse Quests']);
+    expect(byGroup.QUESTS).toEqual(['Extract Quests', 'Browse Quests', 'Catalog']);
     expect(byGroup.DATA).toEqual([
       'Drop Tables',
       'NPC Inventories',
@@ -265,6 +276,8 @@ describe('navigation table', () => {
       'layout-dashboard',
       'upload',
       'list-checks',
+      // Story p6-11: the Catalog nav item's icon, added with the item.
+      'library',
       'backpack',
       'sparkles',
       'book-open',

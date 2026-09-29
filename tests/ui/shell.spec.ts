@@ -54,13 +54,14 @@ const MOCK_QUEST_ROW = {
 } as const;
 
 /**
- * The 12 sidebar items, copied from `docs/spec-ui-design.md` L73-93 on purpose:
+ * The 13 sidebar items, copied from `docs/spec-ui-design.md` L73-93 on purpose:
  * a spec that imported `client/src/lib/routes.ts` could not catch a wrong nav
  * table, only a UI that disagreed with it.
  *
- * Every one of the 12 writes a real page now, and the loop below asserts each page's own
+ * Every one of the 13 writes a real page now, and the loop below asserts each page's own
  * content: `/` (p5-01, the dashboard — the last stub to fall), `/settings` (p1-08),
- * `/quests/extract` (p2-07), `/quests` (p2-08), `/npc-inventories` (p4-01), `/drop-tables`
+ * `/quests/extract` (p2-07), `/quests` (p2-08), `/quests/catalog` (p6-11, the worklist),
+ * `/npc-inventories` (p4-01), `/drop-tables`
  * (p4-02), `/npc-spell-inventories` + `/creature-spellbooks` (p4-03), `/npc-drop-tables` +
  * `/treasure-card-inventories` + `/zone-transfers` (p4-04…p4-06) and `/global-registry`
  * (p4-07, the editor itself).
@@ -74,6 +75,9 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', title: 'Dashboard' },
   { label: 'Extract Quests', path: '/quests/extract', title: 'Extract Quests' },
   { label: 'Browse Quests', path: '/quests', title: 'Browse Quests' },
+  // Story p6-11 added the Catalog item to the QUESTS group (spec-ui-design.md L148-152), so the
+  // list the loop below walks is extended with it rather than silently stopping at 12 pages.
+  { label: 'Catalog', path: '/quests/catalog', title: 'Quest Catalog' },
   { label: 'Drop Tables', path: '/drop-tables', title: 'Drop Tables' },
   { label: 'NPC Inventories', path: '/npc-inventories', title: 'NPC Inventories' },
   {
@@ -228,6 +232,48 @@ async function mockShellApi(page: Page): Promise<void> {
   await page.route('**/api/quests/*', (route) =>
     route.fulfill({
       json: { m_questName: 'DS-ACAD-C01-001', m_questLevel: 1, m_mainline: true },
+    }),
+  );
+
+  // Story p6-11 gave the browse page and `/quests/catalog` a coverage header that reads
+  // `GET /api/quests/coverage`, plus a catalog worklist read. Both are registered **after** the
+  // `**/api/quests/*` branch above, whose glob would otherwise answer them with a bare quest
+  // document (D81: mock every endpoint the page reads, not only the ones the assertions name).
+  await page.route('**/api/quests/coverage', (route) =>
+    route.fulfill({
+      json: {
+        nameable: 1717,
+        id_space: 4823,
+        defined: 322,
+        missing: 1395,
+        references: 2855,
+        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
+      },
+    }),
+  );
+  await page.route('**/api/quests/catalog*', (route) =>
+    route.fulfill({
+      json: {
+        quests: [
+          {
+            quest_name: 'DS-ACAD-C01-001',
+            title: 'Wizard Tours',
+            title_source: 'inferred',
+            has_definition: 1,
+            reference_count: 6,
+          },
+          {
+            quest_name: 'DM-GRAVE-MAIN-008',
+            title: 'Stakes and Stones',
+            title_source: 'direct',
+            has_definition: 0,
+            reference_count: 19,
+          },
+        ],
+        total: 2,
+        missing_only: false,
+        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
+      },
     }),
   );
 
@@ -584,6 +630,21 @@ test.describe('sidebar navigation', () => {
         await expect(page.getByRole('main').getByPlaceholder('Search quests...')).toBeVisible();
         await expect(
           page.getByRole('main').getByRole('columnheader', { name: 'Quest Name' }),
+        ).toBeVisible();
+      } else if (item.path === '/quests/catalog') {
+        // Story p6-11 replaced this route's placeholder with the worklist over the catalog. The
+        // literals are copied on purpose; `tests/ui/quests-catalog.spec.ts` owns the page's full
+        // contract (coverage header, filter, row actions). Both endpoints it reads are mocked in
+        // `mockShellApi`, so this branch passes on CI where the catalog is empty (D81).
+        await expect(page.getByRole('main').getByTestId('coverage-headline')).toHaveText(
+          '322 defined of 1,717 nameable of ~4,823 quests the client holds text for' +
+            ' — corpus: /mock/spiraldb (322 quest files)',
+        );
+        await expect(
+          page.getByRole('main').getByRole('columnheader', { name: 'Defined' }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('main').getByRole('checkbox', { name: 'missing only' }),
         ).toBeVisible();
       } else if (item.path === '/drop-tables') {
         // Story p4-02 replaced this route's stub with the real generic object list for

@@ -265,6 +265,7 @@ CRUD endpoints for each SpiralDB object type. All follow the same pattern.
 | POST | `/api/quests` | Save new/update quest (writes file + metadata + git commit) |
 | POST | `/api/quests/scaffold` | Create the minimal skeleton for a catalog quest (Phase 6, P6-5/P6-6) |
 | GET | `/api/quests/coverage` | Catalog coverage, both denominators (Phase 6, D110) |
+| GET | `/api/quests/catalog` | Catalog worklist; `?missing_only=1` narrows to `has_definition = 0` (Phase 6, task 6.10) |
 | GET | `/api/quests/:name/evidence` | Per-quest evidence (Phase 6, P6-8/P6-10) |
 | GET | `/api/quest-ids/:id/evidence` | Evidence for the id tier (Phase 6, P6-3) |
 
@@ -462,6 +463,34 @@ which would otherwise capture `coverage` as a quest name.
 - **The response names its corpus.** `defined` reads **322** against the D17 clone and **328** against
   the owner's fork, so `corpus` echoes the resolved `settings.spiraldb_path` and the quest-file count
   it just measured. Neither number may be quoted for the other (D80(c) keeps the clone frozen).
+
+**Added by story p6-11 (plan task 6.10): `GET /api/quests/catalog` — the worklist the Catalog view
+reads.** The view's rows are not in the coverage payload, so the read is named here (and its shape
+recorded, under the same "the table fixes no shapes" rule as every other quest endpoint) instead of
+living implicitly in the client. It is registered **before** `/api/quests/:name`, for the same reason as
+`coverage` — and the same consequence the frontend table already accepts: a quest literally named
+`catalog` is unreachable by its detail route (L1026-1030).
+
+```json
+{
+  "quests": [
+    { "quest_name": "DM-GRAVE-MAIN-008", "title": "Stakes and Stones",
+      "title_source": "direct", "has_definition": 0, "reference_count": 19 }
+  ],
+  "total": 1395,
+  "missing_only": true,
+  "corpus": { "spiraldb_path": "/…/data/test-spiraldb", "quest_files": 322 }
+}
+```
+
+- **The missing-only filter is this request's `?missing_only=`**, applied in SQL (`has_definition = 0`).
+  `1`/`true` turns it on, `0`/`false`/absent leaves it off, and anything else is a **`400`** — a
+  malformed query parameter is refused rather than clamped (the same ladder as `?limit=`). The client
+  never re-derives "missing" from the coverage numbers: the filtered `total` **equals** the view's
+  `missing`, reached two ways.
+- Rows are ordered `reference_count DESC, quest_name ASC` — most-gated first, the order the Catalog
+  view's ASCII draws — so a re-read cannot reorder the worklist.
+- `has_definition` is `0 | 1`; the row's action follows it (evidence link when 1, scaffold when 0).
 
 **Added by Phase 6 (P6-8/P6-10/D105): the evidence endpoints.** `GET /api/quests/:name/evidence` and
 `GET /api/quest-ids/:id/evidence` return **one shape**, resolved as a live join over the indexed

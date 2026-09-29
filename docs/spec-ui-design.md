@@ -659,8 +659,10 @@ the world names, what has been built, and what is missing.
   colour-only** (D85, WCAG 1.4.1).
 - **One row per catalog quest**, the name paired with its title through §Names, an inferred title
   carrying the labelled badge (D106), `has_definition` as a check/cross **with text**, and the
-  reference count.
-- **Missing-only filter** narrows to `has_definition = 0`.
+  reference count. The rows come from **`GET /api/quests/catalog`** ([spec-api](./spec-api.md)).
+- **Missing-only filter** narrows to `has_definition = 0` — through that request's `?missing_only=1`,
+  a **server-side predicate over the catalog**, never a client-side re-derivation of the coverage
+  numbers (the filtered count equals the view's `missing`).
 - **Each row links into the evidence panel or the scaffold action** — this is the entry point that
   makes the catalog a worklist rather than a report.
 - **Scaffold** (P6-5/P6-6, D100/D101): for a `has_definition = 0` row, **Create quest** writes a real

@@ -14,6 +14,13 @@
 
 import { reportRequestFailure, reportRequestSuccess } from './connection';
 import type { NameRow, NameRowMap, NamesType } from './display';
+import {
+  catalogRequestPath,
+  COVERAGE_PATH,
+  type CatalogFilter,
+  type QuestCatalogResult,
+  type QuestCoverage,
+} from './quest-catalog';
 import type { SyncCounts } from './toast';
 
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
@@ -1079,4 +1086,43 @@ export function scaffoldQuest(questName: string): Promise<ScaffoldQuestResult> {
     method: 'POST',
     body: JSON.stringify({ quest_name: questName }),
   });
+}
+
+/* ------------------------------------------------- quests (coverage + catalog) */
+
+/**
+ * TanStack Query key for the coverage read (`GET /api/quests/coverage`).
+ *
+ * One key for one definition: the Quests page's header and the Catalog view share it, so a
+ * refetch after a scaffold moves both (the invalidation is the caller's, as everywhere else).
+ */
+export const QUEST_COVERAGE_QUERY_KEY = ['quest-coverage'] as const;
+
+/**
+ * `GET /api/quests/coverage` — the `coverage` view's five axes plus the corpus they were
+ * measured against (task 6.10, spec-api.md L442-464).
+ *
+ * The types live in `lib/quest-catalog.ts` beside the header builder, so the sentence and the
+ * numbers it is built from are one unit. The header is built from this response and never from
+ * a constant — the plan's 1,447 is a different quantity (see `coverageHeadline`).
+ */
+export function getQuestCoverage(): Promise<QuestCoverage> {
+  return apiFetch<QuestCoverage>(COVERAGE_PATH);
+}
+
+/** TanStack Query key for one catalog read; the filter is part of the key, so the two lists
+ * (all rows, missing-only rows) are separate cache entries rather than one that lies. */
+export function questCatalogQueryKey(missingOnly: boolean): readonly [string, boolean] {
+  return ['quest-catalog', missingOnly] as const;
+}
+
+/**
+ * `GET /api/quests/catalog` — the worklist, with `?missing_only=1` applied by the server (task
+ * 6.10). The query comes from `catalogQuery`, the pure builder the unit test pins, so the filter
+ * is never re-derived on the client.
+ */
+export function listQuestCatalog(
+  filter: CatalogFilter = { missingOnly: false },
+): Promise<QuestCatalogResult> {
+  return apiFetch<QuestCatalogResult>(catalogRequestPath(filter));
 }

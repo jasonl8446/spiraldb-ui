@@ -75,8 +75,9 @@ The full 142-class table is reproduced by the command above. The families this p
 **Falsified by:** any WAD entry whose class hash is `276946680`. One such file would overturn the conclusion.
 
 **Known limit:** 14 of the 142 classes (10,274 objects) are not named by `ClientDump.json` — see *Unresolved
-classes*. Classification is by hash, so this does not weaken the result: `QuestTemplate`'s hash is compared
-numerically, not by name.
+classes*, which task 6.10 completed: **7 of the 14 are now named** (6,890 of the 10,274 objects) by the
+**r806919 server-side** sources, and the other 7 are recorded with their site and their evidence. Classification is
+by hash, so none of this weakens the result: `QuestTemplate`'s hash is compared numerically, not by name.
 
 ## Measurement 2 — payload hash scan
 
@@ -254,19 +255,91 @@ for "Gretta" return duplicates.
 
 ## Unresolved classes
 
-14 class hashes (10,274 objects) are neither classes nor properties in `ClientDump.json` (6,754 classes):
+**Task 6.10 resolved 7 of the 14 and recorded the other 7 with their site and their evidence; 6,890 of the 10,274
+objects are now named.** The original claim stands: none of them is quest-shaped.
 
-| Hash | Objects |
+The reason all 14 were unnamed is a **revision mismatch, not a mystery**. The census's naming source,
+`Imcodec.ObjectProperty/GeneratorInput/ClientDump.json` (6,754 classes), is byte-identical to Imcodec's
+`test/CodeGen/Inputs/r756936_WizardDev.json` — sha256 `5a855e16d31f481b9b4fab620d16ca0a979868dc2a21a8eb24e19609fc79da4f`
+— i.e. it is the **r756936 WizardDev** dump, while the censused objects come from the **r806919** tree. Two
+r806919 **server-side** sources name 7 of the 14:
+
+| Source | What it is |
 |---|---|
-| `0x06daac43`, `0x1b6ef770`, `0x3cdbe781` | 3,377 each |
-| `0x525dfd8b` | 132 |
-| `0x217d4c2e` | 2 |
-| 9 others | 1 each |
+| `Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs` | the hand-written server registry (`GetHash()` literals — **hex *and* decimal**, which matters: see the instrument note) |
+| `Imcodec.ObjectProperty/GeneratorInput/r806919_Wizard_1_610.json` (in the Imlight submodule) | the **r806919 server dump** the generator consumed — 6,981 classes, 227 more than the client dump |
 
-Three at exactly 3,377 — the same count as `CompassSystem`, `PathManager::PathTemplateList` and
-`PathManager::NodeTemplateList` — point at map/path infrastructure, but that is inference, not proof. The claim that
-no quest class hides here rests on the hash comparison (`QuestTemplate`'s hash is known), not on these being named.
-Task 6.9 resolves them or records explicitly that they remain unknown.
+| Hash | Decimal | Objects | What it is | Evidence |
+|---|---|---|---|---|
+| `0x06daac43` | 114,994,243 | 3,377 | **`WizZoneTriggers`** | registry L44 `public partial record WizZoneTriggers : PropertyClass { m_triggers }`; **deserialized**: all 3,377 `triggers.xml` entries come out as `class: WizZoneTriggers, hash: 114994243` |
+| `0x1b6ef770` | 460,257,136 | 3,377 | **`WizZoneVolumes`** | registry L96 `public partial record WizZoneVolumes : PropertyClass { m_volumes }`; **deserialized**: all 3,377 `volumes.xml` entries come out as `class: WizZoneVolumes, hash: 460257136` |
+| `0x1e75fec5` | 511,049,413 | 1 | **`WizBangPriorityTemplate`** | registry L988 `GetHash() => 511049413` — written in **decimal**; the hex-only grep that found "2" missed it (below) |
+| `0x525dfd8b` | 1,381,891,467 | 132 | **`SpellFusionTemplate`** | r806919 server dump, class record `SpellFusionTemplate` (`CoreTemplate`/`PropertyClass`, `m_primaryIngredient`/`m_secondaryIngredient`) |
+| `0x6c989d8b` | 1,821,941,131 | 1 | **`DisallowedNameList`** | r806919 server dump (`PropertyClass`, `m_disallowedNameList`) |
+| `0x7e7f0a2a` | 2,122,254,890 | 1 | **`TieredSpellGroupInfoList`** | r806919 server dump (`PropertyClass`, `m_tieredSpellGroupInfoList`) |
+| `0x367e02df` | 914,227,935 | 1 | **`FightFestData`** | r806919 server dump (`PropertyClass`, `m_worldDataList`/`m_worldOrderList`) |
+| `0x3cdbe781` | 1,021,044,609 | 3,377 | unknown — **site: `trigger_groups.xml`** | payload scan: 3,377 distinct entries, all named `trigger_groups.xml` (one per zone WAD); the extractor refuses every one with *"no registered object-property type for class hash 1021044609"* |
+| `0x217d4c2e` | 561,859,630 | 2 | unknown — **site: `Combat/CombatAIData.xml`, `Combat/CombatAIDataBruteForce.xml`** | both entries' own class hash is 561859630 and the extractor refuses both by that number |
+| `0x45d3c534` | 1,171,506,484 | 1 | unknown — **site: `Root.wad`/`HighScoreConfig.xml`** | refused as *"no registered object-property type for class hash 1171506484"* |
+| `0x56c56c0f` | 1,455,778,831 | 1 | unknown — **site: `Root.wad`/`MonsterMagicWorldLoot.xml`** | refused as *"… class hash 1455778831"* |
+| `0x0f775b20` | 259,480,352 | 1 | unknown — **site: `Root.wad`/`WhirlyBurlyConfig.xml`** | refused as *"… class hash 259480352"* |
+| `0x32a408e1` | 849,610,977 | 1 | unknown — **site: `Root.wad`/`NPCServices.xml`** | refused as *"… class hash 849610977"* |
+| `0xb2de6601` | 3,000,919,553 | 1 | unknown — see the anomaly note | the payload scan's **only** hit is `Root.wad`/`TemplateManifest.xml`, whose header-offset hash reads as 3000919553 while Imcodec binds that same entry as `TemplateManifest` (171021254); the disagreement is recorded, not resolved |
+
+**Totals: 7 resolved (6,890 objects) + 7 recorded as still-unknown (3,384 objects) = 10,274.** The three at exactly
+3,377 are the per-zone list files — `triggers.xml`, `volumes.xml`, `trigger_groups.xml` — which is why `CompassSystem`
+and `PathManager::PathTemplateList` (also one per zone WAD) share the count: **the coincidence is "one per zone WAD",
+not "the same class"**. The earlier note's guess of map/path infrastructure is borne out for the two now named
+(zone trigger and volume lists) and for the third's file, but the third's **class name** is still unknown; the
+inference is no longer load-bearing because the site is measured.
+
+### None is quest-shaped
+
+| Check | Measurement |
+|---|---|
+| The 14 versus `QuestTemplate`'s hash | `QuestTemplate` is `276946680` (`0x1081def8`; pointer form `0x1081defd`), `TutorialQuestTemplate` is `1450573585` (`0x5675ff11`) — **none of the 14 equals either**, and none equals any of the 132 classes in the client dump whose name contains "Quest" (136 in the r806919 dump), compared numerically |
+| The falsifier the census names | the payload scan for `276946680` over **199,382 data entries / 0.603 GB** found **0** — with `TutorialQuestTemplate` found **11** times in the same run (the positive control) and a **20-hash negative control at 0 hits** |
+| What the 10,274 objects are | **6,890** of them are `WizZoneTriggers`, `WizZoneVolumes`, `SpellFusionTemplate` (spell fusion), `WizBangPriorityTemplate` (a priority list), `DisallowedNameList`, `TieredSpellGroupInfoList` and `FightFestData`; the remaining **3,384** sit in zone trigger-group, combat-AI, high-score, monster-loot, whirlyburly, NPC-services and template-manifest config files. **No quest template** |
+
+### Reproduction (task 6.10's own runs)
+
+```bash
+G=/home/jason/Documents/git-projects/Aurorium/data/V_r806919.Wizard_1_610/Data/GameData
+C=/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/GeneratorInput/ClientDump.json
+
+# 1. the class census (1m48s): the 14 unresolved rows with their object counts
+node scripts/wad-census.mjs --gamedata "$G" --classes "$C" --json /tmp/p6-11/census-index.json
+
+# 2. the site of every hash that the client dump does not name, plus the QuestTemplate falsifier
+node scripts/wad-census.mjs --gamedata "$G" --classes "$C" \
+  --hashes 1021044609,561859630,1171506484,1455778831,259480352,3000919553,849610977,276946680,1450573585 \
+  --negative-control 20 --json /tmp/p6-11/census-unknown.json
+
+# 3. the deserialization binding: named classes bind, unnamed hashes are refused by number
+export DOTNET_ROOT=$(dirname "$(readlink -f "$(command -v dotnet)")")   # NixOS apphost (D45(3))
+tools/bin/wad-scan extract --gamedata "$G" --select \
+  triggers.xml,volumes.xml,trigger_groups.xml,HighScoreConfig.xml,MonsterMagicWorldLoot.xml,WhirlyBurlyConfig.xml,NPCServices.xml,TemplateManifest.xml \
+  --out /tmp/p6-11/unnamed-classes.ndjson
+
+# 4. the r806919 server-side names (the 7th resolution is a *decimal* literal — grep both forms)
+python3 - <<'PY'
+import json, re
+t={int(h,16) for h in ['3CDBE781','06DAAC43','1B6EF770','525DFD8B','217D4C2E','45D3C534','56C56C0F',
+                       '6C989D8B','7E7F0A2A','0F775B20','B2DE6601','1E75FEC5','32A408E1','367E02DF']}
+reg=open('/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/TypeCache/ServerGeneratedTypeRegistry.cs').read()
+vals=[int(m.group(1),16) if m.group(1).lower().startswith('0x') else int(m.group(1))
+      for m in re.finditer(r'GetHash\(\)\s*=>\s*(0x[0-9A-Fa-f]+|\d+)\s*;', reg)]
+d=json.load(open('/home/jason/Documents/git-projects/Imlight/submodule/Imcodec/src/Imcodec.ObjectProperty/GeneratorInput/r806919_Wizard_1_610.json'))
+srv={int(c['hash']): c['name'] for c in d['classes'].values()}
+for h in sorted(t):
+    print(h, 'registry' if h in set(vals) else ('server-dump: '+srv[h] if h in srv else 'unknown'))
+PY
+```
+
+**Instrument note (earned here).** A hex-only grep of the registry reports **2** hits; parsing the file and reading
+*both* literal forms reports **3** (`0x1e75fec5` is `GetHash() => 511049413` in decimal). The same trap produced the
+"12 unknown" reading: the r806919 **server dump** names 4 more. A detector that cannot see a decimal literal is not
+evidence that a hash is unnamed (D90(c)).
 
 ## Current database state
 

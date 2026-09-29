@@ -390,12 +390,19 @@ export const EVIDENCE_TAB_LABEL = 'Evidence';
 export const JSON_TAB_LABEL = 'JSON';
 
 /**
+ * The `?panel=` values, named so the catalog row's link (task 6.10) and
+ * {@link railTabFromParam} cannot spell the same tab two ways.
+ */
+export const RAIL_TAB_EVIDENCE: QuestRailTab = 'evidence';
+export const RAIL_TAB_JSON: QuestRailTab = 'json';
+
+/**
  * The `?panel=` resolver: `'evidence'` / `'json'` open that tab, anything else leaves the rail
  * closed. One home for the mapping, so a catalog row's link (p6-10) and the page cannot disagree,
  * and a typo opens nothing rather than a guess.
  */
 export function railTabFromParam(value: string | null): QuestRailTab | null {
-  return value === 'evidence' || value === 'json' ? value : null;
+  return value === RAIL_TAB_EVIDENCE || value === RAIL_TAB_JSON ? value : null;
 }
 
 /** The tab strip's accessible name. */

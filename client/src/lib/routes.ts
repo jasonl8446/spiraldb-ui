@@ -24,6 +24,7 @@ export type NavIconName =
   | 'layout-dashboard'
   | 'upload'
   | 'list-checks'
+  | 'library'
   | 'backpack'
   | 'sparkles'
   | 'book-open'
@@ -66,6 +67,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { path: '/quests/extract', label: 'Extract Quests', icon: 'upload' },
       { path: '/quests', label: 'Browse Quests', icon: 'list-checks' },
+      // Task 6.10 / story p6-11: the spec's QUESTS group ends with Catalog
+      // (docs/spec-ui-design.md L148-152), which is the worklist over the catalog.
+      { path: '/quests/catalog', label: 'Catalog', icon: 'library' },
     ],
   },
   {
@@ -113,13 +117,17 @@ export interface AppRoute {
  *
  * Phase mapping (lead decision 7): Dashboard → 5; quests → 2 (the browse list and the
  * detail route were both built in Phase 2 — the editors Phase 3 added inside the detail
- * page do not re-stamp its owner phase); the eight other object editors → 4; Settings → 1.
+ * page do not re-stamp its owner phase); Catalog → 6 (task 6.10's own view); the eight
+ * other object editors → 4; Settings → 1.
  */
 export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/', title: 'Dashboard', phase: 5 },
 
   { path: '/quests/extract', title: 'Extract Quests', phase: 2 },
   { path: '/quests', title: 'Browse Quests', phase: 2 },
+  // Static before the dynamic pattern that would shadow it (spec-api.md L1023-1027): the
+  // Catalog view is Phase 6's (task 6.10), and `/quests/:questName` stays after it.
+  { path: '/quests/catalog', title: 'Quest Catalog', phase: 6 },
   { path: '/quests/:questName', title: 'Quest Detail', phase: 2 },
 
   { path: '/drop-tables', title: 'Drop Tables', phase: 4 },

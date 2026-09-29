@@ -409,6 +409,23 @@ async function mockApi(page: Page, options: MockOptions = {}): Promise<Recorded>
     await route.fulfill({ json: saveResultFor(body.quest) });
   });
 
+  // Story p6-11 mounted a coverage header on the browse page this spec navigates to
+  // (`/quests`), so `GET /api/quests/coverage` is mocked too: without it the header would read
+  // whatever database the harness booted, which is a corpus-shaped read a tier-1 spec must not
+  // depend on (D40/D81).
+  await page.route('**/api/quests/coverage', (route) =>
+    route.fulfill({
+      json: {
+        nameable: 1717,
+        id_space: 4823,
+        defined: 322,
+        missing: 1395,
+        references: 2855,
+        corpus: { spiraldb_path: '/mock/spiraldb', quest_files: 322 },
+      },
+    }),
+  );
+
   return recorded;
 }
 
