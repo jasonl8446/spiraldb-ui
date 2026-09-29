@@ -1,9 +1,10 @@
 # Close-out verification — Phase 6 (and the whole run), ralph Step 3
 
-**This document supersedes the previous run's `architect-verification.md`**, which described Phases 1–5 on a
-`main @ 1bac35c` tree. This run built **Phase 6** (12 stories), closed it with `gate-6`, and then ran the
-three `final-*` gates; the same independent close-out requirement applies to all 76 stories, and the verdict
-below is the one this run earned.
+**This document supersedes the previous run's `architect-verification.md`** — a 466-line revision, still
+readable in full at `origin/main` and at `d2eb7ad` (the only commit that ever wrote it) — which described
+Phases 1–5 on a `main @ c1dafc3` tree (its own line 3, re-checked at `93e9129`). This run built **Phase 6**
+(12 stories), closed it with `gate-6`, and then ran the three `final-*` gates; the same independent close-out
+requirement applies to all 76 stories, and the verdict below is the one this run earned.
 
 ## The verdict
 
@@ -100,3 +101,6 @@ pointer-drag arm the run had fixed at gate-6 did not reproduce at all), i.e. env
 - Per-gate: `docs/evidence/final-deslop-d1-disposition.md` / `-d2-cleanups.md` / `-d3-proof.md`,
   `docs/evidence/final-review.md`, `docs/evidence/final-verify.md` (and its raw artifacts).
 - Decisions: `docs/plan-overview.md` **D96–D124**, plus the phase-log table with all four merge rows.
+- **Superseded:** the Phase 1–5 close-out verification (466 lines, `main @ c1dafc3`) is readable at
+  `origin/main` / `d2eb7ad`; its §3 defines DR-01…DR-16 and its §6 is the withhold list that the ledger's
+  `architectVerifiedNote` fields cite by section number.
