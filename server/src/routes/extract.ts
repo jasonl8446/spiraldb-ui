@@ -23,7 +23,8 @@ import {
  *
  * Contract: `multipart/form-data` with a single field **`file`**, a `.json`
  * packet capture, ≤ 512 MB (decision D2 — multer **disk** storage), answered with
- * exactly `{ quests: [...], count: N }`. The extraction is a blocking subprocess
+ * `{ quests: [...], count: N, suggestions: [...] }` (`suggestions` since task 7.5: the wrapper's sidecar,
+ * passed through and never merged into `quests`). The extraction is a blocking subprocess
  * (no job queue, no polling): the response is sent when the CLI is done, and the
  * UI shows an indeterminate spinner meanwhile.
  *
@@ -242,6 +243,7 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
 
     try {
       const quests = await run.result;
+      const suggestions = await run.suggestions;
       // `?census=1` (D139): what the reader ignored, from the same uploaded file. Never fails the request.
       const census =
         req.query.census === '1' && !aborted
@@ -250,8 +252,8 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
       if (!aborted) {
         res.json(
           census === undefined
-            ? { quests, count: quests.length }
-            : { quests, count: quests.length, census },
+            ? { quests, count: quests.length, suggestions }
+            : { quests, count: quests.length, suggestions, census },
         );
       }
     } catch (error) {

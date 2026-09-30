@@ -1,0 +1,57 @@
+{
+  "suggestions": [
+    {
+      "questName": "WC-UNICORN-MAIN-002",
+      "path": "m_goalLogic",
+      "value": [
+        {
+          "m_goalsAND": [
+            "1_WizardQuestGoals_Kill"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "2_WizardQuestGoals_TalkNPC"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "2_WizardQuestGoals_TalkNPC"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [],
+          "m_completeQuest": true,
+          "m_requiredORCount": 1
+        }
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_WizardQuestGoals_Kill, then MSG_REMOVEGOAL 1_WizardQuestGoals_Kill, then MSG_SENDGOAL 2_WizardQuestGoals_TalkNPC; MSG_COMPLETEGOAL 2_WizardQuestGoals_TalkNPC, then MSG_COMPLETEQUEST (the terminal goal), on QuestID 4922056963995490219"
+    },
+    {
+      "questName": "WC-UNICORN-MAIN-002",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "gold",
+        "amount": 1003,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (gold 1003) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries gold (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-UNICORN-MAIN-002",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "xp",
+        "amount": 503,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (XP 503) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries XP (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    }
+  ]
+}

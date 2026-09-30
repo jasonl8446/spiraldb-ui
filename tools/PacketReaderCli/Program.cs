@@ -15,13 +15,15 @@ namespace PacketReaderCli;
 internal static class Program {
 
     private const string Usage = """
-        Usage: imview-packet-reader --input <path> [--output <path|->]
+        Usage: imview-packet-reader --input <path> [--output <path|->] [--suggestions <path>]
 
         Reconstructs QuestTemplate objects from a JSON packet capture file.
 
         Options:
           --input  <path>    Packet capture file to read (required).
           --output <path|->  Write the JSON here; "-" or omitted writes to stdout.
+          --suggestions <path>
+                             Also write the inferred values to this file (task 7.5).
           -h, --help         Show this help and exit.
 
         Output is a JSON array of QuestTemplate objects. A capture that parses but
@@ -44,6 +46,14 @@ internal static class Program {
         MSG_COMPLETEGOAL CompleteText and MSG_PERSONAINFO GoalHyperlink, joined by
         QuestID/GoalID. A value it cannot write is reported on stderr as one JSON
         line {"report":"observed-field","quest","path","source","value","reason"}.
+
+        With --suggestions it writes {"suggestions":[{questName,path,value,source,
+        confidence,note}]} to that file (D138): m_startGoals and m_goalLogic chains
+        from packet order (complete, remove, send on one QuestID; MSG_COMPLETEQUEST
+        marks the terminal goal) and the reward packets (Rewards, MSG_QUESTREWARDS,
+        MSG_LOOT) as rolled observations at m_endResults.m_results. Nothing in it is
+        merged into the templates; stdout is the same array with or without the flag.
+        A value it cannot suggest is reported as {"report":"suggestion",...}.
 
         Exit codes: 0 = success, 1 = error (message on stderr).
         """;
@@ -85,19 +95,21 @@ internal static class Program {
             var goals = ReaderRepairs.JoinGoals(quests, read, Console.Error.WriteLine);
             ReaderRepairs.RepairDialogs(quests, read, goals, Console.Error.WriteLine);
             ObservedFields.Apply(quests, read, goals.ById, Console.Error.WriteLine);
+
+            // Inferred values go to the sidecar only (D127/D138); the templates are not touched.
+            if (options.SuggestionsPath is not null) {
+                var suggestions = Suggestions.Infer(quests, capture, goals.ById, Console.Error.WriteLine);
+                await WriteFile(options.SuggestionsPath,
+                    new JsonObject { ["suggestions"] = suggestions }.ToJsonString(s_sidecarOptions));
+            }
+
             var json = JsonConvert.SerializeObject(quests, Formatting.Indented, s_jsonSettings);
 
             if (options.OutputPath is null or "-") {
                 Console.Out.Write(json);
             }
             else {
-                var fullPath = Path.GetFullPath(options.OutputPath);
-                var directory = Path.GetDirectoryName(fullPath);
-                if (!string.IsNullOrEmpty(directory)) {
-                    Directory.CreateDirectory(directory);
-                }
-
-                await File.WriteAllTextAsync(fullPath, json);
+                await WriteFile(options.OutputPath, json);
             }
 
             return 0;
@@ -108,7 +120,24 @@ internal static class Program {
         }
     }
 
-    private sealed record Options(string InputPath, string? OutputPath, bool Help);
+    private sealed record Options(string InputPath, string? OutputPath, string? SuggestionsPath, bool Help);
+
+    // The sidecar is System.Text.Json (it is built from JsonNodes); the relaxed encoder keeps notes readable.
+    private static readonly JsonSerializerOptions s_sidecarOptions = new() {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    /// <summary>Writes <paramref name="contents"/> to <paramref name="path"/>, creating parent directories.</summary>
+    private static async Task WriteFile(string path, string contents) {
+        var fullPath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(directory)) {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(fullPath, contents);
+    }
 
     private const string UnsupportedGoalType = "Unsupported goal type: ";
 
@@ -315,18 +344,19 @@ internal static class Program {
     }
 
     private static bool TryParseArguments(string[] args, out Options options, out string error) {
-        options = new Options(string.Empty, null, false);
+        options = new Options(string.Empty, null, null, false);
         error = string.Empty;
 
         string? inputPath = null;
         string? outputPath = null;
+        string? suggestionsPath = null;
 
         for (var i = 0; i < args.Length; i++) {
             var argument = args[i];
 
             switch (argument) {
                 case "-h" or "--help":
-                    options = new Options(string.Empty, null, true);
+                    options = new Options(string.Empty, null, null, true);
                     return true;
 
                 case "--input":
@@ -345,6 +375,14 @@ internal static class Program {
                     outputPath = outputValue;
                     break;
 
+                case "--suggestions":
+                    if (!TryTakeValue(args, ref i, argument, out var suggestionsValue, out error)) {
+                        return false;
+                    }
+
+                    suggestionsPath = suggestionsValue;
+                    break;
+
                 default:
                     error = $"unknown argument: {argument}";
                     return false;
@@ -356,7 +394,7 @@ internal static class Program {
             return false;
         }
 
-        options = new Options(inputPath, outputPath, false);
+        options = new Options(inputPath, outputPath, suggestionsPath, false);
         return true;
     }
 

@@ -891,6 +891,8 @@ above is unchanged.
   verbatim. The server also stores each entry as a pending `quest_suggestions` row with `evidence_ref` =
   `capture:<file name>` (the base name, sanitised like `source`). The insert is idempotent through the identity
   index, so re-uploading the same capture adds nothing. Nothing is merged into `quests`.
+- As built (p7-06): the response carries `suggestions` exactly as the sidecar holds them. Storing them as
+  `quest_suggestions` rows needs migration `0005`, which task 7.6 (p7-07) adds; until then nothing is stored.
 - `census` is present only when the request asks for it with `?census=1`. It holds the `capture-census` rows for
   the same file. If the census binary is absent, `census` is `{ "skipped": "…reason…" }`, and the extraction itself
   still succeeds, the same posture as the sync's missing `wad-scan` (D55).

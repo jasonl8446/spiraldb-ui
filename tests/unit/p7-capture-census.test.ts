@@ -40,6 +40,8 @@ interface Step {
 interface InjectSpec {
   allowAchieveRank?: boolean;
   sendQuestFields: Record<string, unknown>;
+  /** Task 7.5: fields planted on MSG_QUESTOFFER (Rewards). */
+  questOfferFields?: Record<string, unknown>;
   sequence: Step[];
 }
 interface CensusRow {
@@ -78,6 +80,9 @@ function planted(spec: InjectSpec): Map<string, number> {
   for (const field of Object.keys(spec.sendQuestFields)) {
     add('MSG_SENDQUEST', field);
   }
+  for (const field of Object.keys(spec.questOfferFields ?? {})) {
+    add('MSG_QUESTOFFER', field);
+  }
   for (const step of spec.sequence) {
     for (const field of Object.keys(step.fields ?? {})) {
       add(step.message, field);
@@ -98,6 +103,10 @@ function expectedCounts(quest: string, spec: InjectSpec, capture: Envelope[]): M
   const sendQuest = capture.find((e) => e.data.name === 'MSG_SENDQUEST');
   if (sendQuest) {
     plantedOn.set(sendQuest, new Set(Object.keys(spec.sendQuestFields)));
+  }
+  const offer = capture.find((e) => e.data.name === 'MSG_QUESTOFFER');
+  if (offer) {
+    plantedOn.set(offer, new Set(Object.keys(spec.questOfferFields ?? {})));
   }
   let at = 0;
   for (const step of spec.sequence) {
@@ -189,6 +198,10 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
         (f) => `MSG_ACTORDIALOG\t${f}`,
       ),
       ...['CompletionType', 'ActorDialog'].map((f) => `MSG_ENCOUNTERDIALOG\t${f}`),
+      // Task 7.5: the reward packets.
+      'MSG_QUESTOFFER\tRewards',
+      'MSG_QUESTREWARDS\tLootList',
+      'MSG_LOOT\tLootList',
     ];
     for (const key of wanted) {
       expect(all.has(key), key.replace('\t', '.')).toBe(true);
@@ -238,9 +251,19 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
       const plantedHere = planted(specOf(quest));
       const row = (message: string, field: string): CensusRow | undefined =>
         rows.find((r) => r.message === message && r.field === field);
-      // Still ignored (task 7.5 reads the rewards): the census is the gap report.
-      if (plantedHere.has('MSG_SENDQUEST\tRewards')) {
-        expect(row('MSG_SENDQUEST', 'Rewards')?.consumed).toBe(false);
+      // Read by the task 7.5 suggestions pass (flipped in p7-06, goldens regenerated).
+      for (const [message, field] of [
+        ['MSG_SENDQUEST', 'Rewards'],
+        ['MSG_QUESTOFFER', 'Rewards'],
+        ['MSG_QUESTREWARDS', 'LootList'],
+        ['MSG_LOOT', 'LootList'],
+      ] as const) {
+        if (plantedHere.has(`${message}\t${field}`)) {
+          expect(row(message, field)?.consumed, `${message}.${field}`).toBe(true);
+        }
+      }
+      if (specOf(quest).sequence.some((s) => s.message === 'MSG_REMOVEGOAL')) {
+        expect(row('MSG_REMOVEGOAL', 'GoalID')?.consumed).toBe(true);
       }
       // Read by the 7.3 observed-field post-pass (flipped in p7-04) and the 7.4 reader repairs (flipped
       // in p7-05), goldens regenerated; each spec is checked on the fields it plants.

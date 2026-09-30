@@ -731,6 +731,18 @@ what it parsed before.
   ([data model](./spec-data-model.md#quest-suggestions-phase-7-migration-0005_quest_suggestionssql--d129-d130)).
   Nothing in the array is ever merged into a template automatically (D127/D129).
 
+**As built (p7-06).** A reward value is `{kind, …, result}`: `gold`/`xp` carry `amount` (`xp` also `school` when the
+packet names one), `item` carries `itemId` and `count`, `spell` carries `spellId`. `result` is the corpus result node
+that accepting appends to `m_endResults.m_results`: a spell is `ResLearnSpell {m_templateID}`, because Imlight sends a
+quest's `ResLearnSpell` as exactly that `AddSpellLootInfo`; gold, XP and items have no result type in the schema (a
+drop table rolled them), so their `result` is `null` and accepting writes nothing. Each distinct entry is one
+suggestion whose note names every packet that carried it. `MSG_LOOT` has no `QuestID`, so it belongs to the quest
+whose `MSG_COMPLETEQUEST` most recently precedes it (a `MSG_LOOT` after a later `MSG_COMPLETEGOAL` is a goal-result
+drop and is reported). Confidence: a closed chain and start goals 0.8, a chain with no `MSG_COMPLETEQUEST` 0.6, a
+spell 0.6, gold/XP/items 0.3. `m_startGoals` is suggested only when the extraction has none. A chain is emitted only
+whole: a goal the join cannot name (an excluded goal) makes it a `{"report":"suggestion", …}` stderr line instead.
+The wrapper infers only when `--suggestions` is given, so its stderr without the flag is unchanged. See D159.
+
 ### Phase 7: the packet census (D128 — task 7.2)
 
 `tools/CaptureCensus` (assembly `capture-census`, built by `npm run build:census` with the D18 flags into

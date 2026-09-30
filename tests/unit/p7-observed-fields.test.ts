@@ -52,6 +52,7 @@ const ACTIVITY = [
 const LISTED_GOAL_TYPES = new Set([1, 2, 3, 4, 5, 7, 8]);
 const ACHIEVERANK = 7;
 const DIALOG_MESSAGES = new Set(['MSG_ACTORDIALOG', 'MSG_ENCOUNTERDIALOG']);
+const REWARD_MESSAGES = new Set(['MSG_QUESTREWARDS', 'MSG_LOOT']);
 
 interface Step {
   message: string;
@@ -251,6 +252,10 @@ function expectationsFor(
       if (DIALOG_MESSAGES.has(step.message)) {
         pushDialogFlags(expectations, step, envelope, capture, questId, goalFor);
       }
+      return;
+    }
+    // Task 7.5's reward packets are inferred data, checked against the sidecar (p7-suggestions.test.ts).
+    if (REWARD_MESSAGES.has(step.message)) {
       return;
     }
     for (const [field, value] of Object.entries(step.fields ?? {})) {

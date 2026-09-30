@@ -78,7 +78,7 @@
       "message": "MSG_COMPLETEGOAL",
       "field": "QuestID",
       "count": 3,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_COMPLETEQUEST",
@@ -150,19 +150,19 @@
       "message": "MSG_QUESTOFFER",
       "field": "Rewards",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_REMOVEGOAL",
       "field": "GoalID",
       "count": 2,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_REMOVEGOAL",
       "field": "QuestID",
       "count": 2,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",

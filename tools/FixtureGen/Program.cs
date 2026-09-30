@@ -221,7 +221,7 @@ internal static partial class Program {
             "GoalCompilation");
         SelfCheckGoalCompilation(goalDataHex, compilationGoals, notes);
 
-        packets.Add(Envelope("MSG_QUESTOFFER", new JObject {
+        var offerFields = new JObject {
             ["MobileID"] = Wrap(mobileId),
             ["QuestName"] = Wrap(quest.Name),
             ["QuestTitle"] = Wrap(quest.Title),
@@ -232,7 +232,16 @@ internal static partial class Program {
             ["Rewards"] = Wrap(""),
             ["GoalData"] = Wrap(goalDataHex),
             ["Mainline"] = Wrap(quest.Mainline ? 1 : 0),
-        }));
+        };
+
+        // Task 7.5: a planted offer field (Rewards) replaces the engine's in place.
+        if (inject is not null) {
+            foreach (var planted in inject.QuestOfferFields) {
+                offerFields[planted.Key] = new JObject { ["value"] = planted.Value!.DeepClone() };
+            }
+        }
+
+        packets.Add(Envelope("MSG_QUESTOFFER", offerFields));
 
         // MSG_SENDQUEST: lets the reader map QuestTitle -> QuestID, which the completion dialog and
         // every goal packet are matched against.
@@ -351,7 +360,9 @@ internal static partial class Program {
                         ["QuestID"] = Wrap(questId),
                         ["GoalID"] = Wrap(stepGoalId),
                     },
-                    "MSG_COMPLETEQUEST" => new JObject { ["QuestID"] = Wrap(questId) },
+                    "MSG_COMPLETEQUEST" or "MSG_QUESTREWARDS" => new JObject { ["QuestID"] = Wrap(questId) },
+                    // Imlight's LootGranter addresses MSG_LOOT to the player's GlobalID; it carries no QuestID.
+                    "MSG_LOOT" => new JObject { ["GlobalID"] = Wrap(StableId(quest.Name, "player")) },
                     // A planted dialog carries the quest id, as the game server sends it; "goal" omitted
                     // makes it quest-level (GoalID 0). CompletionType and ActorDialog come from the spec.
                     "MSG_ACTORDIALOG" => ActorDialogFields(mobileId, questId, stepGoalId, "", "", options.Persona),
@@ -413,7 +424,7 @@ internal static partial class Program {
             $"  packets          {packets.Count} ({packetGoals.Count} MSG_SENDGOAL, {dialogBlocks} MSG_ACTORDIALOG); tally madlib blobs: {tallyGoals}, client-tag blobs: {clientTagGoals}"));
         if (inject is not null) {
             summary.AppendLine(FormattableString.Invariant(
-                $"  inject           {options.InjectPath}: {inject.SendQuestFields.Count} MSG_SENDQUEST extra(s), {inject.Sequence.Count} sequence step(s) ({injectedSendGoals} MSG_SENDGOAL, {injectedOther} other)"));
+                $"  inject           {options.InjectPath}: {inject.SendQuestFields.Count} MSG_SENDQUEST extra(s), {inject.QuestOfferFields.Count} MSG_QUESTOFFER field(s), {inject.Sequence.Count} sequence step(s) ({injectedSendGoals} MSG_SENDGOAL, {injectedOther} other)"));
         }
 
         summary.AppendLine(FormattableString.Invariant(

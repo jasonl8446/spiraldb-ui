@@ -16,6 +16,7 @@ namespace FixtureGen;
 ///     "allowAchieveRank": false,               opt in to GOAL_TYPE_ACHIEVERANK (D146)
 ///     "goalDialogQuestId": false,              goal dialogs carry the QuestID (task 7.4)
 ///     "sendQuestFields": { "QuestNameID": 1 }, extra fields planted on MSG_SENDQUEST
+///     "questOfferFields": { "Rewards": … },    fields planted on MSG_QUESTOFFER (task 7.5)
 ///     "sequence": [                            the deliberate message order, after MSG_QUESTOFFER,
 ///       { "message": "MSG_SENDGOAL",           MSG_SENDQUEST and the quest-level dialogs
 ///         "goal": 0,                           index into the corpus m_goals list
@@ -34,7 +35,9 @@ namespace FixtureGen;
 /// ObjectSerializer into the hex string the wire carries:
 ///
 ///   { "$blob": "ClientTagList", "tags": ["a", "b"] }              mask 1  (Prop_Save)
-///   { "$blob": "LootInfoList",  "gold": 1234, "magicXp": 56 }     mask 31 (LootTableTest's mask)
+///   { "$blob": "LootInfoList",  "gold": 1234, "magicXp": 56 }     mask 31 (LootTableTest's mask);
+///       task 7.5 adds "items": [{"id": n, "count": n}] (ItemLootInfo) and "spells": [n]
+///       (AddSpellLootInfo), and an absent "gold"/"magicXp" leaves that entry out
 ///   { "$blob": "ActorDialog",   "entries": ["line 1", "line 2"] } mask 16 (QuestBuilder's dialog mask),
 ///                                                                one NPCDialogEntry per line (m_dialog)
 ///
@@ -43,6 +46,10 @@ namespace FixtureGen;
 /// which the reader skips as a duplicate by GoalNameID. A compilation goal that carries dialogs must be
 /// sent (its dialogs follow its first send). A planted MSG_SENDGOAL field replaces the engine's, so a spec
 /// can plant a GoalType QuestBuilder does not list (task 7.4's unlisted-goal-type fixture).
+///
+/// MSG_QUESTREWARDS and MSG_LOOT (task 7.5) are the quest's reward packets: no "goal", and the spec
+/// must plant LootList. The engine fills MSG_QUESTREWARDS.QuestID and MSG_LOOT.GlobalID (the player,
+/// as Imlight's LootGranter sends it: MSG_LOOT carries no QuestID).
 ///
 /// "goalDialogQuestId": true writes the quest's QuestID on the goal dialogs (the engine writes 0 by
 /// default; the game server writes the quest id), which is what makes QuestBuilder attach a goal-level
@@ -58,17 +65,23 @@ internal static partial class Program {
         "MSG_PERSONAINFO",
         "MSG_ACTORDIALOG",
         "MSG_ENCOUNTERDIALOG",
+        "MSG_QUESTREWARDS",
+        "MSG_LOOT",
     ];
 
     // Planted dialogs may be quest-level, so their "goal" is optional.
     private static readonly HashSet<string> s_dialogMessages = ["MSG_ACTORDIALOG", "MSG_ENCOUNTERDIALOG"];
+
+    // The reward packets (task 7.5) are quest-scoped: no "goal", and LootList must be planted.
+    private static readonly HashSet<string> s_rewardMessages = ["MSG_QUESTREWARDS", "MSG_LOOT"];
 
     private const uint PropLootInfoList = 31;
 
     private sealed record InjectStep(string Message, int? Goal, JObject Fields);
 
     private sealed record InjectSpec(
-        bool AllowAchieveRank, bool GoalDialogQuestId, JObject SendQuestFields, List<InjectStep> Sequence);
+        bool AllowAchieveRank, bool GoalDialogQuestId, JObject SendQuestFields, JObject QuestOfferFields,
+        List<InjectStep> Sequence);
 
     private static bool IsOptedInAchieveRank(InjectSpec? inject, CorpusGoal goal)
         => inject is { AllowAchieveRank: true } && goal.Type == GOAL_TYPE.GOAL_TYPE_ACHIEVERANK;
@@ -92,6 +105,14 @@ internal static partial class Program {
         if (root["sendQuestFields"] is JObject planted) {
             foreach (var property in planted.Properties()) {
                 sendQuest[property.Name] = ResolvePlanted(property.Value, $"'{path}': sendQuestFields.{property.Name}");
+            }
+        }
+
+        var questOffer = new JObject();
+
+        if (root["questOfferFields"] is JObject offerPlanted) {
+            foreach (var property in offerPlanted.Properties()) {
+                questOffer[property.Name] = ResolvePlanted(property.Value, $"'{path}': questOfferFields.{property.Name}");
             }
         }
 
@@ -123,6 +144,7 @@ internal static partial class Program {
             root["allowAchieveRank"]?.Value<bool>() ?? false,
             root["goalDialogQuestId"]?.Value<bool>() ?? false,
             sendQuest,
+            questOffer,
             sequence);
     }
 
@@ -141,6 +163,18 @@ internal static partial class Program {
             }
 
             if (step.Message == "MSG_COMPLETEQUEST") {
+                continue;
+            }
+
+            if (s_rewardMessages.Contains(step.Message)) {
+                if (step.Fields["LootList"] is null) {
+                    problems.Add($"inject sequence[{i}] ({step.Message}) must plant LootList");
+                }
+
+                if (step.Goal is not null) {
+                    problems.Add($"inject sequence[{i}] ({step.Message}) is quest-scoped and takes no \"goal\"");
+                }
+
                 continue;
             }
 
@@ -194,14 +228,30 @@ internal static partial class Program {
             }
 
             case "LootInfoList": {
-                var gold = spec["gold"]?.Value<int>() ?? 0;
-                var magicXp = spec["magicXp"]?.Value<int>() ?? 0;
+                var gold = spec["gold"]?.Value<int>();
+                var magicXp = spec["magicXp"]?.Value<int>();
+                var items = (spec["items"] as JArray)?
+                    .Select(t => (Id: t["id"]?.Value<ulong>() ?? 0, Count: t["count"]?.Value<int>() ?? 1)).ToList() ?? [];
+                var spells = (spec["spells"] as JArray)?.Select(t => t.Value<uint>()).ToList() ?? [];
+                var loot = new List<LootInfo>();
+                if (magicXp is { } experience) {
+                    loot.Add(new MagicXPLootInfo { m_lootType = LOOT_TYPE.LOOT_TYPE_MAGIC_XP, m_experience = experience });
+                }
+
+                loot.AddRange(items.Select(item => (LootInfo) new ItemLootInfo {
+                    m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM, m_itemID = item.Id, m_numItems = item.Count,
+                }));
+                loot.AddRange(spells.Select(spell => (LootInfo) new AddSpellLootInfo {
+                    m_lootType = LOOT_TYPE.LOOT_TYPE_ADD_SPELL, m_spellID = spell,
+                }));
                 var list = new LootInfoList {
-                    m_loot = [new MagicXPLootInfo { m_lootType = LOOT_TYPE.LOOT_TYPE_MAGIC_XP, m_experience = magicXp }],
-                    m_goldInfo = new GoldLootInfo { m_lootType = LOOT_TYPE.LOOT_TYPE_GOLD, m_goldAmount = gold },
+                    m_loot = loot,
+                    m_goldInfo = gold is { } amount
+                        ? new GoldLootInfo { m_lootType = LOOT_TYPE.LOOT_TYPE_GOLD, m_goldAmount = amount }
+                        : null,
                 };
                 var hex = SerializeBlob(list, PropLootInfoList, $"LootInfoList({what})");
-                SelfCheckLootInfoList(hex, gold, magicXp, what);
+                SelfCheckLootInfoList(hex, gold, magicXp, items, spells, what);
                 return hex;
             }
 
@@ -233,15 +283,21 @@ internal static partial class Program {
         }
     }
 
-    private static void SelfCheckLootInfoList(string blob, int gold, int magicXp, string what) {
+    private static void SelfCheckLootInfoList(
+        string blob, int? gold, int? magicXp, List<(ulong Id, int Count)> items, List<uint> spells, string what) {
         var serializer = new ObjectSerializer(Versionable: false, Behaviors: SerializerFlags.None);
 
         if (!serializer.Deserialize<LootInfoList>(Convert.FromHexString(blob), (PropertyFlags) PropLootInfoList, out var decoded)
-            || decoded?.m_goldInfo is null
-            || decoded.m_goldInfo.m_goldAmount != gold
-            || decoded.m_loot is not [MagicXPLootInfo { } xp]
-            || xp.m_experience != magicXp) {
-            throw new FixtureException($"self-check: the LootInfoList blob for {what} did not round-trip (gold {gold}, magic xp {magicXp})");
+            || decoded?.m_goldInfo?.m_goldAmount != gold
+            || decoded.m_loot is not { } loot
+            || !loot.OfType<MagicXPLootInfo>().Select(x => (int?) x.m_experience)
+                .SequenceEqual(magicXp is null ? [] : [magicXp])
+            || !loot.OfType<ItemLootInfo>().Select(x => (x.m_itemID.Full, x.m_numItems)).SequenceEqual(items)
+            || !loot.OfType<AddSpellLootInfo>().Select(x => x.m_spellID).SequenceEqual(spells)
+            || loot.Count != (magicXp is null ? 0 : 1) + items.Count + spells.Count) {
+            throw new FixtureException(
+                $"self-check: the LootInfoList blob for {what} did not round-trip (gold {gold}, magic xp {magicXp}, "
+                + $"{items.Count} item(s), {spells.Count} spell(s))");
         }
     }
 }

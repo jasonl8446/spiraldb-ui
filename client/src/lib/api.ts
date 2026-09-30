@@ -773,10 +773,25 @@ export interface CensusRow {
 /** The census of the uploaded capture, or why it could not run (D55 posture). */
 export type ExtractCensus = { messages: number; rows: CensusRow[] } | { skipped: string };
 
+/**
+ * One inferred value from the wrapper's sidecar (task 7.5, D138): shown and stored as a suggestion, never
+ * merged into a quest (D127/D129).
+ */
+export interface CaptureSuggestion {
+  questName: string;
+  path: string;
+  value: unknown;
+  source: 'capture-order' | 'capture-rewards';
+  confidence: number;
+  note: string;
+}
+
 /** `POST /api/extract/quests` success body (docs/spec-api.md L303-307; `census` only with `?census=1`, D139). */
 export interface ExtractQuestsResult {
   quests: QuestObject[];
   count: number;
+  /** Always present since task 7.5, `[]` when nothing was inferred. */
+  suggestions: CaptureSuggestion[];
   census?: ExtractCensus;
 }
 

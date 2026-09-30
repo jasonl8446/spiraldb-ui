@@ -1,0 +1,28 @@
+{
+  "suggestions": [
+    {
+      "questName": "WC-MAIN-C01-013",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "gold",
+        "amount": 1001,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (gold 1001) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries gold (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-MAIN-C01-013",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "xp",
+        "amount": 501,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (XP 501) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries XP (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    }
+  ]
+}

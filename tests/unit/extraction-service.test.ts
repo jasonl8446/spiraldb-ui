@@ -14,6 +14,7 @@ import {
   ExtractionCancelledError,
   ExtractionError,
   parseQuestArray,
+  parseSuggestions,
   CLI_BUILD_HINT,
 } from '@server/services/extraction';
 
@@ -27,6 +28,9 @@ import {
  */
 
 const CLI = '/repo/tools/bin/imview-packet-reader';
+/** The pinned sidecar dir (task 7.5): every run passes `--suggestions <dir>/suggestions.json`. */
+const SIDECAR_DIR = '/tmp/spiraldb-extract-SIDECAR';
+const SIDECAR = `${SIDECAR_DIR}/suggestions.json`;
 
 interface RecordedCall {
   file: string;
@@ -65,6 +69,9 @@ function serviceWith(
     exec,
     env: { PATH: '/nonexistent' },
     fileExists: () => true,
+    createSidecarDir: () => SIDECAR_DIR,
+    removePath: () => Promise.resolve(),
+    reportSuggestions: () => undefined,
     ...overrides,
   });
 }
@@ -221,7 +228,7 @@ describe('parseQuestArray', () => {
 });
 
 describe('extraction service — happy path', () => {
-  it('runs the CLI with --input and parses stdout as the quest array', async () => {
+  it('runs the CLI with --input (and the task 7.5 sidecar) and parses stdout as the quest array', async () => {
     const { exec, calls } = fakeExec([
       { stdout: JSON.stringify([{ m_questName: 'MB-YARD1-C01-001' }, { m_questName: 'B' }]) },
     ]);
@@ -232,7 +239,7 @@ describe('extraction service — happy path', () => {
     expect(quests).toEqual([{ m_questName: 'MB-YARD1-C01-001' }, { m_questName: 'B' }]);
     expect(calls).toHaveLength(1);
     expect(calls[0].file).toBe(CLI);
-    expect(calls[0].args).toEqual(['--input', '/tmp/capture.json']);
+    expect(calls[0].args).toEqual(['--input', '/tmp/capture.json', '--suggestions', SIDECAR]);
     // The spec's 50 MB cap (docs/spec-domain-reference.md L606).
     expect(calls[0].options.maxBuffer).toBe(50 * 1024 * 1024);
   });
@@ -331,10 +338,14 @@ describe('extraction service — the maxBuffer escape hatch (--output file mode)
     const removePath = vi.fn(() => Promise.resolve());
     const service = serviceWith(exec, {
       createTempDir: () => Promise.resolve('/tmp/spiraldb-extract-TEST'),
-      readTextFile: (file) => {
-        expect(file).toBe('/tmp/spiraldb-extract-TEST/quests.json');
-        return Promise.resolve('[{"m_questName":"FROM-FILE"}]');
-      },
+      readTextFile: (file) =>
+        Promise.resolve(
+          file === SIDECAR
+            ? '{"suggestions":[]}'
+            : file === '/tmp/spiraldb-extract-TEST/quests.json'
+              ? '[{"m_questName":"FROM-FILE"}]'
+              : 'unexpected file',
+        ),
       removePath,
     });
 
@@ -342,14 +353,17 @@ describe('extraction service — the maxBuffer escape hatch (--output file mode)
 
     expect(quests).toEqual([{ m_questName: 'FROM-FILE' }]);
     expect(calls).toHaveLength(2);
-    expect(calls[0].args).toEqual(['--input', '/tmp/big.json']);
+    expect(calls[0].args).toEqual(['--input', '/tmp/big.json', '--suggestions', SIDECAR]);
     expect(calls[1].args).toEqual([
       '--input',
       '/tmp/big.json',
       '--output',
       '/tmp/spiraldb-extract-TEST/quests.json',
+      '--suggestions',
+      SIDECAR,
     ]);
     expect(removePath).toHaveBeenCalledWith('/tmp/spiraldb-extract-TEST');
+    expect(removePath).toHaveBeenCalledWith(SIDECAR_DIR);
   });
 
   it('removes the temp dir even when the retry itself fails', async () => {
@@ -399,6 +413,60 @@ describe('extraction service — the maxBuffer escape hatch (--output file mode)
     await expect(service.start('/tmp/big.json').result).rejects.toThrowError(
       /exceeded the 50 MB buffer even in --output file mode.*smaller capture/s,
     );
+  });
+});
+
+describe('the suggestions sidecar (task 7.5, D138)', () => {
+  const suggestion = {
+    questName: 'Q-1',
+    path: 'm_goalLogic',
+    value: [{ m_goalsAND: ['1_A'], m_goalsToAdd: ['2_B'] }],
+    source: 'capture-order',
+    confidence: 0.8,
+    note: 'MSG_COMPLETEGOAL 1_A, then MSG_REMOVEGOAL 1_A, then MSG_SENDGOAL 2_B',
+  };
+
+  it('hands the sidecar array back beside the quests, verbatim and unmerged', async () => {
+    const { exec } = fakeExec([{ stdout: JSON.stringify([{ m_questName: 'Q-1' }]) }]);
+    const read: string[] = [];
+    const run = serviceWith(exec, {
+      readTextFile: (file) => {
+        read.push(file);
+        return Promise.resolve(JSON.stringify({ suggestions: [suggestion] }));
+      },
+    }).start('/tmp/capture.json');
+
+    expect(await run.result).toEqual([{ m_questName: 'Q-1' }]);
+    expect(await run.suggestions).toEqual([suggestion]);
+    expect(read).toEqual([SIDECAR]);
+  });
+
+  it('reports and drops an unreadable sidecar or a malformed entry, never failing the run', async () => {
+    const reports: string[] = [];
+    expect(parseSuggestions('not json', (m) => reports.push(m))).toEqual([]);
+    expect(parseSuggestions('{"quests":[]}', (m) => reports.push(m))).toEqual([]);
+    expect(
+      parseSuggestions(
+        JSON.stringify({ suggestions: [suggestion, { ...suggestion, confidence: 1.5 }] }),
+        (m) => reports.push(m),
+      ),
+    ).toEqual([suggestion]);
+    expect(reports).toHaveLength(3);
+
+    const { exec } = fakeExec([{ stdout: '[]' }]);
+    const run = serviceWith(exec, {
+      readTextFile: () => Promise.reject(new Error('ENOENT')),
+    }).start('/tmp/capture.json');
+    expect(await run.result).toEqual([]);
+    expect(await run.suggestions).toEqual([]);
+  });
+
+  it('resolves to [] when the run fails, leaving the error to result', async () => {
+    const { exec } = fakeExec([{ error: new ExecFileFailure({ code: '1', stderr: 'boom' }) }]);
+    const run = serviceWith(exec).start('/tmp/x.json');
+
+    await expect(run.result).rejects.toThrowError('Failed to parse packet capture: boom');
+    expect(await run.suggestions).toEqual([]);
   });
 });
 

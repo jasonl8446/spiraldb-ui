@@ -1,0 +1,44 @@
+{
+  "suggestions": [
+    {
+      "questName": "MS-DTH1-C01-002",
+      "path": "m_goalLogic",
+      "value": [
+        {
+          "m_goalsAND": [
+            "1_WizardQuestGoals_ExploreZone"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "2_WizardQuestGoals_00000036"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "2_WizardQuestGoals_00000036"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "3_WizardQuestGoals_TalkNPC"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "3_WizardQuestGoals_TalkNPC"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [],
+          "m_completeQuest": true,
+          "m_requiredORCount": 1
+        }
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_WizardQuestGoals_ExploreZone, then MSG_REMOVEGOAL 1_WizardQuestGoals_ExploreZone, then MSG_SENDGOAL 2_WizardQuestGoals_00000036; MSG_COMPLETEGOAL 2_WizardQuestGoals_00000036, then MSG_REMOVEGOAL 2_WizardQuestGoals_00000036, then MSG_SENDGOAL 3_WizardQuestGoals_TalkNPC; MSG_COMPLETEGOAL 3_WizardQuestGoals_TalkNPC, then MSG_COMPLETEQUEST (the terminal goal), on QuestID 4311635402858380091"
+    }
+  ]
+}

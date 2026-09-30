@@ -140,18 +140,22 @@ Corpus pin: the `data/test-spiraldb` clone at `18dc92477d54b1e911796960407ce7710
 | `DS-ACAD2-C01-005` | Task 7.4: completion dialog by `GoalID` (Waypoint x2, Persona) | 3 | `a5281317d78a1494807cde2d67f69087c8535843ba596a311a9ce519ab9e7b1d` |
 | `MS-DTH1-C01-002` | Task 7.4: encounter / underway dialogs, `IsYesNo`, `DefaultDialogAnimation` (Waypoint x2, Persona) | 3 | `72481529f6f68a93577b49b892a004906b42ce47b27372729c93cb637dbaa122` |
 | `DS-ACAD1-C04-003` | Task 7.4: an unlisted goal type (BountyCollect, planted type 9, Persona) | 3 | `3933b3cff2a2ee9323825d20689c5c7c5bb8526f853fe411682479cb9b8861d2` |
+| `WC-HAUNTED-MAIN-001` | Task 7.5: a three-goal chain and every reward packet (Waypoint, BountyCollect, Persona) | 3 | `a6d9712c074ccb7f8c17b05c216b727ac2487f544c4280b7ab33c9e0517127e1` |
 
 ### The inject spec
 
-Strict JSON: `{ description, allowAchieveRank?, goalDialogQuestId?, sendQuestFields, sequence[] }`.
+Strict JSON: `{ description, allowAchieveRank?, goalDialogQuestId?, sendQuestFields, questOfferFields?, sequence[] }`.
 
 - `sendQuestFields` are extra envelope fields planted on `MSG_SENDQUEST` (`QuestNameID`, `QuestInfo`,
   `NoQuestHelper`, `SkipQHAutoSelect`, `ActivityType` (2 = `ACTIVITY_Crafting`), `ClientTags`, `PetOnlyQuest`,
   `Rewards`). Field names are Imlight's `QuestMessages.xml`; a planted field is written whether or not Imview's
   message definition declares it (that is what the census then reports as ignored).
+- `questOfferFields` (task 7.5) are planted on `MSG_QUESTOFFER`, replacing the engine's field in place (its
+  `Rewards` is `""` otherwise).
 - `sequence` is the deliberate message order after `MSG_QUESTOFFER`, `MSG_SENDQUEST` and the quest-level dialogs.
   Each step is `{ message, goal?, fields? }`, `message` one of `MSG_SENDGOAL`, `MSG_PERSONAINFO`,
-  `MSG_COMPLETEGOAL`, `MSG_REMOVEGOAL`, `MSG_COMPLETEQUEST`, `MSG_ACTORDIALOG`, `MSG_ENCOUNTERDIALOG`; `goal`
+  `MSG_COMPLETEGOAL`, `MSG_REMOVEGOAL`, `MSG_COMPLETEQUEST`, `MSG_ACTORDIALOG`, `MSG_ENCOUNTERDIALOG`,
+  `MSG_QUESTREWARDS`, `MSG_LOOT`; `goal`
   indexes the corpus `m_goals`; `fields` are planted on that envelope (ids are filled in; `MSG_SENDGOAL` carries
   the whole corpus goal, and a planted field such as `GoalType` replaces the engine's). Under `--inject`
   `MSG_SENDGOAL` is emitted only from the sequence (a goal's own dialogs follow its first send); every goal the
@@ -162,13 +166,19 @@ Strict JSON: `{ description, allowAchieveRank?, goalDialogQuestId?, sendQuestFie
   `ActorDialog`, and may plant `IsYesNo` / `DefaultDialogAnimation` (`MSG_ACTORDIALOG` only).
   `{"$blob":"ActorDialog","entries":["line", …]}` becomes an `ActorDialog` blob (mask 16) with one
   `NPCDialogEntry` per line, decode-checked before it is written.
+- A reward step (`MSG_QUESTREWARDS`, `MSG_LOOT`, task 7.5) is quest-scoped (no `goal`) and must plant `LootList`.
+  The engine writes `MSG_QUESTREWARDS.QuestID` and `MSG_LOOT.GlobalID` (a stable player id: Imlight's
+  LootGranter addresses the player, so `MSG_LOOT` carries no `QuestID`).
 - `goalDialogQuestId: true` writes the quest's `QuestID` on the corpus goal dialogs (the engine writes 0 by
   default; the game server writes the quest id), which is what makes QuestBuilder copy a goal's `Completion`
   dialog onto the quest.
 - A field value `{"$blob":"ClientTagList","tags":[…]}` (mask 1) or `{"$blob":"LootInfoList","gold":n,"magicXp":n}`
   (mask 31, the mask of Imcodec's `LootTableTest`) is serialised with `ObjectSerializer` to the hex string on the
   wire; the LootInfoList is decode-checked before it is written. Both classes exist in Imview's net9 Imcodec build.
-- Order used by all five: per goal `MSG_SENDGOAL`, `MSG_PERSONAINFO` (persona goals), `MSG_COMPLETEGOAL`, then
+  Task 7.5 adds `"items":[{"id":n,"count":n}]` (`ItemLootInfo`) and `"spells":[n]` (`AddSpellLootInfo`), and an
+  absent `gold` / `magicXp` leaves that entry out (every earlier spec sets both, so their fixtures are unchanged).
+- Order used by the task 7.2 five (and by `WC-HAUNTED-MAIN-001`, which then adds `MSG_QUESTREWARDS` and `MSG_LOOT`
+  after `MSG_COMPLETEQUEST`, where Imlight sends them): per goal `MSG_SENDGOAL`, `MSG_PERSONAINFO` (persona goals), `MSG_COMPLETEGOAL`, then
   `MSG_REMOVEGOAL` unless it is the last goal; `MSG_COMPLETEQUEST` closes the quest. So goal A completes and is
   removed, follow-on goal B is sent on the same `QuestID`, and the goal completed right before
   `MSG_COMPLETEQUEST` (no remove) is the terminal one. The single-goal quest has no remove and no follow-on.
@@ -229,3 +239,28 @@ Each task 7.4 fixture failed on the p7-04 binary (raw output in `docs/evidence/p
   QuestBuilder throws and the p7-04 binary exits 1; the wrapper re-reads the capture without that goal and
   reports it (`goal-excluded`).
 - `WC-TUT-C05-001` — **empty-title ACHIEVERANK** (above).
+
+### Suggestion sidecars (task 7.5)
+
+`<QUEST>.suggestions.json` is the file `imview-packet-reader --suggestions` writes for the fixture (D138): the
+inferred `m_startGoals` / `m_goalLogic` chain from packet order and the reward suggestions at
+`m_endResults.m_results`, each `{questName, path, value, source, confidence, note}`. `<QUEST>.suggestions.reports.jsonl`
+holds the `{"report":"suggestion", …}` stderr lines, committed only where there are any (`DS-ACAD1-C04-003`: its
+excluded goal leaves a gap, so no chain is suggested). stdout with the flag is byte-identical to `<QUEST>.extract.json`.
+Regenerate with:
+
+```bash
+npm run build:cli
+DOTNET_ROOT=$(dirname "$(readlink -f "$(command -v dotnet)")") \
+  tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/<QUEST>.json \
+  --suggestions server/test/fixtures/captures/p7/<QUEST>.suggestions.json > /dev/null 2> stderr.txt
+grep '^{"report":"suggestion"' stderr.txt > server/test/fixtures/captures/p7/<QUEST>.suggestions.reports.jsonl
+```
+
+`tests/unit/p7-suggestions.test.ts` checks every sidecar in CI against its inject spec: the chain equals the planted
+goal order (goals named through the capture's `GoalID` join), a single-goal capture (`WC-MAIN-C01-013`) has no chain,
+`m_startGoals` is suggested only where the extraction has none (`WC-TUT-C05-001`), and every planted loot entry is
+listed with its kind as a rolled observation, naming the packets that carried it. It also applies every suggestion
+and checks the shared zod schemas and the save rules accept the result, and (criterion 3) saves an extraction
+through `POST /api/quests` to show the file holds none of the suggested values until they are accepted. Where the
+binary exists it regenerates the sidecars and compares them byte for byte.

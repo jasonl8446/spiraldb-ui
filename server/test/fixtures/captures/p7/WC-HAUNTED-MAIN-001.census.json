@@ -1,6 +1,6 @@
 {
-  "input": "DS-ACAD1-C04-003.json",
-  "messages": 14,
+  "input": "WC-HAUNTED-MAIN-001.json",
+  "messages": 16,
   "rows": [
     {
       "message": "MSG_ACTORDIALOG",
@@ -70,12 +70,6 @@
     },
     {
       "message": "MSG_COMPLETEGOAL",
-      "field": "CompleteText",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_COMPLETEGOAL",
       "field": "GoalID",
       "count": 3,
       "consumed": true
@@ -93,8 +87,14 @@
       "consumed": true
     },
     {
-      "message": "MSG_PERSONAINFO",
-      "field": "GoalHyperlink",
+      "message": "MSG_LOOT",
+      "field": "GlobalID",
+      "count": 1,
+      "consumed": false
+    },
+    {
+      "message": "MSG_LOOT",
+      "field": "LootList",
       "count": 1,
       "consumed": true
     },
@@ -161,6 +161,18 @@
     {
       "message": "MSG_QUESTOFFER",
       "field": "Rewards",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTREWARDS",
+      "field": "LootList",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTREWARDS",
+      "field": "QuestID",
       "count": 1,
       "consumed": true
     },
@@ -281,6 +293,12 @@
     {
       "message": "MSG_SENDQUEST",
       "field": "QuestTitle",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "Rewards",
       "count": 1,
       "consumed": true
     }

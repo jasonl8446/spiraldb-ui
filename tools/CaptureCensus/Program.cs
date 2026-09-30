@@ -40,14 +40,15 @@ internal static class Program {
     ///
     /// Derived from Imview/src/Imview.PacketReader/QuestBuilder.cs (QB), tools/PacketReaderCli/Program.cs
     /// (CLI), the task 7.3 observed-field post-pass tools/PacketReaderCli/ObservedFields.cs (OF) and the
-    /// task 7.4 reader repairs tools/PacketReaderCli/ReaderRepairs.cs (RR):
+    /// task 7.4 reader repairs tools/PacketReaderCli/ReaderRepairs.cs (RR) and the task 7.5 suggestions
+    /// tools/PacketReaderCli/Suggestions.cs (SG, read under --suggestions):
     ///   MSG_QUESTOFFER   MobileID QB:88 + RR:143; QuestName QB:79 + CLI:278 + RR:143; QuestTitle QB:80 +
     ///                    OF:85; Level CLI:279 (QB:81 reads it but always gets 0, D46); Mainline QB:82;
-    ///                    GoalData QB:183; QuestInfo OF:91. Rewards is declared by QuestOfferPacket but never read.
+    ///                    GoalData QB:183; QuestInfo OF:91; Rewards SG:211 (task 7.5).
     ///   MSG_SENDQUEST    QuestID QB:109 + OF:83,303; QuestTitle QB:108 + OF:303; QuestInfo OF:91;
     ///                    QuestNameID OF:93; NoQuestHelper OF:95; SkipQHAutoSelect OF:97; ActivityType
     ///                    OF:99; ClientTags OF:101; PetOnlyQuest OF:105 (read and reported on stderr: the
-    ///                    quest schema has no home for it). Rewards is not read (task 7.5).
+    ///                    quest schema has no home for it); Rewards SG:215 (task 7.5).
     ///   MSG_SENDGOAL     QuestID QB:124 + OF:120; GoalID QB:176 + OF:127 + RR:70; GoalNameID QB:126,134 +
     ///                    OF:127; GoalTitle QB:130,135 + RR:89; GoalLocation QB:136; GoalDestinationZone
     ///                    QB:137; GoalImage1 QB:138; GoalImage2 QB:139; GoalType QB:132,140 + RR:88 + CLI:167;
@@ -62,17 +63,23 @@ internal static class Program {
     ///   MSG_ENCOUNTERDIALOG QuestID RR:233; GoalID RR:232; CompletionType RR:234; ActorDialog RR:358 (task
     ///                    7.4: a dialog block, never replacing one). MobileID, Persona, PersonaName and
     ///                    PersonaIcon are not read.
-    ///   MSG_COMPLETEGOAL GoalID OF:70,158; CompleteText OF:169.
+    ///   MSG_COMPLETEGOAL GoalID OF:70,158; CompleteText OF:169; QuestID SG:103 (task 7.5 packet order).
+    ///   MSG_REMOVEGOAL   QuestID SG:103; GoalID SG:107 (task 7.5 packet order).
+    ///   MSG_QUESTREWARDS QuestID SG:218; LootList SG:219 (task 7.5).
+    ///   MSG_LOOT         LootList SG:230 (task 7.5; attributed to the preceding MSG_COMPLETEQUEST). GlobalID
+    ///                    (the player) is not read.
     ///   MSG_PERSONAINFO  GoalID OF:70,159; GoalHyperlink OF:171.
     ///   MSG_COMPLETEQUEST QuestID OF:110; CompleteText OF:111 (read and reported on stderr: nothing shows
     ///                    it is the string-table key m_questComplete holds).
-    ///   every other message (MSG_REMOVEGOAL, ...) has no reader, so nothing in it is read.
+    ///   every other message has no reader, so nothing in it is read.
     /// </summary>
     private static readonly Dictionary<string, HashSet<string>> s_consumed = new(StringComparer.Ordinal) {
-        ["MSG_QUESTOFFER"] = ["MobileID", "QuestName", "QuestTitle", "Level", "Mainline", "GoalData", "QuestInfo"],
+        ["MSG_QUESTOFFER"] = [
+            "MobileID", "QuestName", "QuestTitle", "Level", "Mainline", "GoalData", "QuestInfo", "Rewards",
+        ],
         ["MSG_SENDQUEST"] = [
             "QuestID", "QuestTitle", "QuestInfo", "QuestNameID", "NoQuestHelper", "SkipQHAutoSelect",
-            "ActivityType", "ClientTags", "PetOnlyQuest",
+            "ActivityType", "ClientTags", "PetOnlyQuest", "Rewards",
         ],
         ["MSG_SENDGOAL"] = [
             "QuestID", "GoalID", "GoalNameID", "GoalTitle", "GoalLocation", "GoalDestinationZone",
@@ -84,7 +91,10 @@ internal static class Program {
             "DefaultDialogAnimation",
         ],
         ["MSG_ENCOUNTERDIALOG"] = ["QuestID", "GoalID", "CompletionType", "ActorDialog"],
-        ["MSG_COMPLETEGOAL"] = ["GoalID", "CompleteText"],
+        ["MSG_COMPLETEGOAL"] = ["GoalID", "CompleteText", "QuestID"],
+        ["MSG_REMOVEGOAL"] = ["QuestID", "GoalID"],
+        ["MSG_QUESTREWARDS"] = ["QuestID", "LootList"],
+        ["MSG_LOOT"] = ["LootList"],
         ["MSG_PERSONAINFO"] = ["GoalID", "GoalHyperlink"],
         ["MSG_COMPLETEQUEST"] = ["QuestID", "CompleteText"],
     };
