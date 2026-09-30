@@ -7,6 +7,7 @@ import {
   REQUIREMENTS_PATH,
 } from '../../lib/requirement-tree';
 import RequirementTreeEditor from '../shared/RequirementTreeEditor';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 
 /**
@@ -139,9 +140,12 @@ function Slot({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
-        <h2 className="text-xs text-zinc-400">
-          <TermLabel term={{ field: fieldKey }} />
-        </h2>
+        <div className="flex items-center gap-1">
+          <h2 className="text-xs text-zinc-400">
+            <TermLabel term={{ field: fieldKey }} />
+          </h2>
+          <TermHelp term={{ field: fieldKey }} />
+        </div>
         {note === undefined ? null : <p className="text-xs text-zinc-400">{note}</p>}
       </div>
       <RequirementTreeEditor state={state} path={path} label={label} />

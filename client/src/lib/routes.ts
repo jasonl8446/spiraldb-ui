@@ -73,6 +73,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/quests/catalog', label: 'Catalog', icon: 'library' },
       // Task 7.7 / story p7-08 (D144): the draft review queue, after Catalog.
       { path: '/drafts', label: 'Drafts', icon: 'file-pen' },
+      // Task 7.12 / story p7-13 (D144): the glossary, after Drafts.
+      { path: '/glossary', label: 'Glossary', icon: 'book-open' },
     ],
   },
   {
@@ -137,6 +139,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/drafts', title: 'Drafts', phase: 7 },
   { path: '/drafts/quest/:questName', title: 'Draft Quest', phase: 7 },
   { path: '/drafts/id/:questId', title: 'Draft Quest', phase: 7 },
+  { path: '/glossary', title: 'Glossary', phase: 7 },
 
   { path: '/drop-tables', title: 'Drop Tables', phase: 4 },
   { path: '/drop-tables/:name', title: 'Drop Table Detail', phase: 4 },

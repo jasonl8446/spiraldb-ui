@@ -47,6 +47,7 @@ import { resultCardTitle, type CardNames } from '../../lib/card-titles';
 import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 import { fieldTier } from '@shared/glossary';
 
@@ -309,9 +310,12 @@ function ResultFieldControl({
   if (field.kind === 'requirements') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <span className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <RequirementTreeEditor
           state={state}
           path={resultRequirementsPath(card.listPath, card.index)}
@@ -454,9 +458,12 @@ function NameField({
   if (sources.length === 0) {
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <p className="text-xs text-zinc-400">{field.help}</p>
       </div>
     );
@@ -544,9 +551,12 @@ function DualSourceNameField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </span>
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </span>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <div
         role="group"
         aria-label={`${NAME_SOURCE_LABEL} ${termText({ field: field.key })} ${docPathWords(card.path)}`}
@@ -623,9 +633,12 @@ function RouterField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-      <span className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </span>
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </span>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <div
         role="group"
         aria-label={termText({ field: SOUND_ROUTER_KEY })}
@@ -859,9 +872,12 @@ function Labelled({
 }): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: fieldKey }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </label>
+        <TermHelp term={{ field: fieldKey }} />
+      </div>
       {children}
       {help === undefined || help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-400">

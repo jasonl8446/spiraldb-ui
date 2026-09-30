@@ -20,6 +20,7 @@ import GlobalRegistryPage from './pages/GlobalRegistryPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestCatalogPage from './pages/QuestCatalogPage';
 import DraftsPage from './pages/DraftsPage';
+import GlossaryPage from './pages/GlossaryPage';
 import DraftEditorPage from './pages/DraftEditorPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -123,6 +124,9 @@ function elementFor(route: AppRoute): JSX.Element {
     case '/drafts':
       // Task 7.7 / story p7-08: the draft review queue.
       return <DraftsPage />;
+    case '/glossary':
+      // Task 7.12 / story p7-13: every glossary term, searchable by either half.
+      return <GlossaryPage />;
     case '/drafts/quest/:questName':
     case '/drafts/id/:questId':
       return <DraftEditorPage />;

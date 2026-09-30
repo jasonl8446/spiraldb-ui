@@ -105,6 +105,8 @@ const SPEC_ROUTES = [
   '/drafts',
   '/drafts/quest/:questName',
   '/drafts/id/:questId',
+  // Added deliberately by story p7-13 (D144): the glossary page, after Drafts in QUESTS.
+  '/glossary',
   '/drop-tables',
   '/drop-tables/:name',
   '/npc-inventories',
@@ -262,7 +264,13 @@ describe('navigation table', () => {
     );
 
     expect(byGroup.OVERVIEW).toEqual(['Dashboard']);
-    expect(byGroup.QUESTS).toEqual(['Extract Quests', 'Browse Quests', 'Catalog', 'Drafts']);
+    expect(byGroup.QUESTS).toEqual([
+      'Extract Quests',
+      'Browse Quests',
+      'Catalog',
+      'Drafts',
+      'Glossary',
+    ]);
     expect(byGroup.DATA).toEqual([
       'Drop Tables',
       'NPC Inventories',

@@ -318,3 +318,37 @@ describe('glossary lookups', () => {
     );
   });
 });
+
+describe('help on every entry (task 7.12, D144)', () => {
+  // Goal Logic was the gap the plan named: every key its editor renders needs help of its own.
+  const GOAL_LOGIC_KEYS = [GOAL_LOGIC_PATH, ...GOAL_LOGIC_ENTRY_KEYS];
+
+  const withoutHelp = (): string[] =>
+    everyEntry()
+      .filter(([, entry]) => entry.help.trim().length < 12)
+      .map(([address]) => address);
+
+  it('requires non-empty help on every glossary entry, Goal Logic included', () => {
+    for (const key of GOAL_LOGIC_KEYS) {
+      expect(GLOSSARY.fields[key]?.help.trim().length ?? 0, key).toBeGreaterThanOrEqual(12);
+    }
+    expect(withoutHelp()).toEqual([]);
+  });
+
+  it('is red when one help is blank (negative control)', () => {
+    const entry = GLOSSARY.fields.m_goalsAND as { help: string };
+    const original = entry.help;
+    try {
+      entry.help = '';
+      expect(withoutHelp()).toEqual(['fields.m_goalsAND']);
+    } finally {
+      entry.help = original;
+    }
+    expect(withoutHelp()).toEqual([]);
+  });
+
+  it('keeps every technical name unique across the four maps (the glossary page row identity)', () => {
+    const names = everyEntry().map(([address]) => address.split('.').at(-1));
+    expect(new Set(names).size).toBe(names.length);
+  });
+});

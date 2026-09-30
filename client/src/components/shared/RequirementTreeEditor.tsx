@@ -38,6 +38,7 @@ import {
 import { docPathWords, fieldValueText, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 import { hasAdvancedValue, singleLegalValue, splitByTier } from '../../lib/advanced';
 import ReadOnlyEnumValue from './ReadOnlyEnumValue';
@@ -662,9 +663,12 @@ function Labelled({
 }): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: fieldKey }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </label>
+        <TermHelp term={{ field: fieldKey }} />
+      </div>
       {children}
       {help === undefined || help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-400">

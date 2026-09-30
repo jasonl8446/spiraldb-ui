@@ -31,6 +31,7 @@ import {
 } from '../../lib/quest-info';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { cn } from '../../lib/utils';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 
 /**
@@ -129,9 +130,12 @@ function FieldEditor({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <FieldControl
         field={field}
         id={id}

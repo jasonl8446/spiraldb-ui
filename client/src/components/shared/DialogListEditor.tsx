@@ -54,6 +54,7 @@ import { docPathWords, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import { useEvidenceCardFocus } from '../quest/EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { useAutoOpen } from './AdvancedDisclosure';
@@ -526,9 +527,12 @@ function DialogFieldControl({
   if (field.kind === 'requirements') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <span className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <RequirementTreeEditor
           state={state}
           path={path}
@@ -544,9 +548,12 @@ function DialogFieldControl({
   if (field.kind === 'raw-object') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <span className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <pre className="max-h-40 overflow-auto rounded-md border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-300">
           {fieldView.present ? JSON.stringify(fieldView.value, null, 2) : 'absent'}
         </pre>
@@ -560,9 +567,12 @@ function DialogFieldControl({
   if (field.kind === 'string-list') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <label htmlFor={id} className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </label>
+        <div className="flex items-center gap-1">
+          <label htmlFor={id} className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </label>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <textarea
           id={id}
           aria-describedby={describedBy}
@@ -739,9 +749,12 @@ function StringKeyField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <input
         id={id}
         aria-describedby={describedBy}
@@ -877,9 +890,12 @@ function Labelled({
 }): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: fieldKey }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </label>
+        <TermHelp term={{ field: fieldKey }} />
+      </div>
       {children}
       {help === undefined || help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-400">

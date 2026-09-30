@@ -78,6 +78,7 @@ import { fieldValueText, termText, valueTermOf } from '../../lib/term';
 import { goalCardTitle, goalTitleStringKeys, type CardNames } from '../../lib/card-titles';
 import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 import AdvancedDisclosure from '../shared/AdvancedDisclosure';
 import ReadOnlyEnumValue from '../shared/ReadOnlyEnumValue';
@@ -483,9 +484,12 @@ function GoalFieldControl({
     const only = singleLegalValue(field.options ?? [], value);
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <label htmlFor={id} className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </label>
+        <div className="flex items-center gap-1">
+          <label htmlFor={id} className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </label>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         {only !== null ? (
           <ReadOnlyEnumValue id={id} fieldKey={field.key} value={only} />
         ) : (
@@ -513,9 +517,12 @@ function GoalFieldControl({
   if (field.kind === 'zone') {
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="text-xs text-zinc-400">
-          <TermLabel term={{ field: field.key }} />
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         {/*
           FriendlyNameDropdown reads/writes the `zones` table's `zone_path`. Measured:
           only 112 of the 149 distinct zone paths the corpus references exist in that
@@ -555,9 +562,12 @@ function GoalFieldControl({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       {field.kind === 'boolean' ? (
         <input
           id={id}
@@ -675,9 +685,12 @@ function NpcNameField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <input
         id={id}
         type="text"

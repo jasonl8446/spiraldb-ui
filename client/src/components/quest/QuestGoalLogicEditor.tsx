@@ -65,6 +65,7 @@ import {
 import { motionDuration, prefersReducedMotion } from '../../lib/reduced-motion';
 import { cn } from '../../lib/utils';
 import { FieldMessages, fieldAriaInvalid, useFieldMessages } from '../shared/FieldValidation';
+import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -597,9 +598,12 @@ function GoalLogicEntryField({
   const messagesId = `${controlId}-messages`;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={controlId} className="text-xs text-zinc-400">
-        <TermLabel term={{ field: field.key }} />
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={controlId} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       {field.kind === 'bool' ? (
         <input
           id={controlId}
