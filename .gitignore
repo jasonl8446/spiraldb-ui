@@ -1,5 +1,7 @@
 # Local orchestration state (not part of the project)
 .omd/
+# oh-my-claudecode state and the Phase 7 ledger `.omc/prd.json` (D125: local, never committed)
+.omc/
 
 # Application data (Phase 1+: SQLite db, test clone of the SpiralDB fork)
 data/

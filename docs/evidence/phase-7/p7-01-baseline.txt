@@ -1,0 +1,293 @@
+# p7-01 — Measured baseline re-measure (plan: docs/plan-phase-7-coverage-usability.md "Measured baseline")
+# Taken 2026-09-29T20:39:06-04:00 on branch phase-7-coverage-usability @ 3451c88 (working tree).
+# Corpora (D114 — every count names its corpus):
+#   OWNER FORK = /home/jason/Documents/git-projects/spiraldb  (read-only) HEAD 864bd44 2026-09-29 18:13:34 -0400
+#   D17 CLONE  = data/test-spiraldb (frozen)                   HEAD 18dc924 2026-09-26 08:42:36 -0400
+# Raw output follows each command. Scripts used are reproduced verbatim at the end of this file.
+
+================================================================================
+ROWS 1-8 (quest files; {n}_ goal names; four text fields; nameID/activity; goal classes; goal text fields; endResults)
+Row corpus: OWNER FORK (plan rows) — and D17 CLONE measured alongside for reference (not a plan row)
+================================================================================
+$ node baseline.mjs /home/jason/Documents/git-projects/spiraldb "owner fork"
+{
+ "corpus": "owner fork",
+ "root": "/home/jason/Documents/git-projects/spiraldb",
+ "quest_files": 330,
+ "non_json_entries": [
+  "droptables"
+ ],
+ "parsed": 330,
+ "parse_errors": 0,
+ "goal_name_pattern": {
+  "every_goal_matches": 306,
+  "any_goal_matches": 306,
+  "files_with_no_goals": 13
+ },
+ "quest_info_prep_underway_complete_all_empty": 330,
+ "questNameID_zero": 330,
+ "activityType_default": 330,
+ "both": 330,
+ "activityType_values": {
+  "ACTIVITY_NotActivity": 330
+ },
+ "goals": 796,
+ "goal_classes": {
+  "WaypointGoalTemplate": 198,
+  "PersonaGoalTemplate": 429,
+  "BountyGoalTemplate": 107,
+  "ScavengeGoalTemplate": 36,
+  "AchieveRankGoalTemplate": 26
+ },
+ "goal_completeText_empty": 796,
+ "goal_hyperlink_empty": 796,
+ "goal_goalRequirements_empty": 796,
+ "endResults_empty": 8,
+ "endResults_entries_by_class": {
+  "ResDropTable": 323,
+  "ResLearnSpell": 14
+ },
+ "quests_carrying_class": {
+  "ResDropTable": 322,
+  "ResLearnSpell": 1
+ }
+}
+
+$ node baseline.mjs data/test-spiraldb "D17 clone data/test-spiraldb"
+{
+ "corpus": "D17 clone data/test-spiraldb",
+ "root": "data/test-spiraldb",
+ "quest_files": 322,
+ "non_json_entries": [
+  "droptables"
+ ],
+ "parsed": 322,
+ "parse_errors": 0,
+ "goal_name_pattern": {
+  "every_goal_matches": 307,
+  "any_goal_matches": 307,
+  "files_with_no_goals": 11
+ },
+ "quest_info_prep_underway_complete_all_empty": 322,
+ "questNameID_zero": 322,
+ "activityType_default": 322,
+ "both": 322,
+ "activityType_values": {
+  "ACTIVITY_NotActivity": 322
+ },
+ "goals": 772,
+ "goal_classes": {
+  "WaypointGoalTemplate": 194,
+  "PersonaGoalTemplate": 405,
+  "BountyGoalTemplate": 100,
+  "ScavengeGoalTemplate": 47,
+  "AchieveRankGoalTemplate": 26
+ },
+ "goal_completeText_empty": 772,
+ "goal_hyperlink_empty": 772,
+ "goal_goalRequirements_empty": 772,
+ "endResults_empty": 8,
+ "endResults_entries_by_class": {
+  "ResDropTable": 314
+ },
+ "quests_carrying_class": {
+  "ResDropTable": 314
+ }
+}
+
+$ ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates | wc -l ; ls data/test-spiraldb/QuestTemplates | wc -l   # both include the non-json "droptables" entry
+331
+323
+
+================================================================================
+ROW 9 — Quest-related message types the reader consumes. Corpus: Imview QuestBuilder.cs vs Imcodec GeneratorInput
+================================================================================
+$ git -C /home/jason/Documents/git-projects/Imview log -1 --format=%h ; grep -nE "\"MSG_[A-Z_]+\"" Imview/src/Imview.PacketReader/QuestBuilder.cs
+0c9e186
+45:            "MSG_QUESTOFFER"
+49:            "MSG_SENDQUEST"
+53:            "MSG_SENDGOAL"
+57:            "MSG_ACTORDIALOG"
+
+$ ls -la Imview/submodule/Imcodec/src/Imcodec.MessageLayer/GeneratorInput/   # Imview's own Imcodec copy
+total 8
+drwxr-xr-x 2 jason users 4096 Sep 24 20:38 .
+drwxr-xr-x 5 jason users 4096 Sep 24 20:40 ..
+-rw-r--r-- 1 jason users    0 Sep 24 20:38 !base
+$ git -C Imview submodule status
+ fb1a961e21a997502f11ada3b7f43a72ca342bb1 submodule/Imcodec (remotes/origin/tutorial)
+ 2690a70a430b55ed86558f260fd927028a3ed648 submodule/WizardTea (heads/master)
+
+$ F=Imlight/submodule/Imcodec/src/Imcodec.MessageLayer/GeneratorInput/QuestMessages.xml; git -C Imlight/submodule/Imcodec log -1 --format=%h; grep -oE "<MSG_[A-Z0-9_]+" $F | sort -u | wc -l; grep -oE "<MSG_[A-Z0-9_]+" $F | sort -u
+cdf20cf
+19
+<MSG_ACCEPTQUEST
+<MSG_CANACQUIREWORLDELIXIR
+<MSG_COMPLETEGOAL
+<MSG_COMPLETEPERSONA
+<MSG_COMPLETEQUEST
+<MSG_DEBUGQUESTDATA
+<MSG_DECLINEQUEST
+<MSG_GETNEXTWORLD
+<MSG_INTERACTNPC
+<MSG_NPCINFO
+<MSG_PERSONAINFO
+<MSG_QUESTOFFER
+<MSG_QUESTREADYTOTURNIN
+<MSG_REMOVEGOAL
+<MSG_REMOVEQUEST
+<MSG_SENDGOAL
+<MSG_SENDNPCOPTIONS
+<MSG_SENDQUEST
+<MSG_UPDATEUSERHIDDENQUESTS
+$ grep -n "PersonaName" $F
+50:      <PersonaName TYPE="STR"></PersonaName>
+
+================================================================================
+ROW 10 — Real captures on this host. Corpus: filesystem search of /home/jason
+================================================================================
+# (a) binary pcap files by name (Steam runtime mime-type XML descriptors are not captures):
+$ find /home/jason -xdev \( -path "*/node_modules" -o -path "*/.git" -o -path "/home/jason/.cache" -o -path "/home/jason/.local/share/Trash" \) -prune -o -type f \( -iname "*.pcap" -o -iname "*.pcapng" -o -iname "*.pcap.*" -o -iname "*.cap" \) -print
+/home/jason/.local/share/umu/steamrt4/steamrt4_platform_4.0.20260914.260627/files/share/mime/application/vnd.tcpdump.pcap.xml
+/home/jason/.local/share/umu/steamrt4/var/tmp-G50IW3/usr/share/mime/application/vnd.tcpdump.pcap.xml
+/home/jason/.local/share/Steam/steamapps/common/SteamLinuxRuntime_soldier/soldier_platform_2.0.20260805.254767/files/share/mime/application/vnd.tcpdump.pcap.xml
+/home/jason/.local/share/Steam/steamapps/common/SteamLinuxRuntime_soldier/var/tmp-ICK9U3/usr/share/mime/application/vnd.tcpdump.pcap.xml
+/home/jason/.local/share/Steam/steamrt64/pv-runtime/steam-runtime-steamrt/var/tmp-UQJ5V3/usr/share/mime/application/vnd.tcpdump.pcap.xml
+/home/jason/.local/share/Steam/steamrt64/pv-runtime/steam-runtime-steamrt/steamrt3c_platform_3c.0.20260729.253765/files/share/mime/application/vnd.tcpdump.pcap.xml
+exit=0
+
+# (b) the JSON capture shape (D45: a JSON array of {data:{name:"MSG_…"}} envelopes) by content:
+$ grep -rlE --include=*.json --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.cache --exclude-dir=Steam --exclude-dir=umu --exclude-dir=.npm-cache --exclude-dir=.nuget "\"name\": *\"MSG_(QUESTOFFER|SENDQUEST|SENDGOAL|ACTORDIALOG)\"" /home/jason
+/home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-UNICORN-MAIN-004.json
+/home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-FIRECAT-MAIN-004.json
+/home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-CYCLOPS-MAIN-002.json
+/home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/MB-YARD1-C01-001.json
+/home/jason/Documents/git-projects/spiraldb-ui/server/test/fixtures/captures/WC-UNICORN-MAIN-007.json
+exit=0
+# => 0 real captures. The only JSON captures are the 5 committed FixtureGen fixtures (D28) under server/test/fixtures/captures/.
+
+================================================================================
+ROW 11 — Technical strings visible in the quest editor. Corpus: client source (this working tree)
+================================================================================
+# Method: (1) keys = distinct `key: 'm_…'` literals in the six quest spec tables' home files
+#   (client/src/lib/quest-*.ts + requirement-tree.ts); (2) classes = the short names a type selector
+#   offers (GOAL_TYPES + RESULT_TYPES + REQUIREMENT_TYPES in shared/quest/typeConstants.ts); (3) enums =
+#   distinct enum literals in client/src + shared (ACTIVITY_/BT_/GOAL_TYPE_/ROP_/TELEPORT_/ROUTING_/RT_).
+$ bash techstrings.sh
+keys: 165
+classes: 24 (goal 5 + result 15 + requirement 4); KNOWN_TYPE_STRINGS: 29
+ACTIVITY_Crafting ACTIVITY_Fishing ACTIVITY_Gardening ACTIVITY_NotActivity ACTIVITY_Pet ACTIVITY_Spell BT_MOB_KILL GOAL_TYPE_ACHIEVERANK GOAL_TYPE_BOUNTY GOAL_TYPE_BOUNTYCOLLECT GOAL_TYPE_PERSONA GOAL_TYPE_SCAVENGE GOAL_TYPE_USAGE GOAL_TYPE_WAYPOINT ROP_AND ROP_OR ROUTING_ACTOR RT_Caster TELEPORT_STATIC 
+enums: 19
+# => 165 + 24 + 19 = 208. (KNOWN_TYPE_STRINGS holds 29: the 24 selector classes plus RequirementList,
+#    ActorDialogList, NPCDialogEntry, ActorDialog, MadlibArgT_ByteString — 7.8's test covers all 29.)
+
+================================================================================
+SUMMARY (plan row → measured, corpus)
+================================================================================
+Quest files ............................................ OWNER FORK 330 (plan 330)            MATCH
+Quest files ............................................ D17 CLONE 322 (plan 322)             MATCH
+Files whose goal names carry {n}_ ........................ OWNER FORK 306/330 (plan 306/330)   MATCH  (every goal matches in all 306; 13 files have no goals, 11 more carry non-{n}_ names)
+m_questInfo/Prep/Underway/Complete all empty ............ OWNER FORK 330/330 (plan 330/330)   MATCH
+m_questNameID = 0 and m_activityType default ............ OWNER FORK 330/330 (plan 330/330)   MATCH  (default = ACTIVITY_NotActivity on 330)
+Goals by class .......................................... OWNER FORK 796: Persona 429, Waypoint 198, Bounty 107, Scavenge 36, AchieveRank 26   MATCH
+Goal m_completeText / m_hyperlink / m_goalRequirements empty  OWNER FORK 796/796 each           MATCH
+m_endResults empty ...................................... OWNER FORK 8/330; ResDropTable x323, ResLearnSpell x14   MATCH
+Quest-related message types the reader consumes ........ Imview QuestBuilder.cs 4 of 19 declared in QuestMessages.xml   MATCH (the xml is read from Imlight's Imcodec copy — Imview's own submodule has an empty GeneratorInput, see row 9)
+Real captures on this host .............................. filesystem 0                         MATCH
+Technical strings in the quest editor ................... client source 165 + 24 + 19 = 208    MATCH
+
+# For reference only (not plan rows) — D17 CLONE: 322 files, {n}_ 307/322, four text fields empty 322/322,
+# nameID 0 + activity default 322/322, 772 goals (Persona 405, Waypoint 194, Bounty 100, Scavenge 47, AchieveRank 26),
+# goal text fields empty 772/772 each, m_endResults empty 8/322 (ResDropTable x314).
+
+================================================================================
+SCRIPTS (verbatim)
+================================================================================
+---- baseline.mjs
+// p7-01 baseline re-measure. Usage: node baseline.mjs <corpus-root> <label>
+// Reads every QuestTemplates/*.json with JSON5 (the corpus carries trailing commas, D48(b)).
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire('/home/jason/Documents/git-projects/spiraldb-ui/package.json');
+const JSON5 = require('json5');
+
+const [root, label] = process.argv.slice(2);
+const dir = path.join(root, 'QuestTemplates');
+const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
+const nonJson = fs.readdirSync(dir).filter((f) => !f.endsWith('.json'));
+const empty = (v) =>
+  v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+const short = (t) => (typeof t === 'string' ? t.split(',')[0].split('.').pop() : String(t));
+
+let quests = 0, parseErr = 0;
+let goalPatternAll = 0, goalPatternAny = 0, noGoals = 0;
+let fourTextEmpty = 0;
+let nameIdZero = 0, activityDefault = 0, bothIdAct = 0;
+const activity = {};
+let goals = 0;
+const goalClass = {};
+let completeTextEmpty = 0, hyperlinkEmpty = 0, goalReqEmpty = 0;
+let endResultsEmpty = 0;
+const resultClass = {};
+const questsWithResultClass = {};
+for (const f of files) {
+  let q;
+  try { q = JSON5.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch { parseErr++; continue; }
+  quests++;
+  const gs = Array.isArray(q.m_goals) ? q.m_goals : [];
+  if (gs.length === 0) noGoals++;
+  const matches = gs.map((g) => /^\d+_/.test(String(g.m_goalName ?? '')));
+  if (gs.length > 0 && matches.every(Boolean)) goalPatternAll++;
+  if (matches.some(Boolean)) goalPatternAny++;
+  if (['m_questInfo', 'm_questPrep', 'm_questUnderway', 'm_questComplete'].every((k) => empty(q[k]))) fourTextEmpty++;
+  const idZero = (q.m_questNameID ?? 0) === 0;
+  const actDef = q.m_activityType === undefined || q.m_activityType === 'ACTIVITY_NotActivity' || q.m_activityType === 0;
+  activity[String(q.m_activityType)] = (activity[String(q.m_activityType)] ?? 0) + 1;
+  if (idZero) nameIdZero++;
+  if (actDef) activityDefault++;
+  if (idZero && actDef) bothIdAct++;
+  for (const g of gs) {
+    goals++;
+    const c = short(g.$type);
+    goalClass[c] = (goalClass[c] ?? 0) + 1;
+    if (empty(g.m_completeText)) completeTextEmpty++;
+    if (empty(g.m_hyperlink)) hyperlinkEmpty++;
+    const r = g.m_goalRequirements;
+    if (empty(r) || empty(r.m_requirements)) goalReqEmpty++;
+  }
+  const er = q.m_endResults?.m_results;
+  if (empty(er)) endResultsEmpty++;
+  const seen = new Set();
+  for (const r of er ?? []) {
+    const c = short(r.$type);
+    resultClass[c] = (resultClass[c] ?? 0) + 1;
+    seen.add(c);
+  }
+  for (const c of seen) questsWithResultClass[c] = (questsWithResultClass[c] ?? 0) + 1;
+}
+console.log(JSON.stringify({
+  corpus: label, root, quest_files: files.length, non_json_entries: nonJson, parsed: quests, parse_errors: parseErr,
+  goal_name_pattern: { every_goal_matches: goalPatternAll, any_goal_matches: goalPatternAny, files_with_no_goals: noGoals },
+  quest_info_prep_underway_complete_all_empty: fourTextEmpty,
+  questNameID_zero: nameIdZero, activityType_default: activityDefault, both: bothIdAct, activityType_values: activity,
+  goals, goal_classes: goalClass,
+  goal_completeText_empty: completeTextEmpty, goal_hyperlink_empty: hyperlinkEmpty, goal_goalRequirements_empty: goalReqEmpty,
+  endResults_empty: endResultsEmpty, endResults_entries_by_class: resultClass, quests_carrying_class: questsWithResultClass,
+}, null, 1));
+---- techstrings.sh (scratchpad paths are the session scratchpad)
+# Technical strings visible in the quest editor (client source), three parts.
+# (1) keys: distinct `key: 'm_…'` literals in the six quest spec tables' home files
+#     (client/src/lib/quest-*.ts + requirement-tree.ts) -- each is a field whose label the form prints.
+cat client/src/lib/quest-*.ts client/src/lib/requirement-tree.ts | grep -oE "key: ['\"]m_[A-Za-z0-9_]+" | sed "s/key: .//" | sort -u > /tmp/claude-1000/-home-jason-Documents-git-projects-spiraldb-ui/02fd355f-842d-451a-968b-024163d5c555/scratchpad/keys.txt
+echo "keys: $(wc -l < /tmp/claude-1000/-home-jason-Documents-git-projects-spiraldb-ui/02fd355f-842d-451a-968b-024163d5c555/scratchpad/keys.txt)"
+# (2) classes: the short names a type selector shows = GOAL_TYPES + RESULT_TYPES + REQUIREMENT_TYPES
+node --input-type=module -e "
+import('/home/jason/Documents/git-projects/spiraldb-ui/node_modules/tsx/dist/esm/api/index.mjs').then(async ({tsImport}) => {
+  const m = await tsImport('/home/jason/Documents/git-projects/spiraldb-ui/shared/quest/typeConstants.ts', import.meta.url);
+  const g = Object.keys(m.GOAL_TYPES), r = Object.keys(m.RESULT_TYPES), q = Object.keys(m.REQUIREMENT_TYPES);
+  console.log('classes: ' + (g.length + r.length + q.length) + ' (goal ' + g.length + ' + result ' + r.length + ' + requirement ' + q.length + '); KNOWN_TYPE_STRINGS: ' + m.KNOWN_TYPE_STRINGS.length);
+});"
+# (3) enums: distinct enum literals in client/ + shared/ sources
+grep -rhoE "'(ACTIVITY|BT|GOAL_TYPE|ROP|TELEPORT|ROUTING|RT)_[A-Za-z_]+'" client/src shared | sort -u | tr -d "'" | tee /tmp/claude-1000/-home-jason-Documents-git-projects-spiraldb-ui/02fd355f-842d-451a-968b-024163d5c555/scratchpad/enums.txt | tr '\n' ' '; echo
+echo "enums: $(wc -l < /tmp/claude-1000/-home-jason-Documents-git-projects-spiraldb-ui/02fd355f-842d-451a-968b-024163d5c555/scratchpad/enums.txt)"

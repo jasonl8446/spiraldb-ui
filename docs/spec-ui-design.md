@@ -114,6 +114,60 @@ The other display-shaped candidates (`object-list`, `search-palette`,
 and `p5-04-error-surfaces` match a `Name (ID)` grep only through `Remove <name> (<index>)` action
 labels, which are not pairs (`tests/unit/display-single-home.test.ts` allowlists them with reasons).
 
+### Labels: the `Friendly (technical)` pair (Phase 7 — D131, D135)
+
+The value pair above (`Name (ID)`, D105) names **data**. Phase 7 extends the same convention to **labels**: every
+field key, class name and enum literal the quest editor shows renders as `Friendly (technical)`, for example
+`Quest level (m_questLevel)`, `Requires quest (ReqHasQuest)` and `Persona (GOAL_TYPE_PERSONA)`. There is no toggle
+(D131). The technical half is always visible.
+
+- **One home: `shared/glossary.ts`.** Like `shared/document.ts` (D58), it has no dependencies and is safe to use from
+  client and server. It holds three maps: fields keyed by document key, classes keyed by `$type`, and enum values
+  keyed by enum and literal. Each entry is `{label, help, tier: 'basic' | 'advanced', source}`, and `source` cites
+  where the meaning comes from (`file:line` in this spec set, Imlight or Imcodec). The scattered labels
+  (`quest-goals.ts`'s goal `label`s, the requirement labels, the dialog group names) **move** there. They are not
+  duplicated, and a single-home test forbids a second label table (task 7.8).
+- **One renderer: `<TermLabel term=… />`.** It renders the pair, keeps the technical half selectable in mono, and
+  wraps its output in a `[data-term]` element. That is the one place a technical string may legitimately be visible
+  (the task 7.9 scanner reads visible text *outside* `[data-term]`).
+- **Identical halves collapse (D135).** When the friendly half equals the technical half, only one is shown, never
+  `X (X)`. This is the same guard as `namePairDistinct` in `client/src/lib/display.ts`, applied to labels. It also
+  closes D121's open question for CreatureSpellbook.
+- **Where it applies**: every quest tab (Info, Goals, Goal Logic, Requirements, Results, Dialog), the Evidence
+  panel's "Insert into" line, select options, and aria labels. Document-path addresses such as `m_requirements[0]`
+  stay out of visible labels and survive only in `data-path` attributes. **The JSON tab is exempt by design.**
+- **Help everywhere (task 7.12).** Every glossary entry has non-empty `help`. A "What does this mean?" popover on
+  each label shows the help, the technical name and the source, and it opens by keyboard. Goal Logic, which had no
+  help text at all, gets its help from the same entries.
+- AGENTS.md rule 2 ("friendly names are synced, not hardcoded") is about ID-to-name **values** and is unaffected.
+  Field labels are UI copy, not synced data (D131).
+
+**The UI spec files the label pair touches (Phase 7, task 7.9; refreshed at p7-01).** As with the p6-06 list above,
+these files are named before the change lands, so the relabelling is reviewed rather than discovered in a red run.
+They locate or assert by a bare technical label: a field key in `getByLabel`, a class or enum literal in
+`getByText`/`toContainText`, or a `WizardQuestGoals` goal id used as a card title. Measured on 2026-09-29 with the
+grep recorded in `docs/evidence/phase-7/p7-01.md` (count = matching lines):
+
+| File | Lines | What moves in 7.9–7.11 |
+|---|---|---|
+| `quests-results-editor.spec.ts` | 45 | Result class labels and per-type field labels become pairs |
+| `quests-goals-editor.spec.ts` | 33 | Goal field labels, goal class badges and the `1_WizardQuestGoals_…` card titles (7.10) |
+| `quests-info-editor.spec.ts` | 30 | Info field labels (`m_questLevel` → `Quest level (m_questLevel)`), and the Advanced disclosure (7.11) |
+| `quests-dialog-editor.spec.ts` | 25 | Dialog entry field labels, and the Basic/Advanced split of the entry (7.11) |
+| `quests-edit-mode.spec.ts` | 12 | Edit-mode field locators |
+| `quests-detail.spec.ts` | 10 | Tab and field text, and the Overview landing tab (7.13) |
+| `extraction.spec.ts` | 9 | The read-only preview's field labels |
+| `quests-evidence-panel.spec.ts` | 6 | The "Insert into" line's target label |
+| `quests-requirements-editor.spec.ts` | 5 | Requirement class labels (`ReqHasQuest`) |
+| `quests-goal-logic.spec.ts` | 4 | Inspector labels (`m_goalsAND`, `m_completeQuest`, `m_requiredORCount`) and the node's class text |
+| `quests-validation.spec.ts` | 3 | Field locators beside validation messages |
+| `quest-editor.spec.ts` | 3 | Field locators |
+
+Locators move to the pair or to a role, and every change is listed in the 7.9 PR. No assertion is loosened silently
+(the 6.5 precedent). Two grep hits are **not** in scope and stay byte-identical: `treasure-card-inventory-editor.spec.ts`
+(6 lines, a hint that cites `m_baseCost` outside the quest editor) and `shell.spec.ts` (1 line, a false positive: `aurorium_path`
+contains `m_path`).
+
 ---
 
 ## Global Layout
@@ -168,6 +222,14 @@ Fixed left panel, full viewport height, `zinc-900` background, `zinc-800` right 
 Each group header is clickable to collapse/expand. Active item has `blue-600/10` background and `blue-400` text. Hover state: `zinc-800` background. Icons from Lucide, 18px, left-aligned with 12px gap to label.
 
 **Mobile behavior**: Sidebar collapses to hamburger menu. Overlay on open. Swipe-to-close gesture.
+
+**Phase 7 adds two QUESTS items**, after Catalog and in this order: **Drafts** (`/drafts`, task 7.7) and **Glossary**
+(`/glossary`, task 7.12). The block above is the shipped sidebar. Each item joins the block in the commit that ships
+its route, together with `tests/unit/ui-shell.test.ts`'s nav oracle (`byGroup.QUESTS` becomes
+`['Extract Quests', 'Browse Quests', 'Catalog', 'Drafts']` at p7-08 and gains `'Glossary'` at p7-13). This follows
+the p6-11 precedent for Catalog; see the route note in [spec-api.md](./spec-api.md#url-routes-frontend). Placing
+Glossary under QUESTS is a Phase 7 choice made at p7-01: every term it lists is a quest-editor term. The NPC page
+(`/npcs/:npcId`) has no nav item. It is reached from search and from speaker names.
 
 ### Header Bar
 
@@ -251,6 +313,13 @@ Each entry: colored dot (status color), object key in monospace, action text, re
 
 **Empty state**: Illustration of a shield/checkmark icon + "No activity yet. Extract some quests to get started." + "Extract Quests" button.
 
+#### Rebuild Drafts (Phase 7 — task 7.6)
+
+A secondary **Rebuild drafts** button calls `POST /api/drafts/rebuild`, the same builder as `npm run drafts`. While
+it runs it shows a spinner and is disabled. On completion it shows a toast with the inserted count and a link to
+`/drafts`. A `409` (a rebuild is already running) is an info toast, not an error. Placement (Phase 7, chosen at
+p7-01): in the Per-Type Progress Section's title row, right-aligned.
+
 ---
 
 ### 2. Quest Extraction Page
@@ -303,6 +372,12 @@ Split layout: quest list (left, 320px) + quest preview (right, fills remaining).
 ```
 
 "Save All": saves every extracted quest, auto-commits, sets status to "extracted". Shows confirmation dialog first: "Save 14 quests to SpiralDB? This will create files and auto-commit."
+
+**Phase 7 (tasks 7.2 and 7.5; chosen at p7-01).** The page always requests `?census=1`. Under the quest list, a
+collapsed **"Ignored by the reader (n)"** disclosure lists the census rows with `consumed: false` (message, field,
+count), so the next decoding gap is visible on the first real upload. A `census.skipped` reason is shown there as
+text. The extraction's `suggestions` are **not** applied to the preview. The preview shows how many were staged
+("6 suggestions staged for review"), and they are reviewed in the editor like every other suggestion.
 
 **Mobile behavior**: List takes full width. Tap quest opens preview as overlay/modal.
 
@@ -361,10 +436,16 @@ Back arrow + link. Quest name in `text-xl font-mono font-semibold`. Status badge
 Horizontal tab bar below header:
 
 ```
-[Info] [Goals] [Goal Logic] [Requirements] [Results] [Dialog]
+[Overview] [Info] [Goals] [Goal Logic] [Requirements] [Results] [Dialog]
 ```
 
 Active tab: `blue-500` bottom border + white text. Content area below with 24px top padding.
+
+**Overview is the first tab and the landing tab in both view and edit mode** (Phase 7, D133, task 7.13). Before
+Phase 7 the bar starts at Info. See the Overview Tab below.
+
+**Labels on every tab render through the glossary pair** (§Labels, D131). The field keys listed below are the
+technical halves: the Info tab shows `Quest level (m_questLevel)`, not `m_questLevel`.
 
 **Info Tab**: Two-column form layout.
 - Left column: m_questName (read-only), m_questTitle (string table lookup display), m_questLevel (number input), m_mainline (checkbox), m_isHidden (checkbox), m_questRepeat (number input), m_activityType (select)
@@ -386,6 +467,21 @@ Active tab: `blue-500` bottom border + white text. Content area below with 24px 
 
 Drag handle (☰) for reordering. Goal type badge (colored by type). "Start" badge if in m_startGoals array. Edit opens inline expansion or modal with type-specific fields. Add Goal button at bottom with type selector dropdown.
 
+**Readable card titles (Phase 7, task 7.10).** The card title shown above as `1_WizardQuestGoals_00000058` is
+replaced by a title **generated from the document plus resolved names**:
+
+```
+│ ☰ Go to Crystal Grove (Waypoint goal)        [Waypoint] [Start]  │
+│   1_WizardQuestGoals_00000058                                    │
+```
+
+Examples: "Talk to Olivia Dawnwillow (Persona goal)", "Reward: drop table Pesky Pirates", "Requires quest: …". When
+no resolved name exists, the title falls back to the glossary class label, **never to the generated goal id**. The goal
+id stays visible as secondary mono text, because it is the value `m_startGoals` and Goal Logic reference (Phase 7,
+chosen at p7-01). Result and
+requirement cards follow the same rule, and aria labels follow the title. No card title may match
+`/^\d+_WizardQuestGoals_/`.
+
 **Goal Logic Tab**: React Flow canvas. See §Goal Logic Flowchart below.
 
 **Requirements Tab**: Tree editor. Nested AND/OR nodes with requirement type selectors. See §Requirement Tree Editor below.
@@ -393,6 +489,65 @@ Drag handle (☰) for reordering. Goal type badge (colored by type). "Start" bad
 **Results Tab**: Two sections: Start Results and End Results. Each shows a list of result cards. Add Result button with type selector (ResDropTable, ResModifyEntry, ResAddDynaMod, etc.). Each result type has its own form fields.
 
 **Dialog Tab**: Full dialog editor. List of dialog tags (Prep, Completion, etc.). Each tag expands to show NPCDialogEntry list. Each entry has 50+ fields organized in collapsible sub-sections: Basic, Camera, Sound, Animation, Walk-Away, Advanced. See §Dialog Editor below.
+
+#### Overview Tab (Phase 7 — D133, task 7.13)
+
+A **read-only, plain-language story of the quest**, derived from the document plus resolved names. It never writes,
+so it adds no second writer.
+
+```
+┌─ Overview ─────────────────────────────────────────────── [3 suggestions] ┐
+│  Given by Olivia Dawnwillow (the Prep dialog speaker)                      │
+│  Steps (goal-logic order):                                                 │
+│    1. Talk to Olivia Dawnwillow (Persona goal)                             │
+│    2. Go to Crystal Grove (Waypoint goal)                                  │
+│  Completes when: step 2 is complete                                        │
+│  Requires: quest "The Bear Truth" completed                                │
+│  Rewards: drop table Pesky Pirates                                         │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+- Sections, in order: who gives it (the Prep dialog speaker, through the speaker ladder), each step in goal-logic
+  order with its readable card title, what completes it, requirements in words, and rewards with resolved names.
+- **Where `m_goalLogic` is absent, the steps fall back to array order and the tab says so** ("Order: as listed; this
+  quest has no goal logic").
+- The pending suggestion count shows as a badge. Selecting it opens the tab that holds the first pending
+  field (Phase 7, chosen at p7-01).
+- An empty section says it is empty ("No requirements"). It is never omitted.
+
+#### Basic and Advanced fields (Phase 7 — D132, task 7.11)
+
+Every form renders the glossary's **`basic`** fields first and its **`advanced`** fields under a collapsed
+**"Advanced"** disclosure. The tier is data in the glossary, not in the component, and a unit test pins each tab's
+basic set.
+
+- **The disclosure opens automatically** when any advanced field is **non-empty** or **has a validation error**, so
+  no value or error is ever hidden. "Non-empty" means different from the schema/skeleton default (`null`, `''`, `0`,
+  `false`, `[]`). A camera value of `0` therefore does not open it.
+- **An enum with exactly one legal value renders as read-only text** (its glossary pair), not as a one-option select.
+- A dialog entry of the D118 skeleton's shape shows **at most 12 fields** by default. The Dialog editor's existing
+  sub-sections (§7) keep their grouping inside each tier.
+- The disclosure is a real `<button aria-expanded>` and is keyboard-operable. Opening it never changes the document.
+
+#### Inline suggestions (Phase 7 — D129, task 7.7)
+
+A pending suggestion renders **beside the field it would fill**:
+
+```
+Quest title (m_questTitle)   [ QuestTitle_1ED8D            ]
+                             Suggested: QuestTitle_1ED8D "The Lost Lantern" · evidence-title  [Accept] [Reject]
+```
+
+- **Accept** sets that one field in the in-memory document, and nothing is written until Save. The save request
+  carries the applied suggestion ids, and their status flips to accepted **only after the commit**
+  ([API](./spec-api.md#suggestions-and-drafts-phase-7--d129-d130-d137)).
+- **Reject** is immediate (`POST /api/suggestions/:id/reject`) and survives a reload.
+- **"Accept all from this source"** is offered per source above the form (Phase 7, chosen at
+  p7-01: placement). It applies every pending suggestion of
+  that source to the in-memory document.
+- The suggestion's value renders through the same display rules as the field (the name pair for a reference), and
+  its `source` and `confidence` are shown as text. An inferred value is always visibly marked as a suggestion and is
+  never pre-applied (D127).
 
 #### JSON Side Panel
 
@@ -684,6 +839,12 @@ the alias-keyed namespace and its `notes` — and it is unit-tested. **No `/npcs
 entry points this section used to promise exists. Recorded by the final-deslop pass as a spec-vs-reality
 gap (a promise is a claim to re-test — D121's rule).
 
+**Phase 7 builds the page (D136, task 7.14).** Route `/npcs/:npcId`, over the existing `GET /api/npcs/:id` with no
+new API. It shows aliases, personas, dialogs, quests and inventories, and each count matches a direct query. Tier-1
+coverage ships with it. Two entry points ship with it (Phase 7, chosen at p7-01): the search palette's `npc` rows
+link here (`searchResultHref` stops returning `null`), and a resolved speaker name in the Evidence panel links here.
+The layout below is the contract.
+
 ```
 ┌─ Gretta Darkkettle (WC-NPCs_00000003) ──────────────────────────────────────┐
 │  Aliases: Gretta Darkkettle · Gretta                                        │
@@ -704,6 +865,60 @@ gap (a promise is a claim to re-test — D121's rule).
   than missing.
 - **Speaker names in dialog** render through the client's own precedence (override → composed →
   template name) and a composed entry shows the **composition** rather than a raw string-table key.
+
+---
+
+### 12. Draft Review Queue (Phase 7 — D129, D130, D137, task 7.7)
+
+Route **`/drafts`** (nav: QUESTS → Drafts). This is the worklist of automatically drafted quests, over
+`GET /api/drafts`.
+
+```
+┌─ Drafts ──────────────────────────────────────────────────────────────────────────────┐
+│  1,840 drafts with evidence · 4,412 with none hidden  [ ] show all                     │
+│  [Named ▾] [Has file ▾] [Source ▾]                                        [Rebuild]   │
+├──────────────────────────────────────┬──────────┬──────────┬───────────┬──────────────┤
+│ Quest                                │ Evidence │ Pending  │ File      │ Sources      │
+├──────────────────────────────────────┼──────────┼──────────┼───────────┼──────────────┤
+│ The Lost Lantern (#128004, unnamed)  │ 5        │ 6        │ ✗ none    │ title, dlg   │
+│ Stakes and Stones (DM-GRAVE-MAIN-008)│ 4        │ 4        │ ✗ none    │ title, goals │
+└──────────────────────────────────────┴──────────┴──────────┴───────────┴──────────────┘
+```
+
+- **Ranked by evidence richness** (the server's order, never re-sorted by the client by default). Each row shows the
+  quest's name pair (§Names). An unnamed-tier draft shows its title and catalog id, marked **unnamed** as text.
+- **Filters**: named/unnamed, has-file, and source, each a server query parameter. **Zero-evidence drafts are hidden
+  by default** behind a visible toggle **and** the count it hides (D130). The numbers are text, not colour-only.
+- **Opening a draft goes to the quest editor.** A draft with a file opens its file. A draft without one opens the
+  editor on the **D118 minimal skeleton in memory**, with no write until Save. Its pending suggestions render inline
+  (§4 Inline suggestions).
+- **An unnamed draft's first Save asks for a quest name** (D137): a dialog with the name pre-filled from the draft's
+  evidence (its title key where one exists), and never auto-applied. A duplicate or path-escaping name is refused
+  inline, and nothing is written. On success the catalog row and the file are created in one save.
+- **Rebuild** in the header is the same action as the Dashboard's Rebuild drafts button (Phase 7, chosen at p7-01:
+  both placements).
+- **Empty state**: with no catalog (no sync yet), the page says the catalog needs a sync, as the Catalog view does.
+  With a catalog but no suggestions, it offers Rebuild.
+
+### 13. Glossary (Phase 7 — D131, task 7.12)
+
+Route **`/glossary`** (nav: QUESTS → Glossary). A read-only list of **every** `shared/glossary.ts` entry: fields,
+classes and enum values.
+
+```
+┌─ Glossary ─────────────────────────────────────────────────────────────┐
+│  [Search either name…                    ]   [All ▾ Fields Classes Enums]│
+├──────────────────────────────┬───────────┬─────────────────────────────┤
+│ Term                         │ Tier      │ Meaning                      │
+├──────────────────────────────┼───────────┼─────────────────────────────┤
+│ Quest level (m_questLevel)   │ basic     │ Suggested level. Source: …   │
+└──────────────────────────────┴───────────┴─────────────────────────────┘
+```
+
+- **Search matches either half.** `m_questLevel` and "Quest level" find the same row.
+- Each row shows the pair (through `TermLabel`), the tier, the help text and the `source` citation.
+- The label popover's "See in glossary" link opens this page filtered to the term (Phase 7, chosen at p7-01).
+- The kind filter (All, Fields, Classes, Enums) is a Phase 7 choice made at p7-01.
 
 ---
 

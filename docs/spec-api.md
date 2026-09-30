@@ -268,6 +268,8 @@ CRUD endpoints for each SpiralDB object type. All follow the same pattern.
 | GET | `/api/quests/catalog` | Catalog worklist; `?missing_only=1` narrows to `has_definition = 0` (Phase 6, task 6.10) |
 | GET | `/api/quests/:name/evidence` | Per-quest evidence (Phase 6, P6-8/P6-10) |
 | GET | `/api/quest-ids/:id/evidence` | Evidence for the id tier (Phase 6, P6-3) |
+| GET | `/api/quests/:name/suggestions` | A named quest's suggestions (Phase 7, D129; see [Suggestions and Drafts](#suggestions-and-drafts-phase-7--d129-d130-d137)) |
+| GET | `/api/quest-ids/:id/suggestions` | An unnamed-tier id's suggestions (Phase 7, D130/D137) |
 
 **Implemented response shapes** (task 2.5 / story p2-06). This table above is the
 spec's complete contract — it fixes no shapes — so the shapes below are the
@@ -706,6 +708,144 @@ Save operations automatically:
 
 ---
 
+## Suggestions and Drafts (Phase 7 — D129, D130, D137)
+
+Suggestions are staged in the local `quest_suggestions` table ([data model](./spec-data-model.md)). A draft is one
+catalog id, named or unnamed, as the `quest_drafts` view lists it. **None of these routes writes to SpiralDB.** A
+suggestion reaches a file only when the editor applies it to its in-memory document and the user saves through
+`POST /api/quests` or `POST /api/quests/scaffold`. The D119 branch guard therefore applies through those two routes
+and not here, because these routes touch only SQLite.
+
+### GET /api/quests/:name/suggestions · GET /api/quest-ids/:id/suggestions
+
+The two routes mirror the evidence pair: `:name` is a catalog name and `:id` an unnamed-tier `quest_ids.quest_id`.
+Both return one shape (Phase 7, chosen at p7-01). They are registered before `/api/quests/:name`, as `coverage` and
+`catalog` are.
+
+```json
+{
+  "quest_name": "LM-NIGHT-MAIN-009",
+  "catalog_id": 126861,
+  "suggestions": [
+    {
+      "id": 4812,
+      "path": "m_questTitle",
+      "value": "QuestTitle_1ED8D",
+      "source": "evidence-title",
+      "confidence": 1,
+      "evidence_ref": "quest_ids:126861",
+      "status": "pending",
+      "created_at": "2026-09-29T20:14:03Z",
+      "decided_at": null
+    }
+  ]
+}
+```
+
+- `?status=` takes `pending` (the default), `accepted`, `rejected` or `all`. Any other value is a `400`, the same
+  ladder as `?missing_only=`.
+- `value` is the parsed `value_json`, not the string.
+- Rows are ordered by `path`, then `source`, then `id`, so a re-read never reorders the inline list.
+- An unknown name or id is a `404 {"error": "Unknown quest \"…\""}`. A known draft with no rows answers
+  `suggestions: []`.
+
+### POST /api/suggestions/:id/reject
+
+Marks one pending suggestion `rejected` and stamps `decided_at`. The row survives every rebuild (D129). It answers
+the updated row in the shape above. An unknown id is a `404`. A row that is not `pending` is a `409`, because a
+decision is never silently overwritten.
+
+### Accepting: recorded by the save, not by a route of its own
+
+**Accepting is a client-side edit.** It sets the field in the editor's in-memory document, and nothing is persisted
+yet. The status flips to `accepted` **only after the save commits** (task 7.7). So there is no accept endpoint
+(Phase 7, chosen at p7-01). Instead the two save routes take an optional `accepted_suggestions: number[]`:
+
+- `POST /api/quests`: `{ "quest": { … }, "notes"?, "source"?, "accepted_suggestions"?: [4812, 4813] }`.
+- `POST /api/quests/scaffold`: see "Saving a draft" below.
+
+The ids are validated **before** any write. Each must exist, be `pending`, and belong to the quest being saved
+(its `quest_name`, or its `catalog_id` for a draft being named). Otherwise the request is a `400` naming the bad id,
+and nothing is written. After the pipeline's commit exists, the server sets them `accepted` with `decided_at` in
+one transaction. The response echoes `accepted_suggestions`. A save that fails anywhere leaves every id `pending`.
+Accept-all from a source is the same request carrying every id the client applied.
+
+### Saving a draft: `POST /api/quests/scaffold` extended
+
+A draft whose quest has no file starts in the editor from the D118 minimal skeleton **in memory**, and there is no
+write until Save. Its first save goes through the scaffold route, which gains two optional body fields (Phase 7,
+chosen at p7-01):
+
+```json
+{ "quest_name": "LM-NIGHT-MAIN-009", "catalog_id": 126861, "quest": { "…": "skeleton + accepted fields" }, "accepted_suggestions": [4812], "notes": "optional" }
+```
+
+- **`quest`** is the in-memory document. It is written in the scaffold's single commit instead of the bare
+  skeleton, so the file's first diff is the skeleton plus the accepted fields. Its `m_questName` must equal
+  `quest_name`, or the request is a `400`. Without `quest`, the route behaves exactly as it did in Phase 6.
+- **Naming an unnamed draft (D137).** When `catalog_id` names a `quest_ids` row with no `matched_quest_name`, the
+  `quest_name` is the user's choice. It is pre-filled from the id's evidence (its title key where one exists) and
+  never auto-applied. It must not already exist in `quests` (otherwise `409`) and must pass the scaffold's path guard
+  (otherwise `400`). In one transaction the server creates the `quests` row, links the `quest_ids` row, and sets
+  `quest_name` on that id's suggestion rows. It then follows the scaffold path. **A refused name writes nothing.**
+- A named draft keeps the Phase 6 status codes (`404` unknown name, `409` already has a file).
+
+### GET /api/drafts
+
+The draft queue's rows, read from `quest_drafts` (Phase 7, chosen at p7-01):
+
+```json
+{
+  "drafts": [
+    {
+      "quest_name": null,
+      "catalog_id": 128004,
+      "title": "The Lost Lantern",
+      "has_definition": 0,
+      "reference_count": 0,
+      "pending": 6,
+      "accepted": 0,
+      "rejected": 1,
+      "evidence_richness": 5,
+      "sources": ["evidence-dialogue", "evidence-title"]
+    }
+  ],
+  "total": 1840,
+  "hidden_zero_evidence": 4412,
+  "filters": { "named": null, "has_file": null, "source": null, "all": false }
+}
+```
+
+- Filters: `?named=1|0` (a catalog name vs the unnamed tier), `?has_file=1|0`, `?source=<source>`, and `?all=1`,
+  which includes zero-evidence drafts. They are hidden by default, and `hidden_zero_evidence` is the count the toggle
+  shows (D130). A malformed value is a `400`.
+- `?limit=` (default 100, max 1000) and `?offset=` page the result. `total` counts the filtered rows before paging.
+- Ordered `evidence_richness DESC, reference_count DESC`, then `quest_name`, then `catalog_id`, so the order is
+  stable.
+
+### POST /api/drafts/rebuild
+
+Runs the draft builder, the same code as `npm run drafts`, over **every catalog id, named and unnamed** (D130). It is
+synchronous, like `POST /api/sync`. A second request while one runs is a `409`.
+
+```json
+{
+  "inserted": 2311,
+  "unchanged": 18402,
+  "by_source": { "evidence-title": 4102, "evidence-dialogue": 9120, "evidence-goals": 612, "evidence-location": 3380, "evidence-requirements": 1204, "capture-order": 0, "capture-rewards": 0 },
+  "drafts": { "named_missing": 1395, "named_defined": 322, "unnamed": 3106 },
+  "duration_ms": 41210
+}
+```
+
+- `inserted` is the rows this run added, and `unchanged` is the rows the identity index already held, whatever their
+  status. Two consecutive rebuilds therefore report `inserted: 0` the second time.
+- `drafts` reconciles with `GET /api/quests/coverage`: `named_missing` = `missing`, `named_defined` = `defined`, and
+  `unnamed` = the unlinked `quest_ids` rows.
+- The numbers above are illustrative. Every count is read from the run, never hard-coded.
+
+---
+
 ## Extraction
 
 ### POST /api/extract/quests
@@ -730,6 +870,30 @@ Upload a packet capture JSON file and extract quests.
 ```
 
 The extraction is performed by calling the `imview-packet-reader` CLI wrapper as a blocking subprocess. The UI shows an indeterminate spinner during processing. See [Domain Reference](./spec-domain-reference.md#cli-wrapper-for-packet-reader) for CLI details.
+
+**Phase 7 additions (tasks 7.2 and 7.5; the fields are chosen at p7-01).** The response gains two fields. Every field
+above is unchanged.
+
+```json
+{
+  "quests": [ ... ],
+  "count": 14,
+  "suggestions": [ { "questName": "…", "path": "m_goalLogic", "value": [ … ], "source": "capture-order", "confidence": 0.8, "note": "…" } ],
+  "census": {
+    "messages": 412,
+    "rows": [ { "message": "MSG_SENDNPCOPTIONS", "field": "Options", "count": 3, "consumed": false } ]
+  }
+}
+```
+
+- `suggestions` is always present, as `[]` when the wrapper inferred nothing. It is the wrapper's sidecar array
+  ([domain reference](./spec-domain-reference.md#phase-7-the-suggestions-sidecar-d127--task-75)), passed through
+  verbatim. The server also stores each entry as a pending `quest_suggestions` row with `evidence_ref` =
+  `capture:<file name>` (the base name, sanitised like `source`). The insert is idempotent through the identity
+  index, so re-uploading the same capture adds nothing. Nothing is merged into `quests`.
+- `census` is present only when the request asks for it with `?census=1`. It holds the `capture-census` rows for
+  the same file. If the census binary is absent, `census` is `{ "skipped": "…reason…" }`, and the extraction itself
+  still succeeds, the same posture as the sync's missing `wad-scan` (D55).
 
 ---
 
@@ -1031,7 +1195,9 @@ React Router v6 with `<BrowserRouter>`. Layout component wraps all routes with s
 /quests/extract             → Quest extraction (upload + review)
 /quests/catalog             → Quest Catalog: coverage, worklist, scaffold (Phase 6, P6-15)
 /quests/:questName          → Quest detail/edit
-/npcs/:npcId                → NPC view: personas, dialogs, quests, inventories (Phase 6, D112)
+/drafts                     → Draft review queue (Phase 7, task 7.7 / p7-08)
+/glossary                   → Glossary: every field, class and enum label (Phase 7, task 7.12 / p7-13)
+/npcs/:npcId                → NPC view: personas, dialogs, quests, inventories (API Phase 6, D112; page Phase 7, task 7.14 / p7-15)
 /drop-tables                → DropTable list
 /drop-tables/:name          → DropTable detail/edit
 /npc-inventories            → NpcInventory list
@@ -1054,6 +1220,19 @@ React Router v6 with `<BrowserRouter>`. Layout component wraps all routes with s
 shadow them — `/quests/extract` and `/quests/catalog` both precede `/quests/:questName`, which is what
 `matchRoute` (`client/src/lib/routes.ts`) implements. A quest legitimately named `extract` or `catalog`
 is therefore unreachable by its detail route, exactly as it was before Phase 6.
+
+**Phase 7 routes land with their stories.** `/drafts`, `/glossary` and the `/npcs/:npcId` page are listed above ahead
+of the code that serves them. `tests/unit/ui-shell.test.ts` re-types this table as its `SPEC_ROUTES` oracle ("every
+route … and nothing else") rather than parsing it. The oracle therefore still omits all three today, and the test
+stays green. Each implementing story adds its route to `APP_ROUTES` (`client/src/lib/routes.ts`) **and** to
+`SPEC_ROUTES` in the same commit, as p6-11 did for `/quests/catalog`: `'/drafts'` with p7-08, `'/glossary'` with
+p7-13 and `'/npcs/:npcId'` with p7-15. The nav oracle (`byGroup.QUESTS`) moves with the sidebar items
+([UI design](./spec-ui-design.md#sidebar)). None of the three is shadowed by a dynamic pattern, so the order rule
+above is unaffected.
+
+**The NPC page (task 7.14)** reads the existing `GET /api/npcs/:id` and adds no API. `searchResultHref` links an
+`npc` search row to `/npcs/:npcId` instead of returning `null`. **The glossary** is client-side data
+(`shared/glossary.ts`, D131) and adds no API either.
 
 ## Related Documentation
 
