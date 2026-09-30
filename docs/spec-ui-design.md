@@ -122,12 +122,14 @@ field key, class name and enum literal the quest editor shows renders as `Friend
 (D131). The technical half is always visible.
 
 - **One home: `shared/glossary.ts`.** Like `shared/document.ts` (D58), it has no dependencies and is safe to use from
-  client and server. It holds three maps: fields keyed by document key, classes keyed by `$type`, and enum values
-  keyed by enum and literal. Each entry is `{label, help, tier: 'basic' | 'advanced', source}`, and `source` cites
+  client and server. It holds three maps: fields keyed by document key, classes keyed by class name (the short name
+  of the `$type`; `classTerm()` also takes the assembly-qualified string), and enum values keyed by enum name and
+  literal. A fourth small map, `groups`, holds the dialog section names. Each entry is
+  `{label, help, tier: 'basic' | 'advanced', source}`, and `source` cites
   where the meaning comes from (`file:line` in this spec set, Imlight or Imcodec). The scattered labels
   (`quest-goals.ts`'s goal `label`s, the requirement labels, the dialog group names) **move** there. They are not
   duplicated, and a single-home test forbids a second label table (task 7.8).
-- **One renderer: `<TermLabel term=… />`.** It renders the pair, keeps the technical half selectable in mono, and
+- **One renderer: `<TermLabel term=… />`.** `term` is `{field}`, `{type}`, `{enum, value}` or `{group}`. It renders the pair, keeps the technical half selectable in mono, and
   wraps its output in a `[data-term]` element. That is the one place a technical string may legitimately be visible
   (the task 7.9 scanner reads visible text *outside* `[data-term]`).
 - **Identical halves collapse (D135).** When the friendly half equals the technical half, only one is shown, never

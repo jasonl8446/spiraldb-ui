@@ -102,6 +102,7 @@
  */
 
 import { formatDocPath, type DocEdit, type DocPath } from '@shared/document';
+import { enumTerm, fieldLabel } from '@shared/glossary';
 import {
   MAGIC_SCHOOLS,
   REQUIREMENT_LIST_TYPE,
@@ -155,13 +156,13 @@ export const ADD_GROUP_LABEL = 'Add Group';
 export const DELETE_NODE_LABEL = 'Delete';
 
 /** The leaf's `m_applyNOT` checkbox label. */
-export const APPLY_NOT_LABEL = 'NOT';
+export const APPLY_NOT_LABEL = fieldLabel('m_applyNOT');
 
 /** The `m_operator` label, on both a group's toggle and a leaf's select. */
-export const OPERATOR_LABEL = 'Operator';
+export const OPERATOR_LABEL = fieldLabel('m_operator');
 
 /** The leaf's type selector label. */
-export const REQUIREMENT_TYPE_LABEL = 'Type';
+export const REQUIREMENT_TYPE_LABEL = fieldLabel('$type');
 
 /** A group card's own noun (its accessible name leads with the operator). */
 export const GROUP_LABEL = 'Group';
@@ -177,8 +178,8 @@ export const REQUIREMENT_SELECT_UNSET_LABEL = '—';
 
 /** The operator enum's display words (the toggle's visible text and label stem). */
 export const REQUIREMENT_OPERATOR_LABELS: Record<RequirementOperator, string> = {
-  ROP_AND: 'AND',
-  ROP_OR: 'OR',
+  ROP_AND: enumTerm('RequirementOperator', 'ROP_AND')?.label ?? 'ROP_AND',
+  ROP_OR: enumTerm('RequirementOperator', 'ROP_OR')?.label ?? 'ROP_OR',
 };
 
 /** The new condition's default class — the dominant leaf class (277 of 317 leaves). */
@@ -269,7 +270,7 @@ export const REQUIREMENT_TYPE_SPECS: readonly RequirementTypeSpec[] = [
       {
         key: 'm_questName',
         kind: 'quest',
-        label: 'Quest',
+        label: fieldLabel('m_questName'),
         help: 'Quest the player must have (or, with NOT, must not have) completed',
         defaultValue: '',
       },
@@ -288,28 +289,28 @@ export const REQUIREMENT_TYPE_SPECS: readonly RequirementTypeSpec[] = [
       {
         key: 'm_entryName',
         kind: 'text',
-        label: 'Entry',
+        label: fieldLabel('m_entryName'),
         help: 'Quest registry entry name (the corpus uses "Complete")',
         defaultValue: '',
       },
       {
         key: 'm_displayName',
         kind: 'text',
-        label: 'Display Name',
+        label: fieldLabel('m_displayName'),
         help: 'Corpus-only key the domain reference omits; null in all 40 measured nodes',
         defaultValue: null,
       },
       {
         key: 'm_isQuestRegistry',
         kind: 'boolean',
-        label: 'Quest Registry',
+        label: fieldLabel('m_isQuestRegistry'),
         help: 'Corpus-only key the domain reference omits; true in 39 of the 40 measured nodes',
         defaultValue: true,
       },
       {
         key: 'm_questName',
         kind: 'quest',
-        label: 'Quest',
+        label: fieldLabel('m_questName'),
         help: 'Quest whose registry the entry belongs to',
         defaultValue: '',
       },
@@ -324,7 +325,7 @@ export const REQUIREMENT_TYPE_SPECS: readonly RequirementTypeSpec[] = [
       {
         key: 'm_magicSchool',
         kind: 'enum',
-        label: 'School',
+        label: fieldLabel('m_magicSchool'),
         help: "The player's own magic school",
         options: MAGIC_SCHOOLS,
         defaultValue: '',
@@ -340,7 +341,7 @@ export const REQUIREMENT_TYPE_SPECS: readonly RequirementTypeSpec[] = [
       {
         key: 'm_magicSchoolName',
         kind: 'enum',
-        label: 'School Name',
+        label: fieldLabel('m_magicSchoolName'),
         help: 'School the target entity must be (spec-only type: 0 occurrences in quests)',
         options: MAGIC_SCHOOLS,
         defaultValue: '',
@@ -348,7 +349,7 @@ export const REQUIREMENT_TYPE_SPECS: readonly RequirementTypeSpec[] = [
       {
         key: 'm_targetType',
         kind: 'enum',
-        label: 'Target Type',
+        label: fieldLabel('m_targetType'),
         help: 'Entity the school check applies to',
         options: ['RT_Caster'],
         defaultValue: '',

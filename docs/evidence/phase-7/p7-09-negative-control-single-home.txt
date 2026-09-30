@@ -1,0 +1,65 @@
+# p7-09 criterion 3 single-home negative controls (RAW)
+
+## control A: the pre-story ZoneTransferForm.tsx (it held a second label table for m_exitTeleporter / m_teleporterTag / m_transitionID)
+$ npx vitest run tests/unit/glossary-single-home.test.ts   (HEAD version of client/src/components/objects/ZoneTransferForm.tsx in place)
+   × the glossary is the one label home > finds no second label table in client/src, shared or server/src 39ms
+     → expected [ { …(4) }, { …(4) }, { …(4) }, …(3) ] to deeply equal []
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+[31m+     "file": "client/src/components/objects/ZoneTransferForm.tsx",[39m
+[31m+     "line": 479,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_exitTeleporter: 'Exit teleporter',",[39m
+[31m+     "file": "client/src/components/objects/ZoneTransferForm.tsx",[39m
+[31m+     "line": 480,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_teleporterTag: 'Teleporter tag',",[39m
+[31m+     "file": "client/src/components/objects/ZoneTransferForm.tsx",[39m
+[31m+     "line": 481,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_transitionID: 'Transition ID',",[39m
+[31m+     "file": "client/src/components/objects/ZoneTransferForm.tsx",[39m
+[31m+     "line": 486,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_exitTeleporter: 'exit teleporter',",[39m
+[31m+     "file": "client/src/components/objects/ZoneTransferForm.tsx",[39m
+[31m+     "line": 487,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_teleporterTag: 'teleporter tag',",[39m
+[31m+     "file": "client/src/components/objects/ZoneTransferForm.tsx",[39m
+[31m+     "line": 488,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_transitionID: 'transition ID',",[39m
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+## control B: a stray table added to client/src/lib/zz-stray-labels.ts
+$ cat client/src/lib/zz-stray-labels.ts
+export const STRAY = {
+  m_questLevel: 'Level of the quest',
+  ROP_OR: 'Either',
+};
+$ npx vitest run tests/unit/glossary-single-home.test.ts
+   × the glossary is the one label home > finds no second label table in client/src, shared or server/src 47ms
+     → expected [ { …(4) }, { …(4) } ] to deeply equal []
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+[31m+     "file": "client/src/lib/zz-stray-labels.ts",[39m
+[31m+     "line": 2,[39m
+[31m+     "shape": "key → text",[39m
+[31m+     "text": "m_questLevel: 'Level of the quest',",[39m
+[31m+     "file": "client/src/lib/zz-stray-labels.ts",[39m
+[31m+     "line": 3,[39m
+[31m+     "shape": "enum literal → text",[39m
+[31m+     "text": "ROP_OR: 'Either',",[39m
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+## restored
+ M client/src/components/objects/ZoneTransferForm.tsx
+ M client/src/lib/quest-dialog.ts
+ M client/src/lib/quest-goals.ts
+ M client/src/lib/requirement-tree.ts
+?? client/src/components/TermLabel.tsx
+?? shared/glossary.ts
+ ✓ tests/unit/glossary-single-home.test.ts (3 tests) 38ms
+ Test Files  1 passed (1)
+      Tests  3 passed (3)

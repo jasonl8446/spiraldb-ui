@@ -1,6 +1,7 @@
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 
+import { fieldLabel } from '@shared/glossary';
 import {
   addTeleportEdit,
   DESTINATION_LOC_HINT,
@@ -474,16 +475,12 @@ function TeleportRow({
   );
 }
 
-/** The three numeric fields' visible labels. */
-const NUMBER_LABELS: Record<(typeof TELEPORT_NUMBER_KEYS)[number], string> = {
-  m_exitTeleporter: 'Exit teleporter',
-  m_teleporterTag: 'Teleporter tag',
-  m_transitionID: 'Transition ID',
-};
+/** The three numeric fields' visible labels — the glossary's (D131), not a table of their own. */
+const NUMBER_LABELS = Object.fromEntries(
+  TELEPORT_NUMBER_KEYS.map((key) => [key, fieldLabel(key)]),
+) as Record<(typeof TELEPORT_NUMBER_KEYS)[number], string>;
 
-/** The same three fields' accessible-name tails (the visible label, lower-cased). */
-const NUMBER_ARIA: Record<(typeof TELEPORT_NUMBER_KEYS)[number], string> = {
-  m_exitTeleporter: 'exit teleporter',
-  m_teleporterTag: 'teleporter tag',
-  m_transitionID: 'transition ID',
-};
+/** The same three fields' accessible-name tails (the visible label, first letter lower-cased). */
+const NUMBER_ARIA = Object.fromEntries(
+  TELEPORT_NUMBER_KEYS.map((key) => [key, fieldLabel(key).replace(/^./, (c) => c.toLowerCase())]),
+) as Record<(typeof TELEPORT_NUMBER_KEYS)[number], string>;

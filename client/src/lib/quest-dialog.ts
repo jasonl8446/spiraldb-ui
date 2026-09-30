@@ -138,6 +138,7 @@
  */
 
 import { formatDocPath, type DocEdit, type DocPath } from '@shared/document';
+import { groupLabel } from '@shared/glossary';
 import { TYPE_STRINGS } from '@shared/quest/typeConstants';
 
 import { formatNameValue, type NameRowMap, type NamesType } from './display';
@@ -365,13 +366,18 @@ export interface DialogAccordionSpec {
  * puts it) while the *Audio* group's `m_soundEffectFile`/`m_musicFile` go to `Sound`.
  */
 export const DIALOG_ACCORDIONS: readonly DialogAccordionSpec[] = [
-  { id: 'Basic', label: 'Basic', groups: ['Basic'], openByDefault: true },
-  { id: 'Camera', label: 'Camera', groups: ['Camera'], openByDefault: false },
-  { id: 'Sound', label: 'Sound', groups: ['Audio'], openByDefault: false },
-  { id: 'Animation', label: 'Animation', groups: ['Animation & NPC'], openByDefault: false },
+  { id: 'Basic', label: groupLabel('Basic'), groups: ['Basic'], openByDefault: true },
+  { id: 'Camera', label: groupLabel('Camera'), groups: ['Camera'], openByDefault: false },
+  { id: 'Sound', label: groupLabel('Sound'), groups: ['Audio'], openByDefault: false },
+  {
+    id: 'Animation',
+    label: groupLabel('Animation'),
+    groups: ['Animation & NPC'],
+    openByDefault: false,
+  },
   {
     id: 'Advanced',
-    label: 'Advanced',
+    label: groupLabel('Advanced'),
     groups: ['Duration & Timing', 'Walk-Away', 'UI Controls'],
     openByDefault: false,
   },

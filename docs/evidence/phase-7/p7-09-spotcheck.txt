@@ -1,0 +1,498 @@
+ok   fields.m_questName  [Quest]  docs/spec-domain-reference.md:244
+       | `m_questName` | string | Unique quest identifier |
+ok   fields.m_questNameID  [Quest name ID]  docs/spec-domain-reference.md:245
+       | `m_questNameID` | uint | Hashed quest name ID (can be `0`) |
+ok   fields.m_questTitle  [Quest title]  docs/spec-domain-reference.md:246
+       | `m_questTitle` | string | String table key for quest title |
+ok   fields.m_questInfo  [Quest info]  docs/spec-domain-reference.md:247
+       | `m_questInfo` | string? | String table key for quest info text |
+ok   fields.m_questPrep  [Quest prep text]  docs/spec-domain-reference.md:248
+       | `m_questPrep` | string? | Pre-acceptance description |
+ok   fields.m_questUnderway  [Quest underway text]  docs/spec-domain-reference.md:249
+       | `m_questUnderway` | string? | In-progress description |
+ok   fields.m_questComplete  [Quest complete text]  docs/spec-domain-reference.md:250
+       | `m_questComplete` | string? | Completion text |
+ok   fields.m_startGoals  [Start goals]  docs/spec-domain-reference.md:251
+       | `m_startGoals` | string[] | Goal names activated on quest accept |
+ok   fields.m_goals  [Goals]  docs/spec-domain-reference.md:252
+       | `m_goals` | GoalTemplate[] | Polymorphic array of goal definitions |
+ok   fields.m_startResults  [Start results]  docs/spec-domain-reference.md:253
+       | `m_startResults` | ResultList | Results applied on quest accept |
+ok   fields.m_endResults  [End results]  docs/spec-domain-reference.md:254
+       | `m_endResults` | ResultList | Results applied on quest complete |
+ok   fields.m_requirements  [Requirements]  docs/spec-domain-reference.md:255
+       | `m_requirements` | RequirementList? | Requirements to accept the quest |
+ok   fields.m_prepRequirements  [Prep requirements]  docs/spec-domain-reference.md:256
+       | `m_prepRequirements` | RequirementList? | Requirements to see the quest offer |
+ok   fields.m_pruneRequirements  [Prune requirements]  docs/spec-domain-reference.md:257
+       | `m_pruneRequirements` | RequirementList? | Requirements that remove the quest |
+ok   fields.m_goalLogic  [Goal logic]  docs/spec-domain-reference.md:258
+       | `m_goalLogic` | GoalLogicEntry[] | Goal progression rules |
+ok   fields.m_questLevel  [Quest level]  docs/spec-domain-reference.md:259
+       | `m_questLevel` | int | Suggested level |
+ok   fields.m_questRepeat  [Repeatability]  docs/spec-domain-reference.md:260
+       | `m_questRepeat` | int | Repeatability flag (`0` = not repeatable) |
+ok   fields.m_onStartQuestScript  [Start script]  docs/spec-domain-reference.md:261
+       | `m_onStartQuestScript` | string | Script on quest start |
+ok   fields.m_onEndQuestScript  [End script]  docs/spec-domain-reference.md:262
+       | `m_onEndQuestScript` | string | Script on quest end |
+ok   fields.m_dialogList  [Dialog list]  docs/spec-domain-reference.md:263
+       | `m_dialogList` | ActorDialogList? | Dialog tree for quest giver |
+ok   fields.m_isHidden  [Hidden]  docs/spec-domain-reference.md:264
+       | `m_isHidden` | bool | Hidden from quest log |
+ok   fields.m_mainline  [Mainline]  docs/spec-domain-reference.md:265
+       | `m_mainline` | bool | Mainline story quest |
+ok   fields.m_noQuestHelper  [No Quest Helper]  docs/spec-domain-reference.md:266
+       | `m_noQuestHelper` | bool | Disables quest helper arrow |
+ok   fields.m_clientTags  [Client Tags]  docs/spec-domain-reference.md:267
+       | `m_clientTags` | string[]? | Tags for client UI filtering |
+ok   fields.m_activityType  [Activity type]  docs/spec-domain-reference.md:268
+       | `m_activityType` | string | Activity classification |
+ok   fields.m_prepAlways  [Always show prep]  docs/spec-domain-reference.md:269
+       | `m_prepAlways` | bool | Always show prep dialog |
+ok   fields.m_forceInteraction  [Force interaction]  docs/spec-domain-reference.md:270
+       | `m_forceInteraction` | bool | Forces interaction prompt |
+ok   fields.m_checkInventoryForCrafting  [Check inventory for crafting]  docs/spec-domain-reference.md:271
+       | `m_checkInventoryForCrafting` | bool | Checks inventory for crafting goals |
+ok   fields.m_playAsYourPetNPC  [Play as your pet]  docs/spec-domain-reference.md:272
+       | `m_playAsYourPetNPC` | bool | Pet-play mode flag |
+ok   fields.m_missionDoors  [Mission doors]  docs/spec-domain-reference.md:273
+       | `m_missionDoors` | object? | Mission door configuration |
+ok   fields.m_dynaMods  [Dynamic modifiers]  docs/spec-domain-reference.md:274
+       | `m_dynaMods` | object? | Dynamic modifier configuration |
+ok   fields.m_outdated  [Outdated]  docs/spec-domain-reference.md:275
+       | `m_outdated` | bool | Marks quest as deprecated |
+ok   fields.m_defaultDialogAnimation  [Default dialog animation]  docs/spec-domain-reference.md:276
+       | `m_defaultDialogAnimation` | object? | Default dialog animation |
+ok   fields.m_skipQHAutoSelect  [Skip quest helper auto-select]  docs/spec-domain-reference.md:277
+       | `m_skipQHAutoSelect` | bool | Skips auto quest helper selection |
+ok   fields.m_questEffectInfoList  [Quest effects]  docs/spec-domain-reference.md:278
+       | `m_questEffectInfoList` | object? | Visual/audio effects |
+ok   fields.m_behaviors  [Behaviors]  docs/spec-domain-reference.md:279
+       | `m_behaviors` | object? | Server-side behaviors |
+ok   fields.$type  [Type]  docs/spec-domain-reference.md:100
+       | `Requirements` | RequirementList? | `null` | Optional requirement gate (polymorphic `$type` format) |
+ok   fields.m_zoneTag  [Zone]  docs/spec-domain-reference.md:318
+       Type-specific fields: `m_zoneEntry` (bool), `m_zoneTag` (string, zone dropdown), `m_proximityTag` (string), `m_zoneExit` (bool)
+ok   fields.m_zoneEntry  [Entry]  docs/spec-domain-reference.md:318
+       Type-specific fields: `m_zoneEntry` (bool), `m_zoneTag` (string, zone dropdown), `m_proximityTag` (string), `m_zoneExit` (bool)
+ok   fields.m_zoneExit  [Exit]  docs/spec-domain-reference.md:318
+       Type-specific fields: `m_zoneEntry` (bool), `m_zoneTag` (string, zone dropdown), `m_proximityTag` (string), `m_zoneExit` (bool)
+ok   fields.m_proximityTag  [Proximity Tag]  docs/spec-domain-reference.md:318
+       Type-specific fields: `m_zoneEntry` (bool), `m_zoneTag` (string, zone dropdown), `m_proximityTag` (string), `m_zoneExit` (bool)
+ok   fields.m_personaName  [Persona]  docs/spec-domain-reference.md:322
+       Type-specific fields: `m_personaName` (string, NPC dropdown), `m_usePatron` (bool), `m_dialogList` (ActorDialogList)
+ok   fields.m_usePatron  [Use Patron]  docs/spec-domain-reference.md:322
+       Type-specific fields: `m_personaName` (string, NPC dropdown), `m_usePatron` (bool), `m_dialogList` (ActorDialogList)
+ok   fields.m_npcAdjectives  [NPC Adjectives]  docs/spec-domain-reference.md:326
+       Type-specific fields: `m_npcAdjectives` (string[]), `m_bountyTotal` (int), `m_bountyType` (string, e.g. "BT_MOB_KILL"), `m_tallyCounter` (object)
+ok   fields.m_bountyTotal  [Bounty Total]  docs/spec-domain-reference.md:326
+       Type-specific fields: `m_npcAdjectives` (string[]), `m_bountyTotal` (int), `m_bountyType` (string, e.g. "BT_MOB_KILL"), `m_tallyCounter` (object)
+ok   fields.m_bountyType  [Bounty Type]  docs/spec-domain-reference.md:326
+       Type-specific fields: `m_npcAdjectives` (string[]), `m_bountyTotal` (int), `m_bountyType` (string, e.g. "BT_MOB_KILL"), `m_tallyCounter` (object)
+ok   fields.m_itemAdjectives  [Item Adjectives]  docs/spec-domain-reference.md:330
+       Type-specific fields: `m_itemAdjectives` (string[]), `m_itemTotal` (int), `m_tallyCounter` (object)
+ok   fields.m_itemTotal  [Item Total]  docs/spec-domain-reference.md:330
+       Type-specific fields: `m_itemAdjectives` (string[]), `m_itemTotal` (int), `m_tallyCounter` (object)
+ok   fields.m_rank  [Rank]  docs/spec-domain-reference.md:334
+       Type-specific fields: `m_rank` (int)
+ok   fields.m_goalName  [Goal Name]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_goalNameID  [Goal Name ID]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_goalTitle  [Goal Title]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_goalUnderway  [Underway]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_hyperlink  [Hyperlink]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_completeText  [Complete Text]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_completeResults  [Complete results]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_goalRequirements  [Goal requirements]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_tallyCounter  [Tally counter]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_locationName  [Location Name]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_displayImage1  [Display Image 1]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_displayImage2  [Display Image 2]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_genericEvents  [Generic events]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_autoQualify  [Auto Qualify]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_autoComplete  [Auto Complete]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_destinationZone  [Destination Zone]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_goalType  [Goal Type]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_petOnlyQuest  [Pet Only Quest]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_activateResults  [Activate results]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_hideGoalFloatyText  [Hide Goal Floaty Text]  docs/spec-domain-reference.md:338
+       `m_goalName`, `m_goalNameID`, `m_goalTitle`, `m_goalUnderway`, `m_hyperlink`, `m_completeText`, `m_completeResults`, `m_goalRequirements`, `m_tallyCou
+ok   fields.m_goalsAND  [Goals that must all complete]  docs/spec-domain-reference.md:346
+       | `m_goalsAND` | string[] | Goal names that must ALL be complete |
+ok   fields.m_goalsOR  [Goals where any counts]  docs/spec-domain-reference.md:347
+       | `m_goalsOR` | string[] | Goal names where ANY completion counts |
+ok   fields.m_goalsToAdd  [Goals to activate]  docs/spec-domain-reference.md:348
+       | `m_goalsToAdd` | string[] | Goal names to activate when conditions met |
+ok   fields.m_completeQuest  [Completes the quest]  docs/spec-domain-reference.md:349
+       | `m_completeQuest` | bool | When true, completing this entry finishes the quest |
+ok   fields.m_requiredORCount  [Required OR count]  docs/spec-domain-reference.md:350
+       | `m_requiredORCount` | int | Number of OR goals that must be completed |
+ok   fields.m_applyNOT  [NOT]  docs/spec-domain-reference.md:422
+       Fields: `m_questName` (string, quest dropdown), `m_applyNOT` (bool), `m_operator` (enum: ROP_AND/ROP_OR)
+ok   fields.m_operator  [Operator]  docs/spec-domain-reference.md:422
+       Fields: `m_questName` (string, quest dropdown), `m_applyNOT` (bool), `m_operator` (enum: ROP_AND/ROP_OR)
+ok   fields.m_entryName  [Entry]  docs/spec-domain-reference.md:426
+       Fields: `m_questName` (string), `m_entryName` (string), `m_applyNOT` (bool), `m_operator` (enum)
+ok   fields.m_displayName  [Display Name]  client/src/lib/requirement-tree.ts:43
+       * - `ReqHasEntry` carries **two keys the spec's field list omits**: `m_displayName`
+ok   fields.m_isQuestRegistry  [Quest Registry]  docs/spec-domain-reference.md:364
+       Fields: `m_questName` (string), `m_entryName` (string), `m_isQuestRegistry` (bool), `m_value` (int)
+ok   fields.m_magicSchool  [School]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   fields.m_magicSchoolName  [School Name]  docs/spec-domain-reference.md:434
+       Fields: `m_magicSchoolName` (enum), `m_targetType` (string enum, e.g. "RT_Caster"), `m_applyNOT` (bool), `m_operator` (enum)
+ok   fields.m_targetType  [Target Type]  docs/spec-domain-reference.md:434
+       Fields: `m_magicSchoolName` (enum), `m_targetType` (string enum, e.g. "RT_Caster"), `m_applyNOT` (bool), `m_operator` (enum)
+ok   fields.m_results  [Results]  shared/quest/results.ts:25
+       * **no `$type`** — measured 2,206/2,206 occurrences hold exactly one key, `m_results`
+ok   fields.m_tallyResults  [Tally results]  shared/quest/results.ts:174
+       * `m_completeResults` / `m_activateResults` and `TallyCounter.m_tallyResults`.
+ok   fields.m_tableName  [Drop table]  docs/spec-domain-reference.md:360
+       Fields: `m_tableName` (string), `m_maxRolls` (int)
+ok   fields.m_maxRolls  [Max rolls]  docs/spec-domain-reference.md:360
+       Fields: `m_tableName` (string), `m_maxRolls` (int)
+ok   fields.m_value  [Value]  docs/spec-domain-reference.md:364
+       Fields: `m_questName` (string), `m_entryName` (string), `m_isQuestRegistry` (bool), `m_value` (int)
+ok   fields.m_dynaModClientTag  [Modifier client tag]  docs/spec-domain-reference.md:368
+       Fields: `m_dynaModClientTag` (string), `m_dynaModRemove` (bool), `m_useQuestAsOriginator` (bool), `m_dynaModState` (string), `m_zoneName` (string)
+ok   fields.m_dynaModRemove  [Remove modifier]  docs/spec-domain-reference.md:368
+       Fields: `m_dynaModClientTag` (string), `m_dynaModRemove` (bool), `m_useQuestAsOriginator` (bool), `m_dynaModState` (string), `m_zoneName` (string)
+ok   fields.m_useQuestAsOriginator  [Quest is the originator]  docs/spec-domain-reference.md:368
+       Fields: `m_dynaModClientTag` (string), `m_dynaModRemove` (bool), `m_useQuestAsOriginator` (bool), `m_dynaModState` (string), `m_zoneName` (string)
+ok   fields.m_dynaModState  [Modifier state]  docs/spec-domain-reference.md:368
+       Fields: `m_dynaModClientTag` (string), `m_dynaModRemove` (bool), `m_useQuestAsOriginator` (bool), `m_dynaModState` (string), `m_zoneName` (string)
+ok   fields.m_zoneName  [Zone name]  docs/spec-domain-reference.md:368
+       Fields: `m_dynaModClientTag` (string), `m_dynaModRemove` (bool), `m_useQuestAsOriginator` (bool), `m_dynaModState` (string), `m_zoneName` (string)
+ok   fields.m_templateID  [Template ID]  docs/spec-domain-reference.md:372
+       Fields: `m_templateID` (ulong), `m_requirements` (RequirementList, optional)
+ok   fields.m_eventName  [Event name]  docs/spec-domain-reference.md:376
+       Fields: `m_eventName` (string)
+ok   fields.m_spawnID  [Spawn ID]  docs/spec-domain-reference.md:390
+       Fields: `m_spawnID` (int), `m_despawnEffect` (bool), `m_templateID` (ulong, NPC dropdown)
+ok   fields.m_despawnEffect  [Despawn effect]  docs/spec-domain-reference.md:390
+       Fields: `m_spawnID` (int), `m_despawnEffect` (bool), `m_templateID` (ulong, NPC dropdown)
+ok   fields.m_spellID  [Spell]  docs/spec-domain-reference.md:398
+       Fields: `m_templateID` (ulong, NPC dropdown), `m_spellID` (ulong, spell dropdown)
+ok   fields.m_router  [Sound router]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_soundName  [Sound]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_blocking  [Blocking]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_reinteractTime  [Re-interact time]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_locX  [Location X]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_locY  [Location Y]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_locZ  [Location Z]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_routingType  [Routing type]  docs/spec-domain-reference.md:402
+       Fields: `m_router` (object: `m_locX/Y/Z` floats, `m_routingType` string, `m_useLocation` bool, `m_useTriggerLocation` bool), `m_soundName` (string), `
+ok   fields.m_useLocation  [Use router location]  client/src/lib/quest-results.ts:49
+       *   `m_locX, m_locY, m_locZ, m_routingType, m_useLocation, m_useTriggerLocation`, the one
+ok   fields.m_useTriggerLocation  [Use trigger location]  client/src/lib/quest-results.ts:49
+       *   `m_locX, m_locY, m_locZ, m_routingType, m_useLocation, m_useTriggerLocation`, the one
+ok   fields.m_destinationLoc  [Destination location]  docs/spec-domain-reference.md:406
+       Fields: `m_destinationLoc` (string), `m_destinationZone` (string, zone dropdown), `m_exitTeleporter` (int), `m_teleporterTag` (int), `m_teleportType` 
+ok   fields.m_exitTeleporter  [Exit teleporter]  docs/spec-domain-reference.md:406
+       Fields: `m_destinationLoc` (string), `m_destinationZone` (string, zone dropdown), `m_exitTeleporter` (int), `m_teleporterTag` (int), `m_teleportType` 
+ok   fields.m_teleporterTag  [Teleporter tag]  docs/spec-domain-reference.md:406
+       Fields: `m_destinationLoc` (string), `m_destinationZone` (string, zone dropdown), `m_exitTeleporter` (int), `m_teleporterTag` (int), `m_teleportType` 
+ok   fields.m_teleportType  [Teleport type]  docs/spec-domain-reference.md:406
+       Fields: `m_destinationLoc` (string), `m_destinationZone` (string, zone dropdown), `m_exitTeleporter` (int), `m_teleporterTag` (int), `m_teleportType` 
+ok   fields.m_transitionID  [Transition ID]  docs/spec-domain-reference.md:406
+       Fields: `m_destinationLoc` (string), `m_destinationZone` (string, zone dropdown), `m_exitTeleporter` (int), `m_teleporterTag` (int), `m_teleportType` 
+ok   fields.m_secondsToWait  [Seconds to wait]  docs/spec-domain-reference.md:410
+       Fields: `m_secondsToWait` (float)
+ok   fields.m_dialogs  [Dialog blocks]  shared/quest/dialog.ts:10
+       * `ActorDialogList` (`{$type, m_dialogs}`, 797 occurrences on the owner's `f9a1055` baseline,
+ok   fields.m_dialogTag  [Dialog tag]  shared/quest/dialog.ts:160
+       * blocks; `m_dialogTag` stays a free string (empty tags occur).
+ok   fields.m_dialogEntries  [Dialog entries]  shared/quest/dialog.ts:31
+       * `m_dialogList.m_dialogs[0].m_dialogEntries[4]` and `-007.json`'s `[5]`, each the 58-key
+ok   fields.m_madlibs  [Madlibs]  shared/quest/dialog.ts:37
+       * The madlib chain (`m_dialogs[].m_madlibs[]` → `m_madlibBlock` → `m_madlibs[]`) bottoms out
+ok   fields.m_dialogEvents  [Dialog events]  shared/quest/dialog.ts:166
+       m_dialogEvents: opaqueArray.nullish(),
+ok   fields.m_noAggroWhileDialogIsUp  [No aggro while dialog is up]  shared/quest/dialog.ts:167
+       m_noAggroWhileDialogIsUp: z.boolean().nullish(),
+ok   fields.m_noAggroNoDelay  [No aggro, no delay]  shared/quest/dialog.ts:168
+       m_noAggroNoDelay: z.boolean().nullish(),
+ok   fields.m_nameOverride  [Name override]  docs/spec-domain-reference.md:450
+       - `m_nameOverride` (string) — Override display name
+ok   fields.m_nameSTKey  [Name format key]  docs/spec-domain-reference.md:451
+       - `m_nameSTKey` (string) — String table key for name format
+ok   fields.m_guiDisplay  [GUI display]  docs/spec-domain-reference.md:452
+       - `m_guiDisplay` (string) — GUI display override
+ok   fields.m_maxTimeSeconds  [Max display time]  docs/spec-domain-reference.md:453
+       - `m_maxTimeSeconds` (int) — Max dialog display time (-1 = unlimited)
+ok   fields.m_invisible  [Invisible]  docs/spec-domain-reference.md:454
+       - `m_invisible` (bool) — Hide dialog UI
+ok   fields.m_dialog  [Dialog text]  docs/spec-domain-reference.md:456
+       - `m_dialog` (string) — String table key for dialog text
+ok   fields.m_picture  [Portrait]  docs/spec-domain-reference.md:457
+       - `m_picture` (string) — Portrait image path
+ok   fields.m_soundFile  [Voice-over]  docs/spec-domain-reference.md:458
+       - `m_soundFile` (string) — Voice-over audio path
+ok   fields.m_action  [Action]  docs/spec-domain-reference.md:459
+       - `m_action` (string) — Action trigger
+ok   fields.m_dialogEvent  [Dialog event]  docs/spec-domain-reference.md:460
+       - `m_dialogEvent` (string) — Event to fire
+ok   fields.m_actorTemplateID  [Actor template]  docs/spec-domain-reference.md:461
+       - `m_actorTemplateID` (ulong) — NPC actor template (friendly name dropdown)
+ok   fields.m_cameraName  [Camera name]  docs/spec-domain-reference.md:464
+       - `m_cameraName` (string) — Camera position name or "LOCATION"
+ok   fields.m_interpolationDuration  [Camera transition time]  docs/spec-domain-reference.md:465
+       - `m_interpolationDuration` (float) — Camera transition time
+ok   fields.m_cameraOffsetX  [Camera offset X]  docs/spec-domain-reference.md:466
+       - `m_cameraOffsetX/Y/Z` (float) — Camera position offset
+ok   fields.m_cameraOffsetY  [Camera offset Y]  docs/spec-domain-reference.md:466
+       - `m_cameraOffsetX/Y/Z` (float) — Camera position offset
+ok   fields.m_cameraOffsetZ  [Camera offset Z]  docs/spec-domain-reference.md:466
+       - `m_cameraOffsetX/Y/Z` (float) — Camera position offset
+ok   fields.m_pitch  [Camera pitch]  docs/spec-domain-reference.md:467
+       - `m_pitch/yaw/roll` (float) — Camera rotation
+ok   fields.m_yaw  [Camera yaw]  docs/spec-domain-reference.md:467
+       - `m_pitch/yaw/roll` (float) — Camera rotation
+ok   fields.m_roll  [Camera roll]  docs/spec-domain-reference.md:467
+       - `m_pitch/yaw/roll` (float) — Camera rotation
+ok   fields.m_cameraShakeType  [Camera shake type]  docs/spec-domain-reference.md:468
+       - `m_cameraShakeType` (string) — Shake effect type
+ok   fields.m_cameraShakeDuration  [Camera shake duration]  docs/spec-domain-reference.md:469
+       - `m_cameraShakeDuration` (float) — Shake duration
+ok   fields.m_cameraShakeAmplitude  [Camera shake intensity]  docs/spec-domain-reference.md:470
+       - `m_cameraShakeAmplitude` (float) — Shake intensity
+ok   fields.m_bypassCameraOnReview  [Skip camera on review]  docs/spec-domain-reference.md:471
+       - `m_bypassCameraOnReview` (bool) — Skip camera on dialog review
+ok   fields.m_cameraZoneName  [Camera zone]  docs/spec-domain-reference.md:472
+       - `m_cameraZoneName` (string) — Zone for camera position
+ok   fields.m_cameraHidePlayers  [Hide players]  docs/spec-domain-reference.md:473
+       - `m_cameraHidePlayers` (int) — Hide players during dialog (0=no, 2=yes)
+ok   fields.m_cameraFadeType  [Camera fade type]  docs/spec-domain-reference.md:474
+       - `m_cameraFadeType` (string) — Fade effect type
+ok   fields.m_cameraFadeTime  [Camera fade time]  docs/spec-domain-reference.md:475
+       - `m_cameraFadeTime` (float) — Fade duration
+ok   fields.m_secondaryCameraName  [Secondary camera]  docs/spec-domain-reference.md:476
+       - `m_secondaryCameraName` (string) — Secondary camera
+ok   fields.m_secondaryInterpolationDuration  [Secondary camera transition time]  docs/spec-domain-reference.md:477
+       - `m_secondaryInterpolationDuration` (float)
+ok   fields.m_secondaryCameraInitalDelay  [Secondary camera initial delay]  docs/spec-domain-reference.md:478
+       - `m_secondaryCameraInitalDelay` (float)
+ok   fields.m_dontReleaseCameraAtExit  [Keep camera at exit]  docs/spec-domain-reference.md:479
+       - `m_dontReleaseCameraAtExit` (bool)
+ok   fields.m_fadeOutCamera  [Fade out camera]  docs/spec-domain-reference.md:480
+       - `m_fadeOutCamera` (bool)
+ok   fields.m_snapCameraToPlayerAtExit  [Snap camera to player at exit]  docs/spec-domain-reference.md:481
+       - `m_snapCameraToPlayerAtExit` (bool)
+ok   fields.m_duration  [Duration]  docs/spec-domain-reference.md:484
+       - `m_duration` (float) — Dialog duration
+ok   fields.m_delay  [Delay]  docs/spec-domain-reference.md:485
+       - `m_delay` (float) — Delay before showing
+ok   fields.m_spamTime  [Spam prevention interval]  docs/spec-domain-reference.md:486
+       - `m_spamTime` (float) — Spam prevention interval
+ok   fields.m_playSoundIfSpamming  [Play sound while spamming]  docs/spec-domain-reference.md:487
+       - `m_playSoundIfSpamming` (bool)
+ok   fields.m_playMusicIfSpamming  [Play music while spamming]  docs/spec-domain-reference.md:488
+       - `m_playMusicIfSpamming` (bool)
+ok   fields.m_displayButtonsOnTimedDialog  [Show buttons on timed dialog]  docs/spec-domain-reference.md:489
+       - `m_displayButtonsOnTimedDialog` (bool)
+ok   fields.m_walkAwayNpcTemplateID  [Walk-away NPC]  docs/spec-domain-reference.md:492
+       - `m_walkAwayNpcTemplateID` (ulong) — NPC that walks away
+ok   fields.m_walkAwayExitDirectionInDegrees  [Walk-away exit direction]  docs/spec-domain-reference.md:493
+       - `m_walkAwayExitDirectionInDegrees` (float)
+ok   fields.m_walkAwayFadeTime  [Walk-away fade time]  docs/spec-domain-reference.md:494
+       - `m_walkAwayFadeTime` (float)
+ok   fields.m_walkAwayUseCurrentFacing  [Walk away from current facing]  docs/spec-domain-reference.md:495
+       - `m_walkAwayUseCurrentFacing` (bool)
+ok   fields.m_standInPlayerTag  [Stand-in player tag]  docs/spec-domain-reference.md:496
+       - `m_standInPlayerTag` (string)
+ok   fields.m_soundEffectFile  [Sound effect file]  docs/spec-domain-reference.md:499
+       - `m_soundEffectFile` (string) — Sound effect path
+ok   fields.m_musicFile  [Music file]  docs/spec-domain-reference.md:500
+       - `m_musicFile` (string) — Music track path
+ok   fields.m_nonStackableMusic  [Music does not stack]  docs/spec-domain-reference.md:501
+       - `m_nonStackableMusic` (bool)
+ok   fields.m_nonRepeatableMusic  [Music does not repeat]  docs/spec-domain-reference.md:502
+       - `m_nonRepeatableMusic` (bool)
+ok   fields.m_playMusicAtSFXVolume  [Play music at effects volume]  docs/spec-domain-reference.md:503
+       - `m_playMusicAtSFXVolume` (bool)
+ok   fields.m_soundEffectDelay  [Sound effect delay]  docs/spec-domain-reference.md:504
+       - `m_soundEffectDelay` (float)
+ok   fields.m_musicDelay  [Music delay]  docs/spec-domain-reference.md:505
+       - `m_musicDelay` (float)
+ok   fields.m_musicFadeTime  [Music fade time]  docs/spec-domain-reference.md:506
+       - `m_musicFadeTime` (float)
+ok   fields.m_stopMusicFadeTime  [Stop-music fade time]  docs/spec-domain-reference.md:507
+       - `m_stopMusicFadeTime` (float)
+ok   fields.m_restartMusicFadeTime  [Restart-music fade time]  docs/spec-domain-reference.md:508
+       - `m_restartMusicFadeTime` (float)
+ok   fields.m_idleAnimation  [Idle animation]  docs/spec-domain-reference.md:511
+       - `m_idleAnimation` (string)
+ok   fields.m_npcStandInList  [NPC stand-ins]  docs/spec-domain-reference.md:512
+       - `m_npcStandInList` (array)
+ok   fields.m_dialogAnimationList  [Dialog animations]  docs/spec-domain-reference.md:513
+       - `m_dialogAnimationList` (array)
+ok   fields.m_dialogTurningList  [Dialog turning]  docs/spec-domain-reference.md:514
+       - `m_dialogTurningList` (array)
+ok   fields.m_npcYawOffsetInDegrees  [NPC yaw offset]  docs/spec-domain-reference.md:515
+       - `m_npcYawOffsetInDegrees` (float)
+ok   fields.m_allowPlayerToMove  [Allow player to move]  docs/spec-domain-reference.md:516
+       - `m_allowPlayerToMove` (bool)
+ok   fields.m_disableBackButton  [Disable back button]  docs/spec-domain-reference.md:520
+       - `m_disableBackButton` (bool)
+ok   fields.m_enableExitButton  [Enable exit button]  docs/spec-domain-reference.md:521
+       - `m_enableExitButton` (bool)
+ok   fields.m_meetsRequirements  [Meets requirements]  docs/spec-domain-reference.md:522
+       - `m_meetsRequirements` (bool) — Internal flag, usually true
+ok   classes.WaypointGoalTemplate  [Reach a zone (Waypoint goal)]  docs/spec-domain-reference.md:316
+       ### WaypointGoalTemplate
+ok   classes.PersonaGoalTemplate  [Talk to an NPC (Persona goal)]  docs/spec-domain-reference.md:320
+       ### PersonaGoalTemplate
+ok   classes.BountyGoalTemplate  [Kill mobs (Bounty goal)]  docs/spec-domain-reference.md:324
+       ### BountyGoalTemplate
+ok   classes.ScavengeGoalTemplate  [Collect items (Scavenge goal)]  docs/spec-domain-reference.md:328
+       ### ScavengeGoalTemplate
+ok   classes.AchieveRankGoalTemplate  [Reach a rank (Achieve Rank goal)]  docs/spec-domain-reference.md:332
+       ### AchieveRankGoalTemplate
+ok   classes.ResDropTable  [Reward: drop table]  docs/spec-domain-reference.md:358
+       ### ResDropTable
+ok   classes.ResModifyEntry  [Modify quest registry entry]  docs/spec-domain-reference.md:362
+       ### ResModifyEntry
+ok   classes.ResAddDynaMod  [Add or remove dynamic modifier]  docs/spec-domain-reference.md:366
+       ### ResAddDynaMod
+ok   classes.ResLearnSpell  [Teach spell]  docs/spec-domain-reference.md:370
+       ### ResLearnSpell
+ok   classes.ResPostEvent  [Post game event]  docs/spec-domain-reference.md:374
+       ### ResPostEvent
+ok   classes.ResAddHealth  [Restore health]  docs/spec-domain-reference.md:378
+       ### ResAddHealth
+ok   classes.ResAddMana  [Restore mana]  docs/spec-domain-reference.md:381
+       ### ResAddMana
+ok   classes.ResAddSpell  [Add spell to spellbook]  docs/spec-domain-reference.md:384
+       ### ResAddSpell
+ok   classes.ResDespawn  [Despawn NPC or object]  docs/spec-domain-reference.md:388
+       ### ResDespawn
+ok   classes.ResDrawHand  [Draw hand]  docs/spec-domain-reference.md:392
+       ### ResDrawHand
+ok   classes.ResGiveSpell  [Give spell to NPC]  docs/spec-domain-reference.md:396
+       ### ResGiveSpell
+ok   classes.ResPlaySound  [Play sound]  docs/spec-domain-reference.md:400
+       ### ResPlaySound
+ok   classes.ResTeleport  [Teleport player]  docs/spec-domain-reference.md:404
+       ### ResTeleport
+ok   classes.ResWait  [Wait]  docs/spec-domain-reference.md:408
+       ### ResWait
+ok   classes.ResActorDialog  [Actor dialog result]  shared/quest/typeConstants.ts:96
+       ResActorDialog: 'Imcodec.ObjectProperty.TypeCache.ResActorDialog, Imcodec.ObjectProperty',
+ok   classes.ReqHasQuest  [Requires quest]  docs/spec-domain-reference.md:420
+       ### ReqHasQuest
+ok   classes.ReqHasEntry  [Requires quest registry entry]  docs/spec-domain-reference.md:424
+       ### ReqHasEntry
+ok   classes.ReqSchoolOfFocus  [Requires school of focus]  docs/spec-domain-reference.md:428
+       ### ReqSchoolOfFocus
+ok   classes.ReqIsSchool  [Requires target school]  docs/spec-domain-reference.md:432
+       ### ReqIsSchool
+ok   classes.RequirementList  [Requirement group]  docs/spec-domain-reference.md:440
+       The RequirementList wrapper adds: `m_requirements` (array of nested requirements), enabling recursive AND/OR trees.
+ok   classes.ActorDialogList  [Dialog list]  docs/spec-domain-reference.md:263
+       | `m_dialogList` | ActorDialogList? | Dialog tree for quest giver |
+ok   classes.NPCDialogEntry  [Dialog entry]  docs/spec-domain-reference.md:444
+       ## NPCDialogEntry — Complete Field List
+ok   classes.ActorDialog  [Actor dialog block]  shared/quest/typeConstants.ts:120
+       ActorDialog: 'Imcodec.ObjectProperty.TypeCache.ActorDialog, Imcodec.ObjectProperty',
+ok   classes.MadlibArgT_ByteString  [Madlib argument (byte string)]  shared/quest/typeConstants.ts:121
+       MadlibArgT_ByteString:
+ok   groups.Basic  [Basic]  docs/spec-ui-design.md:719
+       │  │  [Basic] [Camera] [Sound] [Animation] [Advanced]     │ │
+ok   groups.Camera  [Camera]  docs/spec-ui-design.md:719
+       │  │  [Basic] [Camera] [Sound] [Animation] [Advanced]     │ │
+ok   groups.Sound  [Sound]  docs/spec-ui-design.md:719
+       │  │  [Basic] [Camera] [Sound] [Animation] [Advanced]     │ │
+ok   groups.Animation  [Animation]  docs/spec-ui-design.md:719
+       │  │  [Basic] [Camera] [Sound] [Animation] [Advanced]     │ │
+ok   groups.Advanced  [Advanced]  docs/spec-ui-design.md:719
+       │  │  [Basic] [Camera] [Sound] [Animation] [Advanced]     │ │
+ok   groups.Duration & Timing  [Duration & Timing]  docs/spec-domain-reference.md:483
+       ### Duration & Timing
+ok   groups.Walk-Away  [Walk-Away]  docs/spec-domain-reference.md:491
+       ### Walk-Away
+ok   groups.Audio  [Audio]  docs/spec-domain-reference.md:498
+       ### Audio
+ok   groups.Animation & NPC  [Animation & NPC]  docs/spec-domain-reference.md:510
+       ### Animation & NPC
+ok   groups.UI Controls  [UI Controls]  docs/spec-domain-reference.md:519
+       ### UI Controls
+ok   enums.ActivityType.ACTIVITY_NotActivity  [Not an activity]  docs/spec-domain-reference.md:236
+       "m_activityType": "ACTIVITY_NotActivity"
+ok   enums.ActivityType.ACTIVITY_Spell  [Spell activity]  Imlight/submodule/Imcodec/src/Imcodec.ObjectProperty/obj/Debug/net10.0/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ClientPropertyClassSourceGenerator/ActivityType.g.cs:32
+       ACTIVITY_Spell = 1,
+ok   enums.ActivityType.ACTIVITY_Crafting  [Crafting activity]  Imlight/submodule/Imcodec/src/Imcodec.ObjectProperty/obj/Debug/net10.0/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ClientPropertyClassSourceGenerator/ActivityType.g.cs:28
+       ACTIVITY_Crafting = 2,
+ok   enums.ActivityType.ACTIVITY_Fishing  [Fishing activity]  Imlight/submodule/Imcodec/src/Imcodec.ObjectProperty/obj/Debug/net10.0/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ClientPropertyClassSourceGenerator/ActivityType.g.cs:29
+       ACTIVITY_Fishing = 3,
+ok   enums.ActivityType.ACTIVITY_Gardening  [Gardening activity]  Imlight/submodule/Imcodec/src/Imcodec.ObjectProperty/obj/Debug/net10.0/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ClientPropertyClassSourceGenerator/ActivityType.g.cs:30
+       ACTIVITY_Gardening = 4,
+ok   enums.ActivityType.ACTIVITY_Pet  [Pet activity]  Imlight/submodule/Imcodec/src/Imcodec.ObjectProperty/obj/Debug/net10.0/generated/Imcodec.ObjectProperty.CodeGen/Imcodec.ObjectProperty.CodeGen.ClientPropertyClassSourceGenerator/ActivityType.g.cs:31
+       ACTIVITY_Pet = 5,
+ok   enums.GoalType.GOAL_TYPE_PERSONA  [Persona]  Imlight/src/Imlight.CoreLib/Game/Services/QuestService.cs:167
+       if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_PERSONA) {
+ok   enums.GoalType.GOAL_TYPE_WAYPOINT  [Waypoint]  Imlight/src/Imlight.CoreLib/Game/Services/QuestService.cs:282
+       if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_WAYPOINT) {
+ok   enums.GoalType.GOAL_TYPE_BOUNTYCOLLECT  [Bounty collect]  Imlight/src/Imlight.CoreLib/Game/Services/QuestService.cs:346
+       || gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT);
+ok   enums.GoalType.GOAL_TYPE_SCAVENGE  [Scavenge]  Imlight/submodule/Imcodec/test/CodeGen/Inputs/r756936_WizardDev.json:93073
+       "GOAL_TYPE_SCAVENGE": 3,
+ok   enums.GoalType.GOAL_TYPE_ACHIEVERANK  [Achieve rank]  Imlight/submodule/Imcodec/test/CodeGen/Inputs/r756936_WizardDev.json:93077
+       "GOAL_TYPE_ACHIEVERANK": 7,
+ok   enums.GoalType.GOAL_TYPE_BOUNTY  [Bounty]  Imlight/src/Imlight.CoreLib/Game/Services/QuestService.cs:345
+       .Where(gTemplate => gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY
+ok   enums.GoalType.GOAL_TYPE_USAGE  [Usage]  Imlight/src/Imlight.CoreLib/Game/Services/QuestService.cs:221
+       if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE) {
+ok   enums.BountyType.BT_MOB_KILL  [Kill mobs]  docs/spec-domain-reference.md:326
+       Type-specific fields: `m_npcAdjectives` (string[]), `m_bountyTotal` (int), `m_bountyType` (string, e.g. "BT_MOB_KILL"), `m_tallyCounter` (object)
+ok   enums.RequirementOperator.ROP_AND  [AND]  docs/spec-domain-reference.md:422
+       Fields: `m_questName` (string, quest dropdown), `m_applyNOT` (bool), `m_operator` (enum: ROP_AND/ROP_OR)
+ok   enums.RequirementOperator.ROP_OR  [OR]  docs/spec-domain-reference.md:422
+       Fields: `m_questName` (string, quest dropdown), `m_applyNOT` (bool), `m_operator` (enum: ROP_AND/ROP_OR)
+ok   enums.RoutingType.ROUTING_ACTOR  [Route from the actor]  client/src/lib/quest-results.ts:51
+       *   `{"m_locX":0,"m_locY":0,"m_locZ":0,"m_routingType":"ROUTING_ACTOR","m_useLocation":false,"m_useTriggerLocation":false}`.
+ok   enums.TeleportType.TELEPORT_STATIC  [Static teleport]  docs/spec-domain-reference.md:297
+       "m_teleportType": "TELEPORT_STATIC",
+ok   enums.TargetType.RT_Caster  [Caster]  docs/spec-domain-reference.md:434
+       Fields: `m_magicSchoolName` (enum), `m_targetType` (string enum, e.g. "RT_Caster"), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Fire  [Fire]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Ice  [Ice]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Storm  [Storm]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Balance  [Balance]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Life  [Life]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Death  [Death]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+ok   enums.MagicSchool.Myth  [Myth]  docs/spec-domain-reference.md:430
+       Fields: `m_magicSchool` (enum: Fire/Ice/Storm/Balance/Life/Death/Myth), `m_applyNOT` (bool), `m_operator` (enum)
+
+248 entries, 248 cite a line that names the term, 0 do not.
