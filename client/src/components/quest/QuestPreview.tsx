@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useId, useState, type ReactNode } from 'react';
 
+import type { TermRef } from '@shared/glossary';
+
 import type { QuestObject } from '../../lib/api';
 import {
   goalCount,
@@ -9,7 +11,9 @@ import {
   type PreviewTab,
 } from '../../lib/extract';
 import { nextTabIndex } from '../../lib/tablist';
+import { termText, valueTermOf } from '../../lib/term';
 import { cn } from '../../lib/utils';
+import TermLabel from '../TermLabel';
 import { Badge } from '../ui/badge';
 
 /**
@@ -180,8 +184,8 @@ function renderPanel(
 }
 
 function InfoPanel({ quest }: { quest: QuestObject }): JSX.Element {
-  const fields: Array<[string, string]> = [
-    ['m_goals (count)', String(goalCount(quest))],
+  const fields: FieldRow[] = [
+    ['m_goals', String(goalCount(quest)), '(count)'],
     ...primitiveFields(quest),
   ];
   return (
@@ -214,8 +218,19 @@ function GoalsPanel({ quest }: { quest: QuestObject }): JSX.Element {
 }
 
 function GoalTypeBadge({ goal }: { goal: unknown }): JSX.Element | null {
-  const type = shortTypeName(fieldText(goal, '$type')) ?? fieldText(goal, 'm_goalType');
-  return type === null ? null : <Badge variant="outline">{type}</Badge>;
+  const typeString = fieldText(goal, '$type');
+  const goalType = fieldText(goal, 'm_goalType');
+  const term: TermRef | null =
+    typeString !== null && shortTypeName(typeString) !== null
+      ? { type: typeString }
+      : goalType === null
+        ? null
+        : { enum: 'GoalType', value: goalType };
+  return term === null ? null : (
+    <Badge variant="outline">
+      <TermLabel term={term} />
+    </Badge>
+  );
 }
 
 function GoalLogicPanel({ quest }: { quest: QuestObject }): JSX.Element {
@@ -247,9 +262,9 @@ function RequirementsPanel({ quest }: { quest: QuestObject }): JSX.Element {
         Read-only JSON — this preview is the extraction page's; the structured requirement tree is
         edited in the Requirements tab of the quest detail page.
       </p>
-      <JsonBlock label="m_requirements" value={quest.m_requirements} />
-      <JsonBlock label="m_prepRequirements" value={quest.m_prepRequirements} />
-      <JsonBlock label="m_pruneRequirements" value={quest.m_pruneRequirements} />
+      <JsonBlock fieldKey="m_requirements" value={quest.m_requirements} />
+      <JsonBlock fieldKey="m_prepRequirements" value={quest.m_prepRequirements} />
+      <JsonBlock fieldKey="m_pruneRequirements" value={quest.m_pruneRequirements} />
     </section>
   );
 }
@@ -267,14 +282,19 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
           {endResults.map((result, index) => (
             <li key={index}>
               <Badge variant="secondary">
-                {shortTypeName(nested(result, '$type')) ?? `Result ${index + 1}`}
+                {typeof nested(result, '$type') === 'string' &&
+                shortTypeName(nested(result, '$type')) !== null ? (
+                  <TermLabel term={{ type: nested(result, '$type') as string }} />
+                ) : (
+                  `Result ${index + 1}`
+                )}
               </Badge>
             </li>
           ))}
         </ul>
       ) : null}
-      <JsonBlock label="m_startResults" value={quest.m_startResults} />
-      <JsonBlock label="m_endResults" value={quest.m_endResults} />
+      <JsonBlock fieldKey="m_startResults" value={quest.m_startResults} />
+      <JsonBlock fieldKey="m_endResults" value={quest.m_endResults} />
     </section>
   );
 }
@@ -286,7 +306,7 @@ function DialogPanel({ quest }: { quest: QuestObject }): JSX.Element {
         Read-only JSON — this preview is the extraction page’s; the structured dialog editor is in
         the Dialog tab of the quest detail page.
       </p>
-      <JsonBlock label="m_dialogList" value={quest.m_dialogList} />
+      <JsonBlock fieldKey="m_dialogList" value={quest.m_dialogList} />
     </section>
   );
 }
@@ -295,30 +315,47 @@ function Empty({ text }: { text: string }): JSX.Element {
   return <p className="text-sm text-zinc-400">{text}</p>;
 }
 
-/** A definition list of primitive fields; never renders `[object Object]`. */
-function FieldList({ fields }: { fields: Array<[string, string]> }): JSX.Element {
+/** One row of a {@link FieldList}: the document key, its display value and an optional note. */
+type FieldRow = [key: string, value: string, note?: string];
+
+/**
+ * A definition list of primitive fields; never renders `[object Object]`. Each key renders as its
+ * glossary pair (task 7.9), and so does a value that is a class or an enum literal.
+ */
+function FieldList({ fields }: { fields: FieldRow[] }): JSX.Element {
   if (fields.length === 0) {
     return <p className="text-sm text-zinc-400">No scalar fields.</p>;
   }
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-      {fields.map(([key, value]) => (
-        <div key={key} className="min-w-0">
-          <dt className="font-mono text-xs text-zinc-400">{key}</dt>
-          <dd className="truncate text-sm text-zinc-200" title={value}>
-            {value}
-          </dd>
-        </div>
-      ))}
+      {fields.map(([key, value, note]) => {
+        const term = valueTermOf(key, value);
+        return (
+          <div key={key} className="min-w-0">
+            <dt className="text-xs text-zinc-400">
+              <TermLabel term={{ field: key }} />
+              {note === undefined ? null : ` ${note}`}
+            </dt>
+            <dd
+              className="truncate text-sm text-zinc-200"
+              title={term === null ? value : termText(term)}
+            >
+              {term === null ? value : <TermLabel term={term} />}
+            </dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }
 
 /** A labelled read-only JSON block — the honest fallback for the Phase 3 editors. */
-function JsonBlock({ label, value }: { label: string; value: unknown }): JSX.Element {
+function JsonBlock({ fieldKey, value }: { fieldKey: string; value: unknown }): JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="mb-1 font-mono text-xs text-zinc-400">{label}</p>
+      <p className="mb-1 text-xs text-zinc-400">
+        <TermLabel term={{ field: fieldKey }} />
+      </p>
       <pre className="max-h-72 overflow-auto rounded-md border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-300">
         {value === undefined ? 'undefined' : JSON.stringify(value, null, 2)}
       </pre>

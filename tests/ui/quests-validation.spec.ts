@@ -246,7 +246,7 @@ test.describe('AC1 — a dangling m_startGoals reference blocks the save', () =>
     await expandCard(secondCard);
     // `exact` on purpose: `getByLabel('m_goalName')` is a substring match and also resolves
     // the neighbouring `m_goalNameID` control.
-    const nameInput = secondCard.getByLabel('m_goalName', { exact: true });
+    const nameInput = secondCard.getByLabel('Goal Name (m_goalName)', { exact: true });
     await nameInput.fill('1_Start');
 
     const message = fieldMessages(page, 'm_goals[1].m_goalName');

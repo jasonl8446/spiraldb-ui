@@ -290,12 +290,18 @@ describe('EvidencePanel — the visible surfaces', () => {
     const { html } = render();
     // The available row writes the focused field…
     expect(html).toContain('aria-label="Insert WizQst17318F_00000006"');
-    expect(html).toContain('→ m_goals[2].m_goalText');
+    // The target is named by its glossary pair and its place in words (task 7.9); the path itself
+    // survives only in `data-path`.
+    expect(html).toMatch(
+      /→ <span data-path="m_goals\[2\]\.m_goalText"><span data-term="m_goalText">Goal text \(<span[^>]*>m_goalText<\/span>\)<\/span> in Goals 3<\/span>/,
+    );
     expect(html).toContain('Insert into');
     // …while the used row writes the field it already fills (its own provenance), even though a
     // different field is focused: the row's label is its own path, not the focus.
     expect(html).toContain('aria-label="Insert WizQst17318E_00000006"');
-    expect(html).toContain('→ m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog');
+    expect(html).toMatch(
+      /→ <span data-path="m_dialogList\.m_dialogs\[0\]\.m_dialogEntries\[0\]\.m_dialog"><span data-term="m_dialog">Dialog text \(<span[^>]*>m_dialog<\/span>\)<\/span> in Dialog list › Dialog blocks 1 › Dialog entries 1<\/span>/,
+    );
   });
 
   it('renders no button and states the reason when nothing is focused', () => {

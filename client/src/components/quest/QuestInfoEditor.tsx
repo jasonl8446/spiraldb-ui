@@ -28,6 +28,7 @@ import {
 } from '../../lib/quest-info';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { cn } from '../../lib/utils';
+import TermLabel from '../TermLabel';
 
 /**
  * `QuestInfoEditor` — the Info tab's editor (plan task 3.3, story p3-03;
@@ -124,8 +125,8 @@ function FieldEditor({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {field.key}
+      <label htmlFor={id} className="text-xs text-zinc-400">
+        <TermLabel term={{ field: field.key }} />
       </label>
       <FieldControl
         field={field}

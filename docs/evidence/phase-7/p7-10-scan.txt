@@ -1,0 +1,97 @@
+$ npm run test:ui -- tests/ui/p7-label-scan.spec.ts --reporter=line   (D17 clone data/test-spiraldb, harness server)
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/p7-label-scan.spec.ts --reporter=line
+
+
+
+
+
+
+
+
+
+
+
+
+Running 9 tests using 1 worker
+
+[1/9] [chromium] › tests/ui/p7-label-scan.spec.ts:249:3 › p7-10 label scan — no bare technical term outside [data-term] › the term lists come from the glossary, with the D135 allowlist computed
+[chromium] › tests/ui/p7-label-scan.spec.ts:249:3 › p7-10 label scan — no bare technical term outside [data-term] › the term lists come from the glossary, with the D135 allowlist computed
+scanned terms: 261; D135 allowlist: Fire, Ice, Storm, Balance, Life, Death, Myth
+
+[2/9] [chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-CYCLOPS-MAIN-003: edit/Info: 22 [data-term]; edit/Goals: 43 [data-term]; edit/Goals#1: 63 [data-term]; edit/Goals#2: 64 [data-term]; edit/Goals#3: 62 [data-term]; edit/Goals#4: 64 [data-term]; edit/Goals#5: 64 [data-term]; edit/Goals#6: 64 [data-term]; edit/Goals#7: 62 [data-term]; edit/Goal Logic: 19 [data-term]; edit/Requirements: 12 [data-term]; edit/Results: 7 [data-term]; edit/Dialog: 218 [data-term]; view/Info: 20 [data-term]; view/Goals: 152 [data-term]; view/Goal Logic: 35 [data-term]; view/Requirements: 3 [data-term]; view/Results: 3 [data-term]; view/Dialog: 1 [data-term]
+
+WC-CYCLOPS-MAIN-003: 0 hit(s)
+
+
+[3/9] [chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-TUT-C05-001: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-TUT-C05-001: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-TUT-C05-001: edit/Info: 22 [data-term]; edit/Goals: 10 [data-term]; edit/Goals#1: 28 [data-term]; edit/Goals#2: 28 [data-term]; edit/Goals#3: 28 [data-term]; edit/Goals#4: 28 [data-term]; edit/Goals#5: 28 [data-term]; edit/Goal Logic: 10 [data-term] (empty state); edit/Requirements: 4 [data-term]; edit/Results: 46 [data-term]; edit/Dialog: 3 [data-term]; view/Info: 21 [data-term]; view/Goals: 100 [data-term]; view/Goal Logic: 0 [data-term] (empty state); view/Requirements: 3 [data-term]; view/Results: 3 [data-term]; view/Dialog: 1 [data-term]
+
+WC-TUT-C05-001: 0 hit(s)
+
+
+[4/9] [chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-COMMONS-MAIN-001: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-COMMONS-MAIN-001: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-COMMONS-MAIN-001: edit/Info: 22 [data-term]; edit/Goals: 11 [data-term]; edit/Goals#1: 32 [data-term]; edit/Goals#2: 30 [data-term]; edit/Goal Logic: 9 [data-term]; edit/Requirements: 4 [data-term]; edit/Results: 37 [data-term]; edit/Dialog: 863 [data-term]; view/Info: 20 [data-term]; view/Goals: 44 [data-term]; view/Goal Logic: 10 [data-term]; view/Requirements: 3 [data-term]; view/Results: 3 [data-term]; view/Dialog: 1 [data-term]
+
+WC-COMMONS-MAIN-001: 0 hit(s)
+
+
+[5/9] [chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-COMMONS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-COMMONS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-COMMONS-MAIN-003: edit/Info: 22 [data-term]; edit/Goals: 5 [data-term]; edit/Goals#1: 24 [data-term]; edit/Goal Logic: 7 [data-term]; edit/Requirements: 12 [data-term]; edit/Results: 7 [data-term]; edit/Dialog: 431 [data-term]; view/Info: 20 [data-term]; view/Goals: 21 [data-term]; view/Goal Logic: 5 [data-term]; view/Requirements: 3 [data-term]; view/Results: 3 [data-term]; view/Dialog: 1 [data-term]
+
+WC-COMMONS-MAIN-003: 0 hit(s)
+
+
+[6/9] [chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › Tutorial_Intro: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › Tutorial_Intro: every tab, edit and view mode, and the Evidence "Insert into" line
+Tutorial_Intro: edit/Info: 22 [data-term]; edit/Goals: 2 [data-term]; edit/Goals#1: 20 [data-term]; edit/Goal Logic: 2 [data-term] (empty state); edit/Requirements: 4 [data-term]; edit/Results: 62 [data-term]; edit/Dialog: 3 [data-term]; view/Info: 21 [data-term]; view/Goals: 20 [data-term]; view/Goal Logic: 0 [data-term] (empty state); view/Requirements: 3 [data-term]; view/Results: 2 [data-term]; view/Dialog: 1 [data-term]
+
+Tutorial_Intro: 0 hit(s)
+
+
+[7/9] [chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-UNICORN-MAIN-004: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:257:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-UNICORN-MAIN-004: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-UNICORN-MAIN-004: edit/Info: 22 [data-term]; edit/Goals: 34 [data-term]; edit/Goals#1: 53 [data-term]; edit/Goals#2: 53 [data-term]; edit/Goals#3: 53 [data-term]; edit/Goals#4: 53 [data-term]; edit/Goals#5: 54 [data-term]; edit/Goals#6: 55 [data-term]; edit/Goals#7: 53 [data-term]; edit/Goal Logic: 14 [data-term] (empty state); edit/Requirements: 4 [data-term]; edit/Results: 4 [data-term]; edit/Dialog: 574 [data-term]; view/Info: 18 [data-term]; view/Goals: 131 [data-term]; view/Goal Logic: 0 [data-term] (empty state); view/Requirements: 3 [data-term]; view/Results: 2 [data-term]; view/Dialog: 1 [data-term]
+
+WC-UNICORN-MAIN-004: 0 hit(s)
+
+
+[8/9] [chromium] › tests/ui/p7-label-scan.spec.ts:306:5 › p7-10 label pairs at 375px › WC-CYCLOPS-MAIN-003: no tab overflows horizontally
+[chromium] › tests/ui/p7-label-scan.spec.ts:306:5 › p7-10 label pairs at 375px › WC-CYCLOPS-MAIN-003: no tab overflows horizontally
+WC-CYCLOPS-MAIN-003 @375px
+edit/Info: scrollWidth 375 / clientWidth 375, 22 [data-term], 0 past the edge
+edit/Goals: scrollWidth 375 / clientWidth 375, 63 [data-term], 0 past the edge
+edit/Goal Logic: scrollWidth 375 / clientWidth 375, 14 [data-term], 0 past the edge
+edit/Requirements: scrollWidth 375 / clientWidth 375, 12 [data-term], 0 past the edge
+edit/Results: scrollWidth 375 / clientWidth 375, 7 [data-term], 0 past the edge
+edit/Dialog: scrollWidth 375 / clientWidth 375, 218 [data-term], 0 past the edge
+view/Info: scrollWidth 375 / clientWidth 375, 20 [data-term], 0 past the edge
+view/Goals: scrollWidth 375 / clientWidth 375, 152 [data-term], 0 past the edge
+view/Goal Logic: scrollWidth 375 / clientWidth 375, 35 [data-term], 0 past the edge
+view/Requirements: scrollWidth 375 / clientWidth 375, 3 [data-term], 0 past the edge
+view/Results: scrollWidth 375 / clientWidth 375, 3 [data-term], 0 past the edge
+view/Dialog: scrollWidth 375 / clientWidth 375, 1 [data-term], 0 past the edge
+
+[9/9] [chromium] › tests/ui/p7-label-scan.spec.ts:306:5 › p7-10 label pairs at 375px › WC-COMMONS-MAIN-001: no tab overflows horizontally
+[chromium] › tests/ui/p7-label-scan.spec.ts:306:5 › p7-10 label pairs at 375px › WC-COMMONS-MAIN-001: no tab overflows horizontally
+WC-COMMONS-MAIN-001 @375px
+edit/Info: scrollWidth 375 / clientWidth 375, 22 [data-term], 0 past the edge
+edit/Goals: scrollWidth 375 / clientWidth 375, 32 [data-term], 0 past the edge
+edit/Goal Logic: scrollWidth 375 / clientWidth 375, 4 [data-term], 0 past the edge
+edit/Requirements: scrollWidth 375 / clientWidth 375, 4 [data-term], 0 past the edge
+edit/Results: scrollWidth 375 / clientWidth 375, 37 [data-term], 0 past the edge
+edit/Dialog: scrollWidth 375 / clientWidth 375, 863 [data-term], 0 past the edge
+view/Info: scrollWidth 375 / clientWidth 375, 20 [data-term], 0 past the edge
+view/Goals: scrollWidth 375 / clientWidth 375, 44 [data-term], 0 past the edge
+view/Goal Logic: scrollWidth 375 / clientWidth 375, 10 [data-term], 0 past the edge
+view/Requirements: scrollWidth 375 / clientWidth 375, 3 [data-term], 0 past the edge
+view/Results: scrollWidth 375 / clientWidth 375, 3 [data-term], 0 past the edge
+view/Dialog: scrollWidth 375 / clientWidth 375, 1 [data-term], 0 past the edge
+
+  9 passed (23.4s)

@@ -9,6 +9,7 @@ import {
   TALLY_RESULTS_PATH,
 } from '../../lib/quest-results';
 import ResultListEditor from '../shared/ResultListEditor';
+import TermLabel from '../TermLabel';
 
 /**
  * `QuestResultsEditor` — the Results tab's body (plan task 3.7, story p3-07;
@@ -97,8 +98,12 @@ export default function QuestResultsEditor({ state }: QuestResultsEditorProps): 
 
       <section aria-label={GOAL_RESULTS_SECTION_LABEL} className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-xs text-zinc-400">
-            {`m_goals[].${COMPLETE_RESULTS_PATH} / m_goals[].${ACTIVATE_RESULTS_PATH}`}
+          <h2
+            className="text-xs text-zinc-400"
+            data-path={`m_goals[].${COMPLETE_RESULTS_PATH} / m_goals[].${ACTIVATE_RESULTS_PATH}`}
+          >
+            <TermLabel term={{ field: COMPLETE_RESULTS_PATH }} /> /{' '}
+            <TermLabel term={{ field: ACTIVATE_RESULTS_PATH }} />
           </h2>
           <p className="text-xs text-zinc-400">{GOAL_RESULTS_NOTE}</p>
         </div>
@@ -162,7 +167,9 @@ function Slot({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
-        <h2 className="font-mono text-xs text-zinc-400">{fieldKey}</h2>
+        <h2 className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </h2>
         <p className="text-xs text-zinc-400">{note}</p>
       </div>
       <ResultListEditor state={state} path={path} label={label} />

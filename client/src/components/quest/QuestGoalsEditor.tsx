@@ -29,6 +29,7 @@ import {
   GOALS_EDITOR_LABEL,
   GOALS_PATH,
   GOAL_EDITABLE_BASE_FIELDS,
+  GOAL_SUMMARY_EMPTY_TEXT,
   GOAL_TYPE_SPECS,
   NO_GOALS_TEXT,
   RAW_FIELDS_LABEL,
@@ -48,11 +49,11 @@ import {
   goalScalarText,
   goalSelectOptions,
   goalSelectValue,
-  goalShortTypeName,
   goalSummaryLines,
   goalTagsFieldEdit,
   goalTextFieldEdit,
   goalTypeFields,
+  goalTypeTerm,
   isStartGoal,
   moveGoalEdits,
   npcNameSuggestions,
@@ -60,7 +61,9 @@ import {
   toggleStartGoalEdits,
   unmodelledGoalKeys,
   type GoalFieldSpec,
+  type GoalSelectOption,
   type GoalShortTypeName,
+  type GoalSummaryLine,
 } from '../../lib/quest-goals';
 import {
   FieldMessages,
@@ -71,7 +74,9 @@ import {
 } from '../shared/FieldValidation';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { prefersReducedMotion } from '../../lib/reduced-motion';
+import { fieldValueText, termText, valueTermOf } from '../../lib/term';
 import { cn } from '../../lib/utils';
+import TermLabel from '../TermLabel';
 import { useEvidenceCardFocus, useEvidenceFieldFocus } from './EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Badge } from '../ui/badge';
@@ -211,11 +216,13 @@ function StartGoalsValidation(): JSX.Element | null {
   return (
     <div
       role="group"
-      aria-label={START_GOALS_PATH}
+      aria-label={termText({ field: START_GOALS_PATH })}
       data-testid="start-goals-validation"
       className="flex flex-col gap-1 rounded-md border border-red-500/60 bg-red-950/20 p-2"
     >
-      <p className="font-mono text-xs text-red-300">{START_GOALS_PATH}</p>
+      <p className="text-xs text-red-300">
+        <TermLabel term={{ field: START_GOALS_PATH }} />
+      </p>
       <FieldMessages messages={messages} />
     </div>
   );
@@ -298,7 +305,7 @@ function GoalCard({
           <span className="font-mono text-sm text-zinc-100">{name ?? `Goal ${index + 1}`}</span>
 
           <Badge variant="outline" className={goalBadgeClass(goal)}>
-            {goalShortTypeName(goal)}
+            <TermLabel term={goalTypeTerm(goal)} />
           </Badge>
           {start ? <Badge variant="success">{START_GOAL_BADGE_LABEL}</Badge> : null}
 
@@ -357,14 +364,27 @@ function GoalSummary({ goal }: { goal: unknown }): JSX.Element | null {
   return (
     <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
       {lines.map((line) => (
-        <div key={line.label} className="flex min-w-0 gap-2">
-          <dt className="shrink-0 text-zinc-400">{line.label}:</dt>
-          <dd className="truncate text-zinc-300" title={line.value}>
-            {line.value}
-          </dd>
+        <div key={line.key} className="flex min-w-0 gap-2">
+          <dt className="shrink-0 text-zinc-400">
+            <TermLabel term={{ field: line.key }} />:
+          </dt>
+          <SummaryValue line={line} />
         </div>
       ))}
     </dl>
+  );
+}
+
+/**
+ * A summary line's value: an enum literal (`BT_MOB_KILL`) as its glossary pair (task 7.9), any
+ * other value as itself.
+ */
+function SummaryValue({ line }: { line: GoalSummaryLine }): JSX.Element {
+  const term = line.value === GOAL_SUMMARY_EMPTY_TEXT ? null : valueTermOf(line.key, line.value);
+  return (
+    <dd className="truncate text-zinc-300" title={term === null ? line.value : termText(term)}>
+      {term === null ? line.value : <TermLabel term={term} />}
+    </dd>
   );
 }
 
@@ -404,7 +424,7 @@ function GoalEditPanel({
   );
 }
 
-/** One field: its raw-key label, its control and its one-line help. */
+/** One field: its glossary-pair label (task 7.9), its control and its one-line help. */
 function GoalFieldControl({
   index,
   field,
@@ -442,8 +462,8 @@ function GoalFieldControl({
     const id = `${GOALS_PATH}-${index}-${field.key}`;
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-          {field.key}
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
         </label>
         <select
           id={id}
@@ -456,7 +476,7 @@ function GoalFieldControl({
         >
           {goalSelectOptions(value, field.options ?? []).map((option) => (
             <option key={option.value} value={option.value}>
-              {option.unlisted ? `${option.label} (unlisted)` : option.label}
+              {goalOptionText(field.key, option)}
             </option>
           ))}
         </select>
@@ -468,7 +488,9 @@ function GoalFieldControl({
   if (field.kind === 'zone') {
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+        <span className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </span>
         {/*
           FriendlyNameDropdown reads/writes the `zones` table's `zone_path`. Measured:
           only 112 of the 149 distinct zone paths the corpus references exist in that
@@ -480,7 +502,7 @@ function GoalFieldControl({
         <FriendlyNameDropdown
           type="zones"
           name={`${GOALS_PATH}-${index}-${field.key}`}
-          aria-label={field.key}
+          aria-label={termText({ field: field.key })}
           value={typeof value === 'string' ? value : null}
           allowEmpty
           invalid={ariaInvalid}
@@ -508,8 +530,8 @@ function GoalFieldControl({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {field.key}
+      <label htmlFor={id} className="text-xs text-zinc-400">
+        <TermLabel term={{ field: field.key }} />
       </label>
       {field.kind === 'boolean' ? (
         <input
@@ -628,8 +650,8 @@ function NpcNameField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {field.key}
+      <label htmlFor={id} className="text-xs text-zinc-400">
+        <TermLabel term={{ field: field.key }} />
       </label>
       <input
         id={id}
@@ -755,7 +777,7 @@ function AddGoalControl({
         >
           {GOAL_TYPE_SPECS.map((spec) => (
             <option key={spec.shortName} value={spec.shortName}>
-              {spec.shortName}
+              {termText({ type: spec.$type })}
             </option>
           ))}
         </select>
@@ -769,6 +791,12 @@ function AddGoalControl({
 }
 
 /* -------------------------------------------------------------- helpers */
+
+/** A select option's text: an enum value as its glossary pair, an unlisted one marked so. */
+function goalOptionText(fieldKey: string, option: GoalSelectOption): string {
+  const text = option.value === '' ? option.label : fieldValueText(fieldKey, option.value);
+  return option.unlisted ? `${text} (unlisted)` : text;
+}
 
 /** `value` as an array, or `[]` (an absent `m_goals` is not an array). */
 function arrayOf(value: unknown): unknown[] {

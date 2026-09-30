@@ -197,12 +197,27 @@ function prepTree(page: Page): Locator {
 }
 
 /**
- * A card by its **full** accessible name. `exact` everywhere on purpose: `Group
- * m_requirements` is a substring of `Group m_requirements[1]`, and every `Add`/`Delete`
- * label ends with its address, so substring matching would be ambiguous.
+ * A card's title: `Group`, or a class's glossary pair (task 7.9) — the leading words of the card's
+ * accessible name.
+ */
+const CARD_TITLES: Record<string, string> = {
+  Group: 'Group',
+  ReqHasQuest: 'Requires quest (ReqHasQuest)',
+  ReqHasEntry: 'Requires quest registry entry (ReqHasEntry)',
+  ReqSchoolOfFocus: 'Requires school of focus (ReqSchoolOfFocus)',
+  ReqIsSchool: 'Requires target school (ReqIsSchool)',
+};
+
+/**
+ * A card by its **exact** document address and its title. The address is the card's `data-path`
+ * (task 7.9: a path never appears in a label; the accessible name reads it in words), matched
+ * whole, so `m_requirements` cannot match `m_requirements[1]`; the title is the accessible name's
+ * leading words, so a card of another class at that address does not match either.
  */
 function card(page: Page, title: string, address: string): Locator {
-  return tree(page).getByRole('article', { name: `${title} ${address}`, exact: true });
+  return tree(page).locator(
+    `article[data-path="${address}"][aria-label^="${CARD_TITLES[title] ?? title} "]`,
+  );
 }
 
 /** A group card. */
@@ -215,12 +230,15 @@ function groupCard(page: Page, address: string): Locator {
  * needs, because changing a leaf's class renames its card.
  */
 function cardByAddress(page: Page, address: string): Locator {
-  return tree(page).locator(`article[aria-label$=" ${address}"]`);
+  return tree(page).locator(`article[data-path="${address}"]`);
 }
 
-/** An `Add Condition` / `Add Group` / `Delete` control, located inside {@link scope}. */
+/**
+ * An `Add Condition` / `Add Group` / `Delete` / `AND` / `OR` control, located inside {@link scope}
+ * by its exact `data-path` and the verb its accessible name starts with.
+ */
 function control(scope: Locator, verb: string, address: string): Locator {
-  return scope.getByRole('button', { name: `${verb} ${address}`, exact: true });
+  return scope.locator(`button[data-path="${address}"][aria-label^="${verb} "]`);
 }
 
 /** The class's left-border colour assertion (spec-ui-design.md L388-416). */
@@ -313,13 +331,13 @@ async function openRequirements(
 
 /** Changes a leaf's class through its own type selector. */
 async function setType(page: Page, address: string, type: string): Promise<void> {
-  await cardByAddress(page, address).getByLabel('Type', { exact: true }).selectOption(type);
+  await cardByAddress(page, address).getByLabel('Type ($type)', { exact: true }).selectOption(type);
 }
 
 /** Selects a quest through the `m_questName` friendly-name dropdown. */
 async function setQuest(page: Page, address: string, questName: string): Promise<void> {
   await cardByAddress(page, address)
-    .getByRole('combobox', { name: `Quest ${address}`, exact: true })
+    .getByRole('combobox', { name: /^Quest \(m_questName\) / })
     .click();
   const search = page.getByRole('combobox', { name: 'Search quests', exact: true });
   await expect(search).toBeVisible();
@@ -346,32 +364,28 @@ async function buildAc1Tree(page: Page): Promise<void> {
   await control(tree(page), 'Add Condition to', root).click();
   await expect(card(page, 'ReqHasQuest', rootLeaf)).toBeVisible();
   await setQuest(page, rootLeaf, REFERENCED_QUEST);
-  await card(page, 'ReqHasQuest', rootLeaf).getByLabel('NOT', { exact: true }).check();
+  await card(page, 'ReqHasQuest', rootLeaf).getByLabel('NOT (m_applyNOT)', { exact: true }).check();
 
   await control(tree(page), 'Add Group to', root).click();
   await expect(groupCard(page, innerGroup)).toBeVisible();
 
   await setType(page, innerFirst, 'ReqSchoolOfFocus');
   await card(page, 'ReqSchoolOfFocus', innerFirst)
-    .getByLabel('School', { exact: true })
+    .getByLabel('School (m_magicSchool)', { exact: true })
     .selectOption('Fire');
 
   await control(groupCard(page, innerGroup), 'Add Condition to', innerGroup).click();
   await setType(page, innerSecond, 'ReqHasEntry');
   await card(page, 'ReqHasEntry', innerSecond)
-    .getByLabel('Entry', { exact: true })
+    .getByLabel('Entry (m_entryName)', { exact: true })
     .fill('Complete');
   await setQuest(page, innerSecond, REFERENCED_QUEST);
 
-  await groupCard(page, innerGroup)
-    .getByRole('button', { name: `OR for ${innerGroup}`, exact: true })
-    .click();
-  await expect(
-    groupCard(page, innerGroup).getByRole('button', {
-      name: `OR for ${innerGroup}`,
-      exact: true,
-    }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await control(groupCard(page, innerGroup), 'OR for', innerGroup).click();
+  await expect(control(groupCard(page, innerGroup), 'OR for', innerGroup)).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -387,15 +401,15 @@ test.describe('the leaf type selector', () => {
     await openRequirements(page);
     await control(tree(page), 'Add Condition to', 'm_requirements').click();
 
-    const selector = card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('Type', {
+    const selector = card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('Type ($type)', {
       exact: true,
     });
     await expect(selector).toHaveValue('ReqHasQuest');
     expect(await selector.locator('option').allTextContents()).toEqual([
-      'ReqHasQuest',
-      'ReqHasEntry',
-      'ReqSchoolOfFocus',
-      'ReqIsSchool',
+      'Requires quest (ReqHasQuest)',
+      'Requires quest registry entry (ReqHasEntry)',
+      'Requires school of focus (ReqSchoolOfFocus)',
+      'Requires target school (ReqIsSchool)',
     ]);
 
     // Not just "unused": absent from the tab's text and from every option.
@@ -412,8 +426,10 @@ test.describe('the leaf type selector', () => {
 
     const leaf = card(page, 'ReqIsSchool', 'm_requirements[0]');
     await expect(leaf).toBeVisible();
-    await leaf.getByLabel('Target Type', { exact: true }).selectOption('RT_Caster');
-    await leaf.getByLabel('School Name', { exact: true }).selectOption('Balance');
+    await leaf.getByLabel('Target Type (m_targetType)', { exact: true }).selectOption('RT_Caster');
+    await leaf
+      .getByLabel('School Name (m_magicSchoolName)', { exact: true })
+      .selectOption('Balance');
 
     const doc = await copyPanelDocument(page);
     expect(rootChildren(doc)[0]).toEqual({
@@ -440,7 +456,7 @@ test.describe('the corpus’s own shapes', () => {
     await expectBorder(card(page, 'ReqSchoolOfFocus', 'm_requirements[0]'), 'border-l-green-500');
 
     await card(page, 'ReqSchoolOfFocus', 'm_requirements[0]')
-      .getByLabel('NOT', { exact: true })
+      .getByLabel('NOT (m_applyNOT)', { exact: true })
       .check();
 
     const doc = await copyPanelDocument(page);
@@ -511,18 +527,12 @@ test.describe('a control reaches the document', () => {
     await control(tree(page), 'Add Condition to', 'm_requirements').click();
 
     const leaf = card(page, 'ReqHasQuest', 'm_requirements[0]');
-    const not = leaf.getByLabel('NOT', { exact: true });
+    const not = leaf.getByLabel('NOT (m_applyNOT)', { exact: true });
     await expect(not).not.toBeChecked();
     await not.check();
 
-    const andButton = groupCard(page, 'm_requirements').getByRole('button', {
-      name: 'AND for m_requirements',
-      exact: true,
-    });
-    const orButton = groupCard(page, 'm_requirements').getByRole('button', {
-      name: 'OR for m_requirements',
-      exact: true,
-    });
+    const andButton = control(groupCard(page, 'm_requirements'), 'AND for', 'm_requirements');
+    const orButton = control(groupCard(page, 'm_requirements'), 'OR for', 'm_requirements');
     await expect(andButton).toHaveAttribute('aria-pressed', 'true');
     await expect(orButton).toHaveAttribute('aria-pressed', 'false');
     await orButton.click();
@@ -543,7 +553,7 @@ test.describe('a control reaches the document', () => {
     // The trigger shows the resolved title, the document the id (AGENTS.md rule 5).
     await expect(
       card(page, 'ReqHasQuest', 'm_requirements[0]').getByRole('combobox', {
-        name: 'Quest m_requirements[0]',
+        name: 'Quest (m_questName) Requirements 1',
         exact: true,
       }),
     ).toContainText(REFERENCED_TITLE);
@@ -605,15 +615,20 @@ test.describe('AC1 — the fixture-only AND(ReqHasQuest{NOT}, OR(...)) tree', ()
     await expect(card(page, 'ReqHasEntry', 'm_requirements[1][1]')).toBeVisible();
     await expectBorder(groupCard(page, 'm_requirements[1]'), 'border-l-purple-500');
     await expect(
-      card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('NOT', { exact: true }),
-    ).toBeChecked();
-    await expect(
-      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel('Quest Registry', {
+      card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('NOT (m_applyNOT)', {
         exact: true,
       }),
     ).toBeChecked();
     await expect(
-      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel('Display Name', {
+      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel(
+        'Quest Registry (m_isQuestRegistry)',
+        {
+          exact: true,
+        },
+      ),
+    ).toBeChecked();
+    await expect(
+      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel('Display Name (m_displayName)', {
         exact: true,
       }),
     ).toHaveValue('');

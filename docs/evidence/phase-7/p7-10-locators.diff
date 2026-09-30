@@ -1,0 +1,1649 @@
+diff --git a/tests/ui/drop-table-editor.spec.ts b/tests/ui/drop-table-editor.spec.ts
+index d6d2910..ca95a97 100644
+--- a/tests/ui/drop-table-editor.spec.ts
++++ b/tests/ui/drop-table-editor.spec.ts
+@@ -81,14 +81,22 @@ function itemTree(page: Page, item: number): ReturnType<Page['locator']> {
+   });
+ }
+ 
+-/** A tree card by its full accessible name (`ReqHasQuest Items[0].Requirements[0]`). */
++/** A requirement class's glossary pair (task 7.9) — the leading words of a tree card's name. */
++const CARD_TITLES: Record<string, string> = { ReqHasQuest: 'Requires quest (ReqHasQuest)' };
++
++/**
++ * A tree card by its exact document address (`Items[0].Requirements[0]`, its `data-path`; task 7.9
++ * keeps a path out of every label) and the class pair its accessible name starts with.
++ */
+ function treeCard(
+   page: Page,
+   item: number,
+   title: string,
+   address: string,
+ ): ReturnType<Page['locator']> {
+-  return itemTree(page, item).getByRole('article', { name: `${title} ${address}`, exact: true });
++  return itemTree(page, item).locator(
++    `article[data-path="${address}"][aria-label^="${CARD_TITLES[title] ?? title} "]`,
++  );
+ }
+ 
+ /** The live document, read through the JSON panel's own `[Copy]` affordance (key order included). */
+@@ -350,20 +358,22 @@ test.describe('AC2: an item row’s requirement tree', () => {
+ 
+     // The slot is the corpus's untyped wrapper; the shared editor offers Add Condition.
+     await itemTree(page, 1)
+-      .getByRole('button', { name: 'Add Condition to Items[0].Requirements', exact: true })
++      .getByRole('button', { name: 'Add Condition to Items 1 › Requirements', exact: true })
+       .click();
+     await expect(treeCard(page, 1, 'ReqHasQuest', address)).toBeVisible();
+ 
+     // Fill the quest and flip NOT — the two controls of the AC's `ReqHasQuest{NOT}`.
+     const card = treeCard(page, 1, 'ReqHasQuest', address);
+-    await card.getByRole('combobox', { name: `Quest ${address}`, exact: true }).click();
++    await card
++      .getByRole('combobox', { name: 'Quest (m_questName) Items 1 › Requirements 1', exact: true })
++      .click();
+     const search = page.getByRole('combobox', { name: 'Search quests', exact: true });
+     await expect(search).toBeVisible();
+     await search.fill(QUEST_NAME);
+     // The option is the QuestTemplate pair (D105/P6-16): `formatNameRow('quests')` pairs
+     // the resolved title with the quest name it belongs to.
+     await page.getByRole('option', { name: `${QUEST_TITLE} (${QUEST_NAME})`, exact: true }).click();
+-    await card.getByLabel('NOT', { exact: true }).check();
++    await card.getByLabel('NOT (m_applyNOT)', { exact: true }).check();
+ 
+     // The live document, byte-shaped through the panel: the wrapper is untyped, the leaf is
+     // tagged, NOT is true, and the sibling item row is untouched.
+@@ -396,9 +406,12 @@ test.describe('AC2: an item row’s requirement tree', () => {
+     await expect(treeCard(page, 1, 'ReqHasQuest', address)).toBeVisible();
+     const reloaded = treeCard(page, 1, 'ReqHasQuest', address);
+     await expect(
+-      reloaded.getByRole('combobox', { name: `Quest ${address}`, exact: true }),
++      reloaded.getByRole('combobox', {
++        name: 'Quest (m_questName) Items 1 › Requirements 1',
++        exact: true,
++      }),
+     ).toContainText(QUEST_TITLE);
+-    await expect(reloaded.getByLabel('NOT', { exact: true })).toBeChecked();
++    await expect(reloaded.getByLabel('NOT (m_applyNOT)', { exact: true })).toBeChecked();
+   });
+ });
+ 
+@@ -425,7 +438,7 @@ test.describe('AC2 continued: an existing untyped wrapper is not normalised', ()
+     await openEditor(page, { document });
+ 
+     await itemTree(page, 1)
+-      .getByRole('button', { name: 'Add Condition to Items[0].Requirements', exact: true })
++      .getByRole('button', { name: 'Add Condition to Items 1 › Requirements', exact: true })
+       .click();
+     await expect(treeCard(page, 1, 'ReqHasQuest', 'Items[0].Requirements[1]')).toBeVisible();
+ 
+diff --git a/tests/ui/quest-editor.spec.ts b/tests/ui/quest-editor.spec.ts
+index 277fe4c..ffef7a8 100644
+--- a/tests/ui/quest-editor.spec.ts
++++ b/tests/ui/quest-editor.spec.ts
+@@ -267,7 +267,7 @@ test.describe('AC#13 chain 1 — a goal field edit reaches the JSON panel', () =
+     await main_(page).getByRole('tab', { name: 'Goals' }).click();
+     const card = goalsEditor(page).getByRole('article').first();
+     await card.getByRole('button', { name: 'Edit' }).click();
+-    await card.getByLabel('m_proximityTag', { exact: true }).fill(NEW_PROXIMITY);
++    await card.getByLabel('Proximity Tag (m_proximityTag)', { exact: true }).fill(NEW_PROXIMITY);
+ 
+     const doc = await copyPanelDocument(page);
+     const goals = goalsOf(doc);
+@@ -366,9 +366,7 @@ test.describe('AC#13 chain 3 — adding a requirement leaf serializes into the p
+     expect((await copyPanelDocument(page)).m_requirements).toBeNull();
+ 
+     const tree = editor.getByRole('region', { name: 'Requirements', exact: true });
+-    await tree
+-      .getByRole('button', { name: 'Add Condition to m_requirements', exact: true })
+-      .click();
++    await tree.getByRole('button', { name: 'Add Condition to Requirements', exact: true }).click();
+ 
+     const doc = await copyPanelDocument(page);
+     const wrapper = doc.m_requirements as Record<string, unknown>;
+@@ -390,7 +388,10 @@ test.describe('AC#13 chain 3 — adding a requirement leaf serializes into the p
+     ]);
+     // The visible tree agrees with the document it wrote.
+     await expect(
+-      tree.getByRole('article', { name: 'ReqHasQuest m_requirements[0]', exact: true }),
++      tree.getByRole('article', {
++        name: 'Requires quest (ReqHasQuest) Requirements 1',
++        exact: true,
++      }),
+     ).toBeVisible();
+   });
+ });
+diff --git a/tests/ui/quests-detail.spec.ts b/tests/ui/quests-detail.spec.ts
+index d995736..edf883e 100644
+--- a/tests/ui/quests-detail.spec.ts
++++ b/tests/ui/quests-detail.spec.ts
+@@ -171,13 +171,19 @@ test.describe('tabs', () => {
+     await main.getByRole('tab', { name: 'Results' }).click();
+     await expect(main.getByRole('region', { name: 'Quest results editor' })).toBeVisible();
+     await expect(main.getByRole('region', { name: 'End results', exact: true })).toBeVisible();
++    // The card by its address (`data-path`) and its class pair (task 7.9: the accessible name
++    // reads the address in words and starts with the class's glossary pair).
+     await expect(
+-      main.getByRole('article', { name: 'ResDropTable m_endResults.m_results[0]' }),
++      main.locator(
++        'article[data-path="m_endResults.m_results[0]"][aria-label^="Reward: drop table (ResDropTable) "]',
++      ),
+     ).toBeVisible();
+     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();
+ 
+     await main.getByRole('tab', { name: 'Dialog' }).click();
+-    await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
++    await expect(
++      main.getByRole('heading', { name: 'Dialog list (m_dialogList)', exact: true }),
++    ).toBeVisible();
+ 
+     // The Dialog tab became the sixth live editor in p3-08, which is why the "Dialog is
+     // read-only" loop that stood here has been replaced rather than weakened: its own spec
+diff --git a/tests/ui/quests-dialog-editor.spec.ts b/tests/ui/quests-dialog-editor.spec.ts
+index a0b9356..f561bcd 100644
+--- a/tests/ui/quests-dialog-editor.spec.ts
++++ b/tests/ui/quests-dialog-editor.spec.ts
+@@ -267,14 +267,22 @@ function list(page: Page, label: string): Locator {
+   return editor(page).getByRole('region', { name: label, exact: true });
+ }
+ 
+-/** One tag section by its own accessible name (`Dialog tag 1 <address>`). */
++/**
++ * One tag section by its exact document address (its `data-path`; task 7.9 keeps a path out of
++ * every label) and the ordinal its accessible name starts with (`Dialog tag 1 <address in words>`).
++ */
+ function tag(scope: Locator, index: number, address: string): Locator {
+-  return scope.getByRole('region', { name: `Dialog tag ${index} ${address}`, exact: true });
++  return scope.locator(`section[data-path="${address}"][aria-label^="Dialog tag ${index} "]`);
+ }
+ 
+-/** One entry card by its own accessible name (`Entry 1 <address>`). */
++/** One entry card by its exact `data-path` and its ordinal (`Entry 1 <address in words>`). */
+ function card(scope: Locator, index: number, address: string): Locator {
+-  return scope.getByRole('article', { name: `Entry ${index} ${address}`, exact: true });
++  return scope.locator(`article[data-path="${address}"][aria-label^="Entry ${index} "]`);
++}
++
++/** A card's `Duplicate` / `Delete` action, by its exact `data-path` and its verb. */
++function action(scope: Locator, verb: string, address: string): Locator {
++  return scope.locator(`button[data-path="${address}"][aria-label^="${verb} "]`);
+ }
+ 
+ /** An accordion's disclosure button on one card. */
+@@ -455,7 +463,7 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
+     // Opening one reveals its fields; closing Basic hides them again.
+     await accordion(questCard, 'Camera').click();
+     await expect(panel(questCard, 'Camera')).toBeVisible();
+-    await expect(questCard.getByLabel('m_cameraName', { exact: true })).toBeVisible();
++    await expect(questCard.getByLabel('Camera name (m_cameraName)', { exact: true })).toBeVisible();
+     await accordion(questCard, 'Basic').click();
+     await expect(panel(questCard, 'Basic')).toBeHidden();
+   });
+@@ -465,35 +473,48 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
+     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
+ 
+     // Basic (open): the spec's own ASCII list.
+-    await expect(questCard.getByLabel('m_dialog', { exact: true })).toBeVisible();
+-    await expect(questCard.getByLabel('m_maxTimeSeconds', { exact: true })).toBeVisible();
++    await expect(questCard.getByLabel('Dialog text (m_dialog)', { exact: true })).toBeVisible();
+     await expect(
+-      questCard.getByRole('checkbox', { name: 'm_invisible', exact: true }),
++      questCard.getByLabel('Max display time (m_maxTimeSeconds)', { exact: true }),
++    ).toBeVisible();
++    await expect(
++      questCard.getByRole('checkbox', { name: 'Invisible (m_invisible)', exact: true }),
+     ).toBeVisible();
+ 
+     // Camera.
+     await accordion(questCard, 'Camera').click();
+-    await expect(questCard.getByLabel('m_cameraZoneName', { exact: true })).toBeVisible();
+     await expect(
+-      questCard.getByRole('combobox', { name: 'm_cameraHidePlayers', exact: true }),
++      questCard.getByLabel('Camera zone (m_cameraZoneName)', { exact: true }),
++    ).toBeVisible();
++    await expect(
++      questCard.getByRole('combobox', { name: 'Hide players (m_cameraHidePlayers)', exact: true }),
+     ).toBeVisible();
+ 
+     // Audio → the Sound accordion.
+     await accordion(questCard, 'Sound').click();
+-    await expect(questCard.getByLabel('m_musicFile', { exact: true })).toBeVisible();
++    await expect(questCard.getByLabel('Music file (m_musicFile)', { exact: true })).toBeVisible();
+ 
+     // Animation & NPC → the Animation accordion.
+     await accordion(questCard, 'Animation').click();
+-    await expect(questCard.getByLabel('m_dialogAnimationList', { exact: true })).toBeVisible();
++    await expect(
++      questCard.getByLabel('Dialog animations (m_dialogAnimationList)', { exact: true }),
++    ).toBeVisible();
+ 
+     // Duration & Timing + Walk-Away + UI Controls → Advanced.
+     await accordion(questCard, 'Advanced').click();
+     await expect(
+-      questCard.getByLabel('m_displayButtonsOnTimedDialog', { exact: true }),
++      questCard.getByLabel('Show buttons on timed dialog (m_displayButtonsOnTimedDialog)', {
++        exact: true,
++      }),
+     ).toBeVisible();
+-    await expect(questCard.getByLabel('m_walkAwayFadeTime', { exact: true })).toBeVisible();
+     await expect(
+-      questCard.getByRole('checkbox', { name: 'm_meetsRequirements', exact: true }),
++      questCard.getByLabel('Walk-away fade time (m_walkAwayFadeTime)', { exact: true }),
++    ).toBeVisible();
++    await expect(
++      questCard.getByRole('checkbox', {
++        name: 'Meets requirements (m_meetsRequirements)',
++        exact: true,
++      }),
+     ).toBeVisible();
+   });
+ 
+@@ -503,12 +524,8 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
+     await openDialog(page);
+     const questList = list(page, QUEST_LIST);
+     const questCard = card(questList, 1, QUEST_ADDRESS);
+-    await expect(
+-      questCard.getByRole('button', { name: `Duplicate ${QUEST_ADDRESS}`, exact: true }),
+-    ).toBeVisible();
+-    await expect(
+-      questCard.getByRole('button', { name: `Delete ${QUEST_ADDRESS}`, exact: true }),
+-    ).toBeVisible();
++    await expect(action(questCard, 'Duplicate', QUEST_ADDRESS)).toBeVisible();
++    await expect(action(questCard, 'Delete', QUEST_ADDRESS)).toBeVisible();
+     await expect(
+       tag(questList, 1, 'm_dialogList.m_dialogs[0]').getByRole('button', {
+         name: 'Add Dialog Entry',
+@@ -544,9 +561,7 @@ test.describe('the entry actions', () => {
+     };
+     await openDialog(page, seeded);
+     const questList = list(page, QUEST_LIST);
+-    await card(questList, 1, QUEST_ADDRESS)
+-      .getByRole('button', { name: `Duplicate ${QUEST_ADDRESS}`, exact: true })
+-      .click();
++    await action(card(questList, 1, QUEST_ADDRESS), 'Duplicate', QUEST_ADDRESS).click();
+ 
+     await expect(card(questList, 2, 'm_dialogList.m_dialogs[0].m_dialogEntries[1]')).toBeVisible();
+     const doc = await copyPanelDocument(page);
+@@ -574,9 +589,7 @@ test.describe('the entry actions', () => {
+     expect(entryOf(doc, 0, 1).m_requirements).toBeNull();
+     expect(Object.keys(entryOf(doc, 0, 1))).not.toContain('m_defaultDialogAnimation');
+ 
+-    await card(questList, 1, QUEST_ADDRESS)
+-      .getByRole('button', { name: `Delete ${QUEST_ADDRESS}`, exact: true })
+-      .click();
++    await action(card(questList, 1, QUEST_ADDRESS), 'Delete', QUEST_ADDRESS).click();
+     // Deleting index 0 shifts the new entry into index 0: the card that remains is the new one,
+     // and the deleted entry's persona is gone.
+     await expect(card(questList, 1, 'm_dialogList.m_dialogs[0].m_dialogEntries[0]')).toContainText(
+@@ -619,8 +632,10 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
+   }) => {
+     await openDialog(page);
+     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
+-    await questCard.getByLabel('m_dialog', { exact: true }).fill('WizQst1ED8D_00000009');
+-    await questCard.getByLabel('m_nameOverride', { exact: true }).fill('Renamed');
++    await questCard
++      .getByLabel('Dialog text (m_dialog)', { exact: true })
++      .fill('WizQst1ED8D_00000009');
++    await questCard.getByLabel('Name override (m_nameOverride)', { exact: true }).fill('Renamed');
+ 
+     const entry = entryOf(await copyPanelDocument(page), 0, 0);
+     expect(Object.keys(entry)).toEqual(ENTRY_ORDER);
+@@ -656,7 +671,9 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
+     await expect(questCard.getByText('"kept"')).toBeVisible();
+ 
+     // …and the key survives an edit to another field.
+-    await questCard.getByLabel('m_dialog', { exact: true }).fill('WizQst1ED8D_00000010');
++    await questCard
++      .getByLabel('Dialog text (m_dialog)', { exact: true })
++      .fill('WizQst1ED8D_00000010');
+     const entry = entryOf(await copyPanelDocument(page), 0, 0);
+     expect(entry.m_legacyKey).toBe('kept');
+     expect(entry.m_dialog).toBe('WizQst1ED8D_00000010');
+@@ -667,7 +684,9 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
+   }) => {
+     await openDialog(page);
+     const questCard = card(list(page, QUEST_LIST), 1, EMPTY_TAG_ADDRESS);
+-    await questCard.getByLabel('m_dialog', { exact: true }).fill('WizQst1ED8D_00000007');
++    await questCard
++      .getByLabel('Dialog text (m_dialog)', { exact: true })
++      .fill('WizQst1ED8D_00000007');
+ 
+     const entry = entryOf(await copyPanelDocument(page), 1, 0);
+     expect(Object.keys(entry)).toHaveLength(45);
+@@ -685,12 +704,12 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
+     const emptyTag = tag(questList, 2, 'm_dialogList.m_dialogs[1]');
+     // The measured empty tag is real content: it renders as `(empty tag)` and its control
+     // holds the empty string — it is not "fixed", and the key is not deleted.
+-    await expect(emptyTag.getByLabel('m_dialogTag', { exact: true })).toHaveValue('');
+-    await emptyTag.getByLabel('m_dialogTag', { exact: true }).fill('Prep');
++    await expect(emptyTag.getByLabel('Dialog tag (m_dialogTag)', { exact: true })).toHaveValue('');
++    await emptyTag.getByLabel('Dialog tag (m_dialogTag)', { exact: true }).fill('Prep');
+     const group = groupsOf(await copyPanelDocument(page))[1] as Record<string, unknown>;
+     expect(Object.keys(group)).toEqual(GROUP_ORDER);
+     expect(group.m_dialogTag).toBe('Prep');
+-    await emptyTag.getByLabel('m_dialogTag', { exact: true }).fill('');
++    await emptyTag.getByLabel('Dialog tag (m_dialogTag)', { exact: true }).fill('');
+     const again = groupsOf(await copyPanelDocument(page))[1] as Record<string, unknown>;
+     expect(Object.keys(again)).toEqual(GROUP_ORDER);
+     expect(again.m_dialogTag).toBe('');
+@@ -771,14 +790,17 @@ test.describe('the reference and string-key fields', () => {
+     };
+     await openDialog(page, seeded);
+     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
+-    const combobox = questCard.getByRole('combobox', { name: 'm_actorTemplateID', exact: true });
++    const combobox = questCard.getByRole('combobox', {
++      name: 'Actor template (m_actorTemplateID)',
++      exact: true,
++    });
+     await expect(combobox).toContainText('Zarek Pickmaster (126322)');
+ 
+     // 0 means "none" in the corpus (1675 entries) and must not become an empty lookup. The
+     // field lives in the Walk-Away group, i.e. the Advanced accordion.
+     await accordion(questCard, 'Advanced').click();
+     const walkAway = questCard.getByRole('combobox', {
+-      name: 'm_walkAwayNpcTemplateID',
++      name: 'Walk-away NPC (m_walkAwayNpcTemplateID)',
+       exact: true,
+     });
+     await expect(walkAway).toContainText('0');
+@@ -809,7 +831,7 @@ test.describe('the reference and string-key fields', () => {
+     await accordion(card(questList, 1, QUEST_ADDRESS), 'Camera').click();
+     await accordion(card(questList, 1, EMPTY_TAG_ADDRESS), 'Camera').click();
+     const live = card(questList, 1, QUEST_ADDRESS).getByRole('combobox', {
+-      name: 'm_cameraZoneName',
++      name: 'Camera zone (m_cameraZoneName)',
+       exact: true,
+     });
+     // A miss shows the path itself; the fixture's zone list holds only two paths.
+@@ -819,7 +841,7 @@ test.describe('the reference and string-key fields', () => {
+     // An empty reference renders the placeholder and issues no request at all.
+     await expect(
+       card(questList, 1, EMPTY_TAG_ADDRESS).getByRole('combobox', {
+-        name: 'm_cameraZoneName',
++        name: 'Camera zone (m_cameraZoneName)',
+         exact: true,
+       }),
+     ).toContainText('Select zones');
+@@ -852,7 +874,7 @@ test.describe('the reference and string-key fields', () => {
+     expect(recorded.lookups.strings).not.toContain('');
+ 
+     // Clearing the key deletes it rather than writing '' (D59c).
+-    await questCard.getByLabel('m_dialog', { exact: true }).fill('');
++    await questCard.getByLabel('Dialog text (m_dialog)', { exact: true }).fill('');
+     const entry = entryOf(await copyPanelDocument(page), 0, 0);
+     expect(Object.prototype.hasOwnProperty.call(entry, 'm_dialog')).toBe(false);
+     expect(Object.keys(entry)).toHaveLength(65);
+@@ -871,7 +893,10 @@ test.describe('the reference and string-key fields', () => {
+     await openDialog(page, seeded);
+     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
+     await accordion(questCard, 'Camera').click();
+-    const select = questCard.getByRole('combobox', { name: 'm_cameraHidePlayers', exact: true });
++    const select = questCard.getByRole('combobox', {
++      name: 'Hide players (m_cameraHidePlayers)',
++      exact: true,
++    });
+     // The measured domain is 0/1/2/3; 7 is not in it, so it is appended and stays selected.
+     await expect(select).toHaveValue('7');
+     await expect(select.locator('option[value="7"]')).toHaveText('7 (unlisted)');
+@@ -899,7 +924,9 @@ test.describe('the reference and string-key fields', () => {
+     await openDialog(page, seeded);
+     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
+     await accordion(questCard, 'Animation').click();
+-    const animations = questCard.getByLabel('m_dialogAnimationList', { exact: true });
++    const animations = questCard.getByLabel('Dialog animations (m_dialogAnimationList)', {
++      exact: true,
++    });
+     await expect(animations).toHaveValue('0|126322|Gen_Dial_01|5\n0|126312|Gen_Dial_02|3');
+ 
+     // A no-op re-set writes the same elements back, in the same order, byte for byte.
+@@ -920,7 +947,7 @@ test.describe('the m_requirements slot', () => {
+     await openDialog(page);
+     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
+     const tree = questCard.getByRole('region', {
+-      name: `Requirements for ${QUEST_ADDRESS}`,
++      name: 'Requirements for Dialog list › Dialog blocks 1 › Dialog entries 1',
+       exact: true,
+     });
+     await expect(tree).toBeVisible();
+@@ -931,10 +958,9 @@ test.describe('the m_requirements slot', () => {
+     // The first Add writes the shared tree's own wrapper — the corpus never carries one, so
+     // this is the fixture-only path and it must not disturb the entry around it.
+     await tree
+-      .getByRole('button', {
+-        name: `Add Condition to ${QUEST_ADDRESS}.m_requirements`,
+-        exact: true,
+-      })
++      .locator(
++        `button[data-path="${QUEST_ADDRESS}.m_requirements"][aria-label^="Add Condition to "]`,
++      )
+       .click();
+     const entry = entryOf(await copyPanelDocument(page), 0, 0);
+     expect(Object.keys(entry)).toEqual(ENTRY_ORDER);
+diff --git a/tests/ui/quests-evidence-panel.spec.ts b/tests/ui/quests-evidence-panel.spec.ts
+index 2587324..06af72a 100644
+--- a/tests/ui/quests-evidence-panel.spec.ts
++++ b/tests/ui/quests-evidence-panel.spec.ts
+@@ -95,6 +95,15 @@ function targetLine(page: Page): Locator {
+   return rail(page, 'Quest evidence').getByTestId('evidence-target');
+ }
+ 
++/**
++ * The target line names `path` (task 7.9): the field's glossary pair and its place in words are the
++ * visible text, and the exact document path is the `data-path` attribute (never a label).
++ */
++async function expectTarget(page: Page, path: string, words: string): Promise<void> {
++  await expect(targetLine(page).locator('[data-path]')).toHaveAttribute('data-path', path);
++  await expect(targetLine(page)).toContainText(`Insert into: ${words}`);
++}
++
+ /** The section the row lives in, so a key lookup cannot escape into another section. */
+ function section(page: Page, heading: string): Locator {
+   return rail(page, 'Quest evidence').getByRole('region', { name: heading });
+@@ -132,7 +141,7 @@ function goalDialogInput(page: Page, goalIndex: number): Locator {
+   return goalDialogSection(page)
+     .getByRole('article')
+     .nth(goalIndex)
+-    .getByLabel('m_dialog', { exact: true });
++    .getByLabel('Dialog text (m_dialog)', { exact: true });
+ }
+ 
+ /** The two rail tabs. */
+@@ -364,7 +373,7 @@ test.describe('one-click insert, into the field it belongs to', () => {
+     await page.getByRole('tab', { name: 'Goals' }).click();
+     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
+     await page.getByRole('tab', { name: 'Evidence' }).click();
+-    await expect(targetLine(page)).toContainText('m_goals[0].m_goalText');
++    await expectTarget(page, 'm_goals[0].m_goalText', 'Goal text (m_goalText) in Goals 1');
+ 
+     const insert = sectionInsertButton(page, 'Available', AVAILABLE_KEY);
+     await expect(insert).toBeVisible();
+@@ -397,14 +406,18 @@ test.describe('one-click insert, into the field it belongs to', () => {
+     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
+     // The shared base fields are a collapsed disclosure; opening it reveals m_locationName.
+     await goalCard(page, 0).getByText('Shared base fields').click();
+-    await goalCard(page, 0).getByLabel('m_locationName', { exact: true }).click();
++    await goalCard(page, 0).getByLabel('Location Name (m_locationName)', { exact: true }).click();
+ 
+     // Read the document first: the rail's JSON tab swaps the *body* only, so the focus report
+     // survives the round trip — asserted, not assumed.
+     await page.getByRole('tab', { name: 'JSON' }).click();
+     const before = await copyDocument(page);
+     await page.getByRole('tab', { name: 'Evidence' }).click();
+-    await expect(targetLine(page)).toContainText('m_goals[0].m_locationName');
++    await expectTarget(
++      page,
++      'm_goals[0].m_locationName',
++      'Location Name (m_locationName) in Goals 1',
++    );
+ 
+     await sectionInsertButton(page, 'Available', AVAILABLE_KEY).click();
+ 
+@@ -421,8 +434,10 @@ test.describe('one-click insert, into the field it belongs to', () => {
+     // Focus the goal-level entry card: reading its m_dialog input is also the assertion target.
+     await goalDialogInput(page, 0).click();
+     await page.getByRole('tab', { name: 'Evidence' }).click();
+-    await expect(targetLine(page)).toContainText(
++    await expectTarget(
++      page,
+       'm_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog',
++      'Dialog text (m_dialog) in Goals 1 › Dialog list › Dialog blocks 1 › Dialog entries 1',
+     );
+ 
+     await expect(section(page, 'Dialogue')).toContainText('Cyrus Drake');
+@@ -442,7 +457,7 @@ test.describe('one-click insert, into the field it belongs to', () => {
+     await page.getByRole('tab', { name: 'Goals' }).click();
+     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
+     await page.getByRole('tab', { name: 'Evidence' }).click();
+-    await expect(targetLine(page)).toContainText('m_goals[0].m_goalText');
++    await expectTarget(page, 'm_goals[0].m_goalText', 'Goal text (m_goalText) in Goals 1');
+ 
+     // The dialogue section carries no button at all in this state…
+     const dialogue = section(page, 'Dialogue');
+diff --git a/tests/ui/quests-goals-editor.spec.ts b/tests/ui/quests-goals-editor.spec.ts
+index 6d359f1..137a7ce 100644
+--- a/tests/ui/quests-goals-editor.spec.ts
++++ b/tests/ui/quests-goals-editor.spec.ts
+@@ -290,7 +290,17 @@ function summary(label: string, value: string): RegExp {
+  * DOM order is waited for rather than sampled.
+  */
+ async function cardOrder(page: Page): Promise<string[]> {
+-  return editor(page).locator('article .font-mono').allTextContents();
++  // The header's own mono name span: since task 7.9 a label's technical half is mono too, so the
++  // name is addressed as the header's direct child rather than as any `.font-mono` in the card.
++  return editor(page).locator('article header > span.font-mono').allTextContents();
++}
++
++/**
++ * A card's class badge (task 7.9): the element around the class's `[data-term]` pair, whose text is
++ * the whole pair and whose class carries the spec's colour.
++ */
++function typeBadge(scope: Locator, className: string): Locator {
++  return scope.locator(`header [data-term="${className}"]`).locator('..');
+ }
+ 
+ /** dnd-kit's accessibility announcements, the only signal a keyboard drag exposes. */
+@@ -308,47 +318,54 @@ test.describe('the goal cards', () => {
+     await expect(
+       waypoint.locator('.font-mono', { hasText: '1_WizardQuestGoals_00000058' }),
+     ).toBeVisible();
+-    // The badge is the `$type`'s TypeName — the same text the read-only Goals panel
+-    // shows for the same quest (`extraction.spec.ts` pins it there), not the type
+-    // selector's friendlier `Waypoint` vocabulary.
+-    await expect(waypoint.getByText('WaypointGoalTemplate', { exact: true })).toBeVisible();
++    // The badge is the `$type`'s glossary pair (task 7.9) — the same text the read-only Goals
++    // panel shows for the same quest (`extraction.spec.ts` pins it there).
++    await expect(typeBadge(waypoint, 'WaypointGoalTemplate')).toHaveText(
++      'Reach a zone (Waypoint goal) (WaypointGoalTemplate)',
++    );
+     // The type badge is the spec's colour (docs/spec-ui-design.md L360-365).
+-    expect(
+-      await waypoint.getByText('WaypointGoalTemplate', { exact: true }).getAttribute('class'),
+-    ).toContain('border-blue-500');
++    expect(await typeBadge(waypoint, 'WaypointGoalTemplate').getAttribute('class')).toContain(
++      'border-blue-500',
++    );
+     // In `m_startGoals` → the Start badge, and the toggle says what it would do.
+     await expect(waypoint.getByText('Start', { exact: true })).toBeVisible();
+     await expect(waypoint.getByRole('button', { name: 'Unset as Start Goal' })).toBeVisible();
+ 
+     // The spec ASCII's summary lines (L305-309); the zone is the unlisted interior path.
+-    await expect(waypoint).toContainText(summary('Zone', UNLISTED_ZONE));
+-    await expect(waypoint).toContainText(summary('Entry', '✓'));
+-    await expect(waypoint).toContainText(summary('Exit', '✗'));
+-    await expect(waypoint).toContainText(summary('Proximity Tag', '(empty)'));
++    await expect(waypoint).toContainText(summary('Zone (m_zoneTag)', UNLISTED_ZONE));
++    await expect(waypoint).toContainText(summary('Entry (m_zoneEntry)', '✓'));
++    await expect(waypoint).toContainText(summary('Exit (m_zoneExit)', '✗'));
++    await expect(waypoint).toContainText(summary('Proximity Tag (m_proximityTag)', '(empty)'));
+     await expect(waypoint).toContainText(
+-      summary('Client Tags', 'CollectCrystal3, Ddl_CollectCrystal_Grove1'),
++      summary('Client Tags (m_clientTags)', 'CollectCrystal3, Ddl_CollectCrystal_Grove1'),
+     );
+     await expect(waypoint).toContainText(
+-      summary('Display Image', 'GUI/QuestButtons/Use_crystal_sample.dds'),
++      summary('Display Image 1 (m_displayImage1)', 'GUI/QuestButtons/Use_crystal_sample.dds'),
+     );
+ 
+     const bounty = card(page, 1);
+-    await expect(bounty.getByText('BountyGoalTemplate', { exact: true })).toBeVisible();
+-    expect(
+-      await bounty.getByText('BountyGoalTemplate', { exact: true }).getAttribute('class'),
+-    ).toContain('border-red-500');
+-    await expect(bounty).toContainText(summary('Bounty Total', '3'));
+-    await expect(bounty).toContainText(summary('Bounty Type', 'BT_MOB_KILL'));
++    await expect(typeBadge(bounty, 'BountyGoalTemplate')).toHaveText(
++      'Kill mobs (Bounty goal) (BountyGoalTemplate)',
++    );
++    expect(await typeBadge(bounty, 'BountyGoalTemplate').getAttribute('class')).toContain(
++      'border-red-500',
++    );
++    await expect(bounty).toContainText(summary('Bounty Total (m_bountyTotal)', '3'));
++    await expect(bounty).toContainText(
++      summary('Bounty Type (m_bountyType)', 'Kill mobs (BT_MOB_KILL)'),
++    );
+     // Not a start goal: no Start badge, and the toggle offers to add it.
+     await expect(bounty.getByText('Start', { exact: true })).toHaveCount(0);
+     await expect(bounty.getByRole('button', { name: 'Set as Start Goal' })).toBeVisible();
+ 
+     const persona = card(page, 2);
+-    await expect(persona.getByText('PersonaGoalTemplate', { exact: true })).toBeVisible();
+-    expect(
+-      await persona.getByText('PersonaGoalTemplate', { exact: true }).getAttribute('class'),
+-    ).toContain('border-purple-500');
+-    await expect(persona).toContainText(summary('Persona', UNLISTED_PERSONA));
++    await expect(typeBadge(persona, 'PersonaGoalTemplate')).toHaveText(
++      'Talk to an NPC (Persona goal) (PersonaGoalTemplate)',
++    );
++    expect(await typeBadge(persona, 'PersonaGoalTemplate').getAttribute('class')).toContain(
++      'border-purple-500',
++    );
++    await expect(persona).toContainText(summary('Persona (m_personaName)', UNLISTED_PERSONA));
+   });
+ 
+   test('Edit expands the card inline into its type fields and the shared base section', async ({
+@@ -364,25 +381,31 @@ test.describe('the goal cards', () => {
+     await expect(waypoint.getByText('Shared base fields')).toBeVisible();
+     await expect(page.getByRole('dialog')).toHaveCount(0);
+     // The type's own fields, labelled with the raw keys.
+-    await expect(waypoint.getByLabel('m_zoneTag', { exact: true })).toBeVisible();
+-    await expect(waypoint.getByLabel('m_zoneEntry', { exact: true })).toBeChecked();
+-    await expect(waypoint.getByLabel('m_zoneExit', { exact: true })).not.toBeChecked();
+-    await expect(waypoint.getByLabel('m_proximityTag', { exact: true })).toHaveValue('');
++    await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toBeVisible();
++    await expect(waypoint.getByLabel('Entry (m_zoneEntry)', { exact: true })).toBeChecked();
++    await expect(waypoint.getByLabel('Exit (m_zoneExit)', { exact: true })).not.toBeChecked();
++    await expect(
++      waypoint.getByLabel('Proximity Tag (m_proximityTag)', { exact: true }),
++    ).toHaveValue('');
+ 
+     // The base fields live behind the collapsible section: present in the DOM, not
+     // visible, until the user opens it (`exact` matters when they are: `m_goalName`
+     // also matches `m_goalNameID` by substring).
+-    await expect(waypoint.getByLabel('m_goalName', { exact: true })).toBeHidden();
++    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toBeHidden();
+     await waypoint.getByText('Shared base fields').click();
+-    await expect(waypoint.getByLabel('m_goalName', { exact: true })).toBeVisible();
+-    await expect(waypoint.getByLabel('m_goalName', { exact: true })).toHaveValue(
++    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toBeVisible();
++    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toHaveValue(
+       '1_WizardQuestGoals_00000058',
+     );
+-    await expect(waypoint.getByLabel('m_goalNameID', { exact: true })).toHaveValue('0');
+-    await expect(waypoint.getByLabel('m_goalType', { exact: true })).toHaveValue(
++    await expect(waypoint.getByLabel('Goal Name ID (m_goalNameID)', { exact: true })).toHaveValue(
++      '0',
++    );
++    await expect(waypoint.getByLabel('Goal Type (m_goalType)', { exact: true })).toHaveValue(
+       'GOAL_TYPE_WAYPOINT',
+     );
+-    await expect(waypoint.getByLabel('m_autoQualify', { exact: true })).not.toBeChecked();
++    await expect(
++      waypoint.getByLabel('Auto Qualify (m_autoQualify)', { exact: true }),
++    ).not.toBeChecked();
+   });
+ 
+   test('the drag handle is a labelled button, not the card', async ({ page }) => {
+@@ -401,7 +424,7 @@ test.describe('adding goals', () => {
+     await openGoals(page);
+     await openJson(page);
+ 
+-    // [selector label, card badge, $type, m_goalType, the type's own fields]
++    // [selector value, card badge class, $type, m_goalType, the type's own fields]
+     const expected: Array<[string, string, string, string, Record<string, unknown>]> = [
+       [
+         'Waypoint',
+@@ -459,7 +482,7 @@ test.describe('adding goals', () => {
+ 
+       // The card is on screen immediately (no refresh), with the type's badge.
+       await expect(editor(page).getByRole('article')).toHaveCount(goals.length);
+-      await expect(card(page, goals.length - 1).getByText(badge, { exact: true })).toBeVisible();
++      await expect(typeBadge(card(page, goals.length - 1), badge)).toBeVisible();
+     }
+ 
+     // Eight goals, eight unique names — the uniqueness plan §3.9 validates.
+@@ -642,7 +665,7 @@ test.describe('preservation (D5/D57)', () => {
+     // Edit an unrelated base field, then compare the goal exactly.
+     await waypoint.getByRole('button', { name: 'Edit' }).click();
+     await waypoint.getByText('Shared base fields').click();
+-    await waypoint.getByLabel('m_autoQualify', { exact: true }).check();
++    await waypoint.getByLabel('Auto Qualify (m_autoQualify)', { exact: true }).check();
+ 
+     const doc = await copyPanelDocument(page);
+     const goal = goalsOf(doc)[0];
+@@ -661,7 +684,7 @@ test.describe('preservation (D5/D57)', () => {
+     const persona = cardNamed(page, '3_WizardQuestGoals_00000070');
+ 
+     await persona.getByRole('button', { name: 'Edit' }).click();
+-    await persona.getByLabel('m_usePatron', { exact: true }).check();
++    await persona.getByLabel('Use Patron (m_usePatron)', { exact: true }).check();
+ 
+     const doc = await copyPanelDocument(page);
+     const goal = goalsOf(doc)[2];
+@@ -683,14 +706,16 @@ test.describe('preservation (D5/D57)', () => {
+     await waypoint.getByRole('button', { name: 'Edit' }).click();
+     // The dropdown cannot resolve the path in the mocked `zones` table (404) and shows
+     // the raw path — the miss path 37 of the corpus's 149 paths need.
+-    const zone = waypoint.getByLabel('m_zoneTag', { exact: true });
++    const zone = waypoint.getByLabel('Zone (m_zoneTag)', { exact: true });
+     await expect(zone).toContainText(UNLISTED_ZONE);
+ 
+     // An unrelated edit must not rewrite it.
+     await waypoint.getByText('Shared base fields').click();
+-    await waypoint.getByLabel('m_noQuestHelper', { exact: true }).check();
++    await waypoint.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }).check();
+ 
+-    await expect(waypoint.getByLabel('m_zoneTag', { exact: true })).toContainText(UNLISTED_ZONE);
++    await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toContainText(
++      UNLISTED_ZONE,
++    );
+     const doc = await copyPanelDocument(page);
+     expect(goalsOf(doc)[0].m_zoneTag).toBe(UNLISTED_ZONE);
+   });
+@@ -710,7 +735,9 @@ test.describe('string-table lookups on m_goalTitle', () => {
+     await cardNamed(page, '2_WizardQuestGoals_00000067')
+       .getByRole('button', { name: 'Edit' })
+       .click();
+-    await expect(card(page, 1).getByLabel('m_goalTitle', { exact: true })).toHaveValue('');
++    await expect(card(page, 1).getByLabel('Goal Title (m_goalTitle)', { exact: true })).toHaveValue(
++      '',
++    );
+     expect(recorded.nameLookups).toHaveLength(before);
+     expect(recorded.nameLookups).not.toContain('');
+ 
+@@ -739,7 +766,7 @@ test.describe('the ID-referencing controls', () => {
+     const waypoint = card(page, 0);
+     await waypoint.getByRole('button', { name: 'Edit' }).click();
+ 
+-    await waypoint.getByLabel('m_zoneTag', { exact: true }).click();
++    await waypoint.getByLabel('Zone (m_zoneTag)', { exact: true }).click();
+     // The dropdown's search box is `cmdk`'s input: it carries `role="combobox"` and an
+     // `aria-label`, but `getByLabel` does not resolve it (it is not a labelled control),
+     // so it is addressed by role — the locator that matches what the element is.
+@@ -748,7 +775,9 @@ test.describe('the ID-referencing controls', () => {
+     await zoneSearch.fill('Crystal');
+     await page.getByRole('option', { name: 'Crystal Grove' }).click();
+ 
+-    await expect(waypoint.getByLabel('m_zoneTag', { exact: true })).toContainText('Crystal Grove');
++    await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toContainText(
++      'Crystal Grove',
++    );
+     const doc = await copyPanelDocument(page);
+     expect(goalsOf(doc)[0].m_zoneTag).toBe(LISTED_ZONE);
+   });
+@@ -759,7 +788,7 @@ test.describe('the ID-referencing controls', () => {
+     const persona = cardNamed(page, '3_WizardQuestGoals_00000070');
+     await persona.getByRole('button', { name: 'Edit' }).click();
+ 
+-    const input = persona.getByLabel('m_personaName', { exact: true });
++    const input = persona.getByLabel('Persona (m_personaName)', { exact: true });
+     // Unlisted (`WC-HUB-NPC01` is in neither names table) — kept, never cleared.
+     await expect(input).toHaveValue(UNLISTED_PERSONA);
+     // The suggestions are `npcs.name` values, and the unlisted current value is offered.
+@@ -770,8 +799,8 @@ test.describe('the ID-referencing controls', () => {
+     expect(suggestions).toContain(UNLISTED_PERSONA);
+ 
+     // An unrelated edit leaves it alone…
+-    await persona.getByLabel('m_usePatron', { exact: true }).check();
+-    await expect(persona.getByLabel('m_personaName', { exact: true })).toHaveValue(
++    await persona.getByLabel('Use Patron (m_usePatron)', { exact: true }).check();
++    await expect(persona.getByLabel('Persona (m_personaName)', { exact: true })).toHaveValue(
+       UNLISTED_PERSONA,
+     );
+     // …and typing a new name writes exactly what was typed.
+diff --git a/tests/ui/quests-info-editor.spec.ts b/tests/ui/quests-info-editor.spec.ts
+index a6f7329..0bcfd8c 100644
+--- a/tests/ui/quests-info-editor.spec.ts
++++ b/tests/ui/quests-info-editor.spec.ts
+@@ -100,52 +100,56 @@ test.describe('the two-column form', () => {
+     await expect(form).toBeVisible();
+ 
+     // Left column, in the spec's order.
+-    const name = form.getByLabel('m_questName', { exact: true });
++    const name = form.getByLabel('Quest (m_questName)', { exact: true });
+     await expect(name).toHaveValue('DS-ACAD1-C01-001');
+     await expect(name).toHaveAttribute('readonly', '');
+ 
+-    const title = form.getByLabel('m_questTitle', { exact: true });
++    const title = form.getByLabel('Quest title (m_questTitle)', { exact: true });
+     await expect(title).toHaveValue('QuestTitle_1ED8D');
+     // The resolved string sits beside the key (the lookup is asserted on its own below).
+     await expect(form.getByText('Quest for Perfection')).toBeVisible();
+ 
+-    await expect(form.getByLabel('m_questLevel', { exact: true })).toHaveAttribute(
++    await expect(form.getByLabel('Quest level (m_questLevel)', { exact: true })).toHaveAttribute(
+       'type',
+       'number',
+     );
+-    await expect(form.getByLabel('m_questLevel', { exact: true })).toHaveValue('7');
++    await expect(form.getByLabel('Quest level (m_questLevel)', { exact: true })).toHaveValue('7');
+ 
+-    await expect(form.getByLabel('m_mainline', { exact: true })).toHaveAttribute(
++    await expect(form.getByLabel('Mainline (m_mainline)', { exact: true })).toHaveAttribute(
+       'type',
+       'checkbox',
+     );
+-    await expect(form.getByLabel('m_mainline', { exact: true })).toBeChecked();
+-    await expect(form.getByLabel('m_isHidden', { exact: true })).toHaveAttribute(
++    await expect(form.getByLabel('Mainline (m_mainline)', { exact: true })).toBeChecked();
++    await expect(form.getByLabel('Hidden (m_isHidden)', { exact: true })).toHaveAttribute(
+       'type',
+       'checkbox',
+     );
+-    await expect(form.getByLabel('m_isHidden', { exact: true })).not.toBeChecked();
++    await expect(form.getByLabel('Hidden (m_isHidden)', { exact: true })).not.toBeChecked();
+ 
+-    await expect(form.getByLabel('m_questRepeat', { exact: true })).toHaveAttribute(
++    await expect(form.getByLabel('Repeatability (m_questRepeat)', { exact: true })).toHaveAttribute(
+       'type',
+       'number',
+     );
+-    await expect(form.getByLabel('m_questRepeat', { exact: true })).toHaveValue('0');
++    await expect(form.getByLabel('Repeatability (m_questRepeat)', { exact: true })).toHaveValue(
++      '0',
++    );
+ 
+-    const activity = form.getByLabel('m_activityType', { exact: true });
++    const activity = form.getByLabel('Activity type (m_activityType)', { exact: true });
+     await expect(activity).toHaveJSProperty('tagName', 'SELECT');
+     // The fixture carries no `m_activityType`: the select falls back to the unset
+     // option rather than inventing `ACTIVITY_NotActivity`.
+     await expect(activity).toHaveValue('');
+ 
+     // Right column.
+-    await expect(form.getByLabel('m_onStartQuestScript', { exact: true })).toBeVisible();
+-    await expect(form.getByLabel('m_onEndQuestScript', { exact: true })).toBeVisible();
+-    await expect(form.getByLabel('m_clientTags', { exact: true })).toBeVisible();
++    await expect(
++      form.getByLabel('Start script (m_onStartQuestScript)', { exact: true }),
++    ).toBeVisible();
++    await expect(form.getByLabel('End script (m_onEndQuestScript)', { exact: true })).toBeVisible();
++    await expect(form.getByLabel('Client Tags (m_clientTags)', { exact: true })).toBeVisible();
+     // The fixture carries `m_clientTags: null` (as all 328 corpus files do — re-measured at
+     // the owner's current baseline: 328 files, 328 `null`, 0 absent, 0 any other value), so
+     // the tag input is empty rather than pre-filled.
+-    await expect(form.getByLabel('m_clientTags', { exact: true })).toHaveValue('');
++    await expect(form.getByLabel('Client Tags (m_clientTags)', { exact: true })).toHaveValue('');
+ 
+     // The spec's read-only timestamps (L298) — the browse row's own `modified_at`.
+     await expect(form.getByText('Modified')).toBeVisible();
+@@ -155,9 +159,11 @@ test.describe('the two-column form', () => {
+     await mockQuestsApi(page);
+     await page.goto('/quests/DS-ACAD1-C01-001');
+ 
+-    const nameBox = await editor(page).getByLabel('m_questName', { exact: true }).boundingBox();
++    const nameBox = await editor(page)
++      .getByLabel('Quest (m_questName)', { exact: true })
++      .boundingBox();
+     const scriptBox = await editor(page)
+-      .getByLabel('m_onStartQuestScript', { exact: true })
++      .getByLabel('Start script (m_onStartQuestScript)', { exact: true })
+       .boundingBox();
+     expect(nameBox).not.toBeNull();
+     expect(scriptBox).not.toBeNull();
+@@ -203,8 +209,10 @@ test.describe('the Advanced section', () => {
+ 
+     // Each is editable, and one is exercised here: the fixture has no
+     // `m_noQuestHelper`, so checking it writes the key (and nothing else).
+-    await details.getByLabel('m_noQuestHelper', { exact: true }).check();
+-    await expect(details.getByLabel('m_noQuestHelper', { exact: true })).toBeChecked();
++    await details.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }).check();
++    await expect(
++      details.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }),
++    ).toBeChecked();
+   });
+ 
+   test('does not inject a key merely by opening the section', async ({ page }) => {
+@@ -233,9 +241,9 @@ test.describe('the string-table title lookup', () => {
+     await expect(editor(page).getByText('Quest for Perfection')).toBeVisible();
+     // The key itself stays visible and editable — this is a lookup display, not a
+     // replacement of the stored value.
+-    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).toHaveValue(
+-      'QuestTitle_1ED8D',
+-    );
++    await expect(
++      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
++    ).toHaveValue('QuestTitle_1ED8D');
+     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
+   });
+ 
+@@ -252,10 +260,9 @@ test.describe('the string-table title lookup', () => {
+     // goal-logic entry does not set `m_completeQuest`, which the validation engine reports as
+     // a blocking finding outside the editor. The narrow, still-strong fact is that the title
+     // control is clean — no `aria-invalid`, no inline message list of its own.
+-    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).not.toHaveAttribute(
+-      'aria-invalid',
+-      'true',
+-    );
++    await expect(
++      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
++    ).not.toHaveAttribute('aria-invalid', 'true');
+     await expect(editor(page).getByRole('list', { name: 'Validation messages' })).toHaveCount(0);
+     await expect(editor(page).getByRole('alert')).toHaveCount(0);
+   });
+@@ -266,7 +273,9 @@ test.describe('the string-table title lookup', () => {
+     });
+     await page.goto('/quests/DS-ACAD1-C01-001');
+ 
+-    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).toHaveValue('');
++    await expect(
++      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
++    ).toHaveValue('');
+     // The load-bearing guard: `/api/names/strings/` is the LIST route and answers
+     // 24,077,358 bytes (measured against the live database), so the client must not
+     // ask at all.
+@@ -286,7 +295,7 @@ test.describe('edits and the JSON panel', () => {
+     expect(before.m_questLevel).toBe(7);
+ 
+     // No reload, no refetch: the same page instance.
+-    await editor(page).getByLabel('m_questLevel', { exact: true }).fill('4242');
++    await editor(page).getByLabel('Quest level (m_questLevel)', { exact: true }).fill('4242');
+ 
+     const after = await copyPanelDocument(page);
+     expect(after.m_questLevel).toBe(4242);
+@@ -301,7 +310,7 @@ test.describe('edits and the JSON panel', () => {
+     await openJson(page);
+     const before = await copyPanelDocument(page);
+ 
+-    await editor(page).getByLabel('m_isHidden', { exact: true }).check();
++    await editor(page).getByLabel('Hidden (m_isHidden)', { exact: true }).check();
+     const after = await copyPanelDocument(page);
+ 
+     expect(after.m_isHidden).toBe(true);
+@@ -313,12 +322,14 @@ test.describe('edits and the JSON panel', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
+     await openJson(page);
+ 
+-    await editor(page).getByLabel('m_clientTags', { exact: true }).fill('event,  seasonal');
++    await editor(page)
++      .getByLabel('Client Tags (m_clientTags)', { exact: true })
++      .fill('event,  seasonal');
+     let doc = await copyPanelDocument(page);
+     expect(doc.m_clientTags).toStrictEqual(['event', 'seasonal']);
+ 
+     // Emptying a field that exists DELETES the key (D57: never write `''`/undefined).
+-    await editor(page).getByLabel('m_clientTags', { exact: true }).fill('');
++    await editor(page).getByLabel('Client Tags (m_clientTags)', { exact: true }).fill('');
+     doc = await copyPanelDocument(page);
+     expect('m_clientTags' in doc).toBe(false);
+   });
+@@ -331,12 +342,12 @@ test.describe('edits and the JSON panel', () => {
+     await openJson(page);
+ 
+     // `m_questTitle` exists in the fixture.
+-    await editor(page).getByLabel('m_questTitle', { exact: true }).fill('');
++    await editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }).fill('');
+     let doc = await copyPanelDocument(page);
+     expect('m_questTitle' in doc).toBe(false);
+ 
+     // `m_onStartQuestScript` does not: clearing it must not create it.
+-    await editor(page).getByLabel('m_onStartQuestScript', { exact: true }).fill('');
++    await editor(page).getByLabel('Start script (m_onStartQuestScript)', { exact: true }).fill('');
+     doc = await copyPanelDocument(page);
+     expect('m_onStartQuestScript' in doc).toBe(false);
+ 
+@@ -352,14 +363,14 @@ test.describe('edits and the JSON panel', () => {
+     });
+     await page.goto('/quests/DS-ACAD1-C01-001');
+ 
+-    const select = editor(page).getByLabel('m_activityType', { exact: true });
++    const select = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
+     await expect(select).toHaveValue('ACTIVITY_Crafting');
+     // The authoritative six (Imcodec's generated `ActivityType` enum).
+     const options = await select.locator('option').allTextContents();
+     expect(options).toHaveLength(6);
+-    expect(options).toContain('Not Activity');
+-    expect(options).toContain('Crafting');
+-    expect(options).toContain('Pet');
++    expect(options).toContain('Not an activity (ACTIVITY_NotActivity)');
++    expect(options).toContain('Crafting activity (ACTIVITY_Crafting)');
++    expect(options).toContain('Pet activity (ACTIVITY_Pet)');
+ 
+     // A value the enum has never heard of stays selectable and selected — real
+     // content is never silently rewritten to a listed option.
+@@ -367,7 +378,7 @@ test.describe('edits and the JSON panel', () => {
+       detail: { ...MOCK_QUEST, m_activityType: 'ACTIVITY_FutureThing' },
+     });
+     await page.reload();
+-    const selectAgain = editor(page).getByLabel('m_activityType', { exact: true });
++    const selectAgain = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
+     await expect(selectAgain).toHaveValue('ACTIVITY_FutureThing');
+     await expect(selectAgain.locator('option')).toHaveCount(7);
+     await expect(selectAgain.locator('option:checked')).toHaveText(
+diff --git a/tests/ui/quests-requirements-editor.spec.ts b/tests/ui/quests-requirements-editor.spec.ts
+index 388b23f..00347f4 100644
+--- a/tests/ui/quests-requirements-editor.spec.ts
++++ b/tests/ui/quests-requirements-editor.spec.ts
+@@ -197,12 +197,27 @@ function prepTree(page: Page): Locator {
+ }
+ 
+ /**
+- * A card by its **full** accessible name. `exact` everywhere on purpose: `Group
+- * m_requirements` is a substring of `Group m_requirements[1]`, and every `Add`/`Delete`
+- * label ends with its address, so substring matching would be ambiguous.
++ * A card's title: `Group`, or a class's glossary pair (task 7.9) — the leading words of the card's
++ * accessible name.
++ */
++const CARD_TITLES: Record<string, string> = {
++  Group: 'Group',
++  ReqHasQuest: 'Requires quest (ReqHasQuest)',
++  ReqHasEntry: 'Requires quest registry entry (ReqHasEntry)',
++  ReqSchoolOfFocus: 'Requires school of focus (ReqSchoolOfFocus)',
++  ReqIsSchool: 'Requires target school (ReqIsSchool)',
++};
++
++/**
++ * A card by its **exact** document address and its title. The address is the card's `data-path`
++ * (task 7.9: a path never appears in a label; the accessible name reads it in words), matched
++ * whole, so `m_requirements` cannot match `m_requirements[1]`; the title is the accessible name's
++ * leading words, so a card of another class at that address does not match either.
+  */
+ function card(page: Page, title: string, address: string): Locator {
+-  return tree(page).getByRole('article', { name: `${title} ${address}`, exact: true });
++  return tree(page).locator(
++    `article[data-path="${address}"][aria-label^="${CARD_TITLES[title] ?? title} "]`,
++  );
+ }
+ 
+ /** A group card. */
+@@ -215,12 +230,15 @@ function groupCard(page: Page, address: string): Locator {
+  * needs, because changing a leaf's class renames its card.
+  */
+ function cardByAddress(page: Page, address: string): Locator {
+-  return tree(page).locator(`article[aria-label$=" ${address}"]`);
++  return tree(page).locator(`article[data-path="${address}"]`);
+ }
+ 
+-/** An `Add Condition` / `Add Group` / `Delete` control, located inside {@link scope}. */
++/**
++ * An `Add Condition` / `Add Group` / `Delete` / `AND` / `OR` control, located inside {@link scope}
++ * by its exact `data-path` and the verb its accessible name starts with.
++ */
+ function control(scope: Locator, verb: string, address: string): Locator {
+-  return scope.getByRole('button', { name: `${verb} ${address}`, exact: true });
++  return scope.locator(`button[data-path="${address}"][aria-label^="${verb} "]`);
+ }
+ 
+ /** The class's left-border colour assertion (spec-ui-design.md L388-416). */
+@@ -313,13 +331,13 @@ async function openRequirements(
+ 
+ /** Changes a leaf's class through its own type selector. */
+ async function setType(page: Page, address: string, type: string): Promise<void> {
+-  await cardByAddress(page, address).getByLabel('Type', { exact: true }).selectOption(type);
++  await cardByAddress(page, address).getByLabel('Type ($type)', { exact: true }).selectOption(type);
+ }
+ 
+ /** Selects a quest through the `m_questName` friendly-name dropdown. */
+ async function setQuest(page: Page, address: string, questName: string): Promise<void> {
+   await cardByAddress(page, address)
+-    .getByRole('combobox', { name: `Quest ${address}`, exact: true })
++    .getByRole('combobox', { name: /^Quest \(m_questName\) / })
+     .click();
+   const search = page.getByRole('combobox', { name: 'Search quests', exact: true });
+   await expect(search).toBeVisible();
+@@ -346,32 +364,28 @@ async function buildAc1Tree(page: Page): Promise<void> {
+   await control(tree(page), 'Add Condition to', root).click();
+   await expect(card(page, 'ReqHasQuest', rootLeaf)).toBeVisible();
+   await setQuest(page, rootLeaf, REFERENCED_QUEST);
+-  await card(page, 'ReqHasQuest', rootLeaf).getByLabel('NOT', { exact: true }).check();
++  await card(page, 'ReqHasQuest', rootLeaf).getByLabel('NOT (m_applyNOT)', { exact: true }).check();
+ 
+   await control(tree(page), 'Add Group to', root).click();
+   await expect(groupCard(page, innerGroup)).toBeVisible();
+ 
+   await setType(page, innerFirst, 'ReqSchoolOfFocus');
+   await card(page, 'ReqSchoolOfFocus', innerFirst)
+-    .getByLabel('School', { exact: true })
++    .getByLabel('School (m_magicSchool)', { exact: true })
+     .selectOption('Fire');
+ 
+   await control(groupCard(page, innerGroup), 'Add Condition to', innerGroup).click();
+   await setType(page, innerSecond, 'ReqHasEntry');
+   await card(page, 'ReqHasEntry', innerSecond)
+-    .getByLabel('Entry', { exact: true })
++    .getByLabel('Entry (m_entryName)', { exact: true })
+     .fill('Complete');
+   await setQuest(page, innerSecond, REFERENCED_QUEST);
+ 
+-  await groupCard(page, innerGroup)
+-    .getByRole('button', { name: `OR for ${innerGroup}`, exact: true })
+-    .click();
+-  await expect(
+-    groupCard(page, innerGroup).getByRole('button', {
+-      name: `OR for ${innerGroup}`,
+-      exact: true,
+-    }),
+-  ).toHaveAttribute('aria-pressed', 'true');
++  await control(groupCard(page, innerGroup), 'OR for', innerGroup).click();
++  await expect(control(groupCard(page, innerGroup), 'OR for', innerGroup)).toHaveAttribute(
++    'aria-pressed',
++    'true',
++  );
+ }
+ 
+ test.beforeEach(async ({ page }) => {
+@@ -387,15 +401,15 @@ test.describe('the leaf type selector', () => {
+     await openRequirements(page);
+     await control(tree(page), 'Add Condition to', 'm_requirements').click();
+ 
+-    const selector = card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('Type', {
++    const selector = card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('Type ($type)', {
+       exact: true,
+     });
+     await expect(selector).toHaveValue('ReqHasQuest');
+     expect(await selector.locator('option').allTextContents()).toEqual([
+-      'ReqHasQuest',
+-      'ReqHasEntry',
+-      'ReqSchoolOfFocus',
+-      'ReqIsSchool',
++      'Requires quest (ReqHasQuest)',
++      'Requires quest registry entry (ReqHasEntry)',
++      'Requires school of focus (ReqSchoolOfFocus)',
++      'Requires target school (ReqIsSchool)',
+     ]);
+ 
+     // Not just "unused": absent from the tab's text and from every option.
+@@ -412,8 +426,10 @@ test.describe('the leaf type selector', () => {
+ 
+     const leaf = card(page, 'ReqIsSchool', 'm_requirements[0]');
+     await expect(leaf).toBeVisible();
+-    await leaf.getByLabel('Target Type', { exact: true }).selectOption('RT_Caster');
+-    await leaf.getByLabel('School Name', { exact: true }).selectOption('Balance');
++    await leaf.getByLabel('Target Type (m_targetType)', { exact: true }).selectOption('RT_Caster');
++    await leaf
++      .getByLabel('School Name (m_magicSchoolName)', { exact: true })
++      .selectOption('Balance');
+ 
+     const doc = await copyPanelDocument(page);
+     expect(rootChildren(doc)[0]).toEqual({
+@@ -440,7 +456,7 @@ test.describe('the corpus’s own shapes', () => {
+     await expectBorder(card(page, 'ReqSchoolOfFocus', 'm_requirements[0]'), 'border-l-green-500');
+ 
+     await card(page, 'ReqSchoolOfFocus', 'm_requirements[0]')
+-      .getByLabel('NOT', { exact: true })
++      .getByLabel('NOT (m_applyNOT)', { exact: true })
+       .check();
+ 
+     const doc = await copyPanelDocument(page);
+@@ -511,18 +527,12 @@ test.describe('a control reaches the document', () => {
+     await control(tree(page), 'Add Condition to', 'm_requirements').click();
+ 
+     const leaf = card(page, 'ReqHasQuest', 'm_requirements[0]');
+-    const not = leaf.getByLabel('NOT', { exact: true });
++    const not = leaf.getByLabel('NOT (m_applyNOT)', { exact: true });
+     await expect(not).not.toBeChecked();
+     await not.check();
+ 
+-    const andButton = groupCard(page, 'm_requirements').getByRole('button', {
+-      name: 'AND for m_requirements',
+-      exact: true,
+-    });
+-    const orButton = groupCard(page, 'm_requirements').getByRole('button', {
+-      name: 'OR for m_requirements',
+-      exact: true,
+-    });
++    const andButton = control(groupCard(page, 'm_requirements'), 'AND for', 'm_requirements');
++    const orButton = control(groupCard(page, 'm_requirements'), 'OR for', 'm_requirements');
+     await expect(andButton).toHaveAttribute('aria-pressed', 'true');
+     await expect(orButton).toHaveAttribute('aria-pressed', 'false');
+     await orButton.click();
+@@ -543,7 +553,7 @@ test.describe('a control reaches the document', () => {
+     // The trigger shows the resolved title, the document the id (AGENTS.md rule 5).
+     await expect(
+       card(page, 'ReqHasQuest', 'm_requirements[0]').getByRole('combobox', {
+-        name: 'Quest m_requirements[0]',
++        name: 'Quest (m_questName) Requirements 1',
+         exact: true,
+       }),
+     ).toContainText(REFERENCED_TITLE);
+@@ -605,15 +615,20 @@ test.describe('AC1 — the fixture-only AND(ReqHasQuest{NOT}, OR(...)) tree', ()
+     await expect(card(page, 'ReqHasEntry', 'm_requirements[1][1]')).toBeVisible();
+     await expectBorder(groupCard(page, 'm_requirements[1]'), 'border-l-purple-500');
+     await expect(
+-      card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('NOT', { exact: true }),
+-    ).toBeChecked();
+-    await expect(
+-      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel('Quest Registry', {
++      card(page, 'ReqHasQuest', 'm_requirements[0]').getByLabel('NOT (m_applyNOT)', {
+         exact: true,
+       }),
+     ).toBeChecked();
+     await expect(
+-      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel('Display Name', {
++      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel(
++        'Quest Registry (m_isQuestRegistry)',
++        {
++          exact: true,
++        },
++      ),
++    ).toBeChecked();
++    await expect(
++      card(page, 'ReqHasEntry', 'm_requirements[1][1]').getByLabel('Display Name (m_displayName)', {
+         exact: true,
+       }),
+     ).toHaveValue('');
+diff --git a/tests/ui/quests-results-editor.spec.ts b/tests/ui/quests-results-editor.spec.ts
+index d551376..9aba2d1 100644
+--- a/tests/ui/quests-results-editor.spec.ts
++++ b/tests/ui/quests-results-editor.spec.ts
+@@ -309,9 +309,68 @@ function list(page: Page, label: string): Locator {
+   return editor(page).getByRole('region', { name: label, exact: true });
+ }
+ 
+-/** A card by its **full** accessible name (`ResDropTable m_startResults.m_results[0]`). */
++/** A class's glossary pair (task 7.9): a card's title, and a type selector option's text. */
++const TITLES: Record<string, string> = {
++  ResDropTable: 'Reward: drop table (ResDropTable)',
++  ResModifyEntry: 'Modify quest registry entry (ResModifyEntry)',
++  ResAddDynaMod: 'Add or remove dynamic modifier (ResAddDynaMod)',
++  ResLearnSpell: 'Teach spell (ResLearnSpell)',
++  ResPostEvent: 'Post game event (ResPostEvent)',
++  ResAddHealth: 'Restore health (ResAddHealth)',
++  ResAddMana: 'Restore mana (ResAddMana)',
++  ResAddSpell: 'Add spell to spellbook (ResAddSpell)',
++  ResDespawn: 'Despawn NPC or object (ResDespawn)',
++  ResDrawHand: 'Draw hand (ResDrawHand)',
++  ResGiveSpell: 'Give spell to NPC (ResGiveSpell)',
++  ResPlaySound: 'Play sound (ResPlaySound)',
++  ResTeleport: 'Teleport player (ResTeleport)',
++  ResWait: 'Wait (ResWait)',
++  ReqSchoolOfFocus: 'Requires school of focus (ReqSchoolOfFocus)',
++};
++
++/**
++ * A card by its **exact** document address (its `data-path`; task 7.9 keeps a path out of every
++ * label) and its class (the pair its accessible name starts with).
++ */
+ function card(scope: Locator, title: string, address: string): Locator {
+-  return scope.getByRole('article', { name: `${title} ${address}`, exact: true });
++  return scope.locator(`article[data-path="${address}"][aria-label^="${TITLES[title] ?? title} "]`);
++}
++
++/** The glossary pair of each field key a card's control is named by (task 7.9). */
++const PAIRS: Record<string, string> = {
++  m_blocking: 'Blocking (m_blocking)',
++  m_despawnEffect: 'Despawn effect (m_despawnEffect)',
++  m_destinationLoc: 'Destination location (m_destinationLoc)',
++  m_destinationZone: 'Destination Zone (m_destinationZone)',
++  m_dynaModClientTag: 'Modifier client tag (m_dynaModClientTag)',
++  m_dynaModRemove: 'Remove modifier (m_dynaModRemove)',
++  m_dynaModState: 'Modifier state (m_dynaModState)',
++  m_entryName: 'Entry (m_entryName)',
++  m_eventName: 'Event name (m_eventName)',
++  m_exitTeleporter: 'Exit teleporter (m_exitTeleporter)',
++  m_isQuestRegistry: 'Quest Registry (m_isQuestRegistry)',
++  m_maxRolls: 'Max rolls (m_maxRolls)',
++  m_questName: 'Quest (m_questName)',
++  m_reinteractTime: 'Re-interact time (m_reinteractTime)',
++  m_requirements: 'Requirements (m_requirements)',
++  m_router: 'Sound router (m_router)',
++  m_secondsToWait: 'Seconds to wait (m_secondsToWait)',
++  m_soundName: 'Sound (m_soundName)',
++  m_spawnID: 'Spawn ID (m_spawnID)',
++  m_spellID: 'Spell (m_spellID)',
++  m_tableName: 'Drop table (m_tableName)',
++  m_teleportType: 'Teleport type (m_teleportType)',
++  m_teleporterTag: 'Teleporter tag (m_teleporterTag)',
++  m_templateID: 'Template ID (m_templateID)',
++  m_transitionID: 'Transition ID (m_transitionID)',
++  m_useQuestAsOriginator: 'Quest is the originator (m_useQuestAsOriginator)',
++  m_value: 'Value (m_value)',
++  m_zoneName: 'Zone name (m_zoneName)',
++};
++
++/** A start result's address in words — how an accessible name reads `m_startResults.m_results[i]`. */
++function startWords(index: number): string {
++  return `Start results › Results ${index + 1}`;
+ }
+ 
+ /** The Add Result selector of one list. */
+@@ -457,7 +516,7 @@ test.describe('the result type selector', () => {
+     const options = await addSelector(list(page, 'Start results'))
+       .locator('option')
+       .allTextContents();
+-    expect(options).toEqual(TYPES.map((type) => type.name));
++    expect(options).toEqual(TYPES.map((type) => TITLES[type.name]));
+     expect(options).toHaveLength(14);
+     // The corpus's 15th class is *known* — `ResActorDialog`, 5 nodes at the 328-quest
+     // baseline, every one `{$type, m_dialog}` — and it *renders* (the unit suite's
+@@ -466,7 +525,7 @@ test.describe('the result type selector', () => {
+     // `{$type}` with no dialog block, a shape the corpus has never had (D79/D80). The deep
+     // equality above already excludes it; naming it here is what keeps the decision legible
+     // to a reader who only skims the option list.
+-    expect(options).not.toContain('ResActorDialog');
++    expect(options).not.toContain('Actor dialog result (ResActorDialog)');
+   });
+ });
+ 
+@@ -488,7 +547,8 @@ test.describe('AC1 — every one of the 14 offered types', () => {
+       const address = `m_startResults.m_results[${index}]`;
+       await expect(card(start, type.name, address)).toBeVisible();
+       for (const [key, role] of type.controls) {
+-        const name = role === 'region' ? `Requirements for ${address}` : key;
++        const name =
++          role === 'region' ? `Requirements for ${startWords(index)}` : (PAIRS[key] ?? key);
+         await expect(
+           card(start, type.name, address).getByRole(role, { name, exact: true }),
+         ).toBeVisible();
+@@ -567,8 +627,8 @@ test.describe('an existing corpus node', () => {
+     const wait = card(end, 'ResModifyEntry', 'm_endResults.m_results[0]');
+ 
+     // One corpus value is visibly re-written; the empty `m_questName` shows the placeholder.
+-    await wait.getByRole('spinbutton', { name: 'm_value', exact: true }).fill('2');
+-    await wait.getByRole('textbox', { name: 'm_entryName', exact: true }).fill('Renamed');
++    await wait.getByRole('spinbutton', { name: 'Value (m_value)', exact: true }).fill('2');
++    await wait.getByRole('textbox', { name: 'Entry (m_entryName)', exact: true }).fill('Renamed');
+ 
+     const node = itemsOf(await copyPanelDocument(page), 'm_endResults')[0] as Record<
+       string,
+@@ -597,10 +657,10 @@ test.describe('an existing corpus node', () => {
+     await addResult(start, 'ResPlaySound');
+     await addResult(start, 'ResTeleport');
+     await card(start, 'ResTeleport', 'm_startResults.m_results[1]')
+-      .getByRole('textbox', { name: 'm_destinationLoc', exact: true })
++      .getByRole('textbox', { name: 'Destination location (m_destinationLoc)', exact: true })
+       .fill('Target location Landing');
+     await card(start, 'ResPlaySound', 'm_startResults.m_results[0]')
+-      .getByRole('textbox', { name: 'm_soundName', exact: true })
++      .getByRole('textbox', { name: 'Sound (m_soundName)', exact: true })
+       .fill('ObjectData/StormStart.xml');
+ 
+     const saved = await copyPanelText(page);
+@@ -627,19 +687,25 @@ test.describe('the m_router sub-object', () => {
+     const start = list(page, 'Start results');
+     await addResult(start, 'ResPlaySound');
+     const sound = card(start, 'ResPlaySound', 'm_startResults.m_results[0]');
+-    const router = sound.getByRole('group', { name: 'm_router', exact: true });
++    const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
+     await expect(router).toBeVisible();
+ 
+     // A new node carries the corpus's measured router, so the six controls show it.
+-    await expect(router.getByLabel('m_locX', { exact: true })).toHaveValue('0');
+-    await expect(router.getByLabel('m_routingType', { exact: true })).toHaveValue('ROUTING_ACTOR');
+-    await expect(router.getByLabel('m_useTriggerLocation', { exact: true })).not.toBeChecked();
++    await expect(router.getByLabel('Location X (m_locX)', { exact: true })).toHaveValue('0');
++    await expect(router.getByLabel('Routing type (m_routingType)', { exact: true })).toHaveValue(
++      'ROUTING_ACTOR',
++    );
++    await expect(
++      router.getByLabel('Use trigger location (m_useTriggerLocation)', { exact: true }),
++    ).not.toBeChecked();
+     await expect(sound.getByText(/the first edit writes it/)).toHaveCount(0);
+ 
+-    await router.getByLabel('m_locX', { exact: true }).fill('12');
+-    await router.getByLabel('m_useLocation', { exact: true }).check();
++    await router.getByLabel('Location X (m_locX)', { exact: true }).fill('12');
++    await router.getByLabel('Use router location (m_useLocation)', { exact: true }).check();
+     // `m_reinteractTime` is a result-level field, not a router sub-field.
+-    await sound.getByRole('spinbutton', { name: 'm_reinteractTime', exact: true }).fill('3');
++    await sound
++      .getByRole('spinbutton', { name: 'Re-interact time (m_reinteractTime)', exact: true })
++      .fill('3');
+ 
+     const node = itemsOf(await copyPanelDocument(page), 'm_startResults')[0] as Record<
+       string,
+@@ -670,11 +736,11 @@ test.describe('the m_router sub-object', () => {
+     };
+     await openResults(page, seeded);
+     const sound = card(list(page, 'Start results'), 'ResPlaySound', 'm_startResults.m_results[0]');
+-    const router = sound.getByRole('group', { name: 'm_router', exact: true });
++    const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
+     await expect(sound.getByText(/the first edit writes it/)).toBeVisible();
+-    await expect(router.getByLabel('m_locX', { exact: true })).toHaveValue('0');
++    await expect(router.getByLabel('Location X (m_locX)', { exact: true })).toHaveValue('0');
+ 
+-    await router.getByLabel('m_locX', { exact: true }).fill('12');
++    await router.getByLabel('Location X (m_locX)', { exact: true }).fill('12');
+ 
+     const node = itemsOf(await copyPanelDocument(page), 'm_startResults')[0] as Record<
+       string,
+@@ -717,10 +783,16 @@ test.describe('the m_router sub-object', () => {
+     };
+     await openResults(page, seeded);
+     const sound = card(list(page, 'End results'), 'ResPlaySound', 'm_endResults.m_results[0]');
+-    const router = sound.getByRole('group', { name: 'm_router', exact: true });
+-    await expect(router.getByLabel('m_reinteractTime', { exact: true })).toHaveCount(0);
+-    await sound.getByRole('spinbutton', { name: 'm_reinteractTime', exact: true }).fill('3');
+-    await router.getByLabel('m_routingType', { exact: true }).selectOption('ROUTING_ACTOR');
++    const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
++    await expect(
++      router.getByLabel('Re-interact time (m_reinteractTime)', { exact: true }),
++    ).toHaveCount(0);
++    await sound
++      .getByRole('spinbutton', { name: 'Re-interact time (m_reinteractTime)', exact: true })
++      .fill('3');
++    await router
++      .getByLabel('Routing type (m_routingType)', { exact: true })
++      .selectOption('ROUTING_ACTOR');
+ 
+     const node = itemsOf(await copyPanelDocument(page), 'm_endResults')[0] as Record<
+       string,
+@@ -752,7 +824,7 @@ test.describe('ResLearnSpell’s requirement slot', () => {
+     await addResult(start, 'ResLearnSpell');
+     const address = 'm_startResults.m_results[0]';
+     const tree = card(start, 'ResLearnSpell', address).getByRole('region', {
+-      name: `Requirements for ${address}`,
++      name: `Requirements for ${startWords(0)}`,
+       exact: true,
+     });
+     await expect(tree).toBeVisible();
+@@ -771,14 +843,14 @@ test.describe('ResLearnSpell’s requirement slot', () => {
+ 
+     // Add a condition, retype it and set its school — the shared tree's own vocabulary.
+     await tree
+-      .getByRole('button', { name: `Add Condition to ${wrapperPath}`, exact: true })
++      .locator(`button[data-path="${wrapperPath}"][aria-label^="Add Condition to "]`)
+       .click();
+     await tree
+-      .locator(`article[aria-label$=" ${wrapperPath}[1]"]`)
+-      .getByLabel('Type', { exact: true })
++      .locator(`article[data-path="${wrapperPath}[1]"]`)
++      .getByLabel('Type ($type)', { exact: true })
+       .selectOption('ReqSchoolOfFocus');
+     await card(start, 'ReqSchoolOfFocus', `${wrapperPath}[1]`)
+-      .getByLabel('School', { exact: true })
++      .getByLabel('School (m_magicSchool)', { exact: true })
+       .selectOption('Storm');
+ 
+     const node = itemsOf(await copyPanelDocument(page), 'm_startResults')[0] as Record<
+@@ -815,7 +887,10 @@ test.describe('friendly-name dropdowns', () => {
+     const start = list(page, 'Start results');
+     await addResult(start, 'ResAddSpell');
+     const spell = card(start, 'ResAddSpell', 'm_startResults.m_results[0]');
+-    const combobox = spell.getByRole('combobox', { name: 'm_templateID', exact: true });
++    const combobox = spell.getByRole('combobox', {
++      name: 'Template ID (m_templateID)',
++      exact: true,
++    });
+ 
+     // The trigger reads as the spell's name; the document gets the raw template id.
+     await pickName(
+@@ -854,7 +929,7 @@ test.describe('friendly-name dropdowns', () => {
+     // An id in the zones list displays its display name…
+     await expect(
+       card(start, 'ResAddDynaMod', 'm_startResults.m_results[0]').getByRole('combobox', {
+-        name: 'm_zoneName',
++        name: 'Zone name (m_zoneName)',
+         exact: true,
+       }),
+     ).toContainText('Hub Square');
+@@ -863,7 +938,7 @@ test.describe('friendly-name dropdowns', () => {
+     const teleport = card(start, 'ResTeleport', 'm_startResults.m_results[1]').getByRole(
+       'combobox',
+       {
+-        name: 'm_destinationZone',
++        name: 'Destination Zone (m_destinationZone)',
+         exact: true,
+       },
+     );
+@@ -888,13 +963,13 @@ test.describe('friendly-name dropdowns', () => {
+     // The three empty/null references render as the unset placeholder…
+     await expect(
+       card(end, 'ResAddDynaMod', 'm_endResults.m_results[0]').getByRole('combobox', {
+-        name: 'm_zoneName',
++        name: 'Zone name (m_zoneName)',
+         exact: true,
+       }),
+     ).toContainText('Select zones');
+     await expect(
+       card(end, 'ResModifyEntry', 'm_endResults.m_results[2]').getByRole('combobox', {
+-        name: 'm_questName',
++        name: 'Quest (m_questName)',
+         exact: true,
+       }),
+     ).toContainText('Select quests');
+@@ -942,37 +1017,43 @@ test.describe('ResDrawHand’s split template id', () => {
+ 
+     // 6 of the 8 corpus values are spells: the default source is Spells.
+     await expect(
+-      spellCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
++      spellCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
+     ).toContainText('Troll');
+     await expect(
+       spellCard.getByRole('button', {
+-        name: `Spells for m_templateID ${addresses[0]}`,
++        name: `Spells for Template ID (m_templateID) ${startWords(0)}`,
+         exact: true,
+       }),
+     ).toHaveAttribute('aria-pressed', 'true');
+ 
+     // 2 of the 8 are NPCs — and the NPC label is the documented `Name (TemplateID)`.
+     await expect(
+-      npcCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
++      npcCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
+     ).toContainText('Draconian (35528)');
+     await expect(
+-      npcCard.getByRole('button', { name: `NPCs for m_templateID ${addresses[1]}`, exact: true }),
++      npcCard.getByRole('button', {
++        name: `NPCs for Template ID (m_templateID) ${startWords(1)}`,
++        exact: true,
++      }),
+     ).toHaveAttribute('aria-pressed', 'true');
+ 
+     // A value neither table knows stays displayed and selected — and switching the source
+     // does not rewrite it.
+     await expect(
+-      unknownCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
++      unknownCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
+     ).toContainText('999999999');
+     await unknownCard
+-      .getByRole('button', { name: `Spells for m_templateID ${addresses[2]}`, exact: true })
++      .getByRole('button', {
++        name: `Spells for Template ID (m_templateID) ${startWords(2)}`,
++        exact: true,
++      })
+       .click();
+     await expect(
+-      unknownCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
++      unknownCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
+     ).toContainText('999999999');
+     await expect(
+       unknownCard.getByRole('button', {
+-        name: `Spells for m_templateID ${addresses[2]}`,
++        name: `Spells for Template ID (m_templateID) ${startWords(2)}`,
+         exact: true,
+       }),
+     ).toHaveAttribute('aria-pressed', 'true');
+@@ -995,7 +1076,7 @@ test.describe('delete and the five mounted homes', () => {
+     await addResult(start, 'ResDropTable');
+ 
+     await start
+-      .getByRole('button', { name: 'Delete m_startResults.m_results[0]', exact: true })
++      .getByRole('button', { name: 'Delete Start results › Results 1', exact: true })
+       .click();
+ 
+     await expect(card(start, 'ResWait', 'm_startResults.m_results[0]')).toHaveCount(0);
+@@ -1028,7 +1109,7 @@ test.describe('delete and the five mounted homes', () => {
+       'ResWait',
+       'm_goals[0].m_completeResults.m_results[0]',
+     )
+-      .getByRole('spinbutton', { name: 'm_secondsToWait', exact: true })
++      .getByRole('spinbutton', { name: 'Seconds to wait (m_secondsToWait)', exact: true })
+       .fill('7');
+     const doc = await copyPanelDocument(page);
+     const goals = doc.m_goals as Array<Record<string, unknown>>;
+diff --git a/tests/ui/quests-validation.spec.ts b/tests/ui/quests-validation.spec.ts
+index debdeb6..ae626c8 100644
+--- a/tests/ui/quests-validation.spec.ts
++++ b/tests/ui/quests-validation.spec.ts
+@@ -246,7 +246,7 @@ test.describe('AC1 — a dangling m_startGoals reference blocks the save', () =>
+     await expandCard(secondCard);
+     // `exact` on purpose: `getByLabel('m_goalName')` is a substring match and also resolves
+     // the neighbouring `m_goalNameID` control.
+-    const nameInput = secondCard.getByLabel('m_goalName', { exact: true });
++    const nameInput = secondCard.getByLabel('Goal Name (m_goalName)', { exact: true });
+     await nameInput.fill('1_Start');
+ 
+     const message = fieldMessages(page, 'm_goals[1].m_goalName');
+diff --git a/tests/unit/evidence-panel.test.ts b/tests/unit/evidence-panel.test.ts
+index 9199adb..1828812 100644
+--- a/tests/unit/evidence-panel.test.ts
++++ b/tests/unit/evidence-panel.test.ts
+@@ -290,12 +290,18 @@ describe('EvidencePanel — the visible surfaces', () => {
+     const { html } = render();
+     // The available row writes the focused field…
+     expect(html).toContain('aria-label="Insert WizQst17318F_00000006"');
+-    expect(html).toContain('→ m_goals[2].m_goalText');
++    // The target is named by its glossary pair and its place in words (task 7.9); the path itself
++    // survives only in `data-path`.
++    expect(html).toMatch(
++      /→ <span data-path="m_goals\[2\]\.m_goalText"><span data-term="m_goalText">Goal text \(<span[^>]*>m_goalText<\/span>\)<\/span> in Goals 3<\/span>/,
++    );
+     expect(html).toContain('Insert into');
+     // …while the used row writes the field it already fills (its own provenance), even though a
+     // different field is focused: the row's label is its own path, not the focus.
+     expect(html).toContain('aria-label="Insert WizQst17318E_00000006"');
+-    expect(html).toContain('→ m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog');
++    expect(html).toMatch(
++      /→ <span data-path="m_dialogList\.m_dialogs\[0\]\.m_dialogEntries\[0\]\.m_dialog"><span data-term="m_dialog">Dialog text \(<span[^>]*>m_dialog<\/span>\)<\/span> in Dialog list › Dialog blocks 1 › Dialog entries 1<\/span>/,
++    );
+   });
+ 
+   it('renders no button and states the reason when nothing is focused', () => {
+diff --git a/tests/unit/quest-goals.test.ts b/tests/unit/quest-goals.test.ts
+index 8346abb..52e133d 100644
+--- a/tests/unit/quest-goals.test.ts
++++ b/tests/unit/quest-goals.test.ts
+@@ -646,25 +646,33 @@ describe('the card summary and the person A name suggestions', () => {
+   it('renders a Waypoint card as the spec ASCII does', () => {
+     const goal = goalsOf(questDoc())[0];
+     expect(goalSummaryLines(goal)).toStrictEqual([
+-      { label: 'Zone', value: 'DragonSpire/DS_A3_Kings/DS_A3Z1_CrystalGrove' },
+-      { label: 'Entry', value: '✓' },
+-      { label: 'Exit', value: '✗' },
+-      { label: 'Proximity Tag', value: '(empty)' },
+-      { label: 'Client Tags', value: 'CollectCrystal3, Ddl_CollectCrystal_Grove1' },
+-      { label: 'Display Image', value: 'GUI/QuestButtons/Use_crystal_sample.dds' },
++      { key: 'm_zoneTag', label: 'Zone', value: 'DragonSpire/DS_A3_Kings/DS_A3Z1_CrystalGrove' },
++      { key: 'm_zoneEntry', label: 'Entry', value: '✓' },
++      { key: 'm_zoneExit', label: 'Exit', value: '✗' },
++      { key: 'm_proximityTag', label: 'Proximity Tag', value: '(empty)' },
++      {
++        key: 'm_clientTags',
++        label: 'Client Tags',
++        value: 'CollectCrystal3, Ddl_CollectCrystal_Grove1',
++      },
++      {
++        key: 'm_displayImage1',
++        label: 'Display Image 1',
++        value: 'GUI/QuestButtons/Use_crystal_sample.dds',
++      },
+     ]);
+   });
+ 
+   it('omits the Client Tags and Display Image lines when the goal has neither', () => {
+     expect(
+       goalSummaryLines({ $type: GOAL_TYPES.AchieveRankGoalTemplate, m_rank: 4 }),
+-    ).toStrictEqual([{ label: 'Rank', value: '4' }]);
++    ).toStrictEqual([{ key: 'm_rank', label: 'Rank', value: '4' }]);
+     // An unknown class still yields the two shared lines, so nothing is hidden.
+     expect(
+       goalSummaryLines({ $type: 'Nothing', m_clientTags: ['a'], m_displayImage1: 'x.dds' }),
+     ).toStrictEqual([
+-      { label: 'Client Tags', value: 'a' },
+-      { label: 'Display Image', value: 'x.dds' },
++      { key: 'm_clientTags', label: 'Client Tags', value: 'a' },
++      { key: 'm_displayImage1', label: 'Display Image 1', value: 'x.dds' },
+     ]);
+   });
+ 
+diff --git a/tests/unit/quest-results.test.ts b/tests/unit/quest-results.test.ts
+index cc3f154..279b196 100644
+--- a/tests/unit/quest-results.test.ts
++++ b/tests/unit/quest-results.test.ts
+@@ -391,7 +391,7 @@ describe('reading a result wrapper', () => {
+     const start = readResultCards([START_RESULTS_PATH], doc.m_startResults);
+     expect(start).toHaveLength(1);
+     expect(start[0]?.address).toBe('m_startResults.m_results[0]');
+-    expect(start[0]?.title).toBe('ResDropTable');
++    expect(start[0]?.title).toBe('Reward: drop table (ResDropTable)');
+     expect(start[0]?.fields.map((field) => field.spec.key)).toEqual(['m_tableName', 'm_maxRolls']);
+     expect(start[0]?.fields.every((field) => field.present)).toBe(true);
+ 
+diff --git a/tests/unit/requirement-tree.test.ts b/tests/unit/requirement-tree.test.ts
+index 41e20b8..b50a640 100644
+--- a/tests/unit/requirement-tree.test.ts
++++ b/tests/unit/requirement-tree.test.ts
+@@ -312,7 +312,7 @@ describe('reading a corpus value', () => {
+     expect(tree?.children[0]?.path).toEqual(['Items', 3, 'Requirements', 'm_requirements', 0]);
+     // The address is the slot path plus one index per level — never the repeated child key.
+     expect(tree?.children[0]?.address).toBe('Items[3].Requirements[0]');
+-    expect(tree?.children[0]?.title).toBe('ReqSchoolOfFocus');
++    expect(tree?.children[0]?.title).toBe('Requires school of focus (ReqSchoolOfFocus)');
+   });
+ 
+   it('names an unknown $type by its own spelling instead of dropping it', () => {
+@@ -644,10 +644,10 @@ describe('validate, never normalise (D57)', () => {
+ describe('the selector vocabularies', () => {
+   it('offers exactly the 4 classes, with an unset option only when nothing matches', () => {
+     expect(requirementTypeSelectOptions({ $type: RSOF }).map((option) => option.label)).toEqual([
+-      'ReqHasQuest',
+-      'ReqHasEntry',
+-      'ReqSchoolOfFocus',
+-      'ReqIsSchool',
++      'Requires quest (ReqHasQuest)',
++      'Requires quest registry entry (ReqHasEntry)',
++      'Requires school of focus (ReqSchoolOfFocus)',
++      'Requires target school (ReqIsSchool)',
+     ]);
+     expect(requirementTypeSelectValue({ $type: RSOF })).toBe('ReqSchoolOfFocus');
+     expect(requirementTypeSelectValue({ $type: 'unknown' })).toBe('');

@@ -171,13 +171,19 @@ test.describe('tabs', () => {
     await main.getByRole('tab', { name: 'Results' }).click();
     await expect(main.getByRole('region', { name: 'Quest results editor' })).toBeVisible();
     await expect(main.getByRole('region', { name: 'End results', exact: true })).toBeVisible();
+    // The card by its address (`data-path`) and its class pair (task 7.9: the accessible name
+    // reads the address in words and starts with the class's glossary pair).
     await expect(
-      main.getByRole('article', { name: 'ResDropTable m_endResults.m_results[0]' }),
+      main.locator(
+        'article[data-path="m_endResults.m_results[0]"][aria-label^="Reward: drop table (ResDropTable) "]',
+      ),
     ).toBeVisible();
     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();
 
     await main.getByRole('tab', { name: 'Dialog' }).click();
-    await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
+    await expect(
+      main.getByRole('heading', { name: 'Dialog list (m_dialogList)', exact: true }),
+    ).toBeVisible();
 
     // The Dialog tab became the sixth live editor in p3-08, which is why the "Dialog is
     // read-only" loop that stood here has been replaced rather than weakened: its own spec

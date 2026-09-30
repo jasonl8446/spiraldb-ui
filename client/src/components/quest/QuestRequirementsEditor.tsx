@@ -7,6 +7,7 @@ import {
   REQUIREMENTS_PATH,
 } from '../../lib/requirement-tree';
 import RequirementTreeEditor from '../shared/RequirementTreeEditor';
+import TermLabel from '../TermLabel';
 
 /**
  * `QuestRequirementsEditor` — the Requirements tab's body (plan task 3.6, story p3-06).
@@ -91,7 +92,9 @@ export default function QuestRequirementsEditor({
 
       <section aria-label={GOAL_REQUIREMENTS_SECTION_LABEL} className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-xs text-zinc-400">{GOAL_REQUIREMENTS_PATH}</h2>
+          <h2 className="text-xs text-zinc-400">
+            <TermLabel term={{ field: GOAL_REQUIREMENTS_PATH }} />
+          </h2>
           <p className="text-xs text-zinc-400">{GOAL_REQUIREMENTS_NOTE}</p>
         </div>
         {goals.length === 0 ? (
@@ -136,7 +139,9 @@ function Slot({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
-        <h2 className="font-mono text-xs text-zinc-400">{fieldKey}</h2>
+        <h2 className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </h2>
         {note === undefined ? null : <p className="text-xs text-zinc-400">{note}</p>}
       </div>
       <RequirementTreeEditor state={state} path={path} label={label} />

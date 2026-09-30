@@ -646,25 +646,33 @@ describe('the card summary and the person A name suggestions', () => {
   it('renders a Waypoint card as the spec ASCII does', () => {
     const goal = goalsOf(questDoc())[0];
     expect(goalSummaryLines(goal)).toStrictEqual([
-      { label: 'Zone', value: 'DragonSpire/DS_A3_Kings/DS_A3Z1_CrystalGrove' },
-      { label: 'Entry', value: '✓' },
-      { label: 'Exit', value: '✗' },
-      { label: 'Proximity Tag', value: '(empty)' },
-      { label: 'Client Tags', value: 'CollectCrystal3, Ddl_CollectCrystal_Grove1' },
-      { label: 'Display Image', value: 'GUI/QuestButtons/Use_crystal_sample.dds' },
+      { key: 'm_zoneTag', label: 'Zone', value: 'DragonSpire/DS_A3_Kings/DS_A3Z1_CrystalGrove' },
+      { key: 'm_zoneEntry', label: 'Entry', value: '✓' },
+      { key: 'm_zoneExit', label: 'Exit', value: '✗' },
+      { key: 'm_proximityTag', label: 'Proximity Tag', value: '(empty)' },
+      {
+        key: 'm_clientTags',
+        label: 'Client Tags',
+        value: 'CollectCrystal3, Ddl_CollectCrystal_Grove1',
+      },
+      {
+        key: 'm_displayImage1',
+        label: 'Display Image 1',
+        value: 'GUI/QuestButtons/Use_crystal_sample.dds',
+      },
     ]);
   });
 
   it('omits the Client Tags and Display Image lines when the goal has neither', () => {
     expect(
       goalSummaryLines({ $type: GOAL_TYPES.AchieveRankGoalTemplate, m_rank: 4 }),
-    ).toStrictEqual([{ label: 'Rank', value: '4' }]);
+    ).toStrictEqual([{ key: 'm_rank', label: 'Rank', value: '4' }]);
     // An unknown class still yields the two shared lines, so nothing is hidden.
     expect(
       goalSummaryLines({ $type: 'Nothing', m_clientTags: ['a'], m_displayImage1: 'x.dds' }),
     ).toStrictEqual([
-      { label: 'Client Tags', value: 'a' },
-      { label: 'Display Image', value: 'x.dds' },
+      { key: 'm_clientTags', label: 'Client Tags', value: 'a' },
+      { key: 'm_displayImage1', label: 'Display Image 1', value: 'x.dds' },
     ]);
   });
 

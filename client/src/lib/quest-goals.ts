@@ -82,7 +82,7 @@
  */
 
 import type { DocEdit, DocPath } from '@shared/document';
-import { fieldLabel } from '@shared/glossary';
+import { fieldLabel, type TermRef } from '@shared/glossary';
 import {
   GOAL_TYPES,
   GOAL_TYPE_VALUES,
@@ -546,6 +546,23 @@ export function goalShortTypeName(goal: unknown): string {
   return lenientShortTypeName(typeString) ?? 'unknown';
 }
 
+/**
+ * The glossary term a goal's class badge renders (task 7.9): the `$type` when the constant table
+ * knows it, the raw `m_goalType` when it does not, and {@link goalShortTypeName}'s last resort
+ * otherwise (which has no entry, so `<TermLabel />` shows it alone, never a guess).
+ */
+export function goalTypeTerm(goal: unknown): TermRef {
+  const typeString = goalField(goal, '$type');
+  if (typeof typeString === 'string' && shortTypeName(typeString) !== undefined) {
+    return { type: typeString };
+  }
+  const goalType = goalField(goal, 'm_goalType');
+  if (typeof goalType === 'string' && goalType !== '') {
+    return { enum: 'GoalType', value: goalType };
+  }
+  return { type: goalShortTypeName(goal) };
+}
+
 /** The badge class for a goal — the spec's colour, or the neutral fallback. */
 export function goalBadgeClass(goal: unknown): string {
   return goalTypeSpecForGoal(goal)?.badgeClass ?? GOAL_TYPE_BADGE_FALLBACK;
@@ -632,6 +649,9 @@ export function goalScalarText(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/** A summary line's text for an empty value. */
+export const GOAL_SUMMARY_EMPTY_TEXT = '(empty)';
+
 /** One field's card-summary display: `✓`/`✗`, the joined tags, or the scalar text. */
 export function goalFieldDisplay(field: GoalFieldSpec, value: unknown): string {
   if (field.kind === 'boolean') {
@@ -639,14 +659,16 @@ export function goalFieldDisplay(field: GoalFieldSpec, value: unknown): string {
   }
   if (field.kind === 'tags') {
     const text = clientTagsToText(value);
-    return text === '' ? '(empty)' : text;
+    return text === '' ? GOAL_SUMMARY_EMPTY_TEXT : text;
   }
   const text = goalScalarText(value);
-  return text === '' ? '(empty)' : text;
+  return text === '' ? GOAL_SUMMARY_EMPTY_TEXT : text;
 }
 
 /** One summary line of a goal card. */
 export interface GoalSummaryLine {
+  /** The document key the line shows — the card renders it as its glossary pair (task 7.9). */
+  key: string;
   label: string;
   value: string;
 }
@@ -659,16 +681,17 @@ export interface GoalSummaryLine {
  */
 export function goalSummaryLines(goal: unknown): GoalSummaryLine[] {
   const lines: GoalSummaryLine[] = goalTypeFields(goal).map((field) => ({
+    key: field.key,
     label: field.label,
     value: goalFieldDisplay(field, goalField(goal, field.key)),
   }));
   const tags = clientTagsToText(goalField(goal, 'm_clientTags'));
   if (tags !== '') {
-    lines.push({ label: fieldLabel('m_clientTags'), value: tags });
+    lines.push({ key: 'm_clientTags', label: fieldLabel('m_clientTags'), value: tags });
   }
   const image = goalField(goal, 'm_displayImage1');
   if (typeof image === 'string' && image !== '') {
-    lines.push({ label: 'Display Image', value: image });
+    lines.push({ key: 'm_displayImage1', label: fieldLabel('m_displayImage1'), value: image });
   }
   return lines;
 }

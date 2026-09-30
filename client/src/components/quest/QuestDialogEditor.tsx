@@ -2,6 +2,7 @@ import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { DIALOG_LIST_KEY } from '../../lib/quest-dialog';
 import { goalName, NO_GOALS_TEXT } from '../../lib/quest-goals';
 import DialogListEditor from '../shared/DialogListEditor';
+import TermLabel from '../TermLabel';
 
 /**
  * `QuestDialogEditor` — the Dialog tab's body (plan task 3.8, story p3-08;
@@ -63,7 +64,9 @@ export default function QuestDialogEditor({ state }: QuestDialogEditorProps): JS
     <section aria-label={DIALOG_EDITOR_LABEL} className="flex flex-col gap-6">
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-xs text-zinc-400">{DIALOG_LIST_KEY}</h2>
+          <h2 className="text-xs text-zinc-400">
+            <TermLabel term={{ field: DIALOG_LIST_KEY }} />
+          </h2>
           <p className="text-xs text-zinc-400">{QUEST_DIALOG_NOTE}</p>
         </div>
         <DialogListEditor state={state} path={[DIALOG_LIST_KEY]} label={QUEST_DIALOG_LIST_LABEL} />
@@ -71,7 +74,10 @@ export default function QuestDialogEditor({ state }: QuestDialogEditorProps): JS
 
       <section aria-label={GOAL_DIALOG_SECTION_LABEL} className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-xs text-zinc-400">{`m_goals[].${DIALOG_LIST_KEY}`}</h2>
+          <h2 className="text-xs text-zinc-400" data-path={`m_goals[].${DIALOG_LIST_KEY}`}>
+            <TermLabel term={{ field: 'm_goals' }} /> ›{' '}
+            <TermLabel term={{ field: DIALOG_LIST_KEY }} />
+          </h2>
           <p className="text-xs text-zinc-400">{GOAL_DIALOG_NOTE}</p>
         </div>
         {goals.length === 0 ? (

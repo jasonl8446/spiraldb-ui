@@ -290,7 +290,17 @@ function summary(label: string, value: string): RegExp {
  * DOM order is waited for rather than sampled.
  */
 async function cardOrder(page: Page): Promise<string[]> {
-  return editor(page).locator('article .font-mono').allTextContents();
+  // The header's own mono name span: since task 7.9 a label's technical half is mono too, so the
+  // name is addressed as the header's direct child rather than as any `.font-mono` in the card.
+  return editor(page).locator('article header > span.font-mono').allTextContents();
+}
+
+/**
+ * A card's class badge (task 7.9): the element around the class's `[data-term]` pair, whose text is
+ * the whole pair and whose class carries the spec's colour.
+ */
+function typeBadge(scope: Locator, className: string): Locator {
+  return scope.locator(`header [data-term="${className}"]`).locator('..');
 }
 
 /** dnd-kit's accessibility announcements, the only signal a keyboard drag exposes. */
@@ -308,47 +318,54 @@ test.describe('the goal cards', () => {
     await expect(
       waypoint.locator('.font-mono', { hasText: '1_WizardQuestGoals_00000058' }),
     ).toBeVisible();
-    // The badge is the `$type`'s TypeName — the same text the read-only Goals panel
-    // shows for the same quest (`extraction.spec.ts` pins it there), not the type
-    // selector's friendlier `Waypoint` vocabulary.
-    await expect(waypoint.getByText('WaypointGoalTemplate', { exact: true })).toBeVisible();
+    // The badge is the `$type`'s glossary pair (task 7.9) — the same text the read-only Goals
+    // panel shows for the same quest (`extraction.spec.ts` pins it there).
+    await expect(typeBadge(waypoint, 'WaypointGoalTemplate')).toHaveText(
+      'Reach a zone (Waypoint goal) (WaypointGoalTemplate)',
+    );
     // The type badge is the spec's colour (docs/spec-ui-design.md L360-365).
-    expect(
-      await waypoint.getByText('WaypointGoalTemplate', { exact: true }).getAttribute('class'),
-    ).toContain('border-blue-500');
+    expect(await typeBadge(waypoint, 'WaypointGoalTemplate').getAttribute('class')).toContain(
+      'border-blue-500',
+    );
     // In `m_startGoals` → the Start badge, and the toggle says what it would do.
     await expect(waypoint.getByText('Start', { exact: true })).toBeVisible();
     await expect(waypoint.getByRole('button', { name: 'Unset as Start Goal' })).toBeVisible();
 
     // The spec ASCII's summary lines (L305-309); the zone is the unlisted interior path.
-    await expect(waypoint).toContainText(summary('Zone', UNLISTED_ZONE));
-    await expect(waypoint).toContainText(summary('Entry', '✓'));
-    await expect(waypoint).toContainText(summary('Exit', '✗'));
-    await expect(waypoint).toContainText(summary('Proximity Tag', '(empty)'));
+    await expect(waypoint).toContainText(summary('Zone (m_zoneTag)', UNLISTED_ZONE));
+    await expect(waypoint).toContainText(summary('Entry (m_zoneEntry)', '✓'));
+    await expect(waypoint).toContainText(summary('Exit (m_zoneExit)', '✗'));
+    await expect(waypoint).toContainText(summary('Proximity Tag (m_proximityTag)', '(empty)'));
     await expect(waypoint).toContainText(
-      summary('Client Tags', 'CollectCrystal3, Ddl_CollectCrystal_Grove1'),
+      summary('Client Tags (m_clientTags)', 'CollectCrystal3, Ddl_CollectCrystal_Grove1'),
     );
     await expect(waypoint).toContainText(
-      summary('Display Image', 'GUI/QuestButtons/Use_crystal_sample.dds'),
+      summary('Display Image 1 (m_displayImage1)', 'GUI/QuestButtons/Use_crystal_sample.dds'),
     );
 
     const bounty = card(page, 1);
-    await expect(bounty.getByText('BountyGoalTemplate', { exact: true })).toBeVisible();
-    expect(
-      await bounty.getByText('BountyGoalTemplate', { exact: true }).getAttribute('class'),
-    ).toContain('border-red-500');
-    await expect(bounty).toContainText(summary('Bounty Total', '3'));
-    await expect(bounty).toContainText(summary('Bounty Type', 'BT_MOB_KILL'));
+    await expect(typeBadge(bounty, 'BountyGoalTemplate')).toHaveText(
+      'Kill mobs (Bounty goal) (BountyGoalTemplate)',
+    );
+    expect(await typeBadge(bounty, 'BountyGoalTemplate').getAttribute('class')).toContain(
+      'border-red-500',
+    );
+    await expect(bounty).toContainText(summary('Bounty Total (m_bountyTotal)', '3'));
+    await expect(bounty).toContainText(
+      summary('Bounty Type (m_bountyType)', 'Kill mobs (BT_MOB_KILL)'),
+    );
     // Not a start goal: no Start badge, and the toggle offers to add it.
     await expect(bounty.getByText('Start', { exact: true })).toHaveCount(0);
     await expect(bounty.getByRole('button', { name: 'Set as Start Goal' })).toBeVisible();
 
     const persona = card(page, 2);
-    await expect(persona.getByText('PersonaGoalTemplate', { exact: true })).toBeVisible();
-    expect(
-      await persona.getByText('PersonaGoalTemplate', { exact: true }).getAttribute('class'),
-    ).toContain('border-purple-500');
-    await expect(persona).toContainText(summary('Persona', UNLISTED_PERSONA));
+    await expect(typeBadge(persona, 'PersonaGoalTemplate')).toHaveText(
+      'Talk to an NPC (Persona goal) (PersonaGoalTemplate)',
+    );
+    expect(await typeBadge(persona, 'PersonaGoalTemplate').getAttribute('class')).toContain(
+      'border-purple-500',
+    );
+    await expect(persona).toContainText(summary('Persona (m_personaName)', UNLISTED_PERSONA));
   });
 
   test('Edit expands the card inline into its type fields and the shared base section', async ({
@@ -364,25 +381,31 @@ test.describe('the goal cards', () => {
     await expect(waypoint.getByText('Shared base fields')).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     // The type's own fields, labelled with the raw keys.
-    await expect(waypoint.getByLabel('m_zoneTag', { exact: true })).toBeVisible();
-    await expect(waypoint.getByLabel('m_zoneEntry', { exact: true })).toBeChecked();
-    await expect(waypoint.getByLabel('m_zoneExit', { exact: true })).not.toBeChecked();
-    await expect(waypoint.getByLabel('m_proximityTag', { exact: true })).toHaveValue('');
+    await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toBeVisible();
+    await expect(waypoint.getByLabel('Entry (m_zoneEntry)', { exact: true })).toBeChecked();
+    await expect(waypoint.getByLabel('Exit (m_zoneExit)', { exact: true })).not.toBeChecked();
+    await expect(
+      waypoint.getByLabel('Proximity Tag (m_proximityTag)', { exact: true }),
+    ).toHaveValue('');
 
     // The base fields live behind the collapsible section: present in the DOM, not
     // visible, until the user opens it (`exact` matters when they are: `m_goalName`
     // also matches `m_goalNameID` by substring).
-    await expect(waypoint.getByLabel('m_goalName', { exact: true })).toBeHidden();
+    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toBeHidden();
     await waypoint.getByText('Shared base fields').click();
-    await expect(waypoint.getByLabel('m_goalName', { exact: true })).toBeVisible();
-    await expect(waypoint.getByLabel('m_goalName', { exact: true })).toHaveValue(
+    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toBeVisible();
+    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toHaveValue(
       '1_WizardQuestGoals_00000058',
     );
-    await expect(waypoint.getByLabel('m_goalNameID', { exact: true })).toHaveValue('0');
-    await expect(waypoint.getByLabel('m_goalType', { exact: true })).toHaveValue(
+    await expect(waypoint.getByLabel('Goal Name ID (m_goalNameID)', { exact: true })).toHaveValue(
+      '0',
+    );
+    await expect(waypoint.getByLabel('Goal Type (m_goalType)', { exact: true })).toHaveValue(
       'GOAL_TYPE_WAYPOINT',
     );
-    await expect(waypoint.getByLabel('m_autoQualify', { exact: true })).not.toBeChecked();
+    await expect(
+      waypoint.getByLabel('Auto Qualify (m_autoQualify)', { exact: true }),
+    ).not.toBeChecked();
   });
 
   test('the drag handle is a labelled button, not the card', async ({ page }) => {
@@ -401,7 +424,7 @@ test.describe('adding goals', () => {
     await openGoals(page);
     await openJson(page);
 
-    // [selector label, card badge, $type, m_goalType, the type's own fields]
+    // [selector value, card badge class, $type, m_goalType, the type's own fields]
     const expected: Array<[string, string, string, string, Record<string, unknown>]> = [
       [
         'Waypoint',
@@ -459,7 +482,7 @@ test.describe('adding goals', () => {
 
       // The card is on screen immediately (no refresh), with the type's badge.
       await expect(editor(page).getByRole('article')).toHaveCount(goals.length);
-      await expect(card(page, goals.length - 1).getByText(badge, { exact: true })).toBeVisible();
+      await expect(typeBadge(card(page, goals.length - 1), badge)).toBeVisible();
     }
 
     // Eight goals, eight unique names — the uniqueness plan §3.9 validates.
@@ -642,7 +665,7 @@ test.describe('preservation (D5/D57)', () => {
     // Edit an unrelated base field, then compare the goal exactly.
     await waypoint.getByRole('button', { name: 'Edit' }).click();
     await waypoint.getByText('Shared base fields').click();
-    await waypoint.getByLabel('m_autoQualify', { exact: true }).check();
+    await waypoint.getByLabel('Auto Qualify (m_autoQualify)', { exact: true }).check();
 
     const doc = await copyPanelDocument(page);
     const goal = goalsOf(doc)[0];
@@ -661,7 +684,7 @@ test.describe('preservation (D5/D57)', () => {
     const persona = cardNamed(page, '3_WizardQuestGoals_00000070');
 
     await persona.getByRole('button', { name: 'Edit' }).click();
-    await persona.getByLabel('m_usePatron', { exact: true }).check();
+    await persona.getByLabel('Use Patron (m_usePatron)', { exact: true }).check();
 
     const doc = await copyPanelDocument(page);
     const goal = goalsOf(doc)[2];
@@ -683,14 +706,16 @@ test.describe('preservation (D5/D57)', () => {
     await waypoint.getByRole('button', { name: 'Edit' }).click();
     // The dropdown cannot resolve the path in the mocked `zones` table (404) and shows
     // the raw path — the miss path 37 of the corpus's 149 paths need.
-    const zone = waypoint.getByLabel('m_zoneTag', { exact: true });
+    const zone = waypoint.getByLabel('Zone (m_zoneTag)', { exact: true });
     await expect(zone).toContainText(UNLISTED_ZONE);
 
     // An unrelated edit must not rewrite it.
     await waypoint.getByText('Shared base fields').click();
-    await waypoint.getByLabel('m_noQuestHelper', { exact: true }).check();
+    await waypoint.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }).check();
 
-    await expect(waypoint.getByLabel('m_zoneTag', { exact: true })).toContainText(UNLISTED_ZONE);
+    await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toContainText(
+      UNLISTED_ZONE,
+    );
     const doc = await copyPanelDocument(page);
     expect(goalsOf(doc)[0].m_zoneTag).toBe(UNLISTED_ZONE);
   });
@@ -710,7 +735,9 @@ test.describe('string-table lookups on m_goalTitle', () => {
     await cardNamed(page, '2_WizardQuestGoals_00000067')
       .getByRole('button', { name: 'Edit' })
       .click();
-    await expect(card(page, 1).getByLabel('m_goalTitle', { exact: true })).toHaveValue('');
+    await expect(card(page, 1).getByLabel('Goal Title (m_goalTitle)', { exact: true })).toHaveValue(
+      '',
+    );
     expect(recorded.nameLookups).toHaveLength(before);
     expect(recorded.nameLookups).not.toContain('');
 
@@ -739,7 +766,7 @@ test.describe('the ID-referencing controls', () => {
     const waypoint = card(page, 0);
     await waypoint.getByRole('button', { name: 'Edit' }).click();
 
-    await waypoint.getByLabel('m_zoneTag', { exact: true }).click();
+    await waypoint.getByLabel('Zone (m_zoneTag)', { exact: true }).click();
     // The dropdown's search box is `cmdk`'s input: it carries `role="combobox"` and an
     // `aria-label`, but `getByLabel` does not resolve it (it is not a labelled control),
     // so it is addressed by role — the locator that matches what the element is.
@@ -748,7 +775,9 @@ test.describe('the ID-referencing controls', () => {
     await zoneSearch.fill('Crystal');
     await page.getByRole('option', { name: 'Crystal Grove' }).click();
 
-    await expect(waypoint.getByLabel('m_zoneTag', { exact: true })).toContainText('Crystal Grove');
+    await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toContainText(
+      'Crystal Grove',
+    );
     const doc = await copyPanelDocument(page);
     expect(goalsOf(doc)[0].m_zoneTag).toBe(LISTED_ZONE);
   });
@@ -759,7 +788,7 @@ test.describe('the ID-referencing controls', () => {
     const persona = cardNamed(page, '3_WizardQuestGoals_00000070');
     await persona.getByRole('button', { name: 'Edit' }).click();
 
-    const input = persona.getByLabel('m_personaName', { exact: true });
+    const input = persona.getByLabel('Persona (m_personaName)', { exact: true });
     // Unlisted (`WC-HUB-NPC01` is in neither names table) — kept, never cleared.
     await expect(input).toHaveValue(UNLISTED_PERSONA);
     // The suggestions are `npcs.name` values, and the unlisted current value is offered.
@@ -770,8 +799,8 @@ test.describe('the ID-referencing controls', () => {
     expect(suggestions).toContain(UNLISTED_PERSONA);
 
     // An unrelated edit leaves it alone…
-    await persona.getByLabel('m_usePatron', { exact: true }).check();
-    await expect(persona.getByLabel('m_personaName', { exact: true })).toHaveValue(
+    await persona.getByLabel('Use Patron (m_usePatron)', { exact: true }).check();
+    await expect(persona.getByLabel('Persona (m_personaName)', { exact: true })).toHaveValue(
       UNLISTED_PERSONA,
     );
     // …and typing a new name writes exactly what was typed.

@@ -39,10 +39,13 @@ import {
   RESULT_LIST_EDITOR_LABEL,
   type ResultCardView,
   type ResultFieldView,
+  type ResultSelectOption,
   type ResultShortTypeName,
 } from '../../lib/quest-results';
+import { docPathWords, fieldValueText, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import TermLabel from '../TermLabel';
 import { FieldMessages, useFieldMessages, type FieldValidationMessage } from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
@@ -71,10 +74,10 @@ import RequirementTreeEditor from './RequirementTreeEditor';
  *    `m_results`, and no `$type` (unlike the requirement wrapper); this component renders
  *    the wrapper and writes into it, and {@link addResultEdits} creates it as
  *    `{m_results: [...]}` when it is missing. Nothing here can add a `$type` to it.
- * 2. **The field keys are the labels.** Each control's visible label and accessible name is
- *    the document key itself (`m_tableName`), the same habit `QuestGoalsEditor` has — the
- *    domain's vocabulary is the field name, and the card's own address disambiguates the
- *    repeats across cards.
+ * 2. **The field keys are the labels, as glossary pairs.** Each control's visible label and
+ *    accessible name is the document key's `Friendly (technical)` pair (`Drop table
+ *    (m_tableName)`, D131, task 7.9), the same habit `QuestGoalsEditor` has, and the card's own
+ *    name disambiguates the repeats across cards.
  * 3. **A friendly-name field is a real dropdown per declared source**, and a **dual-source**
  *    field (`ResDrawHand.m_templateID`, measured 6 of 8 distinct values in `spells` and 2 in
  *    `npcs`) gets a UI-only source toggle: the default is whichever table the current value
@@ -97,15 +100,15 @@ import RequirementTreeEditor from './RequirementTreeEditor';
  * | element | accessible name | how |
  * |---|---|---|
  * | the list's container | the `label` prop (default `Result list editor`) | `<section aria-label>` → a `region` |
- * | a card | `<ClassName> <address>` (`ResDropTable m_startResults.m_results[0]`) | `<article aria-label>` |
- * | delete | `Delete <address>` | `aria-label` on a `×` button |
+ * | a card | `<class pair> <words>` (`Reward: drop table (ResDropTable) Start results › Results 1`) | `<article aria-label>` + `data-path` (the address) |
+ * | delete | `Delete <words>` | `aria-label` + `data-path` on a `×` button |
  * | the add selector | `New result type` | a real `<label htmlFor>` |
  * | the add button | `Add Result` | button text |
- * | a text/number/enum/boolean field | its document key (`m_maxRolls`) | a real `<label htmlFor>` + the card's name for disambiguation |
- * | a friendly-name field | its document key | `aria-label` on the combobox (a `<button>` cannot be named by `htmlFor`) |
- * | the dual-source toggle | `Spells for m_templateID <address>` / `NPCs for …` | `aria-label` + `aria-pressed`, inside `role="group" aria-label="source m_templateID <address>"` |
- * | the router | `m_router` | `role="group" aria-label`; each sub-control is labelled with its own key |
- * | the requirement slot | `Requirements for <address>` | the shared tree's `<section aria-label>` |
+ * | a text/number/enum/boolean field | its glossary pair (`Max rolls (m_maxRolls)`) | a real `<label htmlFor>` + the card's name for disambiguation |
+ * | a friendly-name field | its glossary pair | `aria-label` on the combobox (a `<button>` cannot be named by `htmlFor`) |
+ * | the dual-source toggle | `Spells for <pair> <words>` / `NPCs for …` | `aria-label` + `aria-pressed`, inside `role="group" aria-label="source <pair> <words>"` |
+ * | the router | `Sound router (m_router)` | `role="group" aria-label`; each sub-control is labelled with its own pair |
+ * | the requirement slot | `Requirements for <words>` | the shared tree's `<section aria-label>` |
  *
  * Twelve components are deliberately absent: no undo stack, no reordering, no drag-and-drop,
  * no validation, no new dependency. The header's Save toggle, the dirty guard and validation
@@ -182,15 +185,20 @@ function ResultCard({
   state: ResultListDocumentState;
   card: ResultCardView;
 }): JSX.Element {
+  const typeString =
+    isPlainObject(card.value) && typeof card.value.$type === 'string' ? card.value.$type : null;
   return (
     <li className="min-w-0">
       <article
-        aria-label={`${card.title} ${card.address}`}
+        aria-label={`${card.title} ${docPathWords(card.path)}`}
+        data-path={card.address}
         className="min-w-0 rounded-md border border-zinc-800 border-l-4 border-l-blue-500 bg-zinc-900/40 p-3"
       >
         <header className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-zinc-400">{card.index + 1}</span>
-          <span className="font-mono text-sm text-zinc-100">{card.title}</span>
+          <span className="text-sm text-zinc-100">
+            {typeString === null ? card.title : <TermLabel term={{ type: typeString }} />}
+          </span>
           {card.spec === null ? (
             <span className="text-xs text-amber-400">
               $type this editor does not model — kept verbatim
@@ -201,7 +209,8 @@ function ResultCard({
               state={state}
               listPath={card.listPath}
               index={card.index}
-              label={card.address}
+              path={card.path}
+              address={card.address}
             />
           </div>
         </header>
@@ -261,11 +270,13 @@ function ResultFieldControl({
   if (field.kind === 'requirements') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+        <span className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </span>
         <RequirementTreeEditor
           state={state}
           path={resultRequirementsPath(card.listPath, card.index)}
-          label={`Requirements for ${card.address}`}
+          label={`Requirements for ${docPathWords(card.path)}`}
         />
         <p id={describedBy} className="text-xs text-zinc-400">
           {field.help}
@@ -277,7 +288,7 @@ function ResultFieldControl({
   return (
     <Labelled
       id={id}
-      label={field.key}
+      fieldKey={field.key}
       help={field.help}
       helpId={describedBy}
       messages={messages}
@@ -316,7 +327,7 @@ function ResultFieldControl({
         >
           {resultSelectOptions(view.value, field.options ?? []).map((option) => (
             <option key={option.value} value={option.value}>
-              {option.unlisted ? `${option.label} (unlisted)` : option.label}
+              {optionText(field.key, option)}
             </option>
           ))}
         </select>
@@ -397,7 +408,9 @@ function NameField({
   if (sources.length === 0) {
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+        <span className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </span>
         <p className="text-xs text-zinc-400">{field.help}</p>
       </div>
     );
@@ -420,7 +433,7 @@ function NameField({
   return (
     <Labelled
       id={id}
-      label={field.key}
+      fieldKey={field.key}
       help={field.help}
       helpId={describedBy}
       messages={messages}
@@ -429,7 +442,7 @@ function NameField({
       <FriendlyNameDropdown
         type={sources[0]}
         name={`${card.address}-${field.key}`}
-        aria-label={field.key}
+        aria-label={termText({ field: field.key })}
         value={raw === '' ? null : raw}
         allowEmpty
         invalid={messages.some((message) => message.severity === 'error')}
@@ -485,10 +498,13 @@ function DualSourceNameField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+      <span className="text-xs text-zinc-400">
+        <TermLabel term={{ field: field.key }} />
+      </span>
       <div
         role="group"
-        aria-label={`${NAME_SOURCE_LABEL} ${field.key} ${card.address}`}
+        aria-label={`${NAME_SOURCE_LABEL} ${termText({ field: field.key })} ${docPathWords(card.path)}`}
+        data-path={card.address}
         className="flex gap-1"
       >
         {sources.map((source) => (
@@ -498,7 +514,7 @@ function DualSourceNameField({
             size="sm"
             variant={effective === source ? 'default' : 'outline'}
             aria-pressed={effective === source}
-            aria-label={`${sourceLabel(source)} for ${field.key} ${card.address}`}
+            aria-label={`${sourceLabel(source)} for ${termText({ field: field.key })} ${docPathWords(card.path)}`}
             onClick={() => setChosen(source)}
           >
             {sourceLabel(source)}
@@ -508,7 +524,7 @@ function DualSourceNameField({
       <FriendlyNameDropdown
         type={effective}
         name={`${card.address}-${field.key}`}
-        aria-label={field.key}
+        aria-label={termText({ field: field.key })}
         value={raw === '' ? null : raw}
         allowEmpty
         invalid={messages.some((message) => message.severity === 'error')}
@@ -561,10 +577,12 @@ function RouterField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-      <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+      <span className="text-xs text-zinc-400">
+        <TermLabel term={{ field: field.key }} />
+      </span>
       <div
         role="group"
-        aria-label={SOUND_ROUTER_KEY}
+        aria-label={termText({ field: SOUND_ROUTER_KEY })}
         className="grid grid-cols-1 gap-x-6 gap-y-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-3 sm:grid-cols-3"
       >
         {SOUND_ROUTER_FIELD_SPECS.map((sub) => {
@@ -572,8 +590,8 @@ function RouterField({
           const subValue = routerView[sub.key];
           return (
             <div key={sub.key} className="flex min-w-0 flex-col gap-1">
-              <label htmlFor={subId} className="font-mono text-xs text-zinc-400">
-                {sub.key}
+              <label htmlFor={subId} className="text-xs text-zinc-400">
+                <TermLabel term={{ field: sub.key }} />
               </label>
               {sub.kind === 'boolean' ? (
                 <input
@@ -613,7 +631,7 @@ function RouterField({
                 >
                   {resultSelectOptions(subValue, sub.options ?? []).map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.unlisted ? `${option.label} (unlisted)` : option.label}
+                      {optionText(sub.key, option)}
                     </option>
                   ))}
                 </select>
@@ -701,19 +719,22 @@ function DeleteButton({
   state,
   listPath,
   index,
-  label,
+  path,
+  address,
 }: {
   state: ResultListDocumentState;
   listPath: DocPath;
   index: number;
-  label: string;
+  path: DocPath;
+  address: string;
 }): JSX.Element {
   return (
     <Button
       type="button"
       size="sm"
       variant="ghost"
-      aria-label={`${DELETE_RESULT_LABEL} ${label}`}
+      aria-label={`${DELETE_RESULT_LABEL} ${docPathWords(path)}`}
+      data-path={address}
       onClick={() => state.editAll(deleteResultEdits(listPath, index))}
     >
       ×
@@ -766,10 +787,13 @@ function AddResultControl({
   );
 }
 
-/** A labelled control: the visible label, the control, and the field's one-line help. */
+/**
+ * A labelled control: the visible label (the field's glossary pair, task 7.9), the control, and
+ * the field's one-line help.
+ */
 function Labelled({
   id,
-  label,
+  fieldKey,
   help,
   helpId,
   messages = [],
@@ -777,7 +801,7 @@ function Labelled({
   children,
 }: {
   id: string;
-  label: string;
+  fieldKey: string;
   help?: string;
   helpId?: string;
   /** Story p3-09: this field's findings, rendered below the control. */
@@ -787,8 +811,8 @@ function Labelled({
 }): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {label}
+      <label htmlFor={id} className="text-xs text-zinc-400">
+        <TermLabel term={{ field: fieldKey }} />
       </label>
       {children}
       {help === undefined || help === '' ? null : (
@@ -799,6 +823,12 @@ function Labelled({
       <FieldMessages messages={messages} id={messagesId} />
     </div>
   );
+}
+
+/** A select option's text: an enum value as its glossary pair, an unlisted one marked so. */
+function optionText(fieldKey: string, option: ResultSelectOption): string {
+  const text = option.value === '' ? option.label : fieldValueText(fieldKey, option.value);
+  return option.unlisted ? `${text} (unlisted)` : text;
 }
 
 /** The shared input/select styling (the same classes the other live panels use). */

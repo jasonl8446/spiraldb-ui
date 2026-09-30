@@ -81,14 +81,22 @@ function itemTree(page: Page, item: number): ReturnType<Page['locator']> {
   });
 }
 
-/** A tree card by its full accessible name (`ReqHasQuest Items[0].Requirements[0]`). */
+/** A requirement class's glossary pair (task 7.9) — the leading words of a tree card's name. */
+const CARD_TITLES: Record<string, string> = { ReqHasQuest: 'Requires quest (ReqHasQuest)' };
+
+/**
+ * A tree card by its exact document address (`Items[0].Requirements[0]`, its `data-path`; task 7.9
+ * keeps a path out of every label) and the class pair its accessible name starts with.
+ */
 function treeCard(
   page: Page,
   item: number,
   title: string,
   address: string,
 ): ReturnType<Page['locator']> {
-  return itemTree(page, item).getByRole('article', { name: `${title} ${address}`, exact: true });
+  return itemTree(page, item).locator(
+    `article[data-path="${address}"][aria-label^="${CARD_TITLES[title] ?? title} "]`,
+  );
 }
 
 /** The live document, read through the JSON panel's own `[Copy]` affordance (key order included). */
@@ -350,20 +358,22 @@ test.describe('AC2: an item row’s requirement tree', () => {
 
     // The slot is the corpus's untyped wrapper; the shared editor offers Add Condition.
     await itemTree(page, 1)
-      .getByRole('button', { name: 'Add Condition to Items[0].Requirements', exact: true })
+      .getByRole('button', { name: 'Add Condition to Items 1 › Requirements', exact: true })
       .click();
     await expect(treeCard(page, 1, 'ReqHasQuest', address)).toBeVisible();
 
     // Fill the quest and flip NOT — the two controls of the AC's `ReqHasQuest{NOT}`.
     const card = treeCard(page, 1, 'ReqHasQuest', address);
-    await card.getByRole('combobox', { name: `Quest ${address}`, exact: true }).click();
+    await card
+      .getByRole('combobox', { name: 'Quest (m_questName) Items 1 › Requirements 1', exact: true })
+      .click();
     const search = page.getByRole('combobox', { name: 'Search quests', exact: true });
     await expect(search).toBeVisible();
     await search.fill(QUEST_NAME);
     // The option is the QuestTemplate pair (D105/P6-16): `formatNameRow('quests')` pairs
     // the resolved title with the quest name it belongs to.
     await page.getByRole('option', { name: `${QUEST_TITLE} (${QUEST_NAME})`, exact: true }).click();
-    await card.getByLabel('NOT', { exact: true }).check();
+    await card.getByLabel('NOT (m_applyNOT)', { exact: true }).check();
 
     // The live document, byte-shaped through the panel: the wrapper is untyped, the leaf is
     // tagged, NOT is true, and the sibling item row is untouched.
@@ -396,9 +406,12 @@ test.describe('AC2: an item row’s requirement tree', () => {
     await expect(treeCard(page, 1, 'ReqHasQuest', address)).toBeVisible();
     const reloaded = treeCard(page, 1, 'ReqHasQuest', address);
     await expect(
-      reloaded.getByRole('combobox', { name: `Quest ${address}`, exact: true }),
+      reloaded.getByRole('combobox', {
+        name: 'Quest (m_questName) Items 1 › Requirements 1',
+        exact: true,
+      }),
     ).toContainText(QUEST_TITLE);
-    await expect(reloaded.getByLabel('NOT', { exact: true })).toBeChecked();
+    await expect(reloaded.getByLabel('NOT (m_applyNOT)', { exact: true })).toBeChecked();
   });
 });
 
@@ -425,7 +438,7 @@ test.describe('AC2 continued: an existing untyped wrapper is not normalised', ()
     await openEditor(page, { document });
 
     await itemTree(page, 1)
-      .getByRole('button', { name: 'Add Condition to Items[0].Requirements', exact: true })
+      .getByRole('button', { name: 'Add Condition to Items 1 › Requirements', exact: true })
       .click();
     await expect(treeCard(page, 1, 'ReqHasQuest', 'Items[0].Requirements[1]')).toBeVisible();
 

@@ -120,6 +120,7 @@ import { RESULT_TYPES, shortTypeName as knownShortTypeName } from '@shared/quest
 import type { NamesType } from './display';
 import { shortTypeName as lenientShortTypeName } from './extract';
 import { newRequirementLeaf } from './requirement-tree';
+import { termText } from './term';
 
 /* ------------------------------------------------------------------ paths */
 
@@ -246,9 +247,8 @@ export type ResultShortTypeName = keyof typeof RESULT_TYPES;
 export interface ResultTypeSpec {
   shortName: ResultShortTypeName;
   /**
-   * The selector's own vocabulary. The domain reference names the classes and has no
-   * friendlier word for them, so the label **is** the short name (`ResDropTable`) — the
-   * same choice `requirement-tree.ts` made.
+   * The selector's own vocabulary: the class's glossary pair (`Reward: drop table (ResDropTable)`,
+   * D131, task 7.9), which is also the text of a card's accessible name.
    */
   label: string;
   /** The assembly-qualified `$type`, taken from `shared/quest/typeConstants.ts`. */
@@ -322,7 +322,7 @@ export const SOUND_ROUTER_FIELD_SPECS: readonly ResultFieldSpec[] = [
 export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   {
     shortName: 'ResDropTable',
-    label: 'ResDropTable',
+    label: termText({ type: 'ResDropTable' }),
     $type: RESULT_TYPES.ResDropTable,
     fields: [
       {
@@ -343,7 +343,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResModifyEntry',
-    label: 'ResModifyEntry',
+    label: termText({ type: 'ResModifyEntry' }),
     $type: RESULT_TYPES.ResModifyEntry,
     // The corpus's own order: `$type, m_entryName, m_isQuestRegistry, m_value,
     // m_questName` — deliberately not the domain reference's field order.
@@ -373,7 +373,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResAddDynaMod',
-    label: 'ResAddDynaMod',
+    label: termText({ type: 'ResAddDynaMod' }),
     $type: RESULT_TYPES.ResAddDynaMod,
     fields: [
       {
@@ -412,7 +412,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResLearnSpell',
-    label: 'ResLearnSpell',
+    label: termText({ type: 'ResLearnSpell' }),
     $type: RESULT_TYPES.ResLearnSpell,
     fields: [
       {
@@ -433,7 +433,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResPostEvent',
-    label: 'ResPostEvent',
+    label: termText({ type: 'ResPostEvent' }),
     $type: RESULT_TYPES.ResPostEvent,
     fields: [
       {
@@ -447,14 +447,19 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   // The two fieldless types: `$type` only, and the shape is not padded out.
   {
     shortName: 'ResAddHealth',
-    label: 'ResAddHealth',
+    label: termText({ type: 'ResAddHealth' }),
     $type: RESULT_TYPES.ResAddHealth,
     fields: [],
   },
-  { shortName: 'ResAddMana', label: 'ResAddMana', $type: RESULT_TYPES.ResAddMana, fields: [] },
+  {
+    shortName: 'ResAddMana',
+    label: termText({ type: 'ResAddMana' }),
+    $type: RESULT_TYPES.ResAddMana,
+    fields: [],
+  },
   {
     shortName: 'ResAddSpell',
-    label: 'ResAddSpell',
+    label: termText({ type: 'ResAddSpell' }),
     $type: RESULT_TYPES.ResAddSpell,
     fields: [
       {
@@ -469,7 +474,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResDespawn',
-    label: 'ResDespawn',
+    label: termText({ type: 'ResDespawn' }),
     $type: RESULT_TYPES.ResDespawn,
     fields: [
       { key: 'm_spawnID', kind: 'number', help: 'Spawn id to despawn', defaultValue: 0 },
@@ -491,7 +496,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResDrawHand',
-    label: 'ResDrawHand',
+    label: termText({ type: 'ResDrawHand' }),
     $type: RESULT_TYPES.ResDrawHand,
     fields: [
       {
@@ -508,7 +513,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResGiveSpell',
-    label: 'ResGiveSpell',
+    label: termText({ type: 'ResGiveSpell' }),
     $type: RESULT_TYPES.ResGiveSpell,
     fields: [
       {
@@ -531,7 +536,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResPlaySound',
-    label: 'ResPlaySound',
+    label: termText({ type: 'ResPlaySound' }),
     $type: RESULT_TYPES.ResPlaySound,
     fields: [
       {
@@ -557,7 +562,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResTeleport',
-    label: 'ResTeleport',
+    label: termText({ type: 'ResTeleport' }),
     $type: RESULT_TYPES.ResTeleport,
     fields: [
       {
@@ -588,7 +593,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
   },
   {
     shortName: 'ResWait',
-    label: 'ResWait',
+    label: termText({ type: 'ResWait' }),
     $type: RESULT_TYPES.ResWait,
     fields: [
       {
@@ -620,7 +625,7 @@ export const RESULT_TYPE_SPECS: readonly ResultTypeSpec[] = [
    */
   {
     shortName: 'ResActorDialog',
-    label: 'ResActorDialog',
+    label: termText({ type: 'ResActorDialog' }),
     $type: RESULT_TYPES.ResActorDialog,
     fields: [],
     corpusOnly: true,
@@ -773,7 +778,9 @@ export function readResultCards(listPath: DocPath, wrapperValue: unknown): Resul
       readable,
       spec: spec ?? null,
       typeString: readable && typeof value.$type === 'string' ? value.$type : null,
-      title: spec?.label ?? resultShortTypeName(value),
+      // An unmatched `$type` still reads as its glossary pair when the glossary knows the class (a
+      // short `ResDropTable` spelling), and as its own short name otherwise.
+      title: spec?.label ?? termText({ type: resultShortTypeName(value) }),
       fields: (spec?.fields ?? []).map((field) => ({
         spec: field,
         path: [...path, field.key],
