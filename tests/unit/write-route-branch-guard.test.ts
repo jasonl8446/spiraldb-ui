@@ -11,6 +11,8 @@ import {
   commitCount,
   createTempGitRepo,
   removeTempGitRepo,
+  repoFileExists,
+  writeRepoFile,
   type TempRepo,
 } from '../helpers/temp-git-repo';
 
@@ -31,8 +33,11 @@ import {
  * table fails `classifies every write route`, so it cannot ship without a decision.
  *
  * Hermetic: an in-memory database and a throwaway `git init` repository under
- * `data/__test-scratch__/`, checked out on `content/checked-out` (not `main`, which the helper
- * treats as safe to branch from). The owner's fork and the D17 clone are never touched.
+ * `data/__test-scratch__/`, checked out on `content/checked-out` for the per-route table. The
+ * `main` exemption is driven separately below (PR #14 review 2, D195): it holds only when the
+ * setting's branch does **not** exist yet (the create-from-`main` path); an existing branch would
+ * be checked out over main's tree, so that arm is refused on every guarded route. The owner's fork
+ * and the D17 clone are never touched.
  */
 
 const CHECKED_OUT = 'content/checked-out';
@@ -55,7 +60,9 @@ const EXEMPT: Record<string, string> = {
   'patch /api/status/:type/:key': 'entry_status lifecycle is SQLite only (D4); no file, no commit',
   'post /api/drafts/rebuild': 'stages quest_suggestions rows in SQLite (D129); reads the corpus',
   'post /api/suggestions/:id/reject': 'flips a quest_suggestions row in SQLite',
-  'post /api/extract/quests': 'returns the extracted quest for review; a save is POST /api/quests',
+  'post /api/extract/quests':
+    'stages the capture suggestions as quest_suggestions rows in SQLite (D161) and returns the ' +
+    'extracted quests for review; no SpiralDB file, no commit (a save is POST /api/quests)',
 };
 
 /** The body each guarded route is driven with — valid enough to reach the pipeline. */
@@ -234,5 +241,78 @@ describe('D119 branch guard on every write route (task 7.14)', () => {
     }
     expect(repo.git(['branch', '--show-current']).trim()).toBe(CHECKED_OUT);
     expect(commitCount(repo)).toBe(commitsBefore + Object.keys(GUARDED).length);
+  });
+
+  it('follows the checked-out branch when git_branch is blank, as the CLI does (PR #14 review 5)', async () => {
+    // A blank setting used to be read as `content/{today}` and refused against the tree's branch
+    // with a message naming a branch the setting does not hold.
+    setBranchSetting('');
+    const before = commitCount(repo);
+    const res = await request(app)
+      .post('/api/quests')
+      .send({
+        quest: {
+          m_questName: 'GUARD-BLANK-001',
+          m_goals: [{ $type: TYPE_STRINGS.WaypointGoalTemplate, m_goalName: '1_A' }],
+        },
+      });
+    expect(res.status, res.text).toBe(200);
+    expect(res.body.branch).toBe(CHECKED_OUT);
+    expect(repo.git(['branch', '--show-current']).trim()).toBe(CHECKED_OUT);
+    expect(commitCount(repo)).toBe(before + 1);
+    const { getDb, readSettings } = await import('@server/db');
+    expect(readSettings(getDb()).git_branch).toBe(CHECKED_OUT);
+  });
+
+  describe('the tree on main (PR #14 review 2, D195)', () => {
+    const MAIN_ONLY = 'NEW-on-main.txt';
+
+    it("refuses every guarded route when git_branch names a branch that already exists: main's tree is not replaced", async () => {
+      // The review's reproduction: a database seeded on an earlier day still names that day's
+      // branch, and the tree sits on main holding a file only main has.
+      repo.git(['checkout', 'main']);
+      writeRepoFile(repo, MAIN_ONLY, 'only on main\n');
+      repo.git(['add', MAIN_ONLY]);
+      repo.git(['commit', '-m', 'main-only file']);
+      const mainHead = repo.git(['rev-parse', 'main']).trim();
+      const existingHead = repo.git(['rev-parse', CHECKED_OUT]).trim();
+      setBranchSetting(CHECKED_OUT);
+
+      for (const [route, body] of Object.entries(GUARDED)) {
+        const path = route.split(' ')[1] as string;
+        const res = await request(app)
+          .post(path)
+          .send(body() as object);
+        expect(res.status, `${route}: ${res.text}`).toBe(409);
+        const error = String((res.body as { error?: unknown }).error);
+        expect(error).toContain(`Refusing to save on branch "${CHECKED_OUT}"`);
+        expect(error).toContain('the working tree is on "main"');
+        expect(error).toContain(`"${CHECKED_OUT}" already exists`);
+      }
+      expect(repo.git(['branch', '--show-current']).trim()).toBe('main');
+      expect(repoFileExists(repo, MAIN_ONLY)).toBe(true);
+      expect(repo.git(['rev-parse', 'main']).trim()).toBe(mainHead);
+      expect(repo.git(['rev-parse', CHECKED_OUT]).trim()).toBe(existingHead);
+      expect(repo.git(['status', '--porcelain']).trim()).toBe('');
+    });
+
+    it("still creates a branch that does not exist yet from main (the spec's session branch), keeping main's tree", async () => {
+      const FRESH = 'content/fresh-from-main';
+      expect(repo.git(['branch', '--list', FRESH]).trim()).toBe('');
+      setBranchSetting(FRESH);
+      const res = await request(app)
+        .post('/api/quests')
+        .send({
+          quest: {
+            m_questName: 'GUARD-MAIN-001',
+            m_goals: [{ $type: TYPE_STRINGS.WaypointGoalTemplate, m_goalName: '1_A' }],
+          },
+        });
+      expect(res.status, res.text).toBe(200);
+      expect(res.body.branch).toBe(FRESH);
+      expect(repo.git(['branch', '--show-current']).trim()).toBe(FRESH);
+      expect(repoFileExists(repo, MAIN_ONLY)).toBe(true);
+      expect(repo.git(['merge-base', '--is-ancestor', 'main', FRESH])).toBe('');
+    });
   });
 });

@@ -24,7 +24,11 @@ import {
   resolveDbFile,
   seedSettings,
 } from '../server/src/db.js';
-import { buildDrafts } from '../server/src/services/drafts.js';
+import {
+  buildDrafts,
+  DraftCorpusError,
+  type DraftBuildResult,
+} from '../server/src/services/drafts.js';
 import { createSpiraldbIndex } from '../server/src/services/spiraldbIndex.js';
 
 interface Args {
@@ -93,6 +97,17 @@ console.log(`[spiraldb-ui] SpiralDB root   at ${root} (read only)`);
 
 const index = createSpiraldbIndex(root);
 index.rebuildType('questtemplates');
-const result = buildDrafts({ db, index });
+let result: DraftBuildResult;
+try {
+  result = buildDrafts({ db, index });
+} catch (error) {
+  // An unreadable root refuses before writing (D195): say so plainly, not as a stack trace.
+  if (error instanceof DraftCorpusError) {
+    console.error(`[spiraldb-ui] ${error.message}`);
+    db.close();
+    process.exit(1);
+  }
+  throw error;
+}
 console.log(JSON.stringify(result, null, 2));
 db.close();

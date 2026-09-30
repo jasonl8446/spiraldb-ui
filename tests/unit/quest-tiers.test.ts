@@ -3,10 +3,20 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { ENUM_OF_FIELD, enums, fields } from '../../shared/glossary';
+import { TYPE_STRINGS } from '../../shared/quest/typeConstants';
 import AdvancedDisclosure from '../../client/src/components/shared/AdvancedDisclosure';
 import ReadOnlyEnumValue from '../../client/src/components/shared/ReadOnlyEnumValue';
-import { hasAdvancedValue, singleLegalValue, splitByTier } from '../../client/src/lib/advanced';
-import { DIALOG_ACCORDIONS, dialogFieldsInAccordion } from '../../client/src/lib/quest-dialog';
+import {
+  fieldDefault,
+  hasAdvancedValue,
+  singleLegalValue,
+  splitByTier,
+} from '../../client/src/lib/advanced';
+import {
+  DIALOG_ACCORDIONS,
+  dialogFieldsInAccordion,
+  newDialogEntry,
+} from '../../client/src/lib/quest-dialog';
 import { GOAL_EDITABLE_BASE_FIELDS, GOAL_TYPE_SPECS } from '../../client/src/lib/quest-goals';
 import { GOAL_LOGIC_ENTRY_KEYS } from '../../client/src/lib/quest-goal-logic';
 import { QUEST_ADVANCED_FIELDS, QUEST_VISIBLE_FIELDS } from '../../client/src/lib/quest-info';
@@ -221,17 +231,72 @@ describe('Dialog tab', () => {
 describe('the Advanced auto-open rule', () => {
   const doc = (value: unknown) => ({ value: () => value });
   const path = [['m_cameraOffsetX']];
+  /** One field of a container of class `$type` (a dialog entry, a requirement leaf, …). */
+  const inClass = (classType: string, key: string, value: unknown) => ({
+    state: {
+      value: (p: readonly unknown[]) =>
+        p.length === 1 ? { $type: classType, [key]: value } : value,
+    },
+    paths: [['node', key]],
+  });
+  const ENTRY = TYPE_STRINGS.NPCDialogEntry;
 
-  it('treats the skeleton defaults (null, absent, empty, 0, false, []) as not opening Advanced', () => {
-    for (const value of [null, undefined, '', 0, false, [], { $type: 'X', m_results: [] }]) {
+  // D195 (PR #14 review 4, owner-approved): "set" is **differs from that field's own default**,
+  // derived from the builders — no longer the generic empty set. This block used to pin the old
+  // rule ('' / 0 / false / [] never open, anything else opens); each arm below states the new one.
+
+  it('treats null/absent and the field default as not opening Advanced', () => {
+    // m_cameraOffsetX: every builder that writes it writes 0.
+    expect(fieldDefault('m_cameraOffsetX')).toEqual({ known: true, value: 0 });
+    for (const value of [null, undefined, 0]) {
       expect(hasAdvancedValue(doc(value), path), JSON.stringify(value)).toBe(false);
     }
   });
 
-  it('opens on any other value', () => {
-    for (const value of [1, -0.5, 'x', true, [1], { m_locX: 3 }]) {
+  it('opens on any value other than the field default, including another "empty" one', () => {
+    for (const value of [1, -0.5, 'x', true, [1], { m_locX: 3 }, '', false, []]) {
       expect(hasAdvancedValue(doc(value), path), JSON.stringify(value)).toBe(true);
     }
+  });
+
+  it('opens an authored false/0 where the field defaults to true/non-zero (the reviewer’s cases)', () => {
+    for (const [key, authored] of [
+      ['m_bypassCameraOnReview', false],
+      ['m_meetsRequirements', false],
+      ['m_playMusicIfSpamming', false],
+      ['m_cameraFadeTime', 0],
+      ['m_spamTime', 0],
+      ['m_cameraHidePlayers', 0],
+    ] as const) {
+      const { state, paths } = inClass(ENTRY, key, authored);
+      expect(hasAdvancedValue(state, paths), key).toBe(true);
+    }
+    // m_isQuestRegistry defaults by class: ReqHasEntry true (so false opens — WC-UNICORN-MAIN-002's
+    // second ReqHasEntry, in the D17 clone), ResModifyEntry false (so false stays collapsed).
+    const hasEntry = inClass(TYPE_STRINGS.ReqHasEntry, 'm_isQuestRegistry', false);
+    expect(hasAdvancedValue(hasEntry.state, hasEntry.paths)).toBe(true);
+    const modify = inClass(TYPE_STRINGS.ResModifyEntry, 'm_isQuestRegistry', false);
+    expect(hasAdvancedValue(modify.state, modify.paths)).toBe(false);
+  });
+
+  it('keeps a freshly added dialog entry collapsed: every value equals its own default', () => {
+    const entry = newDialogEntry();
+    for (const accordion of DIALOG_ACCORDIONS) {
+      const paths = dialogFieldsInAccordion(accordion).map((field) => ['entry', field.key]);
+      const state = {
+        value: (p: readonly unknown[]) => (p.length === 1 ? entry : entry[p[1] as string]),
+      };
+      expect(hasAdvancedValue(state, paths), accordion.id).toBe(false);
+    }
+  });
+
+  it('falls back to the empty rule for a field no builder writes', () => {
+    expect(fieldDefault('m_notWrittenByAnyBuilder')).toEqual({ known: false });
+    const other = [['m_notWrittenByAnyBuilder']];
+    for (const value of [null, '', 0, false, []]) {
+      expect(hasAdvancedValue(doc(value), other), JSON.stringify(value)).toBe(false);
+    }
+    expect(hasAdvancedValue(doc('x'), other)).toBe(true);
   });
 
   it('renders the disclosure closed, opened by a value, and held open by an error', () => {

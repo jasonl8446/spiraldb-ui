@@ -681,6 +681,9 @@ test.describe('an existing corpus node', () => {
     const start = list(page, 'Start results');
     await addResult(start, 'ResPlaySound');
     await addResult(start, 'ResTeleport');
+    // D195: a new ResTeleport's `m_teleportType: 'TELEPORT_STATIC'` is its own default, so its
+    // Advanced no longer opens by itself (the generic empty rule read the literal as authored).
+    await openAdvanced(card(start, 'ResTeleport', 'm_startResults.m_results[1]'));
     await card(start, 'ResTeleport', 'm_startResults.m_results[1]')
       .getByRole('textbox', { name: 'Destination location (m_destinationLoc)', exact: true })
       .fill('Target location Landing');

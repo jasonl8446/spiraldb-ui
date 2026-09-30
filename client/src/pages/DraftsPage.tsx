@@ -22,12 +22,17 @@ import {
   draftDisplayName,
   draftEditorPath,
   draftsSummary,
+  DRAFTS_EMPTY_COVERAGE_ERROR,
+  DRAFTS_EMPTY_COVERAGE_PENDING,
   DRAFTS_EMPTY_NO_CATALOG,
+  DRAFTS_EMPTY_NO_MATCH,
   DRAFTS_EMPTY_NO_SUGGESTIONS,
+  draftsEmptyState,
   DRAFTS_SHOW_ALL_LABEL,
   SUGGESTION_SOURCES,
   type DraftFilter,
   type DraftRow,
+  type DraftsEmptyState,
 } from '../lib/suggestions';
 
 /**
@@ -55,7 +60,10 @@ export default function DraftsPage(): JSX.Element {
   const coverage = useQuery({ queryKey: QUEST_COVERAGE_QUERY_KEY, queryFn: getQuestCoverage });
 
   const rows = drafts.data?.drafts ?? [];
-  const noCatalog = (coverage.data?.nameable ?? 0) === 0 && (coverage.data?.id_space ?? 0) === 0;
+  const empty = draftsEmptyState(
+    filter,
+    coverage.isError ? 'error' : coverage.data === undefined ? 'pending' : coverage.data,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -140,16 +148,20 @@ export default function DraftsPage(): JSX.Element {
       ) : rows.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="text-sm text-zinc-200" data-testid="drafts-empty">
-              {noCatalog ? DRAFTS_EMPTY_NO_CATALOG : DRAFTS_EMPTY_NO_SUGGESTIONS}
+            <p className="text-sm text-zinc-200" data-testid="drafts-empty" data-empty={empty}>
+              {EMPTY_TEXT[empty]}
             </p>
-            {noCatalog ? (
+            {empty === 'no-catalog' ? (
               <Button asChild variant="outline">
                 <Link to="/settings">Sync friendly names</Link>
               </Button>
-            ) : (
+            ) : empty === 'coverage-error' ? (
+              <Button variant="outline" onClick={() => void coverage.refetch()}>
+                Try again
+              </Button>
+            ) : empty === 'no-suggestions' ? (
               <RebuildDraftsButton />
-            )}
+            ) : null}
           </CardContent>
         </Card>
       ) : (
@@ -181,6 +193,15 @@ export default function DraftsPage(): JSX.Element {
     </div>
   );
 }
+
+/** The empty queue's sentence, per {@link draftsEmptyState} (PR #14 review 9e). */
+const EMPTY_TEXT: Record<DraftsEmptyState, string> = {
+  'no-match': DRAFTS_EMPTY_NO_MATCH,
+  'coverage-pending': DRAFTS_EMPTY_COVERAGE_PENDING,
+  'coverage-error': DRAFTS_EMPTY_COVERAGE_ERROR,
+  'no-catalog': DRAFTS_EMPTY_NO_CATALOG,
+  'no-suggestions': DRAFTS_EMPTY_NO_SUGGESTIONS,
+};
 
 function DraftTableRow({ row }: { row: DraftRow }): JSX.Element {
   const hasFile = row.has_definition === 1;

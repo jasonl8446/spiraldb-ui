@@ -16,7 +16,7 @@
  * are L119-123.
  */
 
-import type { CensusRow, ExtractCensus } from './api';
+import type { CensusRow, ExtractCensus, SuggestionsStoreOutcome } from './api';
 
 /* ------------------------------------------------------------------- upload */
 
@@ -69,6 +69,32 @@ export function ignoredCensusRows(census: ExtractCensus | undefined): CensusRow[
   return census === undefined || 'skipped' in census
     ? []
     : census.rows.filter((row) => !row.consumed);
+}
+
+/**
+ * The line the upload result shows about the capture suggestions (PR #14 review 9a/9d), or `null`
+ * when there is nothing to say: a store failure used to be a server-side warning only, and a
+ * suggestion for a quest the catalog does not hold is stored but not listed in Drafts yet.
+ */
+export function suggestionsStoreNotice(
+  outcome: SuggestionsStoreOutcome | undefined,
+  total: number,
+): string | null {
+  if (outcome === undefined) {
+    return null;
+  }
+  if (!outcome.stored) {
+    return `The ${total} inferred suggestions were not staged for review: ${outcome.reason}`;
+  }
+  if (outcome.uncatalogued === 0) {
+    return null;
+  }
+  const one = outcome.uncatalogued === 1;
+  return (
+    `${outcome.uncatalogued} of ${total} inferred suggestions ${one ? 'names' : 'name'} a quest ` +
+    `the catalog does not list yet: ${one ? 'it appears' : 'they appear'} in Drafts after a sync ` +
+    `adds that quest.`
+  );
 }
 
 /** The `new` status badge every freshly extracted quest carries (spec L224). */

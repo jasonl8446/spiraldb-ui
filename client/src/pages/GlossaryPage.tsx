@@ -80,9 +80,13 @@ export default function GlossaryPage(): JSX.Element {
           >
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium text-zinc-50">{row.label}</span>
-              <span className="select-text break-all font-mono text-xs text-zinc-300">
-                {row.technical}
-              </span>
+              {/* D135: a label that *is* the technical name is shown once, as everywhere else
+                (PR #14 review 9j — the 17 collapsed pairs read "Basic Basic" here). */}
+              {row.label === row.technical ? null : (
+                <span className="select-text break-all font-mono text-xs text-zinc-300">
+                  {row.technical}
+                </span>
+              )}
               <Badge variant="secondary">{KIND_LABEL[row.kind]}</Badge>
               <Badge variant="outline">{row.tier === 'basic' ? 'Basic' : 'Advanced'}</Badge>
             </div>

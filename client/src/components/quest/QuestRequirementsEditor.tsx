@@ -1,3 +1,5 @@
+import { fieldLabel } from '@shared/glossary';
+
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { goalName, NO_GOALS_TEXT } from '../../lib/quest-goals';
 import {
@@ -45,13 +47,17 @@ export interface QuestRequirementsEditorProps {
 /** The panel's accessible name (the tier-1 spec scopes to it). */
 export const REQUIREMENTS_EDITOR_LABEL = 'Quest requirements editor';
 
-/** The three quest-level trees' accessible names. */
-export const REQUIREMENTS_TREE_LABEL = 'Requirements';
-export const PREP_REQUIREMENTS_TREE_LABEL = 'Preparation requirements';
-export const PRUNE_REQUIREMENTS_TREE_LABEL = 'Prune requirements';
+/**
+ * The three quest-level trees' accessible names — the glossary's labels, so a screen reader hears
+ * the term the visible heading shows (PR #14 review 7: a local copy had drifted to "Preparation
+ * requirements" beside the heading's "Prep requirements").
+ */
+export const REQUIREMENTS_TREE_LABEL = fieldLabel('m_requirements');
+export const PREP_REQUIREMENTS_TREE_LABEL = fieldLabel('m_prepRequirements');
+export const PRUNE_REQUIREMENTS_TREE_LABEL = fieldLabel('m_pruneRequirements');
 
 /** The per-goal section's accessible name; each goal's own tree is named after the goal. */
-export const GOAL_REQUIREMENTS_SECTION_LABEL = 'Goal requirements';
+export const GOAL_REQUIREMENTS_SECTION_LABEL = fieldLabel('m_goalRequirements');
 
 /** The slot hint for a field that is the corpus's `null` — the honest "nothing invented" note. */
 export const PREP_REQUIREMENTS_NOTE =

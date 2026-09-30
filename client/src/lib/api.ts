@@ -793,12 +793,21 @@ export interface CaptureSuggestion {
   note: string;
 }
 
+/**
+ * Whether the run's capture suggestions were staged as `quest_suggestions` rows (PR #14 review
+ * 9a/9d; D195) — present only when the run inferred any.
+ */
+export type SuggestionsStoreOutcome =
+  | { stored: true; inserted: number; unchanged: number; uncatalogued: number }
+  | { stored: false; reason: string };
+
 /** `POST /api/extract/quests` success body (docs/spec-api.md L303-307; `census` only with `?census=1`, D139). */
 export interface ExtractQuestsResult {
   quests: QuestObject[];
   count: number;
   /** Always present since task 7.5, `[]` when nothing was inferred. */
   suggestions: CaptureSuggestion[];
+  suggestions_store?: SuggestionsStoreOutcome;
   census?: ExtractCensus;
 }
 

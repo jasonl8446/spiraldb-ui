@@ -465,18 +465,22 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
       await expect(accordion(questCard, label)).toBeVisible();
     }
     // Spec L554: Basic open by default, the rest collapsed, except an accordion that holds a value
-    // differing from the skeleton default (task 7.11): this entry carries `m_cameraHidePlayers: 2`
-    // (Camera) and `m_nameSTKey` (Advanced), so those two open on their own.
+    // differing from **that field's own** default, or a validation message (task 7.11, D195). This
+    // entry's two advanced values, `m_cameraHidePlayers: 2` and `m_nameSTKey:
+    // 'NPCFormats_First_Last'`, are exactly what `newDialogEntry` writes, so Camera stays collapsed
+    // — under D179's generic empty rule it opened (this assertion changed deliberately with D195).
+    // Advanced still opens, for its validation message: the fixture's `m_walkAwayNpcTemplateID` is
+    // null, which the engine flags, and a message is never hidden.
     await expect(accordion(questCard, 'Basic')).toHaveAttribute('aria-expanded', 'true');
     await expect(panel(questCard, 'Basic')).toBeVisible();
-    for (const label of ['Sound', 'Animation']) {
+    for (const label of ['Camera', 'Sound', 'Animation']) {
       await expect(accordion(questCard, label)).toHaveAttribute('aria-expanded', 'false');
       await expect(panel(questCard, label)).toBeHidden();
     }
-    for (const label of ['Camera', 'Advanced']) {
-      await expect(accordion(questCard, label)).toHaveAttribute('aria-expanded', 'true');
-      await expect(panel(questCard, label)).toBeVisible();
-    }
+    await expect(accordion(questCard, 'Advanced')).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+      panel(questCard, 'Advanced').getByText('The value null must be a whole number'),
+    ).toBeVisible();
 
     // Opening one reveals its fields; closing Basic hides them again.
     await accordion(questCard, 'Sound').click();

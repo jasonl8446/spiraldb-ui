@@ -373,7 +373,7 @@ export const fields: Readonly<Record<string, GlossaryEntry>> = {
   m_goalText: e(
     'Goal text',
     'basic',
-    'docs/spec-api.md:523',
+    'docs/spec-api.md:528',
     "String-table key for the goal's own text, the field the evidence panel inserts goal text into. Not described in the spec beyond that insert target, and no corpus goal carries it yet; this wording is the editor’s reading.",
   ),
   m_goalUnderway: e(
@@ -1327,31 +1327,31 @@ export const groups: Readonly<Record<string, GlossaryEntry>> = {
   Basic: e(
     'Basic',
     'basic',
-    'docs/spec-ui-design.md:719',
+    'docs/spec-ui-design.md:498',
     'The fields most dialog entries set: speaker, text, portrait, voice-over, event and duration limit.',
   ),
   Camera: e(
     'Camera',
     'advanced',
-    'docs/spec-ui-design.md:719',
+    'docs/spec-ui-design.md:498',
     'Camera position, rotation, shake and fade settings for the entry.',
   ),
   Sound: e(
     'Sound',
     'advanced',
-    'docs/spec-ui-design.md:719',
+    'docs/spec-ui-design.md:498',
     "The Sound section: the sound-effect and music settings (the spec's Audio group).",
   ),
   Animation: e(
     'Animation',
     'advanced',
-    'docs/spec-ui-design.md:719',
+    'docs/spec-ui-design.md:498',
     "The Animation section: NPC animation, stand-in, turning and yaw settings (the spec's Animation & NPC group).",
   ),
   Advanced: e(
     'Advanced',
     'advanced',
-    'docs/spec-ui-design.md:719',
+    'docs/spec-ui-design.md:498',
     'The Advanced section: duration and timing, walk-away and UI control settings.',
   ),
   'Duration & Timing': e(

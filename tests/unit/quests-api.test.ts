@@ -659,6 +659,25 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     expect((res.body as { status: { status: string } }).status.status).toBe('extracted');
   });
 
+  it('400s a quest name carrying control characters, writing and committing nothing (PR #14 review 6)', async () => {
+    const repo = gitRepo();
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+    const before = commitSubjects(repo);
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({
+        quest: {
+          // The reviewer's payload: without the naming guard it committed a forged subject line.
+          m_questName: 'A\n\nspiraldb: create quest PWNED\n\nx',
+          m_goals: [{ $type: TYPE_STRINGS.WaypointGoalTemplate, m_goalName: '1_A' }],
+        },
+      });
+    expect(res.status, res.text).toBe(400);
+    expect((res.body as { error: string }).error).toContain('control character');
+    expect(commitSubjects(repo)).toEqual(before);
+    expect(repo.git(['status', '--porcelain']).trim()).toBe('');
+  });
+
   it('round-trips GET → POST unmodified with no field loss (explicit nulls preserved)', async () => {
     const repo = gitRepo();
     const legacy = readFileSync(path.join(FIXTURES, 'quest_DS-ACAD-C01-003.json'), 'utf8');

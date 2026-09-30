@@ -331,6 +331,19 @@ describe('fileNameFor validation', () => {
     expect(() => fileNameFor('npcspellinventory', 'a\0b')).toThrow(/NUL/);
   });
 
+  it('rejects every control character, so no key can start a line of a commit message (PR #14 review 6)', () => {
+    // The reviewer's payload: a name that would forge a second `spiraldb:` subject line.
+    const forged = 'A\n\nspiraldb: create quest PWNED\n\nx';
+    expect(() => fileNameFor('questtemplates', forged)).toThrow(/control character/);
+    for (let code = 1; code <= 0x1f; code += 1) {
+      const key = `A${String.fromCharCode(code)}B`;
+      expect(() => fileNameFor('droptable', key), `U+${code.toString(16)}`).toThrow(NamingError);
+    }
+    expect(() => fileNameFor('zonetransfer', 'WizardCity/WC\u007fHub')).toThrow(NamingError);
+    // The positive partner: printable punctuation and non-ASCII letters stay legal.
+    expect(fileNameFor('droptable', 'Ünïcode - (x) #1')).toBe('droptable_Ünïcode - (x) #1.json');
+  });
+
   it('rejects a key that already carries the .json suffix', () => {
     expect(() => fileNameFor('droptable', 'droptable_x.json')).toThrow(NamingError);
     expect(() => fileNameFor('questtemplates', 'DS-ACAD1-C01-001.json')).toThrow(

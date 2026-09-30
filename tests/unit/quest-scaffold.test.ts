@@ -1074,9 +1074,38 @@ describe('p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap)'
         settingsBranch: 'content/2099-01-01',
         currentBranch: 'main',
         requested: 'content/2099-01-01',
+        requestedExists: false,
         requestedFrom: 'setting',
       }),
     ).toEqual({ kind: 'use', branch: 'content/2099-01-01', updateSetting: false });
+  });
+
+  it('exempts main only for a branch that does not exist yet (PR #14 review 2, D195)', () => {
+    // An existing branch is *checked out*, not created from main: the tree becomes its content.
+    for (const requestedFrom of ['setting', 'flag'] as const) {
+      const decision = resolveScaffoldBranch({
+        settingsBranch: 'content/2026-09-29',
+        currentBranch: 'main',
+        requested: 'content/2026-09-29',
+        requestedExists: true,
+        requestedFrom,
+      });
+      expect(decision.kind, requestedFrom).toBe('refuse');
+      if (decision.kind === 'refuse') {
+        expect(decision.message).toContain('the working tree is on "main"');
+        expect(decision.message).toContain('"content/2026-09-29" already exists');
+        expect(decision.message).toContain('replaces the tree with its contents');
+        expect(decision.message).toContain('git -C <root> checkout content/2026-09-29');
+      }
+    }
+    // Not knowing whether it exists is not an exemption: the caller must say (fail closed).
+    expect(
+      resolveScaffoldBranch({
+        settingsBranch: '',
+        currentBranch: 'main',
+        requested: 'content/2026-09-29',
+      }).kind,
+    ).toBe('refuse');
   });
 
   it('has no opinion outside a git working tree', () => {

@@ -6,9 +6,11 @@ import {
   type DocEdit,
   type JsonDocument,
 } from '@shared/document';
+import { SUGGESTION_SOURCES } from '@shared/suggestions';
 
 import { namePair, namePairDistinct } from './display';
 import type { PreviewTab } from './extract';
+import { QUEST_OTHER_TAB_FIELDS } from './quest-info';
 
 /**
  * The draft queue and the inline suggestions — task 7.7 / story p7-08 (D129, D130, D137, D141,
@@ -67,16 +69,8 @@ export interface DraftList {
   filters: { named: boolean | null; has_file: boolean | null; source: string | null; all: boolean };
 }
 
-/** Every source the server stores, in its own order (D140). */
-export const SUGGESTION_SOURCES = [
-  'evidence-title',
-  'evidence-dialogue',
-  'evidence-goals',
-  'evidence-location',
-  'evidence-requirements',
-  'capture-order',
-  'capture-rewards',
-] as const;
+/** Every source the server stores, in its own order (D140) — the shared list, not a copy (9i). */
+export { SUGGESTION_SOURCES };
 
 /* ------------------------------------------------------------------ the queue */
 
@@ -226,27 +220,56 @@ export function planSuggestionAccept(
   return { kind: 'accept', edit: { op: 'set', path, value: suggestion.value } };
 }
 
-/** The editor tab holding a suggestion's field — where it renders inline (D165). */
+/**
+ * The editor tab holding a suggestion's field — where it renders inline (D165). Read from the
+ * one owner table (`QUEST_OTHER_TAB_FIELDS`), so a field cannot render on a tab other than the one
+ * that edits it (PR #14 review 8: `m_startGoals` had been routed to Goal Logic here while the
+ * Goals tab owns it). A top-level key no other tab claims is the Info tab's.
+ */
 export function suggestionTab(path: string): PreviewTab {
   const root = parseDocPath(path)?.[0];
-  switch (root) {
-    case 'm_goals':
-      return 'Goals';
-    case 'm_goalLogic':
-    case 'm_startGoals':
-      return 'Goal Logic';
-    case 'm_requirements':
-    case 'm_prepRequirements':
-    case 'm_pruneRequirements':
-      return 'Requirements';
-    case 'm_startResults':
-    case 'm_endResults':
-      return 'Results';
-    case 'm_dialogList':
-      return 'Dialog';
-    default:
-      return 'Info';
+  return QUEST_OTHER_TAB_FIELDS.find((field) => field.key === root)?.owner ?? 'Info';
+}
+
+/**
+ * After a failed save, which applied ids the next save may still claim (PR #14 review 3). The
+ * server answers `400` for any id that is no longer pending — flipped by a save whose answer was
+ * lost, or rejected meanwhile (D168's race) — so an `applied` map that kept those ids would make
+ * every retry fail the same way. `pendingIds` is a fresh read of the draft's pending suggestions;
+ * the document keeps every accepted value, only the claim on a dead id is dropped.
+ */
+export function reconcileApplied(
+  applied: ReadonlyMap<number, string>,
+  pendingIds: Iterable<number>,
+): { kept: Map<number, string>; dropped: number[] } {
+  const pending = new Set(pendingIds);
+  const kept = new Map<number, string>();
+  const dropped: number[] = [];
+  for (const [id, path] of applied) {
+    if (pending.has(id)) {
+      kept.set(id, path);
+    } else {
+      dropped.push(id);
+    }
   }
+  return { kept, dropped };
+}
+
+/** The scaffold route's refusal of a quest that already has a file (`questScaffold.ts`). */
+const ALREADY_DEFINED = /already has a definition/;
+
+/**
+ * `true` for a draft's first save refused because the quest's file now exists — the earlier
+ * save committed but its answer never arrived (PR #14 review 3). Recoverable by opening the file;
+ * a duplicate **name** for an unnamed draft (D137) is a different refusal and stays inline.
+ * Duck-typed on `status` so this module does not import `api.ts` (which imports it).
+ */
+export function isDraftAlreadySaved(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error as { status?: unknown }).status === 409 &&
+    ALREADY_DEFINED.test(error.message)
+  );
 }
 
 /* ------------------------------------------------------------------ rendering */
@@ -352,6 +375,35 @@ export const DRAFTS_EMPTY_NO_CATALOG =
   'The quest catalog is empty. Run a sync to build it before reviewing drafts.';
 export const DRAFTS_EMPTY_NO_SUGGESTIONS =
   'No draft has evidence yet. Rebuild drafts to stage suggestions.';
+export const DRAFTS_EMPTY_NO_MATCH = 'No draft matches these filters.';
+export const DRAFTS_EMPTY_COVERAGE_PENDING = 'No drafts to show. Checking the quest catalog…';
+export const DRAFTS_EMPTY_COVERAGE_ERROR =
+  'No drafts to show, and the quest catalog could not be read, so whether it is empty is unknown.';
+
+/** Which empty `/drafts` is (PR #14 review 9e). */
+export type DraftsEmptyState =
+  'no-match' | 'coverage-pending' | 'coverage-error' | 'no-catalog' | 'no-suggestions';
+
+/**
+ * Why the queue answered no rows (PR #14 review 9e). A set filter is "no match" whatever the
+ * catalog holds; otherwise the coverage read decides, and while it is loading or has failed the
+ * page must not claim the catalog is empty (it used to, whenever coverage had not answered).
+ */
+export function draftsEmptyState(
+  filter: DraftFilter,
+  coverage: 'pending' | 'error' | { nameable: number; id_space: number },
+): DraftsEmptyState {
+  if (filter.named !== null || filter.hasFile !== null || filter.source !== null) {
+    return 'no-match';
+  }
+  if (coverage === 'pending') {
+    return 'coverage-pending';
+  }
+  if (coverage === 'error') {
+    return 'coverage-error';
+  }
+  return coverage.nameable === 0 && coverage.id_space === 0 ? 'no-catalog' : 'no-suggestions';
+}
 export const DRAFTS_SHOW_ALL_LABEL = 'Show zero-evidence drafts';
 export const SUGGESTION_ACCEPT_LABEL = 'Accept';
 export const SUGGESTION_REJECT_LABEL = 'Reject';

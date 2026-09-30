@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import {
   formatDocPath,
   getAtPath,
@@ -7,11 +9,12 @@ import {
   type DocPath,
 } from '../../../shared/document.js';
 import { buildQuestScaffold } from '../../../shared/quest/scaffold.js';
+import { SUGGESTION_SOURCES, type SuggestionSource } from '../../../shared/suggestions.js';
 import { REQUIREMENT_LIST_TYPE, TYPE_STRINGS } from '../../../shared/quest/typeConstants.js';
 import type { Db } from '../db.js';
 import type { CaptureSuggestion } from './extraction.js';
 import { questEvidenceByName, readEvidenceTables, type EvidenceTables } from './questEvidence.js';
-import { resolveLink } from './questScaffold.js';
+import { QUEST_TEMPLATES_DIRECTORY, resolveLink } from './questScaffold.js';
 import { readSpiraldbJson } from './spiraldbFiles.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
 import { isPlainObject } from './sync/json.js';
@@ -54,18 +57,8 @@ import { parseQuestTitleKey, parseWizQstKey } from './sync/questRefs.js';
 
 /* ------------------------------------------------------------------- vocabulary */
 
-/** Every source a suggestion may carry (D140), in the order responses list them. */
-export const SUGGESTION_SOURCES = [
-  'evidence-title',
-  'evidence-dialogue',
-  'evidence-goals',
-  'evidence-location',
-  'evidence-requirements',
-  'capture-order',
-  'capture-rewards',
-] as const;
-
-export type SuggestionSource = (typeof SUGGESTION_SOURCES)[number];
+/** Every source a suggestion may carry (D140) — its one home is `shared/suggestions.ts` (9i). */
+export { SUGGESTION_SOURCES, type SuggestionSource };
 
 /** The five sources the builder writes; a rebuild manages only these. */
 export const EVIDENCE_SOURCES: readonly SuggestionSource[] = SUGGESTION_SOURCES.filter((source) =>
@@ -191,8 +184,15 @@ export function storeCaptureSuggestions(
   db: Db,
   suggestions: readonly CaptureSuggestion[],
   captureName: string,
-): InsertResult {
-  return insertSuggestions(
+): CaptureStoreResult {
+  // A row is keyed by name, and `quest_drafts` lists only catalog names: a suggestion for a quest
+  // the catalog does not hold is stored but not in the queue until a sync lists it (PR #14
+  // review 9d) — counted, so the extraction can say so instead of staging it out of sight.
+  const known = db.prepare('SELECT 1 FROM quests WHERE quest_name = ?');
+  const uncatalogued = suggestions.filter(
+    (suggestion) => known.get(suggestion.questName) === undefined,
+  ).length;
+  const stored = insertSuggestions(
     db,
     suggestions.map((suggestion) => ({
       quest_name: suggestion.questName,
@@ -204,6 +204,13 @@ export function storeCaptureSuggestions(
       evidence_ref: `capture:${captureName}`,
     })),
   );
+  return { ...stored, uncatalogued };
+}
+
+/** What storing one extraction's capture suggestions did (the extract response's `suggestions_store`). */
+export interface CaptureStoreResult extends InsertResult {
+  /** Suggestions whose `questName` has no `quests` row, so `/drafts` does not list them yet. */
+  uncatalogued: number;
 }
 
 /** A decision the caller can act on; the route maps `status` verbatim. */
@@ -1016,12 +1023,45 @@ function removeStale(db: Db, proposals: readonly SuggestionProposal[]): number {
 }
 
 /**
+ * A rebuild refused because its quest-file read found nothing while evidence rows are pending
+ * (PR #14 review 1, D195): `removeStale` would read "no file proposed it" as "its field was
+ * filled since" and delete the whole pending evidence queue. Nothing is written; a `409`.
+ */
+export class DraftCorpusError extends Error {
+  readonly status = 409;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'DraftCorpusError';
+  }
+}
+
+/**
  * The draft builder: `npm run drafts` and `POST /api/drafts/rebuild` run exactly this.
  * Writes only `quest_suggestions`; never SpiralDB.
+ *
+ * @throws {DraftCorpusError} when the index holds no quest file and pending `evidence-*` rows
+ *   exist — a root that is an existing directory but not the SpiralDB root (a typo, the parent,
+ *   `QuestTemplates/` itself) reads as an empty corpus, and the run must not erase the queue.
  */
 export function buildDrafts(options: { db: Db; index: SpiraldbIndex }): DraftBuildResult {
   const started = performance.now();
   const { db, index } = options;
+  if (index.keys('questtemplates').length === 0) {
+    const pending = db
+      .prepare<[], { c: number }>(
+        "SELECT count(*) AS c FROM quest_suggestions WHERE status = 'pending' AND source LIKE 'evidence-%'",
+      )
+      .get()?.c;
+    if (pending !== undefined && pending > 0) {
+      throw new DraftCorpusError(
+        `The rebuild read no quest file from ${path.join(index.root, QUEST_TEMPLATES_DIRECTORY)} ` +
+          `(missing or empty), and ${pending} pending evidence suggestions would be deleted as ` +
+          `"no longer proposed". Nothing was changed. Check spiraldb_path in Settings: it must ` +
+          `be the SpiralDB repository root, the directory holding QuestTemplates/.`,
+      );
+    }
+  }
   const run = proposeDrafts(db, index);
   const { inserted, unchanged } = insertSuggestions(db, run.proposals);
   const removed = removeStale(db, run.proposals);

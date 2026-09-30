@@ -172,3 +172,10 @@ export const UNSAVED_CLOSE_MESSAGE = 'This quest has unsaved changes.';
 
 /** The Save failure fallback when the server sends no usable message. */
 export const SAVE_FAILED_FALLBACK = 'Could not save this quest.';
+
+/** The recovery action of a draft save refused because its file now exists (PR #14 review 3). */
+export const OPEN_SAVED_QUEST_LABEL = 'Open the saved quest';
+
+/** The editor's notice when the suggestions read fails (PR #14 review 9f). */
+export const SUGGESTIONS_READ_FAILED =
+  'Could not load this quest’s suggestions, so none are shown (this is not "nothing to accept").';

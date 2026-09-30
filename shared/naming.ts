@@ -171,7 +171,8 @@ const KNOWN_TYPES = OBJECT_FILE_SPECS.map((spec) => spec.type).join(', ');
 
 /**
  * Raised by `fileNameFor` when a name cannot be built — an unknown type, or a key that
- * is blank, carries a path separator, carries a NUL, or already carries `.json`. The
+ * is blank, carries a path separator, carries a NUL or another control character, or already
+ * carries `.json`. The
  * message always names the offending type and key; the other functions here never throw.
  */
 export class NamingError extends Error {
@@ -192,8 +193,8 @@ export function isObjectFileType(value: unknown): value is ObjectFileType {
  * always returns `globalregistry.json`.
  *
  * @throws {NamingError} unknown `type`, or a `key` that is blank, that still contains a
- * path separator (`/` or `\`) *after* the transform, that contains a NUL, or that
- * already ends with `.json`.
+ * path separator (`/` or `\`) *after* the transform, that contains a NUL or any other control
+ * character (U+0000-U+001F, U+007F), or that already ends with `.json`.
  */
 export function fileNameFor(type: ObjectFileType, key: string): string {
   const spec = typeof type === 'string' ? SPEC_BY_TYPE.get(type) : undefined;
@@ -225,6 +226,18 @@ export function fileNameFor(type: ObjectFileType, key: string): string {
   if (fileKey.includes('\0')) {
     throw new NamingError(
       `Cannot build a ${type} file name from key ${JSON.stringify(key)}: it contains a NUL character.`,
+    );
+  }
+  // Every other control character too (PR #14 review 6, D195): the key is also the commit
+  // subject's last token (`spiraldb: {action} {type} {key}`), and a newline in it could forge a
+  // second `spiraldb:` line — the class `sanitizeCommitNotes` closes for `notes` (S4). No corpus
+  // key carries one (0 in the D17 clone and in the owner fork, measured).
+  // eslint-disable-next-line no-control-regex -- matching control characters is the point
+  if (/[\u0000-\u001f\u007f]/.test(fileKey)) {
+    throw new NamingError(
+      `Cannot build a ${type} file name from key ${JSON.stringify(key)}: it contains a control ` +
+        `character (a newline, tab or other U+0000-U+001F / U+007F), which a file name and a ` +
+        `commit subject must not carry.`,
     );
   }
   if (fileKey.endsWith(JSON_SUFFIX)) {

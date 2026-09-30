@@ -4,6 +4,7 @@ import type { ApiError } from '../../../shared/index.js';
 import { readSettings, type Db } from '../db.js';
 import {
   buildDrafts,
+  DraftCorpusError,
   listDrafts,
   listSuggestions,
   rejectSuggestion,
@@ -119,7 +120,7 @@ function fail(res: Response, error: unknown): void {
     res.status(400).json({ error: error.message } satisfies ApiError);
     return;
   }
-  if (error instanceof SuggestionDecisionError) {
+  if (error instanceof SuggestionDecisionError || error instanceof DraftCorpusError) {
     res.status(error.status).json({ error: error.message } satisfies ApiError);
     return;
   }

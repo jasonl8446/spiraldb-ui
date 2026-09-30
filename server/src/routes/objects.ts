@@ -2,6 +2,7 @@ import { Router, type Response } from 'express';
 
 import type { ApiError } from '../../../shared/index.js';
 import type { ObjectTypeConfig } from '../../../shared/objectTypes.js';
+import { NamingError } from '../../../shared/naming.js';
 import { ULong } from '../../../shared/ulong.js';
 import { readSettings, type Db } from '../db.js';
 import { BranchMismatchError, DirtyRepoError } from '../services/git.js';
@@ -40,6 +41,7 @@ import {
  * | body without a usable `object`, or an unusable key    | 400    |
  * | `settings.spiraldb_path` not configured               | 400    |
  * | unknown key (GET `/:key`)                             | 404    |
+ * | a key the naming convention refuses (`NamingError`, D195) | 400 |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14)   | 409    |
  * | `settings.git_branch` is not the checked-out branch (`BranchMismatchError`, D119/D182) | 409 |
  * | anything else thrown by the pipeline                  | 500    |
@@ -93,6 +95,12 @@ export function createObjectRouter({ db, config, validate }: ObjectRouterOptions
         error: error.message,
         ...(error.fields === undefined ? {} : { fields: error.fields }),
       } satisfies ApiError & { fields?: Record<string, string[]> });
+      return;
+    }
+    if (error instanceof NamingError) {
+      // A key the naming convention refuses (a path separator, a control character, …) is the
+      // caller's to fix, and nothing was written (D195).
+      res.status(400).json({ error: error.message } satisfies ApiError);
       return;
     }
     if (error instanceof DirtyRepoError || error instanceof BranchMismatchError) {

@@ -1,3 +1,5 @@
+import { fieldLabel } from '@shared/glossary';
+
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { goalName, NO_GOALS_TEXT } from '../../lib/quest-goals';
 import {
@@ -56,9 +58,9 @@ export interface QuestResultsEditorProps {
 /** The panel's accessible name (the tier-1 spec scopes to it). */
 export const RESULTS_EDITOR_LABEL = 'Quest results editor';
 
-/** The two quest-level wrappers' accessible names. */
-export const START_RESULTS_LABEL = 'Start results';
-export const END_RESULTS_LABEL = 'End results';
+/** The two quest-level wrappers' accessible names — the glossary's labels (PR #14 review 7). */
+export const START_RESULTS_LABEL = fieldLabel('m_startResults');
+export const END_RESULTS_LABEL = fieldLabel('m_endResults');
 
 /** The per-goal section's accessible name (each goal's lists are named after the goal). */
 export const GOAL_RESULTS_SECTION_LABEL = 'Goal results';

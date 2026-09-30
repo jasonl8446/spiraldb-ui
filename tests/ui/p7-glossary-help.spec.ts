@@ -84,6 +84,29 @@ test('the glossary page lists every term and matches either half to the same row
   );
 });
 
+test('a term whose label is its technical name shows it once, the D135 collapse (review 9j)', async ({
+  page,
+}) => {
+  // The 17 collapsed pairs (the dialog group "Basic" is one) rendered "Basic Basic" here, unlike
+  // every other surface.
+  const collapsed = Object.entries(groups).filter(
+    ([technical, entry]) => entry.label === technical,
+  );
+  expect(collapsed.length).toBeGreaterThan(0);
+  await page.goto('/glossary?term=Basic');
+  const row = page.locator('main li[data-term="Basic"]');
+  await expect(row).toBeVisible();
+  const heading = row.locator('div').first();
+  // Twice, not three times: the name once (it was label + technical) and the "Basic" tier badge.
+  await expect(heading.getByText('Basic', { exact: true })).toHaveCount(2);
+  await expect(heading.locator('.font-mono')).toHaveCount(0);
+  // A distinct pair still shows both halves.
+  await page.goto('/glossary?term=m_questLevel');
+  const level = page.locator('main li[data-term="m_questLevel"]');
+  await expect(level.getByText('m_questLevel', { exact: true })).toHaveCount(1);
+  await expect(level.getByText('Quest level', { exact: true })).toHaveCount(1);
+});
+
 test('at 375px the popover and the glossary page do not overflow', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/glossary');

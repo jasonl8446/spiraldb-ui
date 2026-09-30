@@ -7,6 +7,7 @@ import {
   DEFAULT_MAX_BUFFER_BYTES,
   defaultExecFile,
   type ChildRegistry,
+  type ExecChildHandle,
   type ExecFileWithChild,
 } from './extraction.js';
 
@@ -72,6 +73,23 @@ function isCensusResult(value: unknown): value is CensusResult {
   return typeof candidate.messages === 'number' && Array.isArray(candidate.rows);
 }
 
+/**
+ * One row of the documented shape (PR #14 review 9c): a drifted tool output must not be served as a
+ * census — a row without `consumed` would render as "ignored by the reader".
+ */
+function isCensusRow(value: unknown): value is CensusRow {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const row = value as Partial<Record<keyof CensusRow, unknown>>;
+  return (
+    typeof row.message === 'string' &&
+    typeof row.field === 'string' &&
+    typeof row.count === 'number' &&
+    typeof row.consumed === 'boolean'
+  );
+}
+
 export function createCensusService(options: CensusServiceOptions = {}): CensusService {
   const binaryPath = options.binaryPath ?? defaultCensusPath();
   const exec = options.exec ?? defaultExecFile;
@@ -84,6 +102,7 @@ export function createCensusService(options: CensusServiceOptions = {}): CensusS
           skipped: `capture-census not found at ${binaryPath}. Build it with: ${CENSUS_BUILD_HINT}`,
         };
       }
+      let child: ExecChildHandle | undefined;
       try {
         const { stdout } = await exec(
           binaryPath,
@@ -93,17 +112,30 @@ export function createCensusService(options: CensusServiceOptions = {}): CensusS
             maxBuffer: DEFAULT_MAX_BUFFER_BYTES,
             timeout: 0,
           },
-          (child) => children.add(child),
+          (handle) => {
+            child = handle;
+            children.add(handle);
+          },
         );
         const parsed: unknown = JSON.parse(stdout);
         if (!isCensusResult(parsed)) {
           return { skipped: 'capture-census printed JSON without messages and rows' };
+        }
+        if (!parsed.rows.every(isCensusRow)) {
+          return {
+            skipped: 'capture-census printed a row that is not {message, field, count, consumed}',
+          };
         }
         // `input` is the server's temp upload name: not part of the API result.
         return { messages: parsed.messages, rows: parsed.rows };
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         return { skipped: `capture-census failed: ${detail}` };
+      } finally {
+        // Settled: out of the run's registry, as the reader's own child is (review 9c).
+        if (child !== undefined) {
+          children.release(child);
+        }
       }
     },
   };

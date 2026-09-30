@@ -28,6 +28,11 @@ import { GLOSSARY } from '@shared/glossary';
  * 4. **class → text**: a property named for a glossary class with a literal that is not the
  *    assembly-qualified `$type` or another class name (`ReqHasQuest: 'Requires quest'`; a ternary
  *    such as `x ? 'ReqHasEntry' : 'ReqHasQuest'` is a choice between names, not a label).
+ * 5. **a label constant copying a glossary label** (PR #14 review 7): `X_LABEL = '…'` whose literal
+ *    *is* a glossary label (`START_RESULTS_LABEL = 'Start results'`). It is not `m_`-keyed, so
+ *    shapes 1-4 cannot see it, and a copy drifts silently: `PREP_REQUIREMENTS_TREE_LABEL` had
+ *    already become "Preparation requirements" beside the heading's "Prep requirements". A label
+ *    constant reads the glossary (`fieldLabel('m_startResults')`) instead.
  */
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +53,17 @@ interface Hit {
 }
 
 const CLASS_NAMES = Object.keys(GLOSSARY.classes);
+
+/** Every label the glossary owns — fields, classes, enum literals and dialog groups. */
+const GLOSSARY_LABELS = new Set<string>([
+  ...Object.values(GLOSSARY.fields).map((entry) => entry.label),
+  ...Object.values(GLOSSARY.classes).map((entry) => entry.label),
+  ...Object.values(GLOSSARY.groups).map((entry) => entry.label),
+  ...Object.values(GLOSSARY.enums).flatMap((literals) =>
+    Object.values(literals).map((entry) => entry.label),
+  ),
+]);
+const LABEL_CONSTANT = /\b[A-Z][A-Z0-9_]*_LABEL\s*=\s*(['"`])((?:(?!\1).)*)\1/;
 
 const KEY_PROPERTY = /(?:^|[\s{,(])['"]?(m_[A-Za-z0-9]+)['"]?\s*:\s*(['"`])((?:(?!\2).)*)\2/;
 const ENUM_PROPERTY =
@@ -96,6 +112,10 @@ function hitsIn(source: Source): Hit[] {
       !CLASS_NAMES.includes(classProp[3])
     ) {
       hit('class → text');
+    }
+    const constant = LABEL_CONSTANT.exec(text);
+    if (constant !== null && GLOSSARY_LABELS.has(constant[2])) {
+      hit('label constant copying the glossary');
     }
   });
   return hits;
@@ -153,6 +173,7 @@ describe('the glossary is the one label home', () => {
         'export const CLASS_NAMES = {',
         "  ReqHasQuest: 'Requires quest',",
         '};',
+        "export const START_RESULTS_LABEL = 'Start results';",
       ].join('\n'),
     };
     expect(hitsIn(scratch).map((hit) => hit.shape)).toEqual([
@@ -160,6 +181,7 @@ describe('the glossary is the one label home', () => {
       'label beside key',
       'enum literal → text',
       'class → text',
+      'label constant copying the glossary',
     ]);
   });
 
@@ -173,6 +195,8 @@ describe('the glossary is the one label home', () => {
         "const d = { label: fieldLabel('m_rank'), key: 'm_rank' };",
         "const e = { ReqHasQuest: 'Imcodec.ObjectProperty.TypeCache.ReqHasQuest, Imcodec.ObjectProperty' };",
         "const f = entryShaped ? 'ReqHasEntry' : 'ReqHasQuest';",
+        "export const START_RESULTS_LABEL = fieldLabel('m_startResults');",
+        "export const RESULTS_EDITOR_LABEL = 'Quest results editor';",
       ].join('\n'),
     };
     expect(hitsIn(benign)).toEqual([]);

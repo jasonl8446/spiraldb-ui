@@ -28,14 +28,16 @@ function serviceWith(exec: ExecFileWithChild, fileExists = () => true) {
 describe('census service', () => {
   it('runs the binary on the capture and returns messages + rows (dropping the temp input name)', async () => {
     const child: ExecChildHandle = { pid: 1, kill: vi.fn(() => true) };
+    const children = new ChildRegistry();
+    let registeredWhileRunning: number[] = [];
     const exec: ExecFileWithChild = vi.fn((_file, _args, _options, onChild) => {
       onChild?.(child);
+      registeredWhileRunning = children.pids();
       return Promise.resolve({
         stdout: JSON.stringify({ input: 'abc.json', messages: 9, rows: [ROW] }),
         stderr: '',
       });
     });
-    const children = new ChildRegistry();
 
     const outcome = await serviceWith(exec).run('/tmp/abc.json', children);
 
@@ -46,8 +48,10 @@ describe('census service', () => {
       expect.objectContaining({ timeout: 0 }),
       expect.any(Function),
     );
-    // The child is in the run's registry, so a client abort (D9) kills it too.
-    expect(children.pids()).toEqual([1]);
+    // The child is in the run's registry while it runs, so a client abort (D9) kills it too; it
+    // is released once it settles, as the reader's own child is (PR #14 review 9c).
+    expect(registeredWhileRunning).toEqual([1]);
+    expect(children.pids()).toEqual([]);
   });
 
   it('is skipped, naming the build command, when the binary is missing (D55)', async () => {
@@ -75,6 +79,24 @@ describe('census service', () => {
     expect(await serviceWith(exec).run('/tmp/abc.json', new ChildRegistry())).toEqual({
       skipped: 'capture-census printed JSON without messages and rows',
     });
+
+    // A census whose rows drifted from the documented shape is not served as a census (9c): a
+    // row with no `consumed` would render as "ignored by the reader".
+    for (const row of [
+      { message: 'MSG_SENDGOAL', field: 'PersonaName', count: 2 },
+      { message: 'MSG_SENDGOAL', field: 'PersonaName', count: '2', consumed: false },
+      { message: 7, field: 'PersonaName', count: 2, consumed: true },
+      'MSG_SENDGOAL.PersonaName',
+    ]) {
+      const drifted: ExecFileWithChild = () =>
+        Promise.resolve({ stdout: JSON.stringify({ messages: 1, rows: [ROW, row] }), stderr: '' });
+      expect(
+        await serviceWith(drifted).run('/tmp/abc.json', new ChildRegistry()),
+        JSON.stringify(row),
+      ).toEqual({
+        skipped: 'capture-census printed a row that is not {message, field, count, consumed}',
+      });
+    }
 
     const garbage: ExecFileWithChild = () => Promise.resolve({ stdout: 'not json', stderr: '' });
     const outcome = await serviceWith(garbage).run('/tmp/abc.json', new ChildRegistry());

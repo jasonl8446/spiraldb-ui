@@ -176,9 +176,21 @@ internal static class ReaderRepairs {
         // Goal dialogs of the goals QuestBuilder did not map itself, with its tag rule and its
         // replace-by-tag semantics (QuestBuilder.cs:370-422).
         foreach (var packet in actorDialogs) {
-            if (ReadId(packet, "GoalID") is { } goalId and not 0 && !join.ReaderMapped.Contains(goalId)
-                && join.ById.TryGetValue(goalId, out var goal) && DecodeDialog(packet) is { } dialog) {
-                SetDialog(goal.m_dialogList, v => goal.m_dialogList = v, GoalTag(packet), dialog);
+            if (ReadId(packet, "GoalID") is not { } goalId || goalId == 0 || join.ReaderMapped.Contains(goalId)) {
+                continue;
+            }
+
+            if (join.ById.TryGetValue(goalId, out var goal)) {
+                if (DecodeDialog(packet) is { } dialog) {
+                    SetDialog(goal.m_dialogList, v => goal.m_dialogList = v, GoalTag(packet), dialog);
+                }
+            }
+            else if (packet["ActorDialog"]?["value"] is { } dialogValue && !IsEmptyValue(dialogValue)) {
+                // No extracted quest introduces the goal, so the dialog has no home: reported, as the
+                // MSG_ENCOUNTERDIALOG twin is (PR #14 review 9l), never dropped silently.
+                Report(report, "", $"m_goals[GoalID {goalId}].m_dialogList[{GoalTag(packet)}]",
+                    "MSG_ACTORDIALOG.ActorDialog", dialogValue,
+                    $"no MSG_SENDGOAL of an extracted quest introduces GoalID {goalId}");
             }
         }
 

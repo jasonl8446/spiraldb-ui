@@ -418,64 +418,69 @@ describe.skipIf(!FORK_PRESENT)(
       expect(removed.Teleports).toEqual([]);
     });
 
-    it('resolves every one of the 1072 destination refs in the zones table, and reads the labels from it', () => {
-      const db = new Database(DB_PATH, { readonly: true });
-      OPEN_DBS.push(db);
-      const zones = db.prepare('SELECT zone_path, display_name FROM zones').all() as Array<{
-        zone_path: string;
-        display_name: string | null;
-      }>;
-      expect(zones.length).toBe(ZONE_TRANSFER_CORPUS.zoneRows);
+    // The zones table lives in the dev database, which a clone without data/ (CI, D55) lacks: this
+    // arm needs both guards (PR #14 review "could not assess" — DB_PRESENT was computed, never used).
+    it.skipIf(!DB_PRESENT)(
+      'resolves every one of the 1072 destination refs in the zones table, and reads the labels from it',
+      () => {
+        const db = new Database(DB_PATH, { readonly: true });
+        OPEN_DBS.push(db);
+        const zones = db.prepare('SELECT zone_path, display_name FROM zones').all() as Array<{
+          zone_path: string;
+          display_name: string | null;
+        }>;
+        expect(zones.length).toBe(ZONE_TRANSFER_CORPUS.zoneRows);
 
-      const paths = new Set(zones.map((zone) => zone.zone_path));
-      expect(paths.size).toBe(zones.length);
-      expect(zones.filter((zone) => (zone.display_name ?? '').trim() === '').length).toBe(
-        ZONE_TRANSFER_CORPUS.blankZoneDisplayNames,
-      );
+        const paths = new Set(zones.map((zone) => zone.zone_path));
+        expect(paths.size).toBe(zones.length);
+        expect(zones.filter((zone) => (zone.display_name ?? '').trim() === '').length).toBe(
+          ZONE_TRANSFER_CORPUS.blankZoneDisplayNames,
+        );
 
-      // The synced label is already humanized: compare it with the *existing* humanizer rather than
-      // adding a second one. They agree on the documented case and differ only on digit/letter
-      // boundaries — recorded, never "fixed".
-      const agreeing = zones.filter(
-        (zone) => zone.display_name === humanizeZone(zone.zone_path),
-      ).length;
-      expect(agreeing).toBe(ZONE_TRANSFER_CORPUS.zoneDisplayNamesAgreeingWithHumanizer);
-      expect(zones.length - agreeing).toBe(
-        ZONE_TRANSFER_CORPUS.zoneDisplayNamesDifferingFromHumanizer,
-      );
+        // The synced label is already humanized: compare it with the *existing* humanizer rather than
+        // adding a second one. They agree on the documented case and differ only on digit/letter
+        // boundaries — recorded, never "fixed".
+        const agreeing = zones.filter(
+          (zone) => zone.display_name === humanizeZone(zone.zone_path),
+        ).length;
+        expect(agreeing).toBe(ZONE_TRANSFER_CORPUS.zoneDisplayNamesAgreeingWithHumanizer);
+        expect(zones.length - agreeing).toBe(
+          ZONE_TRANSFER_CORPUS.zoneDisplayNamesDifferingFromHumanizer,
+        );
 
-      // Every reference in the corpus resolves here — the whole dropdown source.
-      const files = readCorpus();
-      const referenced = new Set<string>();
-      for (const { document } of files) {
-        for (const { teleport } of readTeleports(document)) {
-          if (teleport !== null && typeof teleport.m_destinationZone === 'string') {
-            referenced.add(teleport.m_destinationZone);
+        // Every reference in the corpus resolves here — the whole dropdown source.
+        const files = readCorpus();
+        const referenced = new Set<string>();
+        for (const { document } of files) {
+          for (const { teleport } of readTeleports(document)) {
+            if (teleport !== null && typeof teleport.m_destinationZone === 'string') {
+              referenced.add(teleport.m_destinationZone);
+            }
           }
         }
-      }
-      expect(referenced.size).toBe(ZONE_TRANSFER_CORPUS.distinctDestinationZones);
-      expect([...referenced].filter((ref) => !paths.has(ref))).toEqual([]);
+        expect(referenced.size).toBe(ZONE_TRANSFER_CORPUS.distinctDestinationZones);
+        expect([...referenced].filter((ref) => !paths.has(ref))).toEqual([]);
 
-      const referencedAgreeing = zones.filter(
-        (zone) =>
-          referenced.has(zone.zone_path) && zone.display_name === humanizeZone(zone.zone_path),
-      ).length;
-      const referencedZoneCount = zones.filter((zone) => referenced.has(zone.zone_path)).length;
-      expect(referencedZoneCount).toBe(ZONE_TRANSFER_CORPUS.distinctDestinationZones);
-      expect(referencedAgreeing).toBe(ZONE_TRANSFER_CORPUS.referencedZoneDisplayNamesAgreeing);
-      expect(referencedZoneCount - referencedAgreeing).toBe(
-        ZONE_TRANSFER_CORPUS.referencedZoneDisplayNamesDiffering,
-      );
+        const referencedAgreeing = zones.filter(
+          (zone) =>
+            referenced.has(zone.zone_path) && zone.display_name === humanizeZone(zone.zone_path),
+        ).length;
+        const referencedZoneCount = zones.filter((zone) => referenced.has(zone.zone_path)).length;
+        expect(referencedZoneCount).toBe(ZONE_TRANSFER_CORPUS.distinctDestinationZones);
+        expect(referencedAgreeing).toBe(ZONE_TRANSFER_CORPUS.referencedZoneDisplayNamesAgreeing);
+        expect(referencedZoneCount - referencedAgreeing).toBe(
+          ZONE_TRANSFER_CORPUS.referencedZoneDisplayNamesDiffering,
+        );
 
-      // The `zones` row the dropdown shows the humanized label from.
-      const sample = db
-        .prepare('SELECT display_name FROM zones WHERE zone_path = ?')
-        .get('Aquila/AQ_Z00_Hub') as { display_name: string } | undefined;
-      // D120's ladder resolves `m_zoneDisplayName` through the string table; it was the humanised
-      // path 'Aquila / AQ Z00 Hub' while the table was corpus-derived (re-measured at p7-02, D145).
-      expect(sample?.display_name).toBe('Garden Of Hesperides');
-    });
+        // The `zones` row the dropdown shows the humanized label from.
+        const sample = db
+          .prepare('SELECT display_name FROM zones WHERE zone_path = ?')
+          .get('Aquila/AQ_Z00_Hub') as { display_name: string } | undefined;
+        // D120's ladder resolves `m_zoneDisplayName` through the string table; it was the humanised
+        // path 'Aquila / AQ Z00 Hub' while the table was corpus-derived (re-measured at p7-02, D145).
+        expect(sample?.display_name).toBe('Garden Of Hesperides');
+      },
+    );
   },
 );
 

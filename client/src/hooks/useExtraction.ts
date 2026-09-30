@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 
 import { extractQuests, type ExtractCensus, type QuestObject } from '../lib/api';
-import { extractErrorMessage, EXTRACTING_TOAST_MESSAGE } from '../lib/extract';
+import {
+  extractErrorMessage,
+  EXTRACTING_TOAST_MESSAGE,
+  suggestionsStoreNotice,
+} from '../lib/extract';
 import { dismissNotification, notifyError, notifyInfo } from '../lib/notify';
 
 /**
@@ -43,6 +47,8 @@ export interface ExtractionState {
   count: number;
   /** The packet census of the capture (D139), when the server answered with one. */
   census: ExtractCensus | undefined;
+  /** What became of the capture suggestions, when there is something to say (review 9a/9d). */
+  suggestionsNotice: string | null;
   /** The capture being extracted (or the last one tried), for the file card. */
   file: File | null;
   /**
@@ -74,6 +80,7 @@ const INITIAL: ExtractionState = {
   quests: [],
   count: 0,
   census: undefined,
+  suggestionsNotice: null,
   file: null,
   error: null,
 };
@@ -101,7 +108,15 @@ export function useExtraction(): ExtractionController {
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    setState({ status: 'extracting', quests: [], count: 0, census: undefined, file, error: null });
+    setState({
+      status: 'extracting',
+      quests: [],
+      count: 0,
+      census: undefined,
+      suggestionsNotice: null,
+      file,
+      error: null,
+    });
     endExtractingNotice(noticeRef);
     noticeRef.current = notifyInfo(EXTRACTING_TOAST_MESSAGE);
 
@@ -117,6 +132,11 @@ export function useExtraction(): ExtractionController {
           quests: result.quests,
           count: result.count,
           census: result.census,
+          suggestionsNotice: suggestionsStoreNotice(
+            result.suggestions_store,
+            // A pre-task-7.5 body (and the older tier-1 mocks) carries no `suggestions`.
+            (result.suggestions ?? []).length,
+          ),
           file,
           error: null,
         });
@@ -133,6 +153,7 @@ export function useExtraction(): ExtractionController {
           quests: [],
           count: 0,
           census: undefined,
+          suggestionsNotice: null,
           file: null,
           error: message,
         });

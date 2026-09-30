@@ -19,6 +19,7 @@ import { createQuestsRouter } from '@server/routes/quests';
 import {
   acceptSuggestions,
   buildDrafts,
+  DraftCorpusError,
   isEmptyValue,
   listSuggestions,
   namePredecessor,
@@ -482,6 +483,49 @@ describe('the builder on the fixture catalog (CI)', () => {
     expect(rows.some((row) => row.source === 'capture-order')).toBe(true);
   });
 
+  it('refuses a rebuild whose quest-file read found no file while evidence rows are pending, writing nothing (PR #14 review 1)', () => {
+    // The review's reproduction: a root that is an existing directory but not the SpiralDB root
+    // (here: the right root with its QuestTemplates/ gone) reads 0 quest files, proposes nothing
+    // for the files, and used to delete every pending evidence row as "no longer proposed".
+    const { db, root, index } = fixture();
+    buildDrafts({ db, index });
+    storeCaptureSuggestions(
+      db,
+      [
+        {
+          questName: 'FX-SERIES-C01-002',
+          path: 'm_goalLogic',
+          value: [],
+          source: 'capture-order',
+          confidence: 0.6,
+          note: 'n',
+        },
+      ],
+      'fixture.json',
+    );
+    const snapshot = (): unknown => db.prepare('SELECT * FROM quest_suggestions ORDER BY id').all();
+    const before = snapshot();
+
+    fs.rmSync(path.join(root, 'QuestTemplates'), { recursive: true, force: true });
+    const unreadable = createSpiraldbIndex(root);
+    const stats = unreadable.rebuildType('questtemplates');
+    expect(stats).toMatchObject({ indexed: 0, missingDirectories: ['QuestTemplates'] });
+
+    expect(() => buildDrafts({ db, index: unreadable })).toThrow(DraftCorpusError);
+    expect(() => buildDrafts({ db, index: unreadable })).toThrow(
+      /read no quest file from .*QuestTemplates.*pending evidence suggestions/s,
+    );
+    expect(snapshot()).toEqual(before);
+  });
+
+  it('rebuilds over an empty quest-file read when no evidence row is pending (nothing to lose)', () => {
+    const { db, root } = fixture();
+    fs.rmSync(path.join(root, 'QuestTemplates'), { recursive: true, force: true });
+    const empty = createSpiraldbIndex(root);
+    empty.rebuildType('questtemplates');
+    expect(buildDrafts({ db, index: empty }).removed).toBe(0);
+  });
+
   it('stores capture suggestions idempotently, and a rebuild keeps them', () => {
     const { db, index } = fixture();
     const golden = JSON.parse(
@@ -506,7 +550,12 @@ describe('the builder on the fixture catalog (CI)', () => {
     buildDrafts({ db, index });
 
     expect(first.inserted).toBe(golden.suggestions.length);
-    expect(again).toEqual({ inserted: 0, unchanged: golden.suggestions.length });
+    // `uncatalogued` (PR #14 review 9d): the fixture catalog holds no WC-HAUNTED-MAIN-001 row.
+    expect(again).toEqual({
+      inserted: 0,
+      unchanged: golden.suggestions.length,
+      uncatalogued: golden.suggestions.length,
+    });
     const stored = listSuggestions(db, { quest_name: 'WC-HAUNTED-MAIN-001' }, 'pending');
     expect(stored).toHaveLength(golden.suggestions.length);
     expect(stored.every((row) => row.evidence_ref === 'capture:WC-HAUNTED-MAIN-001.json')).toBe(
@@ -563,6 +612,30 @@ describe('the drafts and suggestions API (D141, D143)', () => {
     for (const bad of ['named=2', 'source=nope', 'limit=5000', 'all=yes']) {
       expect((await request(server).get(`/api/drafts?${bad}`)).status, bad).toBe(400);
     }
+  });
+
+  it('answers 409 naming the missing directory when the settings root reads no quest file, and deletes nothing (PR #14 review 1)', async () => {
+    const { db, root, index } = fixture();
+    buildDrafts({ db, index });
+    const pending = (): number =>
+      (
+        db
+          .prepare(
+            "SELECT count(*) AS c FROM quest_suggestions WHERE status = 'pending' AND source LIKE 'evidence-%'",
+          )
+          .get() as { c: number }
+      ).c;
+    const before = pending();
+    expect(before).toBeGreaterThan(0);
+    // `spiraldb_path` pointed one level too deep — an existing directory, so Settings accepts it.
+    writeSettings(db, { spiraldb_path: path.join(root, 'QuestTemplates') });
+
+    const res = await request(app(db)).post('/api/drafts/rebuild');
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain('QuestTemplates');
+    expect(res.body.error).toContain(`${before} pending evidence suggestions`);
+    expect(pending()).toBe(before);
   });
 
   it('answers 409 while a rebuild runs', async () => {
@@ -664,5 +737,68 @@ describe('the drafts and suggestions API (D141, D143)', () => {
     expect(rows.map((row) => [row.path, row.value, row.source, row.evidence_ref])).toEqual([
       ['m_startGoals', ['1_WizardQuestGoals_Explore'], 'capture-order', 'capture:session_1.json'],
     ]);
+  });
+
+  describe('the store outcome is part of the answer (PR #14 review 9a, 9d)', () => {
+    const suggestion = (questName: string): CaptureSuggestion => ({
+      questName,
+      path: 'm_startGoals',
+      value: ['1_Goal'],
+      source: 'capture-order',
+      confidence: 0.8,
+      note: 'n',
+    });
+    function extractApp(
+      suggestions: CaptureSuggestion[],
+      store: (s: CaptureSuggestion[], name: string) => unknown,
+    ): Express {
+      const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'p7-drafts-upload-'));
+      TEMP.push(uploadDir);
+      const service: ExtractionService = {
+        cliPath: 'fake',
+        start: () => ({
+          children: new ChildRegistry(),
+          result: Promise.resolve([{ m_questName: suggestions[0]?.questName ?? 'X' }]),
+          suggestions: Promise.resolve(suggestions),
+        }),
+      };
+      const server = express();
+      server.use(
+        '/api/extract',
+        createExtractRouter({ service, uploadDir, storeSuggestions: store as never }),
+      );
+      return server;
+    }
+
+    it('reports a store failure in the 200 body instead of only a server warning', async () => {
+      const res = await request(
+        extractApp([suggestion('FX-SERIES-C01-002')], () => {
+          throw new Error('database is locked');
+        }),
+      )
+        .post('/api/extract/quests')
+        .attach('file', Buffer.from('[]'), 'session_2.json');
+      expect(res.status).toBe(200);
+      expect(res.body.suggestions_store).toEqual({ stored: false, reason: 'database is locked' });
+    });
+
+    it('awaits the store and counts suggestions whose quest the catalog does not hold', async () => {
+      const { db } = fixture();
+      const res = await request(
+        extractApp(
+          [suggestion('FX-SERIES-C01-002'), suggestion('FX-NOT-IN-CATALOG-001')],
+          async (s, name) => storeCaptureSuggestions(db, s, name),
+        ),
+      )
+        .post('/api/extract/quests')
+        .attach('file', Buffer.from('[]'), 'session_3.json');
+      expect(res.status).toBe(200);
+      expect(res.body.suggestions_store).toEqual({
+        stored: true,
+        inserted: 2,
+        unchanged: 0,
+        uncatalogued: 1,
+      });
+    });
   });
 });

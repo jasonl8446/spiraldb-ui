@@ -20,7 +20,8 @@ import { cn } from '../../lib/utils';
  * the condition so the attribute describes the behaviour instead of being the only guard.
  *
  * The accessible name is the visible `Save`; when blocked, `aria-describedby` points at the
- * banner, so a screen reader reaches the reason.
+ * banner, so a screen reader reaches the reason. While a save is in flight (`pending`) the button
+ * is `aria-disabled` and `aria-busy` too, and the click is ignored (PR #14 review 3).
  */
 export const SAVE_LABEL = 'Save';
 
@@ -35,14 +36,23 @@ export const SAVE_READY_TOOLTIP =
 export const SAVE_UNWIRED_TOOLTIP =
   'Validation allows saving, but no save action is wired to this button.';
 
+/** The tooltip while a save is in flight (PR #14 review 3). */
+export const SAVE_PENDING_TOOLTIP = 'Saving…';
+
 export default function QuestSaveButton({
   blocked,
+  pending = false,
   describedBy,
   onSave,
   className,
 }: {
   /** `true` when the document has a blocking finding — the engine's `blocked`. */
   blocked: boolean;
+  /**
+   * `true` while a save is in flight (PR #14 review 3): the button is disabled until it settles,
+   * so a double-click cannot send a second save the server would refuse as already accepted.
+   */
+  pending?: boolean;
   /** The validation banner's id, so a blocked button explains itself. */
   describedBy?: string;
   /** The save action; the detail page's `POST /api/quests` since story p3-10. */
@@ -54,9 +64,18 @@ export default function QuestSaveButton({
     <Button
       type="button"
       variant="outline"
-      aria-disabled={blocked}
+      aria-disabled={blocked || pending}
+      aria-busy={pending}
       aria-describedby={blocked ? describedBy : undefined}
-      title={blocked ? SAVE_BLOCKED_TOOLTIP : wired ? SAVE_READY_TOOLTIP : SAVE_UNWIRED_TOOLTIP}
+      title={
+        blocked
+          ? SAVE_BLOCKED_TOOLTIP
+          : pending
+            ? SAVE_PENDING_TOOLTIP
+            : wired
+              ? SAVE_READY_TOOLTIP
+              : SAVE_UNWIRED_TOOLTIP
+      }
       data-blocked={blocked}
       data-save-wired={wired}
       className={cn(
@@ -65,7 +84,7 @@ export default function QuestSaveButton({
         className,
       )}
       onClick={() => {
-        if (!blocked && onSave !== undefined) {
+        if (!blocked && !pending && onSave !== undefined) {
           onSave();
         }
       }}

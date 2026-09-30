@@ -479,18 +479,33 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     //    helper the scaffold CLI uses refuses a `settings.git_branch` the tree is not on, before
     //    the branch is created from main and the tree replaced (task 7.14, D182). This is the
     //    single chokepoint every route's write passes through.
+    //
+    //    A blank setting names no branch, so the helper's "follow the working tree" rule applies,
+    //    as it does for the CLI (PR #14 review 5, D195) — except on `main`, where the spec's
+    //    session branch `content/{today}` is still cut from main rather than committing to main.
     const storedBranch = (readSettings(db).git_branch ?? '').trim();
+    const currentBranch = await git.currentBranch();
+    const requested =
+      storedBranch !== ''
+        ? storedBranch
+        : currentBranch === 'main'
+          ? sessionBranchName(timestamp)
+          : undefined;
     const decision = resolveScaffoldBranch({
       settingsBranch: storedBranch,
-      currentBranch: await git.currentBranch(),
-      // A blank setting means `content/{today}` (what `ensureSessionBranch` would create).
-      requested: storedBranch === '' ? sessionBranchName(timestamp) : storedBranch,
+      currentBranch,
+      requested,
+      // The `main` exemption holds only on the create-from-main path (D195).
+      requestedExists: requested === undefined ? undefined : await git.branchExists(requested),
       requestedFrom: 'setting',
     });
     if (decision.kind === 'refuse') {
       throw new BranchMismatchError(decision.message);
     }
-    const session = await git.ensureSessionBranch({ date: timestamp });
+    const session = await git.ensureSessionBranch({
+      date: timestamp,
+      ...(decision.branch === '' ? {} : { branch: decision.branch }),
+    });
 
     // 3. The payload. An update merges into the file on disk so omitted nulls
     //    survive (D45(1)); a create writes the object as given.

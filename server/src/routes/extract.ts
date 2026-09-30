@@ -9,6 +9,7 @@ import multer from 'multer';
 import { resolveRepoRoot } from '../db.js';
 import type { ApiError } from '../../../shared/index.js';
 import { createCensusService, type CensusService } from '../services/census.js';
+import type { CaptureStoreResult } from '../services/drafts.js';
 import {
   createExtractionService,
   ExtractionCancelledError,
@@ -109,8 +110,18 @@ export interface ExtractRouterOptions {
    * Stores the run's capture suggestions as pending `quest_suggestions` rows (task 7.6), keyed by
    * the uploaded file's sanitised base name. Absent → nothing is stored (the router's tests).
    */
-  storeSuggestions?: (suggestions: CaptureSuggestion[], captureName: string) => unknown;
+  storeSuggestions?: (
+    suggestions: CaptureSuggestion[],
+    captureName: string,
+  ) => CaptureStoreResult | Promise<CaptureStoreResult>;
 }
+
+/**
+ * The response's `suggestions_store` (PR #14 review 9a/9d): whether the run's capture suggestions
+ * were staged, and how many name a quest the catalog does not hold yet.
+ */
+export type SuggestionsStoreOutcome =
+  ({ stored: true } & CaptureStoreResult) | { stored: false; reason: string };
 
 /** HTTP status for a thrown value — multer codes first, then our own errors. */
 function statusOf(error: unknown): number {
@@ -251,21 +262,22 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
     try {
       const quests = await run.result;
       const suggestions = await run.suggestions;
+      let suggestionsStore: SuggestionsStoreOutcome | undefined;
       if (options.storeSuggestions !== undefined && suggestions.length > 0 && !aborted) {
         // Stored on the extraction's answer, not on a later save (D161): a suggestion belongs to
         // the capture that produced it, and the identity index makes a re-upload add nothing.
-        // A store failure is reported, never fatal: the quests are the extraction's result.
+        // A store failure is reported in the answer, never fatal: the quests are the extraction's
+        // result, and the user must still be told the suggestions were not staged (review 9a).
         try {
-          options.storeSuggestions(
+          const stored = await options.storeSuggestions(
             suggestions,
             sanitizeCaptureSource(file.originalname) ?? path.basename(file.path),
           );
+          suggestionsStore = { stored: true, ...stored };
         } catch (storeError) {
-          process.emitWarning(
-            `[extract] could not store the capture suggestions: ${
-              storeError instanceof Error ? storeError.message : String(storeError)
-            }`,
-          );
+          const reason = storeError instanceof Error ? storeError.message : String(storeError);
+          process.emitWarning(`[extract] could not store the capture suggestions: ${reason}`);
+          suggestionsStore = { stored: false, reason };
         }
       }
       // `?census=1` (D139): what the reader ignored, from the same uploaded file. Never fails the request.
@@ -274,11 +286,13 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
           ? await getCensus().run(file.path, run.children)
           : undefined;
       if (!aborted) {
-        res.json(
-          census === undefined
-            ? { quests, count: quests.length, suggestions }
-            : { quests, count: quests.length, suggestions, census },
-        );
+        res.json({
+          quests,
+          count: quests.length,
+          suggestions,
+          ...(suggestionsStore === undefined ? {} : { suggestions_store: suggestionsStore }),
+          ...(census === undefined ? {} : { census }),
+        });
       }
     } catch (error) {
       if (aborted || error instanceof ExtractionCancelledError) {

@@ -26,13 +26,18 @@ const fixture = JSON.parse(
   readFileSync(path.resolve('tests/unit/fixtures/card-titles-quests.json'), 'utf8'),
 ) as { quests: Record<string, Record<string, unknown>> };
 
-/** An entry whose every value is the skeleton default: nothing here is advanced-and-set. */
+/**
+ * An entry whose every value is its field's own default — what `newDialogEntry` writes (D195): so
+ * nothing here is advanced-and-set. D195 changed four values here deliberately: the old fixture
+ * held the generic empty set (`m_nameSTKey: ''`, `m_cameraHidePlayers: 0`, `m_musicFadeTime: 0`,
+ * `m_spamTime: 0`, `m_meetsRequirements: false`), which the per-field rule now reads as authored.
+ */
 function skeletonEntry(extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     $type: ENTRY_TYPE,
     m_personaName: '',
     m_nameOverride: '',
-    m_nameSTKey: '',
+    m_nameSTKey: 'NPCFormats_First_Last',
     m_guiDisplay: '',
     m_maxTimeSeconds: 0,
     m_invisible: false,
@@ -44,12 +49,12 @@ function skeletonEntry(extra: Record<string, unknown> = {}): Record<string, unkn
     m_dialogEvent: '',
     m_actorTemplateID: 0,
     m_cameraName: '',
-    m_cameraHidePlayers: 0,
+    m_cameraHidePlayers: 2,
     m_cameraOffsetX: 0,
-    m_musicFadeTime: 0,
-    m_spamTime: 0,
+    m_musicFadeTime: 3,
+    m_spamTime: 1,
     m_walkAwayNpcTemplateID: 0,
-    m_meetsRequirements: false,
+    m_meetsRequirements: true,
     ...extra,
   };
 }
@@ -132,6 +137,60 @@ test.describe('Basic vs Advanced', () => {
     await expect(cards.first()).toBeVisible();
     const cameraFirst = cards.nth(withCamera[0]!);
     await expect(accordion(cameraFirst, 'Camera')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('an authored false where the field defaults to true opens its accordion (D195)', async ({
+    page,
+  }) => {
+    // m_bypassCameraOnReview: new entries write true; 35 of the clone's 1,706 entries author false.
+    await open(page, NAME, questWith(skeletonEntry({ m_bypassCameraOnReview: false })), 'Dialog');
+    const card = page.locator('article[aria-label^="Entry 1 "]');
+    await expect(card).toBeVisible();
+    await expect(accordion(card, 'Camera')).toHaveAttribute('aria-expanded', 'true');
+    for (const label of ['Sound', 'Animation', 'Advanced']) {
+      await expect(accordion(card, label)).toHaveAttribute('aria-expanded', 'false');
+    }
+  });
+
+  test('a freshly added dialog entry stays collapsed: its values are its own defaults (D195)', async ({
+    page,
+  }) => {
+    await open(page, NAME, questWith(skeletonEntry()), 'Dialog');
+    await page
+      .getByRole('main')
+      .getByRole('button', { name: 'Add Dialog Entry', exact: true })
+      .first()
+      .click();
+    const added = page.locator('article[aria-label^="Entry 2 "]');
+    await expect(added).toBeVisible();
+    for (const label of ['Camera', 'Sound', 'Animation', 'Advanced']) {
+      await expect(accordion(added, label)).toHaveAttribute('aria-expanded', 'false');
+    }
+  });
+
+  test('a real clone ReqHasEntry with m_isQuestRegistry false opens its Advanced (D195)', async ({
+    page,
+  }) => {
+    // WC-UNICORN-MAIN-002 (D17 clone), committed as the served document so CI needs no data/.
+    const doc = (
+      JSON.parse(
+        readFileSync(
+          path.resolve('tests/unit/fixtures/clone-quest-WC-UNICORN-MAIN-002.json'),
+          'utf8',
+        ),
+      ) as { quest: Record<string, unknown> }
+    ).quest;
+    await open(page, 'WC-UNICORN-MAIN-002', doc, 'Requirements');
+    const leaf = (index: number) =>
+      page
+        .getByRole('main')
+        .locator(`article[data-path="m_requirements[${index}]"]`)
+        .locator('details');
+    // [1] authors false (default true): open. [0] holds the default true: collapsed — under the
+    // old generic-empty rule the two were the other way round.
+    await expect(leaf(1)).toHaveAttribute('open', '');
+    await expect(leaf(0)).toBeAttached();
+    await expect(leaf(0)).not.toHaveAttribute('open', '');
   });
 
   test('a validation message on an advanced field is visible unopened and cannot be hidden', async ({

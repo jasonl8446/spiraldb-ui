@@ -360,9 +360,14 @@ carries no enum conversion (the CLI already emits the corpus spelling, D48(a)).
   on (`BranchMismatchError`, D119 as extended by task 7.14) → `409`, refused before anything is written or
   checked out; any other pipeline failure → `500`. **This last refusal applies to every route that writes a
   SpiralDB file and commits** (`POST /api/quests`, `POST /api/quests/scaffold` and the eight object families'
-  `POST /`), because it sits in the save pipeline they all pass through; a tree on `main` is exempt, since a
-  session branch created from `main` strands nothing. Routes that write only SQLite (`/api/sync`,
-  `/api/settings`, `PATCH /api/status/…`, the drafts and suggestions routes, `/api/extract/quests`) are exempt.
+  `POST /`), because it sits in the save pipeline they all pass through; a tree on `main` is exempt **only when
+  the named branch does not exist yet** (D195), since a session branch created from `main` strands nothing,
+  while checking out an existing branch would replace main's tree with that branch's. A blank `git_branch`
+  follows the checked-out branch, as the scaffold CLI does (D195), except on `main`, where `content/{today}` is
+  still cut from `main`. A quest name or object key the naming convention refuses (a path separator, a NUL or
+  any other control character, a `.json` suffix; `NamingError`, D195) → `400`, before anything is written.
+  Routes that write only SQLite (`/api/sync`, `/api/settings`, `PATCH /api/status/…`, the drafts and
+  suggestions routes, `/api/extract/quests`) are exempt.
 
 **Added by story p3-09 — a 400 body may carry a per-field error map.** A body that
 fails the shared quest schema (task 3.1) or the shared **rule** validation (task 3.9,
@@ -877,6 +882,11 @@ synchronous, like `POST /api/sync`. A second request while one runs is a `409`.
   `evidence-goals` and `evidence-requirements`. `by_source` counts the table's rows per source **after** the run,
   every status, all seven keys present. `unchanged` also counts a proposal a decided row blocks (the data model's
   idempotence rule). A missing `settings.spiraldb_path` is a `400`.
+- **Unreadable corpus (D195).** When the run's quest-file read finds no file (`QuestTemplates/` missing or empty under
+  the root — a typo, the parent directory, or `QuestTemplates/` itself as the root) while pending `evidence-*` rows
+  exist, the rebuild is a `409` naming the directory it read and the pending count, and **nothing is written**:
+  otherwise every pending evidence row would be deleted as "no longer proposed". `npm run drafts` exits 1 with the
+  same message.
 - `npm run drafts -- --db <file> [--spiraldb <dir>]` runs the same builder and prints this body as JSON. It **refuses
   to pick a database implicitly** (exit 2 without `--db` or `SPIRALDB_UI_DB`, D164), and it reads the SpiralDB root
   without writing to it.
@@ -932,9 +942,15 @@ above is unchanged.
   they are stored **when the extraction answers** (not on a later save), with `catalog_id = NULL` and `evidence_ref =
   capture:<file name>` sanitised by the save route's `sanitizeCaptureSource`. A store failure is reported as a
   process warning and never fails the extraction. A rebuild never deletes these rows.
+- **`suggestions_store` (D195).** Present when the run inferred suggestions: `{ "stored": true, "inserted",
+  "unchanged", "uncatalogued" }`, where `uncatalogued` counts the suggestions whose `questName` has no `quests` row
+  (stored, but not listed in `/drafts` until a sync adds that quest), or `{ "stored": false, "reason": "…" }` when
+  the store failed. The store is awaited; the upload page shows either case beside the results.
 - `census` is present only when the request asks for it with `?census=1`. It holds the `capture-census` rows for
   the same file. If the census binary is absent, `census` is `{ "skipped": "…reason…" }`, and the extraction itself
-  still succeeds, the same posture as the sync's missing `wad-scan` (D55).
+  still succeeds, the same posture as the sync's missing `wad-scan` (D55). A tool output whose rows are not all
+  `{message: string, field: string, count: number, consumed: boolean}` is also `{ "skipped" }` (D195), never served
+  as a census.
 
 ---
 

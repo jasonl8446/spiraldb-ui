@@ -24,6 +24,7 @@ import {
   goalCount,
   ignoredByReaderLabel,
   ignoredCensusRows,
+  suggestionsStoreNotice,
   isAbortError,
   NEW_BADGE_LABEL,
   OVERWRITE_HEADING,
@@ -432,5 +433,29 @@ describe('saveQuest', () => {
       quest,
       source: 'session_2026-09-24.json',
     });
+  });
+});
+
+describe('the suggestion store outcome (PR #14 review 9a, 9d)', () => {
+  it('says when the capture suggestions were not staged, with the server reason', () => {
+    expect(suggestionsStoreNotice({ stored: false, reason: 'database is locked' }, 3)).toBe(
+      'The 3 inferred suggestions were not staged for review: database is locked',
+    );
+  });
+
+  it('says how many staged suggestions name a quest the catalog does not list yet', () => {
+    expect(
+      suggestionsStoreNotice({ stored: true, inserted: 2, unchanged: 0, uncatalogued: 1 }, 2),
+    ).toBe(
+      '1 of 2 inferred suggestions names a quest the catalog does not list yet: it appears in ' +
+        'Drafts after a sync adds that quest.',
+    );
+  });
+
+  it('says nothing when every suggestion is staged and listed, or nothing was stored', () => {
+    expect(
+      suggestionsStoreNotice({ stored: true, inserted: 2, unchanged: 0, uncatalogued: 0 }, 2),
+    ).toBeNull();
+    expect(suggestionsStoreNotice(undefined, 0)).toBeNull();
   });
 });

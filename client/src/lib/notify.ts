@@ -60,6 +60,18 @@ export function notifyErrorWithRetry(message: string, onRetry: () => void): void
   });
 }
 
+/**
+ * An error toast carrying one recovery action — a draft's first save refused because its file now
+ * exists offers to open that file (PR #14 review 3). Same duration as {@link notifyError}.
+ */
+export function notifyErrorWithAction(message: string, label: string, onClick: () => void): void {
+  toast.error(message, {
+    duration: TOAST_DURATIONS.error,
+    closeButton: true,
+    action: { label, onClick },
+  });
+}
+
 export function notifyWarning(message: string): void {
   toast.warning(message, { duration: TOAST_WARNING_DURATION_MS });
 }

@@ -384,17 +384,43 @@ above returns 0 hits.
 
 ## Phase acceptance criteria
 
-- [ ] The injected capture set's every observed value is recovered exactly, and every inferred value appears only as a
-      suggestion (7.2–7.5).
-- [ ] `npm run audit:corpus` on the D17 clone: 181+ verified, 0 failures, refusals ≤ 141 and classified.
-- [ ] `npm run drafts` covers every catalog id; two runs are identical; counts reconcile with `coverage`.
-- [ ] One quest built only from accepted suggestions is loaded by a live Imlight boot (count +1).
-- [ ] No bare technical label is visible in any quest tab except JSON (scanner + negative control).
-- [ ] Every glossary term has a label, help, tier and source; one label home, enforced by test.
-- [ ] Overview tab, Basic/Advanced, readable cards, and the popover shipped with tier-1 + tier-2 evidence.
-- [ ] Every Phase 6 residual listed in 7.14–7.16 is closed or dispositioned with a reason.
-- [ ] `npm test`, `npm run lint`, `npm run test:ui` green; flake specs 10/10.
-- [ ] D125–D137 present, the four specs updated, and AGENTS.md updated.
+- [x] The injected capture set's every observed value is recovered exactly, and every inferred value appears only as a
+      suggestion (7.2–7.5). Evidence: [`gate-7-p7-1-census.txt`](./evidence/phase-7/gate-7-p7-1-census.txt) (`TOTAL
+      planted fields 72, missing from census 0`), [`gate-7-p7-2-reader.txt`](./evidence/phase-7/gate-7-p7-2-reader.txt)
+      (9 × stdout and sidecar identical to the goldens), [`p7-04.md`](./evidence/phase-7/p7-04.md) "Criterion 1",
+      [`p7-06.md`](./evidence/phase-7/p7-06.md) "Criterion 3".
+- [x] `npm run audit:corpus` on the D17 clone: 181+ verified, 0 failures, refusals ≤ 141 and classified. Evidence:
+      [`gate-7-p7-3-audit-corpus.txt`](./evidence/phase-7/gate-7-p7-3-audit-corpus.txt) (`PASS: 314/322 verified, 8 not
+      covered by the synthetic harness, 0 failure(s)`, the 8 in two classes).
+- [x] `npm run drafts` covers every catalog id; two runs are identical; counts reconcile with `coverage`. Evidence:
+      [`gate-7-p7-4-drafts.txt`](./evidence/phase-7/gate-7-p7-4-drafts.txt) (run 2 `"inserted": 0`, the four
+      reconciliation flags `1`, `catalog_ids_without_draft` `0`; on a dev-DB copy over the owner fork, gate-7 GD14).
+- [x] One quest built only from accepted suggestions is loaded by a live Imlight boot (count +1). Evidence:
+      [`gate-7-p7-5-live-boot.txt`](./evidence/phase-7/gate-7-p7-5-live-boot.txt) (`322 + 1 = 323`, `PASS — rises by
+      exactly one`), first run [`p7-08.md`](./evidence/phase-7/p7-08.md) "Criterion 3".
+- [x] No bare technical label is visible in any quest tab except JSON (scanner + negative control). Evidence:
+      [`p7-10.md`](./evidence/phase-7/p7-10.md) "Criterion 2" with
+      [`p7-10-negative-control.txt`](./evidence/phase-7/p7-10-negative-control.txt) (1 hit red, 0 green); the Overview
+      tab (added after the scanner) by the Overview arm of `tests/ui/p7-label-scan.spec.ts`,
+      [`pr14-review-fixes.md`](./evidence/phase-7/pr14-review-fixes.md) "Final suites".
+- [x] Every glossary term has a label, help, tier and source; one label home, enforced by test. Evidence:
+      [`p7-09.md`](./evidence/phase-7/p7-09.md) "Criterion 2" and "Criterion 3" with their negative-control sidecars;
+      help on every entry in [`p7-13.md`](./evidence/phase-7/p7-13.md) "1. Help on every glossary entry".
+- [x] Overview tab, Basic/Advanced, readable cards, and the popover shipped with tier-1 + tier-2 evidence. Evidence:
+      [`p7-14.md`](./evidence/phase-7/p7-14.md), [`p7-12.md`](./evidence/phase-7/p7-12.md),
+      [`p7-11.md`](./evidence/phase-7/p7-11.md), [`p7-13.md`](./evidence/phase-7/p7-13.md); tier-2
+      [`p7-14-tier2.md`](./evidence/phase-7/p7-14-tier2.md) and
+      [`gate-7-p7-6-walkthrough.txt`](./evidence/phase-7/gate-7-p7-6-walkthrough.txt).
+- [x] Every Phase 6 residual listed in 7.14–7.16 is closed or dispositioned with a reason. Evidence:
+      [`p7-15.md`](./evidence/phase-7/p7-15.md) (7.14), [`p7-16.md`](./evidence/phase-7/p7-16.md) (7.15),
+      [`p7-17.md`](./evidence/phase-7/p7-17.md) (7.16).
+- [x] `npm test`, `npm run lint`, `npm run test:ui` green; flake specs 10/10. Evidence:
+      [`gate-7-freeze-and-gates.txt`](./evidence/phase-7/gate-7-freeze-and-gates.txt) (`2178 passed`, lint clean,
+      `455 passed`), [`p7-16-isolated.txt`](./evidence/phase-7/p7-16-isolated.txt) (each named arm 10/10); re-run after
+      the PR #14 fixes in [`pr14-review-fixes.md`](./evidence/phase-7/pr14-review-fixes.md) "Final suites".
+- [x] D125–D137 present, the four specs updated, and AGENTS.md updated. Evidence:
+      [`p7-01.md`](./evidence/phase-7/p7-01.md) "Criterion 1" and "Criterion 2" (13 of 13 D-items by grep; each spec
+      change named); AGENTS.md's decision range corrected in the PR #14 fixes (D195).
 
 ## Risks & mitigations
 

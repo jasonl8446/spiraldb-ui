@@ -71,13 +71,15 @@ import {
   type StatusValue,
 } from '../lib/api';
 import {
+  isDraftAlreadySaved,
   namingPrefill,
   planSuggestionAccept,
+  reconcileApplied,
   REWARDS_PATH,
   type Suggestion,
 } from '../lib/suggestions';
 import { savedMessage, serverMessage } from '../lib/extract';
-import { notifyError, notifySuccess, notifyWarning } from '../lib/notify';
+import { notifyError, notifyErrorWithAction, notifySuccess, notifyWarning } from '../lib/notify';
 import { UserNameCancelledError } from '../lib/user-name';
 import {
   BACK_TO_QUESTS_LABEL,
@@ -103,7 +105,9 @@ import {
   EDIT_OFF_TOOLTIP,
   EDIT_ON_TOOLTIP,
   EDIT_TOGGLE_LABEL,
+  OPEN_SAVED_QUEST_LABEL,
   SAVE_FAILED_FALLBACK,
+  SUGGESTIONS_READ_FAILED,
 } from '../lib/quest-edit';
 import {
   isCurrentStatus,
@@ -431,6 +435,48 @@ export function LoadedQuest({
    * entry stays exactly where it was (plan §3.10's last clause). Invalidating the list only
    * refetches the badge, which cannot move without a status change.
    */
+  /**
+   * One save at a time (PR #14 review 3). The button also shows the pending state, but TanStack
+   * publishes `isPending` on a later tick, so a double-click can land its second click before the
+   * re-render: this ref is the synchronous guard, set by the click and cleared when the save
+   * settles.
+   */
+  const saving = useRef(false);
+
+  /**
+   * After a failed save: re-read the draft's pending suggestions and drop every applied id the
+   * server no longer holds as pending (flipped by a save whose answer was lost, or rejected
+   * meanwhile — D168's race), so the next Save does not fail on the same `400` forever. The
+   * accepted values stay in the document; only the dead claims go, and the user is told.
+   */
+  const reconcileAfterFailure = async (): Promise<void> => {
+    if (applied.size === 0) {
+      return;
+    }
+    let pendingIds: number[];
+    try {
+      const fresh = await queryClient.fetchQuery({
+        queryKey: suggestionsQueryKey(suggestionsKey),
+        queryFn: () => getSuggestions(suggestionsKey),
+        staleTime: 0,
+      });
+      pendingIds = fresh.suggestions.map((row) => row.id);
+    } catch {
+      // The read failed too: keep the claims; the next save's own answer decides.
+      return;
+    }
+    const { dropped } = reconcileApplied(applied, pendingIds);
+    if (dropped.length === 0) {
+      return;
+    }
+    setApplied((current) => reconcileApplied(current, pendingIds).kept);
+    notifyWarning(
+      `${dropped.length === 1 ? '1 accepted suggestion is' : `${dropped.length} accepted suggestions are`} ` +
+        'no longer pending (already recorded by a save, or rejected). The values stay in the ' +
+        'editor; Save again to write them without that claim.',
+    );
+  };
+
   const save = useMutation({
     mutationFn: async ({ quest: questToSave, name }: { quest: QuestObject; name?: string }) => {
       await requireUserName();
@@ -477,10 +523,28 @@ export function LoadedQuest({
         setSavedTo(`/quests/${encodeURIComponent(result.quest_name)}`);
       }
     },
-    onError: (error) => {
+    onSettled: () => {
+      saving.current = false;
+    },
+    onError: (error, sent) => {
       // A dismissed identity dialog is not a failure: nothing was written and nothing may
       // claim otherwise.
       if (error instanceof UserNameCancelledError) {
+        return;
+      }
+      void reconcileAfterFailure();
+      if (draft !== undefined && isDraftAlreadySaved(error)) {
+        // The file exists: an earlier save committed but its answer was lost. Retrying the
+        // scaffold can only be refused again, so offer the file's own editor instead.
+        const savedName = draft.kind === 'missing' ? draft.questName : (sent.name ?? '');
+        setNaming(false);
+        setNamingError(null);
+        notifyErrorWithAction(
+          `"${savedName}" already has a file: an earlier save of this draft was written. Open ` +
+            'it to continue there (changes made here since are not in it).',
+          OPEN_SAVED_QUEST_LABEL,
+          () => navigate(`/quests/${encodeURIComponent(savedName)}`),
+        );
         return;
       }
       if (naming) {
@@ -501,7 +565,16 @@ export function LoadedQuest({
       setNaming(true);
       return;
     }
-    save.mutate({ quest: document.doc as QuestObject });
+    submitSave({ quest: document.doc as QuestObject });
+  };
+
+  /** Every save goes through here: a second request while one is in flight is dropped. */
+  const submitSave = (variables: { quest: QuestObject; name?: string }): void => {
+    if (saving.current) {
+      return;
+    }
+    saving.current = true;
+    save.mutate(variables);
   };
 
   const withSuggestions = (tab: PreviewTab, body: JSX.Element): JSX.Element => (
@@ -593,6 +666,7 @@ export function LoadedQuest({
             transitionPending={transition.isPending}
             onTransition={(target) => transition.request(questName, target)}
             saveBlocked={validation.blocked}
+            savePending={save.isPending}
             onSave={requestSave}
             editMode={editMode}
             onToggleEdit={() => setEditMode((on) => !on)}
@@ -609,6 +683,30 @@ export function LoadedQuest({
           {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
             map (D64/D65) — findings the client's engine cannot produce. */}
           <ValidationSummary messages={serverValidation.messages} />
+
+          {/* PR #14 review 9f: a failed suggestions read is said, never shown as "nothing to
+            accept". A 404 is not a failure: a quest the store does not know has no suggestions. */}
+          {editMode && suggestions.isError && !isNotFoundError(suggestions.error) ? (
+            <div
+              role="alert"
+              data-testid="suggestions-read-error"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-red-600/40 bg-red-950/20 px-3 py-2 text-sm text-red-200"
+            >
+              <span>
+                {SUGGESTIONS_READ_FAILED}{' '}
+                {serverMessage(suggestions.error, 'The suggestions request failed.')}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                onClick={() => void suggestions.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : null}
 
           {/* Task 7.7 (D144): "Accept all from this source" sits above the form. */}
           <SuggestionsAcceptAll />
@@ -663,7 +761,7 @@ export function LoadedQuest({
               catalogId={draft.catalogId}
               error={namingError}
               submitting={save.isPending}
-              onSubmit={(name) => save.mutate({ quest: document.doc as QuestObject, name })}
+              onSubmit={(name) => submitSave({ quest: document.doc as QuestObject, name })}
               onCancel={() => {
                 setNaming(false);
                 setNamingError(null);
@@ -774,6 +872,7 @@ function QuestHeader({
   transitionPending,
   onTransition,
   saveBlocked,
+  savePending,
   onSave,
   editMode,
   onToggleEdit,
@@ -798,6 +897,8 @@ function QuestHeader({
   onTransition: (target: TransitionTarget) => void;
   /** Story p3-09: the validation gate the Save affordance follows. */
   saveBlocked: boolean;
+  /** `true` while a save is in flight: Save is disabled until it settles (PR #14 review 3). */
+  savePending: boolean;
   /** Story p3-10: the save action — `POST /api/quests` (D65(f)'s single-prop seam). */
   onSave: () => void;
   /** Story p3-10: `true` while the tabs render the editors instead of the read-only bodies. */
@@ -910,6 +1011,7 @@ function QuestHeader({
             */}
             <QuestSaveButton
               blocked={saveBlocked}
+              pending={savePending}
               describedBy={VALIDATION_BANNER_ID}
               onSave={onSave}
             />

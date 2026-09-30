@@ -318,6 +318,36 @@ test.describe('p7-10 label scan — no bare technical term outside [data-term]',
 });
 
 /**
+ * The Overview tab (task 7.13), added after this scanner was written, so the Phase 7 acceptance box
+ * "no bare technical label in any quest tab except JSON" has a raw scan of it too (PR #14 review 9m).
+ * It is read-only prose — goal ids are secondary mono text, not terms — so its non-vacuity check is
+ * its own content (the steps list), not a `[data-term]` count.
+ */
+test.describe('p7-10 label scan — the Overview tab', () => {
+  for (const quest of QUESTS) {
+    test(`${quest}: Overview, edit and view mode`, async ({ page }) => {
+      await openQuest(page, quest);
+      const found: string[] = [];
+      for (const mode of ['edit', 'view'] as const) {
+        if (mode === 'view') {
+          await main_(page).getByRole('button', { name: 'Edit', exact: true }).click();
+          await expect(main_(page).locator('[data-edit-mode="false"]')).toBeVisible();
+        }
+        await main_(page).getByRole('tab', { name: 'Overview', exact: true }).click();
+        const overview = main_(page).getByRole('region', { name: 'Quest overview' });
+        await expect(overview).toBeVisible();
+        await expect(overview.getByTestId('overview-completes')).toBeVisible();
+        for (const hit of await scan(page)) {
+          found.push(`[${mode}/Overview] ${hit.where} "${hit.text}" in ${hit.context}`);
+        }
+      }
+      console.log(`${quest}: Overview ${found.length} hit(s)\n${found.join('\n')}`);
+      expect(found).toEqual([]);
+    });
+  }
+});
+
+/**
  * Criterion 3's mobile arm: at 375px the pairs are longer than the bare keys they replaced, so they
  * must wrap rather than widen the page. On every tab of the two widest quests, in both modes and
  * with every disclosure open, the document does not scroll sideways and no `[data-term]` label

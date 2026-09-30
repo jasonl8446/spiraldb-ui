@@ -193,7 +193,7 @@ function tree(page: Page): Locator {
 
 /** The `m_prepRequirements` tree. */
 function prepTree(page: Page): Locator {
-  return editor(page).getByRole('region', { name: 'Preparation requirements', exact: true });
+  return editor(page).getByRole('region', { name: 'Prep requirements', exact: true });
 }
 
 /**

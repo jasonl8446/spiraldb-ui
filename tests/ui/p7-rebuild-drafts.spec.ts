@@ -133,7 +133,10 @@ test.describe('Rebuild drafts (task 7.6)', () => {
 
     release();
     const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'Drafts rebuilt' });
-    await expect(toast).toContainText('Drafts rebuilt: 12 new suggestions (6,365 drafts)');
+    // `removed` is surfaced too (PR #14 review 1): a rebuild that drops rows says so.
+    await expect(toast).toContainText(
+      'Drafts rebuilt: 12 new suggestions, 0 removed (6,365 drafts)',
+    );
     await expect(toast).toHaveAttribute('data-type', 'success');
     await expect(rebuildButton(page)).toBeEnabled();
     expect(recorded.rebuilds).toBe(1);
@@ -156,5 +159,23 @@ test.describe('Rebuild drafts (task 7.6)', () => {
     await expect(toast).toHaveAttribute('data-type', 'info');
     await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0);
     await expect(rebuildButton(page)).toBeEnabled();
+  });
+
+  test('a 409 refusing an unreadable corpus is an error toast carrying the server message (PR #14 review 1)', async ({
+    page,
+  }) => {
+    const refusal =
+      'The rebuild read no quest file from /mock/spiraldb/QuestTemplates/QuestTemplates (missing ' +
+      'or empty), and 5373 pending evidence suggestions would be deleted as "no longer proposed". ' +
+      'Nothing was changed.';
+    await mockApi(page, (route) => route.fulfill({ status: 409, json: { error: refusal } }));
+
+    await page.goto('/');
+    await rebuildButton(page).click();
+
+    const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'read no quest file' });
+    await expect(toast).toHaveAttribute('data-type', 'error');
+    await expect(toast).toContainText('5373 pending evidence suggestions');
+    await expect(page.locator('[data-sonner-toast][data-type="info"]')).toHaveCount(0);
   });
 });

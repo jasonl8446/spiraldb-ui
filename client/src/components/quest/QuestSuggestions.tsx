@@ -77,7 +77,11 @@ export function SuggestionsAcceptAll(): JSX.Element | null {
       </span>
       <span className="ml-auto flex flex-wrap gap-2">
         {groups.map(([source, list]) => {
-          const open = list.filter((suggestion) => !channel.applied.has(suggestion.id));
+          // A row whose Reject is in flight is not accepted by "all" either (review 9g).
+          const open = list.filter(
+            (suggestion) =>
+              !channel.applied.has(suggestion.id) && suggestion.id !== channel.rejecting,
+          );
           return (
             <Button
               key={source}
@@ -128,6 +132,9 @@ function SuggestionLine({
   channel: SuggestionsChannel;
 }): JSX.Element {
   const applied = channel.applied.has(suggestion.id);
+  // Accept waits while this row's Reject is in flight (PR #14 review 9g): an accepted id the server
+  // is rejecting would be claimed by the next Save and refused.
+  const rejecting = channel.rejecting === suggestion.id;
   const plan = planSuggestionAccept(channel.doc, suggestion);
   const reasonId = `suggestion-${suggestion.id}-reason`;
   return (
@@ -152,13 +159,13 @@ function SuggestionLine({
             type="button"
             variant="outline"
             size="sm"
-            aria-disabled={plan.kind === 'disabled'}
+            aria-disabled={plan.kind === 'disabled' || rejecting}
             aria-describedby={plan.kind === 'disabled' ? reasonId : undefined}
             title={plan.kind === 'disabled' ? plan.reason : undefined}
             aria-label={`${SUGGESTION_ACCEPT_LABEL} ${suggestion.path} from ${suggestion.source}`}
             className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
             onClick={() => {
-              if (plan.kind === 'accept') {
+              if (plan.kind === 'accept' && !rejecting) {
                 channel.onAccept([suggestion]);
               }
             }}
@@ -170,7 +177,7 @@ function SuggestionLine({
           type="button"
           variant="ghost"
           size="sm"
-          disabled={channel.rejecting === suggestion.id || applied}
+          disabled={rejecting || applied}
           aria-label={`${SUGGESTION_REJECT_LABEL} ${suggestion.path} from ${suggestion.source}`}
           onClick={() => channel.onReject(suggestion)}
         >

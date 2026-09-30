@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 
 import type { ApiError } from '../../../shared/index.js';
+import { NamingError } from '../../../shared/naming.js';
 import { readSettings, type Db } from '../db.js';
 import { BranchMismatchError, DirtyRepoError } from '../services/git.js';
 import { questEvidenceByName } from '../services/questEvidence.js';
@@ -76,6 +77,7 @@ import { DraftQueryError, parseStatusFilter, questSuggestionsByName } from './dr
  * | `POST /scaffold` with a name that would write outside `QuestTemplates/` (ac3) | 400 |
  * | `POST /scaffold` for a quest that already has a file | 409 |
  * | malformed `?missing_only=` (not 1/0/true/false) | 400 |
+ * | a name the naming convention refuses (`NamingError`: a path separator, a control character, …; D195) | 400 |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14) | 409 |
  * | `settings.git_branch` is not the checked-out branch (`BranchMismatchError`, D119/D182) | 409 |
  * | anything else thrown by the pipeline         | 500    |
@@ -173,6 +175,12 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       // Task 7.7 (D141): an `accepted_suggestions` id that is unknown, decided or another
       // quest's — refused before anything was written.
       res.status(error.status).json({ error: error.message } satisfies ApiError);
+      return;
+    }
+    if (error instanceof NamingError) {
+      // A key the naming convention refuses (a path separator, a control character, …) is the
+      // caller's to fix, and nothing was written (D195).
+      res.status(400).json({ error: error.message } satisfies ApiError);
       return;
     }
     if (error instanceof DirtyRepoError || error instanceof BranchMismatchError) {

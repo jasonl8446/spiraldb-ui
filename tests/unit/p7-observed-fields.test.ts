@@ -771,6 +771,27 @@ describe.skipIf(!fs.existsSync(CLI))(
       expect(conflicts[0]!.reason).toMatch(/never replaces/);
     });
 
+    it('reports an MSG_ACTORDIALOG whose GoalID no extracted quest introduces, as the encounter twin does (PR #14 review 9l)', () => {
+      const { reports } = runMutated('MS-DTH1-C01-002', (capture) => {
+        const goalDialog = capture.find(
+          (e) =>
+            e.data.name === 'MSG_ACTORDIALOG' &&
+            e.data.fields.GoalID?.value !== 0 &&
+            e.data.fields.GoalID?.value !== undefined,
+        )!;
+        const orphan = structuredClone(goalDialog);
+        orphan.data.fields.GoalID = { value: 424242 };
+        capture.push(orphan);
+      });
+      const orphans = reports.filter(
+        (r) => r.source === 'MSG_ACTORDIALOG.ActorDialog' && r.path.includes('GoalID 424242'),
+      );
+      expect(orphans).toHaveLength(1);
+      expect(orphans[0]!.reason).toBe(
+        'no MSG_SENDGOAL of an extracted quest introduces GoalID 424242',
+      );
+    });
+
     it('renames a reader goal that a recovered ACHIEVERANK goal precedes in capture order', () => {
       const { quest, reports } = runMutated('WC-TUT-C05-001', (capture) => {
         const sends = capture.filter((e) => e.data.name === 'MSG_SENDGOAL');

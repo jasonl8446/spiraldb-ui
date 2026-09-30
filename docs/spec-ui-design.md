@@ -322,9 +322,10 @@ it runs it shows a spinner and is disabled. On completion it shows a toast with 
 `/drafts`. A `409` (a rebuild is already running) is an info toast, not an error. Placement (Phase 7, chosen at
 p7-01): in the Per-Type Progress Section's title row, right-aligned.
 
-As built (p7-07): the toast reads `Drafts rebuilt: <inserted> new suggestions (<drafts> drafts)` and carries an
+As built (p7-07): the toast reads `Drafts rebuilt: <inserted> new suggestions, <removed> removed (<drafts> drafts)` (`removed` added by D195) and carries an
 **Open drafts** action that navigates to `/drafts`; the `/drafts` route itself lands with p7-08. Tier-1 spec:
-`tests/ui/p7-rebuild-drafts.spec.ts`.
+`tests/ui/p7-rebuild-drafts.spec.ts`. A `409` that is not the running one (the root read no quest file while evidence
+suggestions are pending, D195) is an error toast carrying the server's message, which names the unread directory.
 
 ---
 
@@ -528,10 +529,13 @@ Every form renders the glossary's **`basic`** fields first and its **`advanced`*
 basic set.
 
 - **The disclosure opens automatically** when any advanced field is **non-empty** or **has a validation error**, so
-  no value or error is ever hidden. "Non-empty" means different from the schema/skeleton default (`null`, `''`, `0`,
-  `false`, `[]`). A camera value of `0` therefore does not open it.
+  no value or error is ever hidden. "Non-empty" means different from **that field's own** default (D195, amending
+  D179): the value a new node of its class is built with — the D118 skeleton, `newDialogEntry`, the goal,
+  requirement and result builders — so an authored `false` where a new entry writes `true`
+  (`m_bypassCameraOnReview`) opens it, and a fresh entry's `m_cameraFadeTime: 0.5` does not. `null`/absent never
+  opens it; a field no builder writes keeps the empty rule (`''`, `0`, `false`, `[]`).
 - **An enum with exactly one legal value renders as read-only text** (its glossary pair), not as a one-option select.
-- A dialog entry of the D118 skeleton's shape shows **at most 12 fields** by default. The Dialog editor's existing
+- A dialog entry at its fields' defaults (what **Add Dialog Entry** writes) shows **at most 12 fields** by default. The Dialog editor's existing
   sub-sections (§7) keep their grouping inside each tier.
 - The disclosure is a real `<button aria-expanded>` and is keyboard-operable. Opening it never changes the document.
 
@@ -911,13 +915,21 @@ Route **`/drafts`** (nav: QUESTS → Drafts). This is the worklist of automatica
 - **Rebuild** in the header is the same action as the Dashboard's Rebuild drafts button (Phase 7, chosen at p7-01:
   both placements).
 - **Empty state**: with no catalog (no sync yet), the page says the catalog needs a sync, as the Catalog view does.
-  With a catalog but no suggestions, it offers Rebuild.
+  With a catalog but no suggestions, it offers Rebuild. **(D195)** With a filter set, it says no draft matches the
+  filters; while the coverage read is pending it says the catalog is being checked, and when that read fails it says
+  so with **Try again** — it never claims an empty catalog it has not read.
 - **As built (p7-08).** Filters are three labelled selects (Named, Has file, Source). The toggle reads "Show
   zero-evidence drafts (N hidden)". The first 100 rows are shown, with "Showing the first 100 of N" beneath. A named
   draft without a file opens at `/drafts/quest/:questName`, and an unnamed one at `/drafts/id/:questId`. The name
   dialog's pre-fill is the accepted `m_questTitle`, else the id's title suggestion (a `QuestTitle_*` key). After the
   first save, the editor continues at `/quests/<name>`. A draft has no status yet, so its header shows "Draft · no file
   yet" in place of the badge and the transitions. Tier-1: `tests/ui/p7-drafts.spec.ts`.
+- **Saving (D195).** Save is disabled (`aria-disabled`, `aria-busy`) while a save is in flight, so a double-click
+  sends one request. After a failed save the editor re-reads the draft's pending suggestions and drops every applied
+  id that is no longer pending (a warning says how many), so a retry does not fail on the same `400`. A draft's first
+  save refused because its file now exists shows an error toast with **Open the saved quest**. A failed suggestions
+  read (other than `404`) is an alert with **Try again**, never an empty list, and Accept is disabled while the same
+  row's Reject is in flight. Tier-1: `tests/ui/p7-editor-review-fixes.spec.ts`.
 
 ### 13. Glossary (Phase 7 — D131, task 7.12)
 
