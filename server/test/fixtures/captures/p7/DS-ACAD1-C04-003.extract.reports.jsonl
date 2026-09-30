@@ -1,0 +1,1 @@
+{"report":"goal-excluded","quest":"DS-ACAD1-C04-003","path":"m_goals[GoalID 8393399155336036053]","source":"MSG_SENDGOAL.GoalType","value":9,"reason":"GOAL_TYPE_COMPLETEQUEST is not listed by QuestBuilder.GetGoalFromType, which throws NotSupportedException for it; re-read without this goal (3 message(s) carrying its GoalID)"}

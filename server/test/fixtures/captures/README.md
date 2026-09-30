@@ -45,10 +45,11 @@ regenerated and these hashes updated.
 | `WC-FIRECAT-MAIN-004.json` | `QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json` | `3b85784c36d4fac05bea53f0177b712d3cbc65d3a48fdebf5c3b4fbfc6967e75` | 5 (1) | SCAVENGE, PERSONA ×2, WAYPOINT, BOUNTYCOLLECT | 3 / 13 | 1 | `SCAVENGE` (43 corpus-wide) inside a multi-type quest |
 
 Together they cover 6 of the 7 goal types present in the corpus. The 7th, `GOAL_TYPE_ACHIEVERANK`,
-**cannot** round-trip through this reader: its corpus goals carry an empty `m_goalTitle` and
-`m_goalNameID 0`, while `QuestBuilder` numbers goals `"{n}_{m_goalTitle}"` and skips a packet whose
-`GoalNameID` it has already seen (all 4 ACHIEVERANK quests; 26 goals). The generator refuses them
-explicitly instead of emitting a capture that would silently mangle goal names.
+**cannot** round-trip on goal names: its corpus goals carry an empty `m_goalTitle` and `m_goalNameID 0`,
+and their corpus names ("Trigger Storm", …) are on no packet, while goals are named `"{n}_{m_goalTitle}"`
+(all 4 ACHIEVERANK quests; 26 goals). Since task 7.4 the wrapper keeps every such goal (QuestBuilder alone
+kept only the first, skipping the rest as duplicate `GoalNameID`s) and names it `{n}_` by position, but
+that is still not the corpus name, so the generator refuses them by default.
 
 ## Dialog counts: two different definitions
 
@@ -74,7 +75,8 @@ Both are reported by `verify:captures`; they differ whenever a dialog carries mo
    `GetValue<int>()` (Imview repo — read-only for this project). The three fixtures at level 1
    (`MB-YARD1-C01-001`, `WC-CYCLOPS-MAIN-002`, `WC-FIRECAT-MAIN-004`) are kept for their structural
    diversity; `WC-UNICORN-MAIN-004`/`-007` verify the level row exactly.
-2. **A goal-level `Completion` dialog is also copied onto the quest.**
+2. **A goal-level `Completion` dialog is also copied onto the quest** *(repaired by the wrapper's
+   post-pass in task 7.4: the quest's Prep/Completion come only from a `GoalID` 0 packet; see p7 below)*.
    `QuestBuilder.AddCompletionDialogToQuestTemplate` matches on
    `CompletionType == "Completion" && QuestID == quest.ID` and **ignores `GoalID`**, so with
    `MSG_SENDQUEST` present the first goal-level `Completion` dialog becomes an extra quest-level
@@ -94,11 +96,20 @@ Both are reported by `verify:captures`; they differ whenever a dialog carries mo
 ## What the generator will refuse (by design)
 
 `fixturegen` writes nothing and exits 1, listing every problem, when a capture could not be
-reconstructed faithfully. Over the 322 corpus quests: **181 generate, 141 are refused** — 130
-because a goal that carries dialogs is delivered by the `GoalCompilation` (the reader cannot attach
+reconstructed faithfully. Over the 322 corpus quests in Phase 2: **181 generated, 141 were refused** —
+130 because a goal that carries dialogs is delivered by the `GoalCompilation` (the reader cannot attach
 a dialog to a compilation goal), 26 goal-name/26 goal-id problems in the 4 ACHIEVERANK quests, 11
 quests with no goals, 5 unrepresentable quest-level dialog tags, 2 duplicate `m_goalNameID`s and 1
 duplicate quest-level dialog tag.
+
+Task 7.4 (p7-05) lifted three refusals once the wrapper's post-pass could rebuild those shapes: a
+compilation goal that carries dialogs is now **re-sent by `MSG_SENDGOAL`** (as the game server sends every
+started goal) with its dialogs after it, attached by `GoalID`; a goal dialog tagged `QuestInfo` no longer
+leaks onto the quest (the quest's Prep comes from a `GoalID` 0 packet); and a quest with no goals is emitted
+with an empty `GoalCompilation`. The Phase 2 fixtures above are byte-identical (their compilation goals carry
+no dialogs). `npm run audit:corpus` on the D17 clone: **314 verified, 8 refused, 0 failures** — 4 ACHIEVERANK
+quests (goal names not on the wire) and 4 quests with a quest-level dialog tagged `""` (no `CompletionType`
+is known to carry it).
 
 ## p7: planted-value fixtures (task 7.2 / D128)
 
@@ -126,10 +137,13 @@ Corpus pin: the `data/test-spiraldb` clone at `18dc92477d54b1e911796960407ce7710
 | `WC-UNICORN-MAIN-002` | Bounty (goal 0) then Persona | 2 | `98bc790ee2f884ef542a0772f262d5eeb308b834d978daf74d549da2cc9b0e3b` |
 | `DS-ACAD1-C04-001` | Scavenge (goal 0) then Persona | 2 | `5fbf0d11af4d909dca98dbea9dc40cac6ad72f3401b3ad8d8473939e7d88f06c` |
 | `WC-TUT-C05-001` | AchieveRank x5 (opt-in, see below) | 5 | `d5979a4ff98a9d01734cfc5ce7600dd1f68bda435836b6ea5749f732c25ff7b3` |
+| `DS-ACAD2-C01-005` | Task 7.4: completion dialog by `GoalID` (Waypoint x2, Persona) | 3 | `a5281317d78a1494807cde2d67f69087c8535843ba596a311a9ce519ab9e7b1d` |
+| `MS-DTH1-C01-002` | Task 7.4: encounter / underway dialogs, `IsYesNo`, `DefaultDialogAnimation` (Waypoint x2, Persona) | 3 | `72481529f6f68a93577b49b892a004906b42ce47b27372729c93cb637dbaa122` |
+| `DS-ACAD1-C04-003` | Task 7.4: an unlisted goal type (BountyCollect, planted type 9, Persona) | 3 | `3933b3cff2a2ee9323825d20689c5c7c5bb8526f853fe411682479cb9b8861d2` |
 
 ### The inject spec
 
-Strict JSON: `{ description, allowAchieveRank?, sendQuestFields, sequence[] }`.
+Strict JSON: `{ description, allowAchieveRank?, goalDialogQuestId?, sendQuestFields, sequence[] }`.
 
 - `sendQuestFields` are extra envelope fields planted on `MSG_SENDQUEST` (`QuestNameID`, `QuestInfo`,
   `NoQuestHelper`, `SkipQHAutoSelect`, `ActivityType` (2 = `ACTIVITY_Crafting`), `ClientTags`, `PetOnlyQuest`,
@@ -137,11 +151,20 @@ Strict JSON: `{ description, allowAchieveRank?, sendQuestFields, sequence[] }`.
   message definition declares it (that is what the census then reports as ignored).
 - `sequence` is the deliberate message order after `MSG_QUESTOFFER`, `MSG_SENDQUEST` and the quest-level dialogs.
   Each step is `{ message, goal?, fields? }`, `message` one of `MSG_SENDGOAL`, `MSG_PERSONAINFO`,
-  `MSG_COMPLETEGOAL`, `MSG_REMOVEGOAL`, `MSG_COMPLETEQUEST`; `goal` indexes the corpus `m_goals`; `fields` are
-  planted on that envelope (ids are filled in; `MSG_SENDGOAL` carries the whole corpus goal). Under `--inject`
+  `MSG_COMPLETEGOAL`, `MSG_REMOVEGOAL`, `MSG_COMPLETEQUEST`, `MSG_ACTORDIALOG`, `MSG_ENCOUNTERDIALOG`; `goal`
+  indexes the corpus `m_goals`; `fields` are planted on that envelope (ids are filled in; `MSG_SENDGOAL` carries
+  the whole corpus goal, and a planted field such as `GoalType` replaces the engine's). Under `--inject`
   `MSG_SENDGOAL` is emitted only from the sequence (a goal's own dialogs follow its first send); every goal the
-  `GoalCompilation` does not carry must be sent. A compilation goal may be sent too; the reader skips it as a
-  duplicate by `GoalNameID`.
+  `GoalCompilation` does not carry must be sent, and so must a compilation goal that carries dialogs. A
+  compilation goal may be sent too; the reader skips it as a duplicate by `GoalNameID`.
+- A dialog step (`MSG_ACTORDIALOG`, `MSG_ENCOUNTERDIALOG`, task 7.4) plants a dialog: `goal` omitted means
+  quest-level (`GoalID` 0); the quest's `QuestID` is always written; the step must plant `CompletionType` and
+  `ActorDialog`, and may plant `IsYesNo` / `DefaultDialogAnimation` (`MSG_ACTORDIALOG` only).
+  `{"$blob":"ActorDialog","entries":["line", …]}` becomes an `ActorDialog` blob (mask 16) with one
+  `NPCDialogEntry` per line, decode-checked before it is written.
+- `goalDialogQuestId: true` writes the quest's `QuestID` on the corpus goal dialogs (the engine writes 0 by
+  default; the game server writes the quest id), which is what makes QuestBuilder copy a goal's `Completion`
+  dialog onto the quest.
 - A field value `{"$blob":"ClientTagList","tags":[…]}` (mask 1) or `{"$blob":"LootInfoList","gold":n,"magicXp":n}`
   (mask 31, the mask of Imcodec's `LootTableTest`) is serialised with `ObjectSerializer` to the hex string on the
   wire; the LootInfoList is decode-checked before it is written. Both classes exist in Imview's net9 Imcodec build.
@@ -153,9 +176,11 @@ Strict JSON: `{ description, allowAchieveRank?, sendQuestFields, sequence[] }`.
 ### GOAL_TYPE_ACHIEVERANK under `--inject`
 
 The default refusal stays (see above). A spec with `"allowAchieveRank": true` plants the corpus goals as they are
-(empty `m_goalTitle`, `m_goalNameID 0`). What the reader does with `WC-TUT-C05-001` today: 5 goals in the
-capture, **1** goal out, named `1_` (`m_goalNameID 0`, `GOAL_TYPE_ACHIEVERANK`): the first goal takes the empty
-title, and the other four are skipped because their `GoalNameID` 0 is already present. Story 7.4 repairs this.
+(empty `m_goalTitle`, `m_goalNameID 0`). What QuestBuilder alone does with `WC-TUT-C05-001`: 5 goals in
+the capture, **1** goal out, named `1_` (`m_goalNameID 0`, `GOAL_TYPE_ACHIEVERANK`): the first goal takes the
+empty title, and the other four are skipped because their `GoalNameID` 0 is already present. Since task 7.4 the
+wrapper adds the four back from their packets, in capture order, named `2_` … `5_` (`{n}_{GoalTitle}` by
+position; the corpus names are not on the wire), and their planted `CompleteText` values land.
 
 ### Census goldens
 
@@ -168,15 +193,16 @@ CI (every planted field present with the planted count) and, where `tools/bin/ca
 ### Wrapper goldens (task 7.3)
 
 `<QUEST>.extract.json` is the `imview-packet-reader` stdout for the fixture, and `<QUEST>.extract.reports.jsonl` the
-observed-field report lines it printed on stderr (one `{"report":"observed-field", quest, path, source, value,
-reason}` per value it could not write). Regenerate with:
+report lines it printed on stderr: one `{"report":"observed-field", quest, path, source, value, reason}` per value
+it could not write, and (task 7.4) one `{"report":"reader-repair", …}` per change to QuestBuilder's output and one
+`{"report":"goal-excluded", …}` per goal of an unlisted type. Regenerate with:
 
 ```bash
 npm run build:cli
 DOTNET_ROOT=$(dirname "$(readlink -f "$(command -v dotnet)")") \
   tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/<QUEST>.json \
   > server/test/fixtures/captures/p7/<QUEST>.extract.json 2> stderr.txt
-grep '^{"report":"observed-field"' stderr.txt > server/test/fixtures/captures/p7/<QUEST>.extract.reports.jsonl
+grep '^{"report":' stderr.txt > server/test/fixtures/captures/p7/<QUEST>.extract.reports.jsonl
 ```
 
 `tests/unit/p7-observed-fields.test.ts` checks both in CI against the inject spec: every planted observed value is
@@ -184,4 +210,22 @@ at its expected path exactly or reported with a reason, goals joined by `GoalID`
 joins them, never by position. Where the binary exists it regenerates both and compares them. Two kinds of planted
 value are reported by design: fields the schema has no home for (`MSG_SENDQUEST.PetOnlyQuest`,
 `MSG_COMPLETEQUEST.CompleteText`, `PersonaName` on a non-persona goal) and, in `WC-TUT-C05-001`, the values of the
-four ACHIEVERANK goals the reader drops as duplicates of `GoalNameID 0` (story 7.4 repairs that).
+`PersonaName` values planted on the ACHIEVERANK goals (`AchieveRankGoalTemplate` has no `m_personaName`).
+
+### Reader repairs (task 7.4)
+
+Each task 7.4 fixture failed on the p7-04 binary (raw output in `docs/evidence/phase-7/p7-05.md`) and passes now;
+`tests/unit/p7-observed-fields.test.ts` checks them in CI through the same goldens:
+
+- `DS-ACAD2-C01-005` — **completion dialog by `GoalID`.** Goal dialogs carry the quest id; a planted `Completion`
+  dialog on re-sent compilation goal 0 comes first and the planted quest-level one last. QuestBuilder alone puts
+  goal 0's dialog on the quest and drops both the quest's own and goal 0's; the wrapper puts each on its owner.
+- `MS-DTH1-C01-002` — **more dialog.** `MSG_ENCOUNTERDIALOG` on compilation goal 0 (Prep), goal 1 (Completion) and
+  the quest (Completion); `Underway` `MSG_ACTORDIALOG`s at quest level and on goal 1 with `IsYesNo` 1 and a
+  `DefaultDialogAnimation`. Goal 2's corpus `Completion` carries the quest id and has no quest-level counterpart,
+  so QuestBuilder alone adds a bogus quest-level one; the wrapper removes it. `IsYesNo`/`DefaultDialogAnimation`
+  have no field in the dialog schema, so they are read and reported.
+- `DS-ACAD1-C04-003` — **unlisted goal type.** Goal 1 is planted as `GoalType` 9 (`GOAL_TYPE_COMPLETEQUEST`):
+  QuestBuilder throws and the p7-04 binary exits 1; the wrapper re-reads the capture without that goal and
+  reports it (`goal-excluded`).
+- `WC-TUT-C05-001` — **empty-title ACHIEVERANK** (above).

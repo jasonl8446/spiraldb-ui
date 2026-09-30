@@ -1,96 +1,90 @@
 {
-  "input": "WC-UNICORN-MAIN-002.json",
-  "messages": 12,
+  "input": "DS-ACAD1-C04-003.json",
+  "messages": 14,
   "rows": [
     {
       "message": "MSG_ACTORDIALOG",
       "field": "ActorDialog",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "CompletionType",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "DefaultDialogAnimation",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "GoalID",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "IsEncounter",
-      "count": 3,
+      "count": 2,
       "consumed": false
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "MobileID",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "Persona",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "PersonaIcon",
-      "count": 3,
+      "count": 2,
       "consumed": false
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "PersonaName",
-      "count": 3,
+      "count": 2,
       "consumed": false
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "QuestID",
-      "count": 3,
+      "count": 2,
       "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",
       "field": "RangeCheck",
-      "count": 3,
+      "count": 2,
       "consumed": false
     },
     {
       "message": "MSG_COMPLETEGOAL",
       "field": "CompleteText",
-      "count": 2,
+      "count": 1,
       "consumed": true
     },
     {
       "message": "MSG_COMPLETEGOAL",
       "field": "GoalID",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_COMPLETEGOAL",
       "field": "QuestID",
-      "count": 2,
+      "count": 3,
       "consumed": false
-    },
-    {
-      "message": "MSG_COMPLETEQUEST",
-      "field": "CompleteText",
-      "count": 1,
-      "consumed": true
     },
     {
       "message": "MSG_COMPLETEQUEST",
@@ -173,168 +167,120 @@
     {
       "message": "MSG_REMOVEGOAL",
       "field": "GoalID",
-      "count": 1,
+      "count": 2,
       "consumed": false
     },
     {
       "message": "MSG_REMOVEGOAL",
       "field": "QuestID",
-      "count": 1,
+      "count": 2,
       "consumed": false
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "ClientTags",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalDestinationZone",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalID",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalImage1",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalImage2",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalLocation",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalMadlibs",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalNameID",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalTitle",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalTotal",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "GoalType",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "NoQuestHelper",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "PersonaName",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "PetOnlyQuest",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "QuestID",
-      "count": 2,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "UseTally",
-      "count": 2,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "ActivityType",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "ClientTags",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "NoQuestHelper",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "PetOnlyQuest",
-      "count": 1,
+      "count": 3,
       "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
       "field": "QuestID",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "QuestInfo",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "QuestNameID",
       "count": 1,
       "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
       "field": "QuestTitle",
-      "count": 1,
-      "consumed": true
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "Rewards",
-      "count": 1,
-      "consumed": false
-    },
-    {
-      "message": "MSG_SENDQUEST",
-      "field": "SkipQHAutoSelect",
       "count": 1,
       "consumed": true
     }

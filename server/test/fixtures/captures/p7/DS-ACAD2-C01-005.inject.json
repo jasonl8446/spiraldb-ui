@@ -1,0 +1,72 @@
+{
+  "description": "p7 inject spec for DS-ACAD2-C01-005 (task 7.4): the completion dialog attached by GoalID. Goal dialogs carry the QuestID, as the game server sends them (goalDialogQuestId). Compilation goal 0 is re-sent and a planted goal-level Completion dialog follows it; the quest-level Completion dialog is planted last, after goal 2's own Completion. QuestBuilder attaches the first Completion packet with the quest's QuestID to the quest, whatever its GoalID.",
+  "goalDialogQuestId": true,
+  "sendQuestFields": {},
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "goal": 0,
+      "fields": {
+        "CompletionType": "Completion",
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-DS-ACAD2-C01-005-g0-Completion"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 2
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "goal": 2
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 2
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "fields": {
+        "CompletionType": "Completion",
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-DS-ACAD2-C01-005-quest-Completion-1",
+            "P7-PLANT-Dialog-DS-ACAD2-C01-005-quest-Completion-2"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_COMPLETEQUEST"
+    }
+  ]
+}

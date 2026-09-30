@@ -674,6 +674,13 @@ unlisted goal type no longer aborts the capture. The CLI catches `QuestBuilder`'
 excluded, and reports the exclusion. The post-pass also reads `MSG_ENCOUNTERDIALOG`, the underway dialogs and the
 `ActorDialog` `IsYesNo`/`DefaultDialogAnimation` fields.
 
+**As built (p7-04/p7-05).** `MSG_SENDQUEST.PetOnlyQuest` and `MSG_COMPLETEQUEST.CompleteText` are reported, not
+written: the quest schema has no pet-only field, and `m_questComplete` is a string-table key that Imlight never
+fills from that packet. `IsYesNo`/`DefaultDialogAnimation` are reported too, because the dialog block has no field for
+either (D156). Empty wire values are neither written nor reported (D151). Report lines are JSON on stderr, of kinds
+`observed-field`, `reader-repair` and `goal-excluded` (D152, D154). The goal join, the ACHIEVERANK naming, the
+dialog attachment and the exclusion loop are D150, D155, D156 and D157.
+
 ### Phase 7: the `suggestions` sidecar (D127 — task 7.5)
 
 A value that needs reasoning across packets, or a type mapping, is **inferred**. Inferred values are never written

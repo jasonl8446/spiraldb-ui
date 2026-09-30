@@ -1,0 +1,1 @@
+{"report":"reader-repair","quest":"DS-ACAD2-C01-005","path":"m_dialogList[Completion]","source":"MSG_ACTORDIALOG.GoalID","value":5646972278875833427,"reason":"replaced: QuestBuilder took the quest\u0027s Completion dialog from GoalID 5646972278875833427\u0027s packet (it ignores GoalID); the first Completion packet with GoalID 0 is the quest\u0027s (D46(4))"}

@@ -18,7 +18,7 @@
       "message": "MSG_ACTORDIALOG",
       "field": "DefaultDialogAnimation",
       "count": 2,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_ACTORDIALOG",

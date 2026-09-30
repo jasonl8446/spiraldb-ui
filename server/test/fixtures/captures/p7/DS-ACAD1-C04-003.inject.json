@@ -1,0 +1,54 @@
+{
+  "description": "p7 inject spec for DS-ACAD1-C04-003 (task 7.4): an unlisted goal type. Goal 1's MSG_SENDGOAL carries GoalType 9 (GOAL_TYPE_COMPLETEQUEST), which QuestBuilder.GetGoalFromType does not list and throws on; the wrapper re-runs with that goal excluded and reports it.",
+  "sendQuestFields": {},
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 1,
+      "fields": {
+        "GoalType": 9
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 2
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "goal": 2,
+      "fields": {
+        "GoalHyperlink": "P7-PLANT-GoalHyperlink-DS-ACAD1-C04-003-g2"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 2,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-DS-ACAD1-C04-003-g2"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEQUEST"
+    }
+  ]
+}

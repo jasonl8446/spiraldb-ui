@@ -1,0 +1,113 @@
+{
+  "description": "p7 inject spec for MS-DTH1-C01-002 (task 7.4): more dialog. MSG_ENCOUNTERDIALOG on compilation goal 0 (Prep), on goal 1 (Completion) and at quest level (Completion); Underway MSG_ACTORDIALOGs at quest level and on goal 1, carrying IsYesNo and DefaultDialogAnimation. Goal dialogs carry the QuestID (goalDialogQuestId), so goal 2's corpus Completion dialog would also land on the quest without the GoalID repair.",
+  "goalDialogQuestId": true,
+  "sendQuestFields": {},
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_ENCOUNTERDIALOG",
+      "goal": 0,
+      "fields": {
+        "CompletionType": "Prep",
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-MS-DTH1-C01-002-g0-encounter-Prep"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "fields": {
+        "CompletionType": "Underway",
+        "IsYesNo": 1,
+        "DefaultDialogAnimation": "P7-PLANT-DefaultDialogAnimation-MS-DTH1-C01-002-quest",
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-MS-DTH1-C01-002-quest-Underway"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "goal": 1,
+      "fields": {
+        "CompletionType": "Underway",
+        "IsYesNo": 1,
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-MS-DTH1-C01-002-g1-Underway-1",
+            "P7-PLANT-Dialog-MS-DTH1-C01-002-g1-Underway-2"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_ENCOUNTERDIALOG",
+      "goal": 1,
+      "fields": {
+        "CompletionType": "Completion",
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-MS-DTH1-C01-002-g1-encounter-Completion"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 2
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "goal": 2
+    },
+    {
+      "message": "MSG_ENCOUNTERDIALOG",
+      "fields": {
+        "CompletionType": "Completion",
+        "ActorDialog": {
+          "$blob": "ActorDialog",
+          "entries": [
+            "P7-PLANT-Dialog-MS-DTH1-C01-002-quest-encounter-Completion"
+          ]
+        }
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 2
+    },
+    {
+      "message": "MSG_COMPLETEQUEST"
+    }
+  ]
+}

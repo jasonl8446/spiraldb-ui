@@ -1,0 +1,27 @@
+$ npm test
+
+ Test Files  93 passed (93)
+      Tests  1963 passed (1963)
+   Start at  22:16:21
+   Duration  61.63s (transform 1.54s, setup 0ms, collect 5.56s, tests 43.25s, environment 8ms, prepare 2.90s)
+
+exit=0
+$ npm run lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+$ npm run typecheck:tests
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+exit=0
+$ npm run typecheck:scripts
+> spiraldb-ui@0.1.0 typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+exit=0
+$ git -C data/test-spiraldb log --oneline -1; git -C data/test-spiraldb status --short
+18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+$ git -C ../Imview status --short

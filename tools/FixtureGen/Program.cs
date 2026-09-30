@@ -26,9 +26,10 @@ namespace FixtureGen;
 /// `"{n}_{m_goalTitle}"`, numbering compilation goals 1..k and then continuing with the goals it
 /// adds from MSG_SENDGOAL packets. The corpus' `m_startGoals` is a prefix of `m_goals` in all 322
 /// quests, so the faithful split is compilation = `m_startGoals`, packets = the remainder. A goal
-/// the compilation already produced makes the reader skip the matching packet *and* leaves the
-/// GoalID→goal map empty, so a goal-level dialog only survives on a packet-delivered goal — that
-/// is enforced below and never papered over.
+/// the compilation already produced makes the reader skip the matching packet *and* leaves its
+/// GoalID→goal map empty, so a compilation goal that carries dialogs is re-sent by MSG_SENDGOAL (as
+/// the game server sends every started goal) and the wrapper's post-pass attaches its dialogs by
+/// GoalID (task 7.4).
 /// </summary>
 internal static partial class Program {
 
@@ -121,9 +122,8 @@ internal static partial class Program {
             problems.Add("quest has an empty m_questName");
         }
 
-        if (quest.Goals.Count == 0) {
-            problems.Add("quest has no goals");
-        }
+        // A quest with no goals is emitted too (task 7.4, measured): its offer carries an empty
+        // GoalCompilation, and the reader rebuilds it with m_goals [].
 
         for (var i = 0; i < quest.Goals.Count; i++) {
             var goal = quest.Goals[i];
@@ -188,29 +188,15 @@ internal static partial class Program {
             }
         }
 
-        // Goal-level dialogs can only land on a packet-delivered goal (see class remarks).
-        for (var i = 0; i < quest.Goals.Count; i++) {
-            if (quest.Goals[i].Dialogs.Count > 0 && i < quest.StartGoals.Count) {
-                problems.Add(
-                    $"goal[{i}] '{quest.Goals[i].Name}' carries dialogs but is delivered from the "
-                    + $"GoalCompilation (m_startGoals has {quest.StartGoals.Count} entries): QuestBuilder "
-                    + "cannot attach a dialog to a compilation goal.");
-            }
-
-            // A goal dialog whose CompletionType is "QuestInfo" would also satisfy
-            // AddPrepDialogToQuestTemplate (which matches on CompletionType + MobileID, not on
-            // GoalID), so it would be copied onto the quest as a Prep dialog.
-            foreach (var dialog in quest.Goals[i].Dialogs.Where(d =>
-                         (d.m_dialogTag ?? "").Equals("QuestInfo", StringComparison.OrdinalIgnoreCase))) {
-                problems.Add(
-                    $"goal[{i}] '{quest.Goals[i].Name}' carries a dialog tagged 'QuestInfo': that "
-                    + "CompletionType also matches QuestBuilder's quest-level prep matcher, which "
-                    + "ignores GoalID, so the dialog would appear at quest level as well.");
-            }
-        }
+        // A compilation goal that carries dialogs is re-sent by MSG_SENDGOAL (as the game server sends
+        // every started goal), and its dialogs follow by GoalID: QuestBuilder skips the re-send as a
+        // duplicate, and the wrapper's post-pass attaches the dialogs by GoalID (task 7.4). Likewise a
+        // goal dialog tagged 'QuestInfo' no longer leaks onto the quest: the post-pass takes the
+        // quest-level Prep only from a GoalID-0 packet. Neither shape is refused any more.
 
         if (inject is not null) {
-            problems.AddRange(ValidateInject(inject, quest.Goals.Count, quest.StartGoals.Count));
+            problems.AddRange(ValidateInject(
+                inject, quest.Goals.Count, quest.StartGoals.Count, goal => quest.Goals[goal].Dialogs.Count > 0));
         }
 
         if (problems.Count > 0) {
@@ -269,12 +255,18 @@ internal static partial class Program {
         var clientTagGoals = 0;
         var sendGoalBase = new Dictionary<int, JObject>();
 
+        // Without --inject, a compilation goal is re-sent only when it carries dialogs (see the
+        // validations): the Phase 2 fixtures, whose compilation goals carry none, stay byte-identical.
+        var resentGoals = 0;
+
         for (var index = 0; index < quest.Goals.Count; index++) {
             var isPacketGoal = index >= quest.StartGoals.Count;
 
-            if (!isPacketGoal && inject is null) {
+            if (!isPacketGoal && inject is null && quest.Goals[index].Dialogs.Count == 0) {
                 continue;
             }
+
+            resentGoals += isPacketGoal ? 0 : 1;
 
             var goal = quest.Goals[index];
             var goalId = GoalId(quest.Name, index);
@@ -348,16 +340,22 @@ internal static partial class Program {
             AddQuestDialogs(quest, mobileId, questId, options.Persona, packets, notes);
 
             var dialogsEmitted = new HashSet<int>();
+            var goalDialogQuestId = inject.GoalDialogQuestId ? questId : 0;
 
             foreach (var step in inject.Sequence) {
+                var stepGoalId = step.Goal is { } goalIndex ? GoalId(quest.Name, goalIndex) : 0;
                 var fields = step.Message switch {
                     "MSG_SENDGOAL" => (JObject) sendGoalBase[step.Goal!.Value].DeepClone(),
                     "MSG_PERSONAINFO" => new JObject {
                         ["MobileID"] = Wrap(mobileId),
                         ["QuestID"] = Wrap(questId),
-                        ["GoalID"] = Wrap(GoalId(quest.Name, step.Goal!.Value)),
+                        ["GoalID"] = Wrap(stepGoalId),
                     },
                     "MSG_COMPLETEQUEST" => new JObject { ["QuestID"] = Wrap(questId) },
+                    // A planted dialog carries the quest id, as the game server sends it; "goal" omitted
+                    // makes it quest-level (GoalID 0). CompletionType and ActorDialog come from the spec.
+                    "MSG_ACTORDIALOG" => ActorDialogFields(mobileId, questId, stepGoalId, "", "", options.Persona),
+                    "MSG_ENCOUNTERDIALOG" => EncounterDialogFields(mobileId, questId, stepGoalId, options.Persona),
                     _ => new JObject {
                         ["QuestID"] = Wrap(questId),
                         ["GoalID"] = Wrap(GoalId(quest.Name, step.Goal!.Value)),
@@ -377,8 +375,8 @@ internal static partial class Program {
 
                 injectedSendGoals++;
 
-                if (step.Goal!.Value >= quest.StartGoals.Count && dialogsEmitted.Add(step.Goal.Value)) {
-                    AddGoalDialogs(quest, step.Goal.Value, mobileId, options.Persona, packets, notes);
+                if (dialogsEmitted.Add(step.Goal!.Value)) {
+                    AddGoalDialogs(quest, step.Goal.Value, mobileId, goalDialogQuestId, options.Persona, packets, notes);
                 }
             }
         }
@@ -389,8 +387,8 @@ internal static partial class Program {
         if (inject is null) {
             AddQuestDialogs(quest, mobileId, questId, options.Persona, packets, notes);
 
-            for (var i = quest.StartGoals.Count; i < quest.Goals.Count; i++) {
-                AddGoalDialogs(quest, i, mobileId, options.Persona, packets, notes);
+            for (var i = 0; i < quest.Goals.Count; i++) {
+                AddGoalDialogs(quest, i, mobileId, 0, options.Persona, packets, notes);
             }
         }
 
@@ -400,12 +398,15 @@ internal static partial class Program {
         var dialogEntries = quest.QuestDialogs.Sum(d => d.m_dialogEntries?.Count ?? 0)
             + quest.Goals.Sum(g => g.Dialogs.Sum(d => d.m_dialogEntries?.Count ?? 0));
 
+        var resent = inject is null && resentGoals > 0
+            ? FormattableString.Invariant($"; {resentGoals} compilation goal(s) re-sent by MSG_SENDGOAL for their dialogs")
+            : "";
         var summary = new StringBuilder();
         summary.AppendLine($"fixturegen: {options.QuestPath}");
         summary.AppendLine(FormattableString.Invariant(
             $"  quest            {quest.Name}  title={quest.Title}  level={quest.Level}  mainline={quest.Mainline}"));
         summary.AppendLine(FormattableString.Invariant(
-            $"  goals            {quest.Goals.Count} total = {compilationGoals.Count} in GoalCompilation (m_startGoals) + {packetGoals.Count} via MSG_SENDGOAL"));
+            $"  goals            {quest.Goals.Count} total = {compilationGoals.Count} in GoalCompilation (m_startGoals) + {packetGoals.Count} via MSG_SENDGOAL{resent}"));
         summary.AppendLine(FormattableString.Invariant(
             $"  dialogs          {dialogBlocks} block(s) / {dialogEntries} dialog entry(ies); {quest.QuestDialogs.Count} quest-level, {dialogBlocks - quest.QuestDialogs.Count} goal-level"));
         summary.AppendLine(FormattableString.Invariant(
@@ -442,7 +443,8 @@ internal static partial class Program {
     }
 
     private static void AddGoalDialogs(
-        CorpusQuest quest, int goalIndex, ulong mobileId, string persona, JArray packets, List<string> notes) {
+        CorpusQuest quest, int goalIndex, ulong mobileId, ulong questId, string persona, JArray packets,
+        List<string> notes) {
         var goal = quest.Goals[goalIndex];
 
         foreach (var dialog in goal.Dialogs) {
@@ -450,13 +452,14 @@ internal static partial class Program {
                 dialog, PropAuthorityTransmit, $"ActorDialog({goal.Name}/{dialog.m_dialogTag})");
             SelfCheckActorDialog(blob, dialog, notes);
 
-            // QuestID is 0 on a goal-scoped dialog on purpose: AddCompletionDialogToQuestTemplate
+            // QuestID is 0 on a goal-scoped dialog by default: AddCompletionDialogToQuestTemplate
             // matches on CompletionType == "Completion" && QuestID == quest.Id and *ignores*
-            // GoalID, so writing the quest id here makes QuestBuilder copy the first goal-level
-            // Completion dialog onto the quest as a second (bogus) quest-level dialog.
-            // AddDialogToGoals only needs GoalID, so nothing is lost.
+            // GoalID, so the quest id here makes QuestBuilder copy the first goal-level Completion
+            // dialog onto the quest (the wrapper's post-pass repairs that since task 7.4; an --inject
+            // spec with "goalDialogQuestId": true writes the quest id, as the game server does, to
+            // reproduce it). AddDialogToGoals only needs GoalID, so nothing is lost.
             packets.Add(Envelope("MSG_ACTORDIALOG", ActorDialogFields(
-                mobileId, 0, GoalId(quest.Name, goalIndex), dialog.m_dialogTag ?? "", blob, persona)));
+                mobileId, questId, GoalId(quest.Name, goalIndex), dialog.m_dialogTag ?? "", blob, persona)));
         }
     }
 
@@ -474,6 +477,19 @@ internal static partial class Program {
             ["RangeCheck"] = Wrap(0),
             ["IsEncounter"] = Wrap(0),
             ["DefaultDialogAnimation"] = Wrap(""),
+        };
+
+    /// <summary>MSG_ENCOUNTERDIALOG's fields (WizardMessages.xml): MSG_ACTORDIALOG's first eight.</summary>
+    private static JObject EncounterDialogFields(ulong mobileId, ulong questId, ulong goalId, string persona)
+        => new() {
+            ["MobileID"] = Wrap(mobileId),
+            ["QuestID"] = Wrap(questId),
+            ["GoalID"] = Wrap(goalId),
+            ["CompletionType"] = Wrap(""),
+            ["ActorDialog"] = Wrap(""),
+            ["Persona"] = Wrap(persona),
+            ["PersonaName"] = Wrap(""),
+            ["PersonaIcon"] = Wrap(""),
         };
 
     private sealed record CorpusGoal(

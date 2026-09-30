@@ -14,6 +14,7 @@ namespace FixtureGen;
 ///   {
 ///     "description": "…",                      free text, ignored
 ///     "allowAchieveRank": false,               opt in to GOAL_TYPE_ACHIEVERANK (D146)
+///     "goalDialogQuestId": false,              goal dialogs carry the QuestID (task 7.4)
 ///     "sendQuestFields": { "QuestNameID": 1 }, extra fields planted on MSG_SENDQUEST
 ///     "sequence": [                            the deliberate message order, after MSG_QUESTOFFER,
 ///       { "message": "MSG_SENDGOAL",           MSG_SENDQUEST and the quest-level dialogs
@@ -22,7 +23,9 @@ namespace FixtureGen;
 ///     ]
 ///   }
 ///
-/// `message` is one of <see cref="s_injectMessages"/>. A planted field is written into the envelope
+/// `message` is one of <see cref="s_injectMessages"/>. MSG_ACTORDIALOG and MSG_ENCOUNTERDIALOG are
+/// planted dialogs (task 7.4): "goal" is optional (omitted = quest-level, GoalID 0), the engine fills
+/// MobileID/QuestID/GoalID and the spec must plant CompletionType and ActorDialog. A planted field is written into the envelope
 /// exactly as given, whether or not Imview's message definition declares it (that is the point:
 /// `MSG_SENDGOAL.PersonaName` is declared by Imlight's QuestMessages.xml but not by the reader). The
 /// engine fills the ids (QuestID, and GoalID / MobileID where the message has them) and, for
@@ -32,10 +35,18 @@ namespace FixtureGen;
 ///
 ///   { "$blob": "ClientTagList", "tags": ["a", "b"] }              mask 1  (Prop_Save)
 ///   { "$blob": "LootInfoList",  "gold": 1234, "magicXp": 56 }     mask 31 (LootTableTest's mask)
+///   { "$blob": "ActorDialog",   "entries": ["line 1", "line 2"] } mask 16 (QuestBuilder's dialog mask),
+///                                                                one NPCDialogEntry per line (m_dialog)
 ///
 /// Under --inject, MSG_SENDGOAL is emitted only where the sequence says so (every goal the
 /// GoalCompilation does not carry must be sent at least once); a compilation goal may be sent too,
-/// which the reader skips as a duplicate by GoalNameID.
+/// which the reader skips as a duplicate by GoalNameID. A compilation goal that carries dialogs must be
+/// sent (its dialogs follow its first send). A planted MSG_SENDGOAL field replaces the engine's, so a spec
+/// can plant a GoalType QuestBuilder does not list (task 7.4's unlisted-goal-type fixture).
+///
+/// "goalDialogQuestId": true writes the quest's QuestID on the goal dialogs (the engine writes 0 by
+/// default; the game server writes the quest id), which is what makes QuestBuilder attach a goal-level
+/// Completion dialog to the quest as well (D46(4)).
 /// </summary>
 internal static partial class Program {
 
@@ -45,13 +56,19 @@ internal static partial class Program {
         "MSG_REMOVEGOAL",
         "MSG_COMPLETEQUEST",
         "MSG_PERSONAINFO",
+        "MSG_ACTORDIALOG",
+        "MSG_ENCOUNTERDIALOG",
     ];
+
+    // Planted dialogs may be quest-level, so their "goal" is optional.
+    private static readonly HashSet<string> s_dialogMessages = ["MSG_ACTORDIALOG", "MSG_ENCOUNTERDIALOG"];
 
     private const uint PropLootInfoList = 31;
 
     private sealed record InjectStep(string Message, int? Goal, JObject Fields);
 
-    private sealed record InjectSpec(bool AllowAchieveRank, JObject SendQuestFields, List<InjectStep> Sequence);
+    private sealed record InjectSpec(
+        bool AllowAchieveRank, bool GoalDialogQuestId, JObject SendQuestFields, List<InjectStep> Sequence);
 
     private static bool IsOptedInAchieveRank(InjectSpec? inject, CorpusGoal goal)
         => inject is { AllowAchieveRank: true } && goal.Type == GOAL_TYPE.GOAL_TYPE_ACHIEVERANK;
@@ -102,11 +119,16 @@ internal static partial class Program {
             }
         }
 
-        return new InjectSpec(root["allowAchieveRank"]?.Value<bool>() ?? false, sendQuest, sequence);
+        return new InjectSpec(
+            root["allowAchieveRank"]?.Value<bool>() ?? false,
+            root["goalDialogQuestId"]?.Value<bool>() ?? false,
+            sendQuest,
+            sequence);
     }
 
     /// <summary>Everything wrong with the spec against this quest's goal list, all at once.</summary>
-    private static List<string> ValidateInject(InjectSpec inject, int goalCount, int compilationGoalCount) {
+    private static List<string> ValidateInject(
+        InjectSpec inject, int goalCount, int compilationGoalCount, Func<int, bool> carriesDialogs) {
         var problems = new List<string>();
         var sent = new HashSet<int>();
 
@@ -122,6 +144,16 @@ internal static partial class Program {
                 continue;
             }
 
+            if (s_dialogMessages.Contains(step.Message)) {
+                foreach (var required in new[] { "CompletionType", "ActorDialog" }.Where(f => step.Fields[f] is null)) {
+                    problems.Add($"inject sequence[{i}] ({step.Message}) must plant {required}");
+                }
+
+                if (step.Goal is null) {
+                    continue;
+                }
+            }
+
             if (step.Goal is not { } goal || goal < 0 || goal >= goalCount) {
                 problems.Add($"inject sequence[{i}] ({step.Message}) needs a \"goal\" index in 0..{goalCount - 1}");
                 continue;
@@ -135,6 +167,12 @@ internal static partial class Program {
         for (var goal = compilationGoalCount; goal < goalCount; goal++) {
             if (!sent.Contains(goal)) {
                 problems.Add($"inject sequence never sends goal {goal}: it is not in the GoalCompilation, so the reader would never see it");
+            }
+        }
+
+        for (var goal = 0; goal < compilationGoalCount; goal++) {
+            if (carriesDialogs(goal) && !sent.Contains(goal)) {
+                problems.Add($"inject sequence never sends compilation goal {goal}: it carries dialogs, which only a GoalID can attach");
             }
         }
 
@@ -167,8 +205,31 @@ internal static partial class Program {
                 return hex;
             }
 
+            case "ActorDialog": {
+                var lines = (spec["entries"] as JArray)?.Select(t => t.Value<string>() ?? "").ToList() ?? [];
+                var dialog = new ActorDialog {
+                    m_dialogTag = "",
+                    m_dialogEntries = [.. lines.Select(line => (ActorDialogEntry) new NPCDialogEntry { m_dialog = line })],
+                    m_madlibs = [],
+                    m_dialogEvents = [],
+                };
+                var hex = SerializeBlob(dialog, PropAuthorityTransmit, $"ActorDialog({what})");
+                SelfCheckPlantedDialog(hex, lines, what);
+                return hex;
+            }
+
             default:
-                throw new FixtureException($"{what}: unknown $blob kind '{kind}' (ClientTagList, LootInfoList)");
+                throw new FixtureException($"{what}: unknown $blob kind '{kind}' (ClientTagList, LootInfoList, ActorDialog)");
+        }
+    }
+
+    private static void SelfCheckPlantedDialog(string blob, List<string> lines, string what) {
+        var serializer = new ObjectSerializer(Versionable: false, Behaviors: SerializerFlags.None);
+
+        if (!serializer.Deserialize<ActorDialog>(Convert.FromHexString(blob), PropAuthorityTransmit, out var decoded)
+            || decoded?.m_dialogEntries is not { } entries
+            || !entries.Select(e => (e as NPCDialogEntry)?.m_dialog ?? "").SequenceEqual(lines)) {
+            throw new FixtureException($"self-check: the ActorDialog blob for {what} did not round-trip its {lines.Count} line(s)");
         }
     }
 

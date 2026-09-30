@@ -1,0 +1,1 @@
+error: Unsupported goal type: GOAL_TYPE_COMPLETEQUEST

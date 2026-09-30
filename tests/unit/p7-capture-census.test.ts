@@ -86,6 +86,46 @@ function planted(spec: InjectSpec): Map<string, number> {
   return counts;
 }
 
+/**
+ * The count the golden must show for each planted (message, field): the planted count plus the envelopes
+ * the engine emitted on its own that carry the same field — every MSG_SENDGOAL carries GoalType, and the
+ * corpus dialogs are MSG_ACTORDIALOGs too (task 7.4 plants both). Step envelopes are found as the in-order
+ * subsequence of the capture, and each must carry every planted plain value exactly.
+ */
+function expectedCounts(quest: string, spec: InjectSpec, capture: Envelope[]): Map<string, number> {
+  const counts = planted(spec);
+  const plantedOn = new Map<Envelope, Set<string>>();
+  const sendQuest = capture.find((e) => e.data.name === 'MSG_SENDQUEST');
+  if (sendQuest) {
+    plantedOn.set(sendQuest, new Set(Object.keys(spec.sendQuestFields)));
+  }
+  let at = 0;
+  for (const step of spec.sequence) {
+    while (capture[at] && capture[at]!.data.name !== step.message) {
+      at += 1;
+    }
+    const envelope = capture[at];
+    expect(envelope, `${quest}: step ${step.message} not in the capture`).toBeDefined();
+    for (const [field, value] of Object.entries(step.fields ?? {})) {
+      if (typeof value !== 'object') {
+        expect(envelope!.data.fields[field]?.value, `${quest}: ${step.message}.${field}`).toBe(
+          value,
+        );
+      }
+    }
+    plantedOn.set(envelope!, new Set(Object.keys(step.fields ?? {})));
+    at += 1;
+  }
+  for (const key of counts.keys()) {
+    const [message, field] = key.split('\t') as [string, string];
+    const unplanted = capture.filter(
+      (e) => e.data.name === message && field in e.data.fields && !plantedOn.get(e)?.has(field),
+    ).length;
+    counts.set(key, counts.get(key)! + unplanted);
+  }
+  return counts;
+}
+
 describe('p7 census goldens against their --inject specs (CI-bound)', () => {
   it('commits at least 5 injected quests, each with a fixture, a spec and a golden', () => {
     expect(quests.length).toBeGreaterThanOrEqual(5);
@@ -143,6 +183,12 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
       'MSG_COMPLETEGOAL\tCompleteText',
       'MSG_COMPLETEQUEST\tCompleteText',
       'MSG_PERSONAINFO\tGoalHyperlink',
+      // Task 7.4: an unlisted goal type and the planted dialogs.
+      'MSG_SENDGOAL\tGoalType',
+      ...['CompletionType', 'ActorDialog', 'IsYesNo', 'DefaultDialogAnimation'].map(
+        (f) => `MSG_ACTORDIALOG\t${f}`,
+      ),
+      ...['CompletionType', 'ActorDialog'].map((f) => `MSG_ENCOUNTERDIALOG\t${f}`),
     ];
     for (const key of wanted) {
       expect(all.has(key), key.replace('\t', '.')).toBe(true);
@@ -157,7 +203,7 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
     it('lists every planted field with exactly the planted count', () => {
       const golden = goldenOf(quest);
       const counts = new Map(golden.rows.map((r) => [`${r.message}\t${r.field}`, r.count]));
-      const expected = planted(specOf(quest));
+      const expected = expectedCounts(quest, specOf(quest), captureOf(quest));
       expect(expected.size).toBeGreaterThan(0);
       for (const [key, count] of expected) {
         expect(counts.get(key), key.replace('\t', '.')).toBe(count);
@@ -189,11 +235,15 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
 
     it('reports the planted fields the reader does not read as ignored', () => {
       const rows = goldenOf(quest).rows;
+      const plantedHere = planted(specOf(quest));
       const row = (message: string, field: string): CensusRow | undefined =>
         rows.find((r) => r.message === message && r.field === field);
       // Still ignored (task 7.5 reads the rewards): the census is the gap report.
-      expect(row('MSG_SENDQUEST', 'Rewards')?.consumed).toBe(false);
-      // Read by the 7.3 observed-field post-pass (flipped in p7-04, goldens regenerated)…
+      if (plantedHere.has('MSG_SENDQUEST\tRewards')) {
+        expect(row('MSG_SENDQUEST', 'Rewards')?.consumed).toBe(false);
+      }
+      // Read by the 7.3 observed-field post-pass (flipped in p7-04) and the 7.4 reader repairs (flipped
+      // in p7-05), goldens regenerated; each spec is checked on the fields it plants.
       for (const [message, field] of [
         ['MSG_SENDGOAL', 'PersonaName'],
         ['MSG_SENDQUEST', 'QuestNameID'],
@@ -205,8 +255,17 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
         ['MSG_SENDQUEST', 'PetOnlyQuest'],
         ['MSG_COMPLETEGOAL', 'CompleteText'],
         ['MSG_COMPLETEQUEST', 'CompleteText'],
+        ['MSG_SENDGOAL', 'GoalType'],
+        ['MSG_ACTORDIALOG', 'CompletionType'],
+        ['MSG_ACTORDIALOG', 'ActorDialog'],
+        ['MSG_ACTORDIALOG', 'IsYesNo'],
+        ['MSG_ACTORDIALOG', 'DefaultDialogAnimation'],
+        ['MSG_ENCOUNTERDIALOG', 'CompletionType'],
+        ['MSG_ENCOUNTERDIALOG', 'ActorDialog'],
       ] as const) {
-        expect(row(message, field)?.consumed, `${message}.${field}`).toBe(true);
+        if (plantedHere.has(`${message}\t${field}`)) {
+          expect(row(message, field)?.consumed, `${message}.${field}`).toBe(true);
+        }
       }
       // …while the fields the reader does read stay consumed.
       expect(row('MSG_SENDQUEST', 'QuestID')?.consumed).toBe(true);

@@ -39,25 +39,32 @@ internal static class Program {
     /// the wrapper the field, then regenerate the committed census goldens.
     ///
     /// Derived from Imview/src/Imview.PacketReader/QuestBuilder.cs (QB), tools/PacketReaderCli/Program.cs
-    /// (CLI) and the task 7.3 observed-field post-pass tools/PacketReaderCli/ObservedFields.cs (OF):
-    ///   MSG_QUESTOFFER   MobileID QB:88; QuestName QB:79 + CLI:182; QuestTitle QB:80 + OF:90; Level CLI:183
-    ///                    (QB:81 reads it but always gets 0, D46); Mainline QB:82; GoalData QB:183;
-    ///                    QuestInfo OF:96. Rewards is declared by QuestOfferPacket but never read.
-    ///   MSG_SENDQUEST    QuestID QB:109 + OF:56,88; QuestTitle QB:108 + OF:56; QuestInfo OF:96;
-    ///                    QuestNameID OF:98; NoQuestHelper OF:100; SkipQHAutoSelect OF:102; ActivityType
-    ///                    OF:104; ClientTags OF:106; PetOnlyQuest OF:110 (read and reported on stderr: the
+    /// (CLI), the task 7.3 observed-field post-pass tools/PacketReaderCli/ObservedFields.cs (OF) and the
+    /// task 7.4 reader repairs tools/PacketReaderCli/ReaderRepairs.cs (RR):
+    ///   MSG_QUESTOFFER   MobileID QB:88 + RR:143; QuestName QB:79 + CLI:278 + RR:143; QuestTitle QB:80 +
+    ///                    OF:85; Level CLI:279 (QB:81 reads it but always gets 0, D46); Mainline QB:82;
+    ///                    GoalData QB:183; QuestInfo OF:91. Rewards is declared by QuestOfferPacket but never read.
+    ///   MSG_SENDQUEST    QuestID QB:109 + OF:83,303; QuestTitle QB:108 + OF:303; QuestInfo OF:91;
+    ///                    QuestNameID OF:93; NoQuestHelper OF:95; SkipQHAutoSelect OF:97; ActivityType
+    ///                    OF:99; ClientTags OF:101; PetOnlyQuest OF:105 (read and reported on stderr: the
     ///                    quest schema has no home for it). Rewards is not read (task 7.5).
-    ///   MSG_SENDGOAL     QuestID QB:124 + OF:125; GoalID QB:176 + OF:132; GoalNameID QB:126,134 + OF:132;
-    ///                    GoalTitle QB:130,135; GoalLocation QB:136; GoalDestinationZone QB:137; GoalImage1
-    ///                    QB:138; GoalImage2 QB:139; GoalType QB:132,140; GoalTotal QB:143,148; UseTally
-    ///                    QB:147,154; GoalMadlibs QB:147-148; ClientTags QB:159-165; PersonaName OF:167;
-    ///                    NoQuestHelper OF:170; PetOnlyQuest OF:172.
-    ///   MSG_ACTORDIALOG  MobileID QB:242; QuestID QB:312; GoalID QB:371; CompletionType QB:243,311,396;
-    ///                    ActorDialog QB:246,315,374; Persona QB:271,340,408. PersonaName, PersonaIcon,
-    ///                    RangeCheck, IsEncounter and DefaultDialogAnimation are declared, never read.
-    ///   MSG_COMPLETEGOAL GoalID OF:75,163; CompleteText OF:174.
-    ///   MSG_PERSONAINFO  GoalID OF:75,164; GoalHyperlink OF:176.
-    ///   MSG_COMPLETEQUEST QuestID OF:115; CompleteText OF:116 (read and reported on stderr: nothing shows
+    ///   MSG_SENDGOAL     QuestID QB:124 + OF:120; GoalID QB:176 + OF:127 + RR:70; GoalNameID QB:126,134 +
+    ///                    OF:127; GoalTitle QB:130,135 + RR:89; GoalLocation QB:136; GoalDestinationZone
+    ///                    QB:137; GoalImage1 QB:138; GoalImage2 QB:139; GoalType QB:132,140 + RR:88 + CLI:167;
+    ///                    GoalTotal QB:143,148; UseTally QB:147,154; GoalMadlibs QB:147-148; ClientTags
+    ///                    QB:159-165; PersonaName OF:162; NoQuestHelper OF:165; PetOnlyQuest OF:167.
+    ///   MSG_ACTORDIALOG  MobileID QB:242 + RR:161; QuestID QB:312 + RR:163; GoalID QB:371 + RR:179;
+    ///                    CompletionType QB:243,311,396 + RR:333; ActorDialog QB:246,315,374 + RR:358;
+    ///                    Persona QB:271,340,408; IsYesNo RR:321 and DefaultDialogAnimation RR:325 (read and
+    ///                    reported on stderr: the dialog block has no field for either). PersonaName,
+    ///                    PersonaIcon, RangeCheck, IsEncounter and PolymorphViewMobTemplateID are declared,
+    ///                    never read.
+    ///   MSG_ENCOUNTERDIALOG QuestID RR:233; GoalID RR:232; CompletionType RR:234; ActorDialog RR:358 (task
+    ///                    7.4: a dialog block, never replacing one). MobileID, Persona, PersonaName and
+    ///                    PersonaIcon are not read.
+    ///   MSG_COMPLETEGOAL GoalID OF:70,158; CompleteText OF:169.
+    ///   MSG_PERSONAINFO  GoalID OF:70,159; GoalHyperlink OF:171.
+    ///   MSG_COMPLETEQUEST QuestID OF:110; CompleteText OF:111 (read and reported on stderr: nothing shows
     ///                    it is the string-table key m_questComplete holds).
     ///   every other message (MSG_REMOVEGOAL, ...) has no reader, so nothing in it is read.
     /// </summary>
@@ -72,7 +79,11 @@ internal static class Program {
             "GoalImage1", "GoalImage2", "GoalType", "GoalTotal", "UseTally", "GoalMadlibs", "ClientTags",
             "PersonaName", "NoQuestHelper", "PetOnlyQuest",
         ],
-        ["MSG_ACTORDIALOG"] = ["MobileID", "QuestID", "GoalID", "CompletionType", "ActorDialog", "Persona"],
+        ["MSG_ACTORDIALOG"] = [
+            "MobileID", "QuestID", "GoalID", "CompletionType", "ActorDialog", "Persona", "IsYesNo",
+            "DefaultDialogAnimation",
+        ],
+        ["MSG_ENCOUNTERDIALOG"] = ["QuestID", "GoalID", "CompletionType", "ActorDialog"],
         ["MSG_COMPLETEGOAL"] = ["GoalID", "CompleteText"],
         ["MSG_PERSONAINFO"] = ["GoalID", "GoalHyperlink"],
         ["MSG_COMPLETEQUEST"] = ["QuestID", "CompleteText"],

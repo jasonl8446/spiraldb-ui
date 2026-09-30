@@ -30,6 +30,14 @@ internal static class Program {
         The wrapper restores MSG_QUESTOFFER.Level, which the bundled reader drops
         (decision D46), and keeps the reader's diagnostics off stdout.
 
+        It repairs three reader defects (task 7.4): the quest's Prep/Completion dialog
+        is taken from a GoalID-0 packet; an ACHIEVERANK goal the reader drops as a
+        duplicate GoalNameID is added back, named {n}_{GoalTitle} by position; a goal
+        type QuestBuilder does not list is excluded and the capture re-read. Dialogs
+        reach goals the reader did not map by GoalID; quest-level Underway dialogs and
+        MSG_ENCOUNTERDIALOG become dialog blocks. Each change is reported on stderr
+        as {"report":"reader-repair"|"goal-excluded",...}.
+
         It also copies the observed fields the reader drops (Phase 7, D126/D127):
         MSG_SENDQUEST QuestInfo/QuestNameID/NoQuestHelper/SkipQHAutoSelect/
         ActivityType/ClientTags, MSG_SENDGOAL PersonaName/NoQuestHelper/PetOnlyQuest,
@@ -71,21 +79,12 @@ internal static class Program {
             // empty list for anything it cannot match, so a non-capture would look like success.
             var capture = ValidateCapture(options.InputPath);
 
-            // The upstream builder writes diagnostics straight to Console.Out (a template-manifest
-            // warning fires as soon as a dialog carries a persona), which would corrupt the JSON
-            // payload the Node caller parses. Keep its chatter off stdout for the call.
-            List<QuestTemplate> quests;
-            var stdout = Console.Out;
-            try {
-                Console.SetOut(Console.Error);
-                quests = await QuestBuilder.BuildQuestsFromPacketCaptureAsync(options.InputPath);
-            }
-            finally {
-                Console.SetOut(stdout);
-            }
+            var (quests, read) = await BuildExcludingUnlistedGoals(options.InputPath, capture, Console.Error.WriteLine);
 
-            ApplyOfferLevels(quests, ReadOfferLevels(capture));
-            ObservedFields.Apply(quests, capture, Console.Error.WriteLine);
+            ApplyOfferLevels(quests, ReadOfferLevels(read));
+            var goals = ReaderRepairs.JoinGoals(quests, read, Console.Error.WriteLine);
+            ReaderRepairs.RepairDialogs(quests, read, goals, Console.Error.WriteLine);
+            ObservedFields.Apply(quests, read, goals.ById, Console.Error.WriteLine);
             var json = JsonConvert.SerializeObject(quests, Formatting.Indented, s_jsonSettings);
 
             if (options.OutputPath is null or "-") {
@@ -110,6 +109,103 @@ internal static class Program {
     }
 
     private sealed record Options(string InputPath, string? OutputPath, bool Help);
+
+    private const string UnsupportedGoalType = "Unsupported goal type: ";
+
+    /// <summary>
+    /// Runs QuestBuilder; when it throws on a goal type its <c>GetGoalFromType</c> does not list
+    /// (QuestBuilder.cs:484-494), re-runs it on a copy of the capture without that goal (task 7.4): every
+    /// <c>MSG_SENDGOAL</c> of that type, and every message carrying one of their <c>GoalID</c>s, is left
+    /// out and reported as one <c>{"report":"goal-excluded", …}</c> line. Returns the quests and the capture
+    /// they were read from, which the post-passes then read. A compilation goal of an unlisted type (inside
+    /// <c>MSG_QUESTOFFER.GoalData</c>) is not excluded; that throw still fails the run.
+    /// </summary>
+    private static async Task<(List<QuestTemplate> Quests, JsonNode Read)> BuildExcludingUnlistedGoals(
+        string inputPath, JsonNode capture, Action<string> report) {
+        var read = capture;
+        string? scratch = null;
+
+        try {
+            while (true) {
+                try {
+                    return (await BuildQuests(scratch ?? inputPath), read);
+                }
+                catch (NotSupportedException ex) when (ex.Message.StartsWith(UnsupportedGoalType, StringComparison.Ordinal)
+                    && Enum.TryParse<GOAL_TYPE>(ex.Message[UnsupportedGoalType.Length..], out var goalType)
+                    && ExcludeGoalType(read, goalType, report) is { } filtered) {
+                    read = filtered;
+                    scratch ??= Path.Combine(Path.GetTempPath(), $"imview-packet-reader-{Guid.NewGuid():N}.json");
+                    await File.WriteAllTextAsync(scratch, read.ToJsonString());
+                }
+            }
+        }
+        finally {
+            if (scratch is not null) {
+                File.Delete(scratch);
+            }
+        }
+    }
+
+    private static async Task<List<QuestTemplate>> BuildQuests(string path) {
+        // The upstream builder writes diagnostics straight to Console.Out (a template-manifest
+        // warning fires as soon as a dialog carries a persona), which would corrupt the JSON
+        // payload the Node caller parses. Keep its chatter off stdout for the call.
+        var stdout = Console.Out;
+        try {
+            Console.SetOut(Console.Error);
+            return await QuestBuilder.BuildQuestsFromPacketCaptureAsync(path);
+        }
+        finally {
+            Console.SetOut(stdout);
+        }
+    }
+
+    /// <summary>The capture without the goals of <paramref name="goalType"/>, or null when it has none.</summary>
+    private static JsonNode? ExcludeGoalType(JsonNode root, GOAL_TYPE goalType, Action<string> report) {
+        var envelopes = ObservedFields.Envelopes(root);
+        var excluded = ObservedFields.Named(envelopes, "MSG_SENDGOAL")
+            .Where(p => ObservedFields.ReadInteger(p["GoalType"]?["value"]) == (int) goalType)
+            .ToList();
+        var goalIds = excluded.Select(p => ObservedFields.ReadId(p, "GoalID")).OfType<ulong>().ToHashSet();
+        if (goalIds.Count == 0) {
+            return null;
+        }
+
+        var kept = new JsonArray();
+        var dropped = new Dictionary<ulong, int>();
+        foreach (var (node, envelope) in (root is JsonArray array ? array : [root]).Zip(envelopes)) {
+            if (ObservedFields.ReadId(envelope.Fields, "GoalID") is { } goalId && goalIds.Contains(goalId)) {
+                dropped[goalId] = dropped.GetValueOrDefault(goalId) + 1;
+                continue;
+            }
+
+            kept.Add(node!.DeepClone());
+        }
+
+        // Name the quest through the same joins QuestBuilder uses: QuestID -> MSG_SENDQUEST title -> offer.
+        var titleById = ObservedFields.Named(envelopes, "MSG_SENDQUEST")
+            .Select(p => (Id: ObservedFields.ReadId(p, "QuestID"), Title: ObservedFields.ReadString(p, "QuestTitle")))
+            .Where(q => q.Id is not null && q.Title is not null)
+            .GroupBy(q => q.Id!.Value).ToDictionary(g => g.Key, g => g.First().Title!);
+        var nameByTitle = ObservedFields.Named(envelopes, "MSG_QUESTOFFER")
+            .Select(p => (Title: ObservedFields.ReadString(p, "QuestTitle"), Name: ObservedFields.ReadString(p, "QuestName")))
+            .Where(q => q.Title is not null && q.Name is not null)
+            .GroupBy(q => q.Title!).ToDictionary(g => g.Key, g => g.First().Name!);
+
+        foreach (var goalId in goalIds) {
+            var packet = excluded.First(p => ObservedFields.ReadId(p, "GoalID") == goalId);
+            var quest = ObservedFields.ReadId(packet, "QuestID") is { } questId && titleById.TryGetValue(questId, out var title)
+                ? nameByTitle.GetValueOrDefault(title, "")
+                : "";
+            ObservedFields.Report(report, quest, $"m_goals[GoalID {goalId}]", "MSG_SENDGOAL.GoalType",
+                packet["GoalType"]?["value"],
+                $"{goalType} is not listed by QuestBuilder.GetGoalFromType, which throws NotSupportedException "
+                + $"for it; re-read without this goal ({dropped[goalId]} message(s) carrying its GoalID)",
+                "goal-excluded");
+        }
+
+        return kept;
+    }
 
     /// <summary>
     /// Reads and validates the capture file, throwing <see cref="CliException"/> with a

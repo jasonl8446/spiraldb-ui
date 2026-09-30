@@ -35,29 +35,24 @@ namespace PacketReaderCli;
 /// </summary>
 internal static class ObservedFields {
 
-    private sealed record Envelope(string Name, JsonObject Fields);
+    internal sealed record Envelope(string Name, JsonObject Fields);
 
-    private sealed record Observation(string Source, JsonNode? Value);
+    internal sealed record Observation(string Source, JsonNode? Value);
 
-    private readonly record struct Decoded<T>(bool Ok, T Value, string? Reason) {
+    internal readonly record struct Decoded<T>(bool Ok, T Value, string? Reason) {
         public static Decoded<T> Of(T value) => new(true, value, null);
         public static Decoded<T> Fail(string reason) => new(false, default!, reason);
     }
 
-    internal static void Apply(List<QuestTemplate> quests, JsonNode root, Action<string> report) {
-        var envelopes = (root is JsonArray array ? array : [root])
-            .Select(node => new Envelope(
-                node!["data"]!["name"]!.GetValue<string>(), (JsonObject) node["data"]!["fields"]!))
-            .ToList();
-
-        // QuestBuilder.cs:105-114: the first MSG_SENDQUEST with a matching title supplies the QuestID.
-        var questIdByTitle = new Dictionary<string, ulong>(StringComparer.Ordinal);
-        foreach (var packet in Named(envelopes, "MSG_SENDQUEST")) {
-            if (ReadString(packet, "QuestTitle") is { } title && ReadId(packet, "QuestID") is { } id) {
-                questIdByTitle.TryAdd(title, id);
-            }
-        }
-
+    /// <summary>
+    /// <paramref name="goalById"/> is the GoalID join (D150) the reader repairs built
+    /// (<see cref="ReaderRepairs.JoinGoals"/>), including the ACHIEVERANK goals they recovered.
+    /// </summary>
+    internal static void Apply(
+        List<QuestTemplate> quests, JsonNode root, IReadOnlyDictionary<ulong, GoalTemplate> goalById,
+        Action<string> report) {
+        var envelopes = Envelopes(root);
+        var questIdByTitle = QuestIdsByTitle(envelopes);
         var joinedGoalIds = new HashSet<ulong>();
 
         foreach (var quest in quests) {
@@ -66,7 +61,7 @@ internal static class ObservedFields {
             }
 
             ApplyQuestFields(quest, questId, envelopes, questIdByTitle, report);
-            ApplyGoalFields(quest, questId, envelopes, joinedGoalIds, report);
+            ApplyGoalFields(quest, questId, envelopes, goalById, joinedGoalIds, report);
         }
 
         // A goal-scoped message whose GoalID no extracted quest's MSG_SENDGOAL introduced.
@@ -119,8 +114,8 @@ internal static class ObservedFields {
     }
 
     private static void ApplyGoalFields(
-        QuestTemplate quest, ulong questId, List<Envelope> envelopes, HashSet<ulong> joinedGoalIds,
-        Action<string> report) {
+        QuestTemplate quest, ulong questId, List<Envelope> envelopes,
+        IReadOnlyDictionary<ulong, GoalTemplate> goalById, HashSet<ulong> joinedGoalIds, Action<string> report) {
 
         var sendGoals = Named(envelopes, "MSG_SENDGOAL").Where(p => ReadId(p, "QuestID") == questId).ToList();
         var name = quest.m_questName ?? "";
@@ -145,7 +140,7 @@ internal static class ObservedFields {
 
             var mine = sendGoals.Where(p => ReadId(p, "GoalID") == goalId).ToList();
             var owner = ownerByNameId[nameId];
-            var goal = owner == goalId ? quest.m_goals?.FirstOrDefault(g => g.m_goalNameID == nameId) : null;
+            var goal = goalById.GetValueOrDefault(goalId);
 
             string path;
             string? dropped = null;
@@ -184,7 +179,7 @@ internal static class ObservedFields {
     /// why). <paramref name="silentWhenUnwritable"/> marks values that carry nothing worth reporting
     /// there (a zero flag).
     /// </summary>
-    private static void Resolve<T>(
+    internal static void Resolve<T>(
         Action<string> report, string quest, string path, List<Observation> observations,
         Func<JsonNode?, Decoded<T>> decode, Action<T>? write, string? unwritable = null,
         Func<T, bool>? silentWhenUnwritable = null) {
@@ -234,10 +229,11 @@ internal static class ObservedFields {
         _ => false,
     };
 
-    private static void Report(
-        Action<string> report, string quest, string path, string source, JsonNode? value, string reason)
+    internal static void Report(
+        Action<string> report, string quest, string path, string source, JsonNode? value, string reason,
+        string kind = "observed-field")
         => report(new JsonObject {
-            ["report"] = "observed-field",
+            ["report"] = kind,
             ["quest"] = quest,
             ["path"] = path,
             ["source"] = source,
@@ -247,12 +243,12 @@ internal static class ObservedFields {
 
     // ---- decoders: each is lossless or fails with a reason ---------------------------------------
 
-    private static Decoded<string> DecodeString(JsonNode? value)
+    internal static Decoded<string> DecodeString(JsonNode? value)
         => value is JsonValue json && json.TryGetValue<string>(out var text)
             ? Decoded<string>.Of(text)
             : Decoded<string>.Fail("not a string");
 
-    private static Decoded<bool> DecodeFlag(JsonNode? value) => ReadInteger(value) switch {
+    internal static Decoded<bool> DecodeFlag(JsonNode? value) => ReadInteger(value) switch {
         0 => Decoded<bool>.Of(false),
         1 => Decoded<bool>.Of(true),
         _ => Decoded<bool>.Fail("a UBYT flag must be 0 or 1 to map losslessly onto a boolean"),
@@ -271,7 +267,7 @@ internal static class ObservedFields {
             : Decoded<ActivityType>.Fail("the byte has no mapping in Imcodec's ActivityType enum");
 
     // Blob -> string list through Imcodec's serializer, the way QuestBuilder decodes goal tags (mask 1).
-    private static Decoded<List<string>> DecodeClientTags(JsonNode? value) {
+    internal static Decoded<List<string>> DecodeClientTags(JsonNode? value) {
         if (DecodeString(value) is not { Ok: true } hex) {
             return Decoded<List<string>>.Fail("not a hex string");
         }
@@ -295,16 +291,33 @@ internal static class ObservedFields {
 
     // ---- envelope access -------------------------------------------------------------------------
 
-    private static IEnumerable<JsonObject> Named(List<Envelope> envelopes, string name)
+    internal static List<Envelope> Envelopes(JsonNode root)
+        => [.. (root is JsonArray array ? array : [root])
+            .Select(node => new Envelope(
+                node!["data"]!["name"]!.GetValue<string>(), (JsonObject) node["data"]!["fields"]!))];
+
+    /// <summary>QuestBuilder.cs:105-114: the first MSG_SENDQUEST with a matching title supplies the QuestID.</summary>
+    internal static Dictionary<string, ulong> QuestIdsByTitle(List<Envelope> envelopes) {
+        var questIdByTitle = new Dictionary<string, ulong>(StringComparer.Ordinal);
+        foreach (var packet in Named(envelopes, "MSG_SENDQUEST")) {
+            if (ReadString(packet, "QuestTitle") is { } title && ReadId(packet, "QuestID") is { } id) {
+                questIdByTitle.TryAdd(title, id);
+            }
+        }
+
+        return questIdByTitle;
+    }
+
+    internal static IEnumerable<JsonObject> Named(List<Envelope> envelopes, string name)
         => envelopes.Where(e => e.Name == name).Select(e => e.Fields);
 
-    private static List<Observation> From(List<JsonObject> packets, string message, string field)
+    internal static List<Observation> From(List<JsonObject> packets, string message, string field)
         => [.. packets.Where(p => p.ContainsKey(field)).Select(p => new Observation($"{message}.{field}", p[field]?["value"]))];
 
-    private static string? ReadString(JsonObject packet, string field)
+    internal static string? ReadString(JsonObject packet, string field)
         => packet[field]?["value"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
-    private static ulong? ReadId(JsonObject packet, string field) {
+    internal static ulong? ReadId(JsonObject packet, string field) {
         if (packet[field]?["value"] is not JsonValue value) {
             return null;
         }
@@ -314,7 +327,7 @@ internal static class ObservedFields {
             : null;
     }
 
-    private static long? ReadInteger(JsonNode? node) {
+    internal static long? ReadInteger(JsonNode? node) {
         if (node is not JsonValue value) {
             return null;
         }
