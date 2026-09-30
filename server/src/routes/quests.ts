@@ -7,7 +7,9 @@ import { BranchMismatchError, DirtyRepoError } from '../services/git.js';
 import { questEvidenceByName } from '../services/questEvidence.js';
 import {
   listQuestCatalog,
+  CATALOG_Q_PARAM,
   MISSING_ONLY_PARAM,
+  parseCatalogQ,
   parseMissingOnly,
   QuestCatalogQueryError,
   readCoverage,
@@ -230,7 +232,8 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
    * `?missing_only=1` narrows to `has_definition = 0` **in SQL** — the filter is a predicate over
    * the catalog, not a client-side re-derivation of `nameable - defined` (which would be a second
    * definition of "missing" and would silently disagree on a filtered read). A malformed value is
-   * the 400 above, never a silent clamp.
+   * the 400 above, never a silent clamp. `?q=` (D186) narrows to quests whose name or title
+   * contains the text, also in SQL and ANDed with `missing_only`; it is echoed back as `q`.
    *
    * Registered before `/:name` for the same reason as `/coverage`; the spec already accepts that a
    * quest literally named `catalog` is unreachable by its detail route (spec-api.md L1023-1027).
@@ -238,7 +241,8 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
   router.get('/catalog', (req, res) => {
     try {
       const missingOnly = parseMissingOnly(req.query[MISSING_ONLY_PARAM]);
-      res.json(listQuestCatalog(db, { missingOnly }));
+      const q = parseCatalogQ(req.query[CATALOG_Q_PARAM]);
+      res.json(listQuestCatalog(db, { missingOnly, q }));
     } catch (error) {
       if (error instanceof QuestCatalogQueryError) {
         res.status(400).json({ error: error.message } satisfies ApiError);

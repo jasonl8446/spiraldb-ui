@@ -10,10 +10,11 @@ import {
   shortTypeName,
   type PreviewTab,
 } from '../../lib/extract';
-import { goalCardTitle, NO_CARD_NAMES } from '../../lib/card-titles';
+import { goalCardTitle, NO_CARD_NAMES, resultDropTableName } from '../../lib/card-titles';
 import { nextTabIndex } from '../../lib/tablist';
 import { termText, valueTermOf } from '../../lib/term';
 import { cn } from '../../lib/utils';
+import DropTableLink from '../shared/DropTableLink';
 import TermLabel from '../TermLabel';
 import { Badge } from '../ui/badge';
 
@@ -50,6 +51,12 @@ export interface QuestPreviewProps {
    * has to know the tab list.
    */
   panels?: Partial<Record<QuestTab, ReactNode>>;
+  /**
+   * The drop tables the corpus holds, for the read-only Results tab to link a `ResDropTable`
+   * reward to its editor (D187). The **caller** resolves them (the preview stays fetch-free), and
+   * passes nothing on the extraction page, which keeps its unlinked badges.
+   */
+  dropTableNames?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -94,7 +101,12 @@ function tabDomId(panelId: string, name: QuestTab): string {
   return `${panelId}-tab-${name.replace(/\s+/g, '-')}`;
 }
 
-export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
+export default function QuestPreview({
+  quest,
+  className,
+  panels,
+  dropTableNames,
+}: QuestPreviewProps): JSX.Element {
   const tabs: readonly QuestTab[] =
     panels?.Overview === undefined ? PREVIEW_TABS : ['Overview', ...PREVIEW_TABS];
   const [tab, setTab] = useState<QuestTab>(tabs[0]);
@@ -156,7 +168,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
         className="min-h-0 flex-1 overflow-y-auto p-4"
       >
         <PreviewTabSelectContext.Provider value={setTab}>
-          {renderPanel(tab, quest, panels)}
+          {renderPanel(tab, quest, panels, dropTableNames)}
         </PreviewTabSelectContext.Provider>
       </div>
     </div>
@@ -172,6 +184,7 @@ function renderPanel(
   tab: QuestTab,
   quest: QuestObject,
   panels?: Partial<Record<QuestTab, ReactNode>>,
+  dropTableNames?: ReadonlyMap<string, string>,
 ): JSX.Element {
   const editor = panels?.[tab];
   if (editor !== undefined) {
@@ -190,7 +203,7 @@ function renderPanel(
     case 'Requirements':
       return <RequirementsPanel quest={quest} />;
     case 'Results':
-      return <ResultsPanel quest={quest} />;
+      return <ResultsPanel quest={quest} dropTableNames={dropTableNames} />;
     case 'Dialog':
       return <DialogPanel quest={quest} />;
   }
@@ -286,7 +299,13 @@ function RequirementsPanel({ quest }: { quest: QuestObject }): JSX.Element {
   );
 }
 
-function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
+function ResultsPanel({
+  quest,
+  dropTableNames,
+}: {
+  quest: QuestObject;
+  dropTableNames?: ReadonlyMap<string, string>;
+}): JSX.Element {
   const endResults = arrayOf(nested(quest.m_endResults, 'm_results'));
   return (
     <section aria-label="Results" className="flex flex-col gap-4">
@@ -306,6 +325,14 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
                   `Result ${index + 1}`
                 )}
               </Badge>
+              {dropTableNames === undefined || resultDropTableName(result) === null ? null : (
+                <span className="ml-2 text-xs text-zinc-300">
+                  <DropTableLink
+                    name={resultDropTableName(result) ?? ''}
+                    known={dropTableNames.has(resultDropTableName(result) ?? '')}
+                  />
+                </span>
+              )}
             </li>
           ))}
         </ul>

@@ -1,4 +1,4 @@
-import { mountPathFor, type ObjectTypeConfig } from '@shared/objectTypes';
+import { mountPathFor, objectTypeConfig, type ObjectTypeConfig } from '@shared/objectTypes';
 import { ULong } from '@shared/ulong';
 
 import { apiFetch, type StatusRouteType, type StatusValue } from './api';
@@ -117,6 +117,11 @@ export function objectDetailApiPath(config: ObjectTypeConfig, key: string): stri
 /** The frontend route of one entry (`/npc-inventories/1025`). */
 export function objectDetailPath(config: ObjectTypeConfig, key: string): string {
   return `${mountPathFor(config)}/${encodeURIComponent(key)}`;
+}
+
+/** The DropTable editor's route for one table name (`/drop-tables/DS-ACAD-C01-001`). */
+export function dropTablePath(name: string): string {
+  return `${mountPathFor(objectTypeConfig('droptable'))}/${encodeURIComponent(name)}`;
 }
 
 /** The frontend route of a family's list (`/npc-inventories`). */

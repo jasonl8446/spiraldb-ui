@@ -1,12 +1,15 @@
-import { MISSING_ONLY_PARAM } from '@shared/quest/catalog';
+import { CATALOG_Q_PARAM, MISSING_ONLY_PARAM } from '@shared/quest/catalog';
 import { describe, expect, it } from 'vitest';
 
 import {
   CATALOG_EVIDENCE_ACTION,
   CATALOG_INFERRED_BADGE,
   CATALOG_MISSING_ONLY_LABEL,
+  CATALOG_NO_MISSING,
   CATALOG_NO_TITLE,
   CATALOG_SCAFFOLD_ACTION,
+  catalogCountText,
+  catalogNoMatchText,
   catalogQuery,
   catalogRequestPath,
   catalogRowAction,
@@ -107,6 +110,25 @@ describe('the missing-only query builder', () => {
   it('spells the parameter from the one shared constant, not from a literal here', () => {
     expect(MISSING_ONLY_PARAM).toBe('missing_only');
     expect(catalogQuery({ missingOnly: true })).toContain(MISSING_ONLY_PARAM);
+  });
+
+  it('carries the search as ?q= (trimmed, encoded), alone or after missing_only (D186)', () => {
+    expect(catalogQuery({ missingOnly: false, q: '  ' })).toBe('');
+    expect(catalogQuery({ missingOnly: false, q: ' Wizard Tours ' })).toBe('?q=Wizard+Tours');
+    expect(catalogRequestPath({ missingOnly: true, q: 'a&b' })).toBe(
+      '/api/quests/catalog?missing_only=1&q=a%26b',
+    );
+    expect(catalogQuery({ missingOnly: true, q: 'x' })).toContain(`${CATALOG_Q_PARAM}=x`);
+  });
+
+  it('the count line says when a search narrows the rows, and the empty states stay distinct', () => {
+    expect(catalogCountText(4, false, '')).toBe('4 catalog rows');
+    expect(catalogCountText(2, true, '')).toBe('2 missing');
+    expect(catalogCountText(3, false, 'tour')).toBe('Showing 3 matching “tour”');
+    expect(catalogCountText(1, true, 'tour')).toBe('Showing 1 matching “tour”, missing only');
+    expect(catalogNoMatchText('zzz', false)).toBe('No catalog quest matches “zzz”.');
+    expect(catalogNoMatchText('zzz', true)).toBe('No missing catalog quest matches “zzz”.');
+    expect(catalogNoMatchText('zzz', false)).not.toBe(CATALOG_NO_MISSING);
   });
 
   it('the filter label is the spec wording, and the filter is not a client-side predicate', () => {

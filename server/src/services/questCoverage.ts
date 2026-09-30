@@ -1,8 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { MISSING_ONLY_PARAM } from '../../../shared/quest/catalog.js';
+import {
+  CATALOG_Q_MAX_LENGTH,
+  CATALOG_Q_PARAM,
+  MISSING_ONLY_PARAM,
+} from '../../../shared/quest/catalog.js';
 import { readSettings, type Db } from '../db.js';
+import { escapeLike } from './names.js';
 import { collectionSpec } from './spiraldbFiles.js';
 
 /**
@@ -90,6 +95,8 @@ export interface QuestCatalogResult {
    */
   total: number;
   missing_only: boolean;
+  /** The search the rows were narrowed by (`''` when none), echoed like `missing_only`. */
+  q: string;
   corpus: CoverageCorpus;
 }
 
@@ -143,6 +150,8 @@ export function readCoverage(db: Db): CoverageResult {
 export interface ListQuestCatalogOptions {
   /** `true` narrows the query to `has_definition = 0` (spec-ui-design.md L667). */
   missingOnly?: boolean;
+  /** Case-insensitive literal substring over `quest_name` or `title` (D186); `''`/absent = none. */
+  q?: string;
 }
 
 /**
@@ -159,7 +168,19 @@ export function listQuestCatalog(
   options: ListQuestCatalogOptions = {},
 ): QuestCatalogResult {
   const missingOnly = options.missingOnly === true;
-  const where = missingOnly ? 'WHERE has_definition = 0' : '';
+  const q = options.q ?? '';
+  const conditions: string[] = [];
+  const params: string[] = [];
+  if (missingOnly) {
+    conditions.push('has_definition = 0');
+  }
+  if (q !== '') {
+    // Either half of the pair, as a literal substring — the same LIKE rule the names API uses.
+    const pattern = `%${escapeLike(q.toLowerCase())}%`;
+    conditions.push("(lower(quest_name) LIKE ? ESCAPE '\\' OR lower(title) LIKE ? ESCAPE '\\')");
+    params.push(pattern, pattern);
+  }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const rows = db
     .prepare(
       `SELECT quest_name, title, title_source, has_definition, reference_count
@@ -167,12 +188,13 @@ export function listQuestCatalog(
          ${where}
         ORDER BY reference_count DESC, quest_name ASC`,
     )
-    .all() as QuestCatalogRow[];
+    .all(...params) as QuestCatalogRow[];
 
   return {
     quests: rows.map((row) => ({ ...row, has_definition: row.has_definition === 1 ? 1 : 0 })),
     total: rows.length,
     missing_only: missingOnly,
+    q,
     corpus: readCorpus(db),
   };
 }
@@ -184,7 +206,7 @@ export function listQuestCatalog(
  * `shared/quest/catalog.ts`, which is its single home: the client's query builder imports the
  * same constant, so the two halves cannot spell the wire differently.
  */
-export { MISSING_ONLY_PARAM };
+export { CATALOG_Q_PARAM, MISSING_ONLY_PARAM };
 
 /** A `400`-worthy query value, carrying the message the route returns verbatim. */
 export class QuestCatalogQueryError extends Error {}
@@ -207,4 +229,27 @@ export function parseMissingOnly(value: unknown): boolean {
   throw new QuestCatalogQueryError(
     `Invalid ${MISSING_ONLY_PARAM} "${String(value)}": expected 1/0 (or true/false).`,
   );
+}
+
+/**
+ * `?q=` → the trimmed search text. Absent, `''` or whitespace-only means "no search"; a repeated
+ * parameter (an array) or one over {@link CATALOG_Q_MAX_LENGTH} characters is a `400`, never a
+ * silent truncation (D186).
+ */
+export function parseCatalogQ(value: unknown): string {
+  if (value === undefined) {
+    return '';
+  }
+  if (typeof value !== 'string') {
+    return rejectQ(`Query parameter "${CATALOG_Q_PARAM}" must be a single string value`);
+  }
+  const q = value.trim();
+  if (q.length > CATALOG_Q_MAX_LENGTH) {
+    return rejectQ(`Invalid ${CATALOG_Q_PARAM}: at most ${CATALOG_Q_MAX_LENGTH} characters`);
+  }
+  return q;
+}
+
+function rejectQ(message: string): never {
+  throw new QuestCatalogQueryError(message);
 }

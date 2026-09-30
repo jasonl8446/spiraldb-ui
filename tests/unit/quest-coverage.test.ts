@@ -13,6 +13,7 @@ import { createQuestsRouter } from '@server/routes/quests';
 import {
   COVERAGE_VIEW_SELECT,
   listQuestCatalog,
+  parseCatalogQ,
   parseMissingOnly,
   QuestCatalogQueryError,
   readCoverage,
@@ -284,6 +285,78 @@ describe('GET /api/quests/catalog', () => {
     // The filter's count and the view's `missing` are the same quantity, reached two ways.
     expect(response.body.total).toBe(viewRow(db).missing);
     expect(response.body.total).toBe(4);
+  });
+
+  it('?q= narrows by name or title in SQL, case-insensitively (D186)', async () => {
+    const db = memoryDb();
+    seedCatalog(db, tempCorpus(0));
+
+    const byName = await request(app(db)).get('/api/quests/catalog?q=q-3').expect(200);
+    expect(byName.body.quests.map((row: { quest_name: string }) => row.quest_name)).toEqual([
+      'Q-3',
+    ]);
+    expect(byName.body.total).toBe(1);
+    expect(byName.body.q).toBe('q-3');
+
+    // `TITLE 5` is only in the title (`Title 5`), never in a name.
+    const byTitle = await request(app(db)).get('/api/quests/catalog?q=TITLE%205').expect(200);
+    expect(byTitle.body.quests.map((row: { quest_name: string }) => row.quest_name)).toEqual([
+      'Q-5',
+    ]);
+
+    const all = await request(app(db)).get('/api/quests/catalog?q=title').expect(200);
+    expect(all.body.total).toBe(7);
+
+    const none = await request(app(db)).get('/api/quests/catalog?q=zzz').expect(200);
+    expect(none.body.quests).toEqual([]);
+    expect(none.body.total).toBe(0);
+  });
+
+  it('?q= is a literal substring (LIKE metacharacters escaped) and blank means no search', async () => {
+    const db = memoryDb();
+    seedCatalog(db, tempCorpus(0));
+
+    const percent = await request(app(db)).get('/api/quests/catalog?q=%25').expect(200);
+    expect(percent.body.total).toBe(0);
+    const underscore = await request(app(db)).get('/api/quests/catalog?q=_').expect(200);
+    expect(underscore.body.total).toBe(0);
+
+    const blank = await request(app(db)).get('/api/quests/catalog?q=%20%20').expect(200);
+    expect(blank.body.total).toBe(7);
+    expect(blank.body.q).toBe('');
+  });
+
+  it('?q= combines with missing_only (AND) and the combined count is the intersection', async () => {
+    const db = memoryDb();
+    seedCatalog(db, tempCorpus(0));
+
+    // Q-0..Q-2 are defined, Q-3..Q-6 missing; `Title` matches all seven.
+    const both = await request(app(db)).get('/api/quests/catalog?missing_only=1&q=Q-').expect(200);
+    expect(both.body.quests.map((row: { quest_name: string }) => row.quest_name)).toEqual([
+      'Q-6',
+      'Q-5',
+      'Q-4',
+      'Q-3',
+    ]);
+    const defined = await request(app(db))
+      .get('/api/quests/catalog?missing_only=1&q=Q-1')
+      .expect(200);
+    expect(defined.body.total).toBe(0);
+  });
+
+  it('refuses a malformed ?q= (repeated, or over the length cap)', async () => {
+    const db = memoryDb();
+    seedCatalog(db, tempCorpus(0));
+
+    const repeated = await request(app(db)).get('/api/quests/catalog?q=a&q=b').expect(400);
+    expect(repeated.body.error).toBe('Query parameter "q" must be a single string value');
+    const long = await request(app(db))
+      .get(`/api/quests/catalog?q=${'x'.repeat(201)}`)
+      .expect(400);
+    expect(long.body.error).toBe('Invalid q: at most 200 characters');
+    expect(() => parseCatalogQ(['a'])).toThrow(QuestCatalogQueryError);
+    expect(parseCatalogQ(undefined)).toBe('');
+    expect(parseCatalogQ('  hi ')).toBe('hi');
   });
 
   it('refuses a malformed filter instead of clamping it', async () => {

@@ -348,11 +348,31 @@ export interface NameOption {
   keywords: string;
 }
 
-/** Builds the option list for one type's cached rows. */
-export function toNameOptions(type: NamesType, rows: readonly NameRow[]): NameOption[] {
+/**
+ * The label of a `strings` row in a **category-scoped picker** (D186): the pair
+ * `Title text (QuestTitle_17318F)`, or the key alone when the row has no text. `formatNameRow`
+ * keeps `strings` unpaired everywhere else (spec-ui-design §Names: a string table has no id to
+ * show), because a picker over one category is the one place the key is the thing being chosen.
+ */
+export function stringKeyPair(row: NameRowMap['strings']): string {
+  return namePairDistinct(row.value, row.key);
+}
+
+/**
+ * Builds the option list for one type's cached rows. `pairKey` (a category-scoped `strings`
+ * picker only) labels each option with {@link stringKeyPair}.
+ */
+export function toNameOptions(
+  type: NamesType,
+  rows: readonly NameRow[],
+  pairKey = false,
+): NameOption[] {
   return rows.map((row) => {
     const id = nameRowId(type, row);
-    const label = formatNameRow(type, row) || id;
+    const label =
+      pairKey && type === 'strings'
+        ? stringKeyPair(row as NameRowMap['strings'])
+        : formatNameRow(type, row) || id;
     return { id, label, keywords: `${label} ${id}`.toLowerCase() };
   });
 }

@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Check, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import CoverageHeader from '../components/quest/CoverageHeader';
@@ -33,10 +33,14 @@ import {
   CATALOG_LOAD_ERROR,
   CATALOG_MISSING_ONLY_LABEL,
   CATALOG_NAME_HEADER,
+  CATALOG_SEARCH_LABEL,
+  CATALOG_SEARCH_PLACEHOLDER,
   CATALOG_NO_MISSING,
   CATALOG_REFS_HEADER,
   CATALOG_SCAFFOLDING_LABEL,
   CATALOG_TITLE_HEADER,
+  catalogCountText,
+  catalogNoMatchText,
   catalogRowAction,
   catalogTitleIsInferred,
   catalogTitleText,
@@ -60,6 +64,11 @@ import { serverMessage } from '../lib/extract';
  *   **in that request's SQL** (`has_definition = 0`). The page never filters the rows itself and
  *   never derives the numbers: `missing` is a column of the `coverage` view and the filter is a
  *   predicate over the catalog, so a second derivation could only disagree with them.
+ * - **The search box (D186) is the same kind of filter.** The typed text is debounced
+ *   ({@link SEARCH_DEBOUNCE_MS}) and sent as `?q=`; the server matches the quest name or the title
+ *   in SQL and ANDs it with missing-only. While a search narrows the rows the count line says
+ *   `Showing N matching "…"`, because the coverage header above keeps counting the whole catalog.
+ *   Like missing-only it is local state, not the URL: this page has no URL-synced filter to extend.
  * - The filter state is local because this page owns no other state; the **query** it produces
  *   comes from `catalogQuery` in `lib/quest-catalog.ts`, the pure builder the unit suite pins.
  *
@@ -82,17 +91,30 @@ import { serverMessage } from '../lib/extract';
  * (most-gated first, the order the API returns). A pager would hide the thing the page exists to
  * show; the list is one page of rows by design.
  */
+/** How long typing must pause before the search is sent (one request per pause, not per key). */
+const SEARCH_DEBOUNCE_MS = 300;
+
 export default function QuestCatalogPage(): JSX.Element {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [missingOnly, setMissingOnly] = useState(false);
 
-  const filter: CatalogFilter = useMemo(() => ({ missingOnly }), [missingOnly]);
+  const [searchText, setSearchText] = useState('');
+  const [q, setQ] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setQ(searchText.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const filter: CatalogFilter = useMemo(() => ({ missingOnly, q }), [missingOnly, q]);
 
   const catalog = useQuery({
-    queryKey: questCatalogQueryKey(missingOnly),
+    queryKey: questCatalogQueryKey(missingOnly, q),
     queryFn: () => listQuestCatalog(filter),
+    // Keep the rows on screen while the next search is in flight — a skeleton per keystroke pause
+    // would flash the whole table.
+    placeholderData: keepPreviousData,
   });
 
   /**
@@ -129,7 +151,13 @@ export default function QuestCatalogPage(): JSX.Element {
    * the header shows, so the two surfaces cannot disagree in the same render.
    */
   const emptyTier = (coverage.data?.nameable ?? 0) === 0;
-  const emptyMessage = emptyTier ? CATALOG_EMPTY : CATALOG_NO_MISSING;
+  // What the rows on screen were narrowed by (the server's echo), not what is typed this instant.
+  const shownQ = catalog.data?.q ?? '';
+  const emptyMessage = emptyTier
+    ? CATALOG_EMPTY
+    : shownQ !== ''
+      ? catalogNoMatchText(shownQ, missingOnly)
+      : CATALOG_NO_MISSING;
 
   return (
     <div className="flex flex-col gap-4">
@@ -149,11 +177,26 @@ export default function QuestCatalogPage(): JSX.Element {
           />
           {CATALOG_MISSING_ONLY_LABEL}
         </label>
-        <span className="text-xs text-zinc-400" data-testid="catalog-count">
+        <span className="text-xs text-zinc-400" data-testid="catalog-count" aria-live="polite">
           {catalog.data === undefined
             ? ''
-            : `${catalog.data.total} ${missingOnly ? 'missing' : 'catalog rows'}`}
+            : catalogCountText(catalog.data.total, missingOnly, shownQ)}
         </span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="catalog-search" className="text-xs text-zinc-400">
+          {CATALOG_SEARCH_LABEL}
+        </label>
+        <input
+          id="catalog-search"
+          type="search"
+          value={searchText}
+          onChange={(event) => setSearchText(event.target.value)}
+          placeholder={CATALOG_SEARCH_PLACEHOLDER}
+          autoComplete="off"
+          className="w-full min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:max-w-md"
+        />
       </div>
 
       {scaffold.isError ? (

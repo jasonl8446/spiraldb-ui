@@ -3,7 +3,7 @@ import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { getName, nameLookupQueryKey } from '../lib/api';
-import { formatNameValue, type NamesType } from '../lib/display';
+import { formatNameValue, stringKeyPair, type NameRowMap, type NamesType } from '../lib/display';
 import { selectedId, useNames } from '../hooks/useNames';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
@@ -68,6 +68,16 @@ export interface FriendlyNameDropdownProps {
    * the editor still writes and keeps the raw id.
    */
   invalid?: boolean;
+  /**
+   * Restrict a `strings` picker to one string-table category (D186) — `QuestTitle` for the quest
+   * title. Switches the list to server-side search with no minimum query.
+   */
+  category?: string;
+  /** Plural friendly noun for the popover's own text (`quest titles`); defaults to the type name. */
+  noun?: string;
+  /** Lets a `<label htmlFor>` name and focus the combobox trigger. */
+  id?: string;
+  'aria-describedby'?: string;
   className?: string;
 }
 
@@ -82,13 +92,18 @@ export default function FriendlyNameDropdown({
   'aria-label': ariaLabel,
   placeholder,
   invalid = false,
+  category,
+  noun,
+  id: triggerId,
+  'aria-describedby': describedBy,
   className,
 }: FriendlyNameDropdownProps): JSX.Element {
+  const what = noun ?? type;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   const id = selectedId(value);
-  const names = useNames(type, search);
+  const names = useNames(type, search, { category, enabled: open });
   const fromList = id === '' ? undefined : names.labelFromList(id);
 
   // One lookup only when the id is genuinely not in the cached list (or the list
@@ -110,12 +125,14 @@ export default function FriendlyNameDropdown({
       return fromList;
     }
     if (lookup.data !== undefined) {
-      return formatNameValue(type, id, lookup.data);
+      return category !== undefined && type === 'strings'
+        ? stringKeyPair(lookup.data as NameRowMap['strings'])
+        : formatNameValue(type, id, lookup.data);
     }
     return id;
-  }, [fromList, id, lookup.data, type]);
+  }, [category, fromList, id, lookup.data, type]);
 
-  const shown = label === '' ? (placeholder ?? `Select ${type}…`) : label;
+  const shown = label === '' ? (placeholder ?? `Select ${what}…`) : label;
   const isPlaceholder = label === '';
 
   function select(rawId: string): void {
@@ -142,9 +159,11 @@ export default function FriendlyNameDropdown({
           <Button
             type="button"
             variant="outline"
+            id={triggerId}
             role="combobox"
             aria-expanded={open}
-            aria-label={ariaLabel ?? `Select ${type}`}
+            aria-describedby={describedBy}
+            aria-label={ariaLabel ?? `Select ${what}`}
             disabled={disabled}
             aria-invalid={invalid || undefined}
             className={cn(
@@ -164,26 +183,26 @@ export default function FriendlyNameDropdown({
               autoFocus
               value={search}
               onValueChange={setSearch}
-              placeholder={`Search ${type}…`}
-              aria-label={`Search ${type}`}
+              placeholder={`Search ${what}…`}
+              aria-label={`Search ${what}`}
             />
             <CommandList>
               {names.isLoading ? (
                 <div className="flex items-center gap-2 p-4 text-sm text-zinc-400">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  Loading {type}…
+                  Loading {what}…
                 </div>
               ) : null}
 
               {names.error !== null ? (
                 <div role="alert" className="p-4 text-sm text-red-400">
-                  Could not load {type}: {names.error.message}
+                  Could not load {what}: {names.error.message}
                 </div>
               ) : null}
 
               {names.needsQuery ? (
                 <div className="p-4 text-sm text-zinc-400">
-                  Type at least 2 characters to search {type}.
+                  Type at least 2 characters to search {what}.
                 </div>
               ) : null}
 

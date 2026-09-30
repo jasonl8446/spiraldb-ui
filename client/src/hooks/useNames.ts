@@ -74,14 +74,29 @@ export interface NamesResult {
 }
 
 /**
+ * Narrowing for a server-searched type (D186).
+ *
+ * `category` restricts `strings` to one string-table category (`QuestTitle`: 5,959 of 216,991
+ * rows). A category list is a browse list, so it needs no minimum query — the first page loads as
+ * soon as it is `enabled` (the dropdown enables it while open). Without a category `strings`
+ * behaves exactly as before.
+ */
+export interface NamesScope {
+  category?: string;
+  /** `false` keeps the server query from running (a closed picker has no use for its list). */
+  enabled?: boolean;
+}
+
+/**
  * Reads one friendly-name list.
  *
  * @param type   one of the seven names types
  * @param search the current combobox text; for `strings` it is sent to the server,
  *               for the bulk types it only filters the cached list
  */
-export function useNames(type: NamesType, search = ''): NamesResult {
+export function useNames(type: NamesType, search = '', scope: NamesScope = {}): NamesResult {
   const bulk = isBulkNameType(type);
+  const { category, enabled = true } = scope;
   const query = search.trim();
 
   // The bulk query is keyed only by type: typing must never refetch 79,835 rows.
@@ -97,18 +112,19 @@ export function useNames(type: NamesType, search = ''): NamesResult {
 
   // `strings`: server-side `?q=`/`?limit=` only (decision D39 item 4).
   const streamQuery = useQuery({
-    queryKey: namesQueryKey(type, { q: query, limit: STRING_SEARCH_LIMIT }),
-    queryFn: () => getNames(type, { q: query, limit: STRING_SEARCH_LIMIT }),
+    queryKey: namesQueryKey(type, { q: query, limit: STRING_SEARCH_LIMIT, category }),
+    queryFn: () => getNames(type, { q: query, limit: STRING_SEARCH_LIMIT, category }),
     staleTime: Infinity,
-    enabled: !bulk && query.length >= STRING_MIN_QUERY_LENGTH,
+    enabled:
+      !bulk && enabled && (category !== undefined || query.length >= STRING_MIN_QUERY_LENGTH),
   });
 
   const active = bulk ? bulkQuery : streamQuery;
   const rows = active.data as NameRow[] | undefined;
 
   const allOptions = useMemo(
-    () => (rows === undefined ? [] : toNameOptions(type, rows)),
-    [rows, type],
+    () => (rows === undefined ? [] : toNameOptions(type, rows, category !== undefined)),
+    [rows, type, category],
   );
 
   const byId = useMemo(() => {
@@ -131,7 +147,7 @@ export function useNames(type: NamesType, search = ''): NamesResult {
         isLoading: active.isLoading,
         error: (active.error as Error | null) ?? null,
         isBulk: false,
-        needsQuery: query.length < STRING_MIN_QUERY_LENGTH,
+        needsQuery: category === undefined && query.length < STRING_MIN_QUERY_LENGTH,
         labelFromList: (id: string) => byId.get(id),
       };
     }
@@ -148,7 +164,7 @@ export function useNames(type: NamesType, search = ''): NamesResult {
       needsQuery: false,
       labelFromList: (id: string) => byId.get(id),
     };
-  }, [active.error, active.isLoading, allOptions, bulk, byId, query, rows]);
+  }, [active.error, active.isLoading, allOptions, bulk, byId, category, query, rows]);
 }
 
 /**

@@ -52,6 +52,16 @@ the envelope nor the single-lookup body:
 - `?limit=<n>` — row cap. Malformed `q`/`limit` → `400`; a value that cannot be valid for the type
   → `404`, by the same ladder as the single lookup.
 
+**`?category=` (D186, `strings` only).** `GET /api/names/strings?category=QuestTitle&q=bear&limit=50`
+restricts the list to one `string_table.category` — an exact, case-sensitive match applied in SQL
+(`category = ?`, bound) and ANDed with `q`. It exists because `strings` has 216,991 rows and a picker
+must never load them: the quest-title dropdown reads the 5,959 `QuestTitle` rows 50 at a time. The
+value must be a bare token (`[A-Za-z0-9_-]`, at most 64); a malformed or repeated `category`, or one
+on any type but `strings`, is a `400 { error }`; an empty `category=` means no restriction. The
+envelope is unchanged (`{ "strings": [ { key, value, category } ] }`). **Ordering**: a category read
+is a browse list, so rows whose `value` is empty (1,179 of the 5,959 `QuestTitle` rows) sort after
+the labelled ones, then by `value`, `key`; an unrestricted read keeps the documented order.
+
 **Phase 6 widens `searchColumns` from the label column to the id column as well** (D105/P6-16:
 "every search matches either the friendly or the technical value"). Typing `12` therefore finds the
 item whose `gid` is 12 *and* an item named "12…":
@@ -265,7 +275,7 @@ CRUD endpoints for each SpiralDB object type. All follow the same pattern.
 | POST | `/api/quests` | Save new/update quest (writes file + metadata + git commit) |
 | POST | `/api/quests/scaffold` | Create the minimal skeleton for a catalog quest (Phase 6, P6-5/P6-6) |
 | GET | `/api/quests/coverage` | Catalog coverage, both denominators (Phase 6, D110) |
-| GET | `/api/quests/catalog` | Catalog worklist; `?missing_only=1` narrows to `has_definition = 0` (Phase 6, task 6.10) |
+| GET | `/api/quests/catalog` | Catalog worklist; `?missing_only=1` narrows to `has_definition = 0` (Phase 6, task 6.10); `?q=` narrows to quests whose name or title contains the text (D186) |
 | GET | `/api/quests/:name/evidence` | Per-quest evidence (Phase 6, P6-8/P6-10) |
 | GET | `/api/quest-ids/:id/evidence` | Evidence for the id tier (Phase 6, P6-3) |
 | GET | `/api/quests/:name/suggestions` | A named quest's suggestions (Phase 7, D129; see [Suggestions and Drafts](#suggestions-and-drafts-phase-7--d129-d130-d137)) |
@@ -492,6 +502,7 @@ living implicitly in the client. It is registered **before** `/api/quests/:name`
   ],
   "total": 1395,
   "missing_only": true,
+  "q": "",
   "corpus": { "spiraldb_path": "/…/data/test-spiraldb", "quest_files": 322 }
 }
 ```
@@ -501,6 +512,12 @@ living implicitly in the client. It is registered **before** `/api/quests/:name`
   malformed query parameter is refused rather than clamped (the same ladder as `?limit=`). The client
   never re-derives "missing" from the coverage numbers: the filtered `total` **equals** the view's
   `missing`, reached two ways.
+- **The search is this request's `?q=`** (D186), also applied in SQL: a case-insensitive **literal**
+  substring (`LIKE` metacharacters escaped, like the names API) matched against `quest_name` **or**
+  `title`, ANDed with `missing_only`. The text is trimmed; absent or blank means no search. A repeated
+  `q`, or one over 200 characters, is a **`400`** — never truncated. The body echoes the applied text
+  as `q` (`''` when none), and `total` is the **filtered** count: with a search it is no longer the
+  view's `missing`, which is why the page words it `Showing N matching "…"`.
 - Rows are ordered `reference_count DESC, quest_name ASC` — most-gated first, the order the Catalog
   view's ASCII draws — so a re-read cannot reorder the worklist.
 - `has_definition` is `0 | 1`; the row's action follows it (evidence link when 1, scaffold when 0).

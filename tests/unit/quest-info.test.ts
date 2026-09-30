@@ -60,7 +60,7 @@ describe('the field inventory covers all 36 top-level keys', () => {
       QUEST_VISIBLE_FIELDS.map((field) => [field.key, field.kind, field.column]),
     ).toStrictEqual([
       ['m_questName', 'readonly', 'left'],
-      ['m_questTitle', 'text', 'left'],
+      ['m_questTitle', 'string-key', 'left'],
       ['m_questLevel', 'number', 'left'],
       ['m_mainline', 'boolean', 'left'],
       ['m_isHidden', 'boolean', 'left'],

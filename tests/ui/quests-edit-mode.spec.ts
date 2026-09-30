@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { mockQuestsApi, type QuestsMockRecorded } from './quests-mocks';
+import { mockQuestsApi, pickQuestTitle, type QuestsMockRecorded } from './quests-mocks';
 
 /**
  * Tier-1 edit-mode spec (plan task 3.10 / story p3-10, decision D23 tier 1 / D40).
@@ -120,7 +120,11 @@ async function openCleanQuest(
   page: Page,
   options: Parameters<typeof mockQuestsApi>[1] = {},
 ): Promise<QuestsMockRecorded> {
-  const recorded = await mockQuestsApi(page, { detail: CLEAN_QUEST, ...options });
+  const recorded = await mockQuestsApi(page, {
+    detail: CLEAN_QUEST,
+    names: { [TITLE]: 'Quest for Perfection', [NEW_TITLE]: 'Forged in Fire' },
+    ...options,
+  });
   // The five bulk reference tables the validation engine injects (D65(c)); empty on purpose, so
   // the engine treats every reference as absent instead of warning about real ids.
   for (const type of ['zones', 'npcs', 'spells', 'drop_tables', 'quests']) {
@@ -181,7 +185,7 @@ test.describe('the JSON side panel (AC2)', () => {
     await expect(tree).not.toContainText(NEW_TITLE);
 
     // One form edit, no re-fetch, no refresh: the panel is fed the editor's live document.
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
     await expect(root(page)).toHaveAttribute('data-dirty', 'true');
     await expect(tree).toContainText(NEW_TITLE);
     await expect(tree).not.toContainText(TITLE);
@@ -250,7 +254,7 @@ test.describe('the unsaved-changes guard (AC3)', () => {
 
   test('blocks an in-app navigation while dirty, and Stay keeps the edit', async ({ page }) => {
     await openCleanQuest(page);
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
     await expect(root(page)).toHaveAttribute('data-dirty', 'true');
 
     await main_(page).getByRole('link', { name: 'Back to Quests' }).click();
@@ -264,13 +268,15 @@ test.describe('the unsaved-changes guard (AC3)', () => {
     await expect(unsavedDialog(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/quests\/DS-ACAD1-C01-001$/);
     // The typed value and the dirty marker survived the cancelled navigation.
-    await expect(main_(page).getByLabel('m_questTitle')).toHaveValue(NEW_TITLE);
+    await expect(
+      main_(page).getByRole('combobox', { name: 'Quest title (m_questTitle)' }),
+    ).toHaveText(`Forged in Fire (${NEW_TITLE})`);
     await expect(root(page)).toHaveAttribute('data-dirty', 'true');
   });
 
   test('Discard changes leaves for the destination', async ({ page }) => {
     await openCleanQuest(page);
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
 
     await main_(page).getByRole('link', { name: 'Back to Quests' }).click();
     await unsavedDialog(page).getByRole('button', { name: 'Discard changes' }).click();
@@ -285,7 +291,7 @@ test.describe('the unsaved-changes guard (AC3)', () => {
     const panel = sidePanel(page);
     const before = await jsonContainer(panel).innerText();
 
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
     await main_(page).getByLabel('m_questLevel').fill('42');
     await expect(root(page)).toHaveAttribute('data-dirty', 'true');
     await expect(jsonContainer(panel)).not.toHaveText(before);
@@ -295,7 +301,9 @@ test.describe('the unsaved-changes guard (AC3)', () => {
 
     await expect(root(page)).toHaveAttribute('data-dirty', 'false');
     await expect(discardButton(page)).toHaveCount(0);
-    await expect(main_(page).getByLabel('m_questTitle')).toHaveValue(TITLE);
+    await expect(
+      main_(page).getByRole('combobox', { name: 'Quest title (m_questTitle)' }),
+    ).toHaveText(`Quest for Perfection (${TITLE})`);
     await expect(main_(page).getByLabel('m_questLevel')).toHaveValue('7');
     // The whole document's rendering is back to the loaded one — key order included, since the
     // tree draws the serialized document.
@@ -314,7 +322,7 @@ test.describe('the unsaved-changes guard (AC3)', () => {
     });
     expect(clean).toBe(false);
 
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
     await expect(root(page)).toHaveAttribute('data-dirty', 'true');
 
     const dirty = await page.evaluate(() => {
@@ -339,7 +347,7 @@ test.describe('the save pipeline (AC4)', () => {
     await expect(saveButton(page)).toHaveAttribute('data-blocked', 'false');
     await expect(main_(page).getByLabel('Status: Extracted')).toBeVisible();
 
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
     await main_(page).getByLabel('m_questLevel').fill('42');
     await expect(root(page)).toHaveAttribute('data-dirty', 'true');
 
@@ -387,7 +395,7 @@ test.describe('the save pipeline (AC4)', () => {
       onSave: (route) => route.fulfill({ status: 500, json: { error: failure } }),
     });
 
-    await main_(page).getByLabel('m_questTitle').fill(NEW_TITLE);
+    await pickQuestTitle(page, 'p310', `Forged in Fire (${NEW_TITLE})`);
     await saveButton(page).click();
 
     await expect(page.getByText(failure)).toBeVisible();

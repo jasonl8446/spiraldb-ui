@@ -1,4 +1,9 @@
-import { MISSING_ONLY_PARAM, QUEST_CATALOG_PATH, QUEST_COVERAGE_PATH } from '@shared/quest/catalog';
+import {
+  CATALOG_Q_PARAM,
+  MISSING_ONLY_PARAM,
+  QUEST_CATALOG_PATH,
+  QUEST_COVERAGE_PATH,
+} from '@shared/quest/catalog';
 
 import type { EvidenceTitleSource } from './api';
 import { RAIL_TAB_EVIDENCE, RAIL_TAB_QUERY_PARAM } from './quests';
@@ -63,6 +68,8 @@ export interface QuestCatalogResult {
   quests: QuestCatalogRow[];
   total: number;
   missing_only: boolean;
+  /** The search the server applied (D186); absent from an older server. */
+  q?: string;
   corpus: CoverageCorpus;
 }
 
@@ -102,6 +109,30 @@ export const CATALOG_EMPTY =
   'The quest catalog is empty — it needs a sync to be built from the game files.';
 export const CATALOG_EMPTY_ACTION = 'Open Settings and sync';
 export const CATALOG_NO_MISSING = 'Every catalog quest has a definition. Nothing is missing.';
+
+/** The search box's label and placeholder (D186) — it matches either half of a row's name/title. */
+export const CATALOG_SEARCH_LABEL = 'Search quests';
+export const CATALOG_SEARCH_PLACEHOLDER = 'Search by quest name or title…';
+
+/**
+ * A search that matched nothing — distinct from an empty tier (needs a sync) and from an empty
+ * missing-only read (everything is defined), and it names the text so the reader can fix it.
+ */
+export function catalogNoMatchText(q: string, missingOnly: boolean): string {
+  return `No ${missingOnly ? 'missing ' : ''}catalog quest matches “${q}”.`;
+}
+
+/**
+ * The count line. Unsearched it is the filter's own count (`N catalog rows` / `N missing`); with a
+ * search it says so — `Showing N matching “q”` — because the coverage header above keeps counting
+ * the whole catalog and the two must not read as a disagreement (D186).
+ */
+export function catalogCountText(total: number, missingOnly: boolean, q: string): string {
+  if (q === '') {
+    return `${total} ${missingOnly ? 'missing' : 'catalog rows'}`;
+  }
+  return `Showing ${total} matching “${q}”${missingOnly ? ', missing only' : ''}`;
+}
 
 /** The label on the corpus clause of the header — the words a reader needs to know what was measured. */
 export const CATALOG_CORPUS_PREFIX = 'corpus';
@@ -179,6 +210,8 @@ export function coveragePercentLabel(defined: number, nameable: number): string 
 /** The filter's state, as one value a caller can pass around. */
 export interface CatalogFilter {
   missingOnly: boolean;
+  /** The search text (D186); `''`/absent sends no parameter. */
+  q?: string;
 }
 
 /**
@@ -187,7 +220,16 @@ export interface CatalogFilter {
  * server's `parseMissingOnly` also reads, so the two halves cannot spell the wire differently.
  */
 export function catalogQuery(filter: CatalogFilter): string {
-  return filter.missingOnly ? `?${MISSING_ONLY_PARAM}=1` : '';
+  const params = new URLSearchParams();
+  if (filter.missingOnly) {
+    params.set(MISSING_ONLY_PARAM, '1');
+  }
+  const q = (filter.q ?? '').trim();
+  if (q !== '') {
+    params.set(CATALOG_Q_PARAM, q);
+  }
+  const query = params.toString();
+  return query === '' ? '' : `?${query}`;
 }
 
 /** `GET /api/quests/catalog` with the filter applied — what the read requests. */

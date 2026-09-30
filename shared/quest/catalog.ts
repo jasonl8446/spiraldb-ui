@@ -23,11 +23,21 @@ export const QUEST_COVERAGE_PATH = '/api/quests/coverage';
 export const QUEST_CATALOG_PATH = '/api/quests/catalog';
 
 /**
- * The catalog read's one parameter, `?missing_only=` — `1`/`true` narrows to
+ * The catalog read's first parameter, `?missing_only=` — `1`/`true` narrows to
  * `has_definition = 0`, `0`/`false`/absent means no filter, anything else is a `400`
  * (a malformed query parameter is refused, never silently clamped).
  */
 export const MISSING_ONLY_PARAM = 'missing_only';
+
+/**
+ * The catalog read's second parameter, `?q=` (D186) — a case-insensitive literal substring
+ * matched against the quest name **or** the title, applied in the read's SQL and combined (AND)
+ * with `missing_only`. Absent/blank means no search; a repeated or over-long value is a `400`.
+ */
+export const CATALOG_Q_PARAM = 'q';
+
+/** The longest `?q=` the catalog accepts (a quest name is under 40 characters). */
+export const CATALOG_Q_MAX_LENGTH = 200;
 
 /*
  * Ordering note, kept beside the paths it constrains: both static routes are registered

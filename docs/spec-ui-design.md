@@ -835,6 +835,12 @@ the world names, what has been built, and what is missing.
 - **Missing-only filter** narrows to `has_definition = 0` — through that request's `?missing_only=1`,
   a **server-side predicate over the catalog**, never a client-side re-derivation of the coverage
   numbers (the filtered count equals the view's `missing`).
+- **Search** (D186): a search box above the table filters by quest name **or** title (either half,
+  case-insensitive) through that request's `?q=`, debounced, and combined with missing-only. The
+  filter is server-side like missing-only; the coverage header keeps counting the whole catalog, so
+  while a search narrows the rows the count line says `Showing N matching "…"`. A search that matched
+  nothing is its own empty state (naming the text), distinct from the empty tier (needs a sync) and
+  from "everything is defined". The text is local page state, not part of the URL.
 - **Each row links into the evidence panel or the scaffold action** — this is the entry point that
   makes the catalog a worklist rather than a report.
 - **Scaffold** (P6-5/P6-6, D100/D101): for a `has_definition = 0` row, **Create quest** writes a real

@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import { useId } from 'react';
 
 import {
@@ -11,7 +10,6 @@ import {
 } from '../shared/FieldValidation';
 import AdvancedDisclosure from '../shared/AdvancedDisclosure';
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
-import { getName, nameLookupQueryKey } from '../../lib/api';
 import { hasAdvancedValue, splitByTier } from '../../lib/advanced';
 import { relativeTime } from '../../lib/display';
 import {
@@ -24,13 +22,12 @@ import {
   QUEST_ADVANCED_FIELDS,
   QUEST_TIMESTAMP_LABEL,
   QUEST_VISIBLE_FIELDS,
-  questTitleDisplay,
-  shouldLookupStringKey,
   textFieldEdit,
   type QuestFieldSpec,
 } from '../../lib/quest-info';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { cn } from '../../lib/utils';
+import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 
@@ -53,11 +50,13 @@ import TermLabel from '../TermLabel';
  * 2. **A checkbox that renders unchecked is not the same as `false`.** An absent or
  *    `null` boolean renders unchecked and is left untouched until the user actually
  *    toggles it — otherwise merely opening the tab would write `false` over absence.
- * 3. **The title is a text edit of the string-table key with the resolved string
- *    beside it.** Only `m_questName` is read-only in the spec's list; an unresolvable
- *    key shows itself verbatim, and the empty key is never looked up at all
- *    (`shouldLookupStringKey`): `GET /api/names/strings/` falls through to the LIST
- *    route and answers 24 MB.
+ * 3. **The title is a searchable picker over the `QuestTitle` string-table category**
+ *    (D186): each option reads `Title text (QuestTitle_…)`, the stored value is exactly the
+ *    chosen key, and the trigger is also the resolved-title display. Only `m_questName` is
+ *    read-only in the spec's list; an unresolvable key shows itself verbatim, the empty key
+ *    shows a placeholder and is never looked up (`shouldLookupStringKey`: `GET
+ *    /api/names/strings/` falls through to the LIST route and answers 24 MB), and opening the
+ *    picker never rewrites either (D57).
  *
  * The header's Edit/Save toggle, the dirty-state guard and the save itself are task
  * 3.10 — this component only edits local document state.
@@ -146,7 +145,6 @@ function FieldEditor({
         present={present}
         state={state}
       />
-      {field.key === 'm_questTitle' ? <TitleResolution value={value} /> : null}
       <FieldMessages messages={messages} id={messagesId} />
       {field.help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-400">
@@ -261,6 +259,27 @@ function FieldControl({
           onChange={(event) => edit(clientTagsEdit(field.key, present, event.target.value))}
         />
       );
+    case 'string-key':
+      // The title is a string-table key chosen from the `QuestTitle` category. The trigger shows
+      // the resolved pair, or the raw key / placeholder when the stored value is unknown or empty
+      // — opening the picker never rewrites it (D57). Clearing deletes the key, like any text field.
+      return (
+        <FriendlyNameDropdown
+          id={id}
+          type="strings"
+          category="QuestTitle"
+          noun="quest titles"
+          name={field.key}
+          value={scalarText(value)}
+          onChange={(key) => edit(textFieldEdit(field.key, present, key))}
+          allowEmpty
+          emptyLabel="None (remove the title)"
+          placeholder="No title set"
+          aria-label="Quest title (m_questTitle)"
+          aria-describedby={describedBy}
+          invalid={ariaInvalid === true}
+        />
+      );
     case 'text':
       return (
         <input
@@ -274,30 +293,6 @@ function FieldControl({
         />
       );
   }
-}
-
-/**
- * The resolved `m_questTitle`: one `GET /api/names/strings/:key` read (never the
- * list), enabled only for a non-empty key, with a miss rendering the raw key — see
- * the module header's rule 3.
- */
-function TitleResolution({ value }: { value: unknown }): JSX.Element | null {
-  const lookupKey = shouldLookupStringKey(value) ? value : null;
-  const lookup = useQuery({
-    queryKey: nameLookupQueryKey('strings', lookupKey ?? ''),
-    queryFn: () => getName('strings', lookupKey ?? ''),
-    enabled: lookupKey !== null,
-    retry: false,
-  });
-  if (lookupKey === null) {
-    return null;
-  }
-  const display = questTitleDisplay(lookupKey, lookup.data);
-  return (
-    <p className="truncate text-xs text-zinc-400" title={display}>
-      {display}
-    </p>
-  );
 }
 
 /** The spec's read-only "timestamps" — the browse row's own `modified_at`. */

@@ -113,10 +113,13 @@ test.describe('the two-column form', () => {
     await expect(name).toHaveValue('DS-ACAD1-C01-001');
     await expect(name).toHaveAttribute('readonly', '');
 
-    const title = form.getByLabel('Quest title (m_questTitle)', { exact: true });
-    await expect(title).toHaveValue('QuestTitle_1ED8D');
-    // The resolved string sits beside the key (the lookup is asserted on its own below).
-    await expect(form.getByText('Quest for Perfection')).toBeVisible();
+    // The title is a picker (D186): its trigger shows the resolved pair, and the hidden field
+    // carries the stored key.
+    const title = form.getByRole('combobox', { name: 'Quest title (m_questTitle)', exact: true });
+    await expect(title).toHaveText('Quest for Perfection (QuestTitle_1ED8D)');
+    await expect(form.locator('input[type="hidden"][name="m_questTitle"]')).toHaveValue(
+      'QuestTitle_1ED8D',
+    );
 
     await expect(form.getByLabel('Quest level (m_questLevel)', { exact: true })).toHaveAttribute(
       'type',
@@ -243,58 +246,172 @@ test.describe('the Advanced section', () => {
   });
 });
 
-test.describe('the string-table title lookup', () => {
-  test('a hit renders the resolved string beside the raw key', async ({ page }) => {
+test.describe('the string-table title picker', () => {
+  const titleTrigger = (page: Page): Locator =>
+    editor(page).getByRole('combobox', { name: 'Quest title (m_questTitle)', exact: true });
+
+  test('a hit renders the resolved pair, from one lookup, without opening the list', async ({
+    page,
+  }) => {
     const recorded = await mockQuestsApi(page, {
       names: { QuestTitle_1ED8D: 'Quest for Perfection' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
     await openInfoTab(page);
 
-    await expect(editor(page).getByText('Quest for Perfection')).toBeVisible();
-    // The key itself stays visible and editable — this is a lookup display, not a
-    // replacement of the stored value.
-    await expect(
-      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
-    ).toHaveValue('QuestTitle_1ED8D');
+    await expect(titleTrigger(page)).toHaveText('Quest for Perfection (QuestTitle_1ED8D)');
     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
+    // The list is a server search that only runs while the picker is open.
+    expect(recorded.nameSearches).toEqual([]);
   });
 
-  test('a miss renders the raw key verbatim, with no warning', async ({ page }) => {
+  test('a miss renders the raw key verbatim, untouched and with no warning', async ({ page }) => {
     // `{}` = every key 404s, which is the corpus's own fallback path.
     const recorded = await mockQuestsApi(page, { names: {} });
     await page.goto('/quests/DS-ACAD1-C01-001');
     await openInfoTab(page);
+    await openJson(page);
 
-    await expect(editor(page).getByText('QuestTitle_1ED8D', { exact: true })).toBeVisible();
+    await expect(titleTrigger(page)).toHaveText('QuestTitle_1ED8D');
     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
+    // D57: showing an unknown key (and opening the picker on it) never rewrites it.
+    await titleTrigger(page).click();
+    await page.keyboard.press('Escape');
+    const doc = await copyPanelDocument(page);
+    expect(doc.m_questTitle).toBe('QuestTitle_1ED8D');
     // No error surface *for this field*: an unresolvable key is expected content, not a
     // failure. Scoped to the Info editor and to `m_questTitle` on purpose (story p3-09): the
     // page-level validation banner is a different surface, and this fixture's final
     // goal-logic entry does not set `m_completeQuest`, which the validation engine reports as
     // a blocking finding outside the editor. The narrow, still-strong fact is that the title
     // control is clean — no `aria-invalid`, no inline message list of its own.
-    await expect(
-      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
-    ).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(titleTrigger(page)).not.toHaveAttribute('aria-invalid', 'true');
     await expect(editor(page).getByRole('list', { name: 'Validation messages' })).toHaveCount(0);
     await expect(editor(page).getByRole('alert')).toHaveCount(0);
   });
 
-  test('the empty key is never looked up', async ({ page }) => {
+  test('the empty key is never looked up, and shows a placeholder', async ({ page }) => {
     const recorded = await mockQuestsApi(page, {
       detail: { ...MOCK_QUEST, m_questTitle: '' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
     await openInfoTab(page);
 
-    await expect(
-      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
-    ).toHaveValue('');
+    await expect(titleTrigger(page)).toHaveText('No title set');
     // The load-bearing guard: `/api/names/strings/` is the LIST route and answers
     // 24,077,358 bytes (measured against the live database), so the client must not
     // ask at all.
     expect(recorded.nameLookups).toEqual([]);
+  });
+
+  test('typing searches either half, and choosing writes exactly that key (D186)', async ({
+    page,
+  }) => {
+    const recorded = await mockQuestsApi(page, {
+      names: { QuestTitle_1ED8D: 'Quest for Perfection' },
+      titleRows: [
+        { key: 'QuestTitle_1ED8D', value: 'Quest for Perfection' },
+        { key: 'QuestTitle_17318F', value: 'The Bear Truth' },
+        { key: 'QuestTitle_ABCDE', value: 'Bear Necessities' },
+      ],
+    });
+    await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
+    await openJson(page);
+    const before = await copyPanelDocument(page);
+
+    await titleTrigger(page).click();
+    const search = page.getByRole('combobox', { name: 'Search quest titles' });
+
+    // The title half…
+    await search.fill('bear');
+    await expect(page.getByRole('listbox').getByRole('option')).toHaveText([
+      'None (remove the title)',
+      'Bear Necessities (QuestTitle_ABCDE)',
+      'The Bear Truth (QuestTitle_17318F)',
+    ]);
+    // …and the key half.
+    await search.fill('17318f');
+    await expect(page.getByRole('option', { name: /QuestTitle_17318F/ })).toBeVisible();
+    await expect(page.getByRole('option', { name: /Bear Necessities/ })).toHaveCount(0);
+    // Every list read was the category-restricted server search — never the bare table.
+    expect(recorded.nameSearches.length).toBeGreaterThan(0);
+    for (const url of recorded.nameSearches) {
+      expect(url).toContain('category=QuestTitle');
+      expect(url).toContain('limit=50');
+    }
+
+    await page.getByRole('option', { name: 'The Bear Truth (QuestTitle_17318F)' }).click();
+
+    await expect(titleTrigger(page)).toHaveText('The Bear Truth (QuestTitle_17318F)');
+    const after = await copyPanelDocument(page);
+    expect(after.m_questTitle).toBe('QuestTitle_17318F');
+    // Only that one key changed.
+    expect({ ...after, m_questTitle: before.m_questTitle }).toStrictEqual(before);
+  });
+
+  test('fits a 375px viewport with the list open and no horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await mockQuestsApi(page, {
+      names: { QuestTitle_1ED8D: 'Quest for Perfection' },
+      titleRows: [
+        { key: 'QuestTitle_17318F', value: 'A very long quest title that has to truncate' },
+      ],
+    });
+    await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
+    await titleTrigger(page).click();
+    await expect(page.getByRole('option', { name: /QuestTitle_17318F/ })).toBeVisible();
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test('is operable from the keyboard alone', async ({ page }) => {
+    await mockQuestsApi(page, {
+      names: { QuestTitle_1ED8D: 'Quest for Perfection' },
+      titleRows: [
+        { key: 'QuestTitle_1ED8D', value: 'Quest for Perfection' },
+        { key: 'QuestTitle_17318F', value: 'The Bear Truth' },
+      ],
+    });
+    await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
+    await openJson(page);
+
+    await titleTrigger(page).focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('truth');
+    await expect(page.getByRole('option', { name: /QuestTitle_17318F/ })).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+
+    await expect(titleTrigger(page)).toHaveText('The Bear Truth (QuestTitle_17318F)');
+    expect((await copyPanelDocument(page)).m_questTitle).toBe('QuestTitle_17318F');
+  });
+
+  test('a stored key missing from the table stays shown while other titles are searched', async ({
+    page,
+  }) => {
+    await mockQuestsApi(page, {
+      names: {},
+      titleRows: [{ key: 'QuestTitle_17318F', value: 'The Bear Truth' }],
+    });
+    await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
+    await openJson(page);
+
+    await titleTrigger(page).click();
+    await page.getByRole('combobox', { name: 'Search quest titles' }).fill('bear');
+    await expect(page.getByRole('option', { name: /QuestTitle_17318F/ })).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // Searching is not choosing: the unknown stored key is still what the trigger shows and what
+    // the document holds (D57).
+    await expect(titleTrigger(page)).toHaveText('QuestTitle_1ED8D');
+    expect((await copyPanelDocument(page)).m_questTitle).toBe('QuestTitle_1ED8D');
   });
 });
 
@@ -361,7 +478,10 @@ test.describe('edits and the JSON panel', () => {
     await openJson(page);
 
     // `m_questTitle` exists in the fixture.
-    await editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }).fill('');
+    await editor(page)
+      .getByRole('combobox', { name: 'Quest title (m_questTitle)', exact: true })
+      .click();
+    await page.getByRole('option', { name: 'None (remove the title)' }).click();
     let doc = await copyPanelDocument(page);
     expect('m_questTitle' in doc).toBe(false);
 

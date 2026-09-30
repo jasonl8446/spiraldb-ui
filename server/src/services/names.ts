@@ -177,7 +177,12 @@ export interface ListNamesOptions {
   q?: string;
   /** Row cap; a positive integer. */
   limit?: number;
+  /** Exact `string_table.category` to restrict to (`strings` only, D186); absent means all. */
+  category?: string;
 }
+
+/** A category is a bare token (`QuestTitle`, `GUI`, `ZoneLocName`) — never SQL, only a bound value. */
+const CATEGORY_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
 export type ListNamesQueryResult =
   { ok: true; options: ListNamesOptions } | { ok: false; error: string };
@@ -189,7 +194,10 @@ export type ListNamesQueryResult =
  * Repeated parameters (`?limit=1&limit=2`) arrive as arrays and are rejected with
  * the same message as any other malformed value.
  */
-export function parseListNamesQuery(query: Record<string, unknown> = {}): ListNamesQueryResult {
+export function parseListNamesQuery(
+  query: Record<string, unknown> = {},
+  type?: NamesType,
+): ListNamesQueryResult {
   const options: ListNamesOptions = {};
 
   const rawQ = query.q;
@@ -219,6 +227,28 @@ export function parseListNamesQuery(query: Record<string, unknown> = {}): ListNa
       };
     }
     options.limit = Number(rawLimit);
+  }
+
+  const rawCategory = query.category;
+  if (rawCategory !== undefined) {
+    if (typeof rawCategory !== 'string') {
+      return { ok: false, error: 'Query parameter "category" must be a single string value' };
+    }
+    if (rawCategory !== '') {
+      if (!CATEGORY_PATTERN.test(rawCategory)) {
+        return {
+          ok: false,
+          error: `Invalid category "${rawCategory}": expected letters, digits, "_" or "-" (max 64)`,
+        };
+      }
+      if (type !== undefined && type !== 'strings') {
+        return {
+          ok: false,
+          error: `Query parameter "category" is only valid for strings, not ${type}`,
+        };
+      }
+      options.category = rawCategory;
+    }
   }
 
   return { ok: true, options };
@@ -256,14 +286,25 @@ export function listNames(db: Db, type: NamesType, options: ListNamesOptions = {
   const params: Array<string | number> = [];
   let sql = `SELECT ${spec.selectColumns.join(', ')} FROM ${spec.table}`;
 
+  const where: string[] = [];
+  if (options.category !== undefined && type === 'strings') {
+    where.push('category = ?');
+    params.push(options.category);
+  }
   if (options.q !== undefined) {
     const pattern = `%${escapeLike(options.q.toLowerCase())}%`;
     const matches = spec.searchColumns.map((column) => `lower(${column}) LIKE ? ESCAPE '\\'`);
-    sql += ` WHERE (${matches.join(' OR ')})`;
+    where.push(`(${matches.join(' OR ')})`);
     params.push(...spec.searchColumns.map(() => pattern));
   }
+  if (where.length > 0) {
+    sql += ` WHERE ${where.join(' AND ')}`;
+  }
 
-  sql += ` ORDER BY ${orderColumns(spec).join(', ')}`;
+  // A category read is a dropdown's browse list: rows with an empty value (1,179 of the 5,959
+  // QuestTitle rows) sort after the labelled ones, so the first page is not a wall of bare keys.
+  const emptyLast = options.category !== undefined ? `(${spec.labelColumn} = '') ASC, ` : '';
+  sql += ` ORDER BY ${emptyLast}${orderColumns(spec).join(', ')}`;
 
   if (options.limit !== undefined) {
     sql += ' LIMIT ?';

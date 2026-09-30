@@ -43,10 +43,11 @@ import {
   type ResultShortTypeName,
 } from '../../lib/quest-results';
 import { docPathWords, fieldValueText, termText } from '../../lib/term';
-import { resultCardTitle, type CardNames } from '../../lib/card-titles';
+import { resultCardTitle, resultDropTableName, type CardNames } from '../../lib/card-titles';
 import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import DropTableLink from './DropTableLink';
 import TermHelp from '../TermHelp';
 import TermLabel from '../TermLabel';
 import { fieldTier } from '@shared/glossary';
@@ -165,7 +166,7 @@ export default function ResultListEditor({
   const wrapperIsObject = isPlainObject(wrapper);
   const cards = readResultCards(path, wrapper);
   const items = state.value([...path, 'm_results']);
-  const names = useCardNames(['spells', 'npcs', 'zones']);
+  const names = useCardNames(['spells', 'npcs', 'zones', 'drop_tables']);
 
   return (
     <section aria-label={label} className={cn('flex min-w-0 flex-col gap-3', className)}>
@@ -205,6 +206,7 @@ function ResultCard({
     isPlainObject(card.value) && typeof card.value.$type === 'string' ? card.value.$type : null;
   // Titled by meaning with resolved names (task 7.10); an unreadable node keeps the lenient title.
   const title = card.readable ? resultCardTitle(card.value, names) : card.title;
+  const dropTable = card.readable ? resultDropTableName(card.value) : null;
   // Basic fields first, the rest under Advanced (task 7.11): the glossary's tier per field key.
   const basicViews = card.fields.filter((view) => fieldTier(view.spec.key) === 'basic');
   const advancedViews = card.fields.filter((view) => fieldTier(view.spec.key) === 'advanced');
@@ -219,7 +221,21 @@ function ResultCard({
       >
         <header className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-zinc-400">{card.index + 1}</span>
-          <span className="text-sm text-zinc-100">{title}</span>
+          <span className="text-sm text-zinc-100">
+            {dropTable !== null && title.endsWith(dropTable) ? (
+              // The title is `<label> <table>`: the table is linked beside the label's own text,
+              // so the header holds one link and nothing interactive is nested (D187).
+              <>
+                {title.slice(0, title.length - dropTable.length)}
+                <DropTableLink
+                  name={dropTable}
+                  known={names.drop_tables?.has(dropTable) === true}
+                />
+              </>
+            ) : (
+              title
+            )}
+          </span>
           {typeString === null ? null : (
             <span className="text-xs text-zinc-400">
               <TermLabel term={{ type: typeString }} />

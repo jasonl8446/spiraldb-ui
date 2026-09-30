@@ -350,6 +350,13 @@ export interface QuestsMockOptions {
    */
   names?: Record<string, string>;
   /**
+   * The `QuestTitle` rows `GET /api/names/strings?category=QuestTitle&q=&limit=` searches (the
+   * quest-title picker, D186). Defaults to the rows of {@link names}, so a key the lookup can
+   * resolve is also one the picker can offer. The handler applies `category`, `q` (either half,
+   * case-insensitive) and `limit` exactly as the server's SQL does.
+   */
+  titleRows?: Array<{ key: string; value: string }>;
+  /**
    * `settings.user_name`. `''` is the D38/D43 "not asked yet" state, which makes the
    * identity gate open **before** the notes dialog.
    */
@@ -432,6 +439,8 @@ export interface QuestsMockRecorded {
    * answers 24 MB (measured against the live database).
    */
   nameLookups: string[];
+  /** Every `GET /api/names/strings?…` request (path + query), in order — the title picker's searches. */
+  nameSearches: string[];
   /**
    * The bodies of every `POST /api/quests`, in order (`{ quest, notes?, source? }` — the save
    * contract of task 2.4 / D49(a), which story p3-10's Save drives).
@@ -475,6 +484,7 @@ export async function mockQuestsApi(
     historyRequests: 0,
     settingsPuts: [],
     nameLookups: [],
+    nameSearches: [],
     savePosts: [],
     evidenceRequests: 0,
     evidenceUrls: [],
@@ -532,6 +542,30 @@ export async function mockQuestsApi(
     }
     await route.fulfill({ json: { key: id, value, category: 'QuestTitle' } });
   });
+
+  await page.route(
+    (url) => url.pathname === '/api/names/strings',
+    async (route) => {
+      const url = new URL(route.request().url());
+      recorded.nameSearches.push(`${url.pathname}${url.search}`);
+      const category = url.searchParams.get('category');
+      const q = (url.searchParams.get('q') ?? '').toLowerCase();
+      const limit = Number(url.searchParams.get('limit') ?? '1000');
+      const all =
+        options.titleRows ??
+        Object.entries(options.names ?? {}).map(([key, value]) => ({ key, value }));
+      const strings = all
+        .filter(() => category === null || category === 'QuestTitle')
+        .filter(
+          (row) =>
+            q === '' || row.key.toLowerCase().includes(q) || row.value.toLowerCase().includes(q),
+        )
+        .sort((a, b) => a.value.localeCompare(b.value) || a.key.localeCompare(b.key))
+        .slice(0, limit)
+        .map((row) => ({ ...row, category: 'QuestTitle' }));
+      await route.fulfill({ json: { strings } });
+    },
+  );
 
   await page.route('**/api/quests', async (route) => {
     // `POST /api/quests` is the same path as the list read (docs/spec-api.md §"Quests"), so the
@@ -645,14 +679,21 @@ export async function mockQuestsApi(
     }
     const missingOnly = url.searchParams.get('missing_only') === '1';
     const catalogRows = options.catalogRows ?? MOCK_CATALOG_ROWS;
-    const filtered = missingOnly
-      ? catalogRows.filter((row) => row.has_definition === 0)
-      : catalogRows;
+    // `?q=` (D186): name or title, case-insensitive substring — the server's SQL predicate.
+    const q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+    const filtered = catalogRows.filter(
+      (row) =>
+        (!missingOnly || row.has_definition === 0) &&
+        (q === '' ||
+          row.quest_name.toLowerCase().includes(q) ||
+          row.title.toLowerCase().includes(q)),
+    );
     await route.fulfill({
       json: {
         quests: filtered,
         total: filtered.length,
         missing_only: missingOnly,
+        q,
         corpus: MOCK_COVERAGE.corpus,
       },
     });
@@ -763,4 +804,20 @@ export async function mockQuestsApi(
   });
 
   return recorded;
+}
+
+/**
+ * Picks a quest title through the Info tab's `QuestTitle` picker (D186): open the combobox, type
+ * `search` (either half of a row), and click the option whose accessible name is `optionName`
+ * (the pair `Title text (QuestTitle_…)`). The picker's list is a server search, so the caller
+ * can assert the request afterwards through {@link QuestsMockRecorded.nameSearches}.
+ */
+export async function pickQuestTitle(
+  page: Page,
+  search: string,
+  optionName: string,
+): Promise<void> {
+  await page.getByRole('combobox', { name: 'Quest title (m_questTitle)', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Search quest titles' }).fill(search);
+  await page.getByRole('option', { name: optionName, exact: true }).click();
 }

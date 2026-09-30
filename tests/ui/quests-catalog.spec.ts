@@ -139,6 +139,93 @@ test.describe('the missing-only filter', () => {
   });
 });
 
+test.describe('the search box (D186)', () => {
+  const searchBox = (page: Page): Locator => page.getByRole('searchbox', { name: 'Search quests' });
+
+  test('narrows the rows by re-requesting ?q=, matching either half, debounced', async ({
+    page,
+  }) => {
+    const recorded = await mockQuestsApi(page);
+    await page.goto('/quests/catalog');
+    await expect(page.getByTestId(/^catalog-row-/)).toHaveCount(4);
+
+    // A title half (`Unicorn Way`), typed key by key: one request for the pause, not one per key.
+    await searchBox(page).pressSequentially('unicorn', { delay: 20 });
+    await expect(page.getByTestId(/^catalog-row-/)).toHaveCount(1);
+    await expect(catalogRow(page, SECOND_MISSING_ROW)).toBeVisible();
+    expect(recorded.catalogUrls).toEqual(['/api/quests/catalog', '/api/quests/catalog?q=unicorn']);
+    // The count line says a search narrowed the rows — the header above still counts the catalog.
+    await expect(page.getByTestId('catalog-count')).toHaveText('Showing 1 matching “unicorn”');
+    await expect(page.getByTestId('coverage-headline')).toHaveText(MOCK_COVERAGE_HEADLINE);
+
+    // A name half, case-insensitively.
+    await searchBox(page).fill('ds-acad1');
+    await expect(catalogRow(page, DEFINED_ROW)).toBeVisible();
+    await expect(page.getByTestId(/^catalog-row-/)).toHaveCount(1);
+    await expect
+      .poll(() => recorded.catalogUrls[recorded.catalogUrls.length - 1])
+      .toBe('/api/quests/catalog?q=ds-acad1');
+
+    // Clearing returns the whole catalog, and the request carries no parameter at all.
+    await searchBox(page).fill('');
+    await expect(page.getByTestId(/^catalog-row-/)).toHaveCount(4);
+    await expect
+      .poll(() => recorded.catalogUrls[recorded.catalogUrls.length - 1])
+      .toBe('/api/quests/catalog');
+    await expect(page.getByTestId('catalog-count')).toHaveText('4 catalog rows');
+  });
+
+  test('fits a 375px viewport with no horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await mockQuestsApi(page);
+    await page.goto('/quests/catalog');
+    await searchBox(page).fill('unicorn');
+    await expect(page.getByTestId('catalog-count')).toHaveText('Showing 1 matching “unicorn”');
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test('combines with missing only (one request carrying both)', async ({ page }) => {
+    const recorded = await mockQuestsApi(page);
+    await page.goto('/quests/catalog');
+
+    await page.getByRole('checkbox', { name: 'missing only' }).check();
+    await searchBox(page).fill('gr');
+
+    await expect
+      .poll(() => recorded.catalogUrls[recorded.catalogUrls.length - 1])
+      .toBe('/api/quests/catalog?missing_only=1&q=gr');
+    // `DM-GRAVE-MAIN-008` is missing and matches; nothing defined matches `gr` anyway, so widen:
+    await expect(page.getByTestId(/^catalog-row-/)).toHaveCount(1);
+    await expect(catalogRow(page, MISSING_ROW)).toBeVisible();
+    await expect(page.getByTestId('catalog-count')).toHaveText(
+      'Showing 1 matching “gr”, missing only',
+    );
+
+    // `Temple` is a defined quest's title: missing-only AND the search leave nothing.
+    await searchBox(page).fill('temple');
+    await expect(page.getByText('No missing catalog quest matches “temple”.')).toBeVisible();
+  });
+
+  test('a search that matched nothing is its own empty state, not the tier-empty one', async ({
+    page,
+  }) => {
+    await mockQuestsApi(page);
+    await page.goto('/quests/catalog');
+
+    await searchBox(page).fill('zzzz');
+
+    await expect(page.getByText('No catalog quest matches “zzzz”.')).toBeVisible();
+    // Not the empty-tier state (needs a sync), and not the everything-is-defined one.
+    await expect(page.getByRole('link', { name: 'Open Settings and sync' })).toHaveCount(0);
+    await expect(page.getByText('Every catalog quest has a definition')).toHaveCount(0);
+    await expect(page.getByTestId('catalog-count')).toHaveText('Showing 0 matching “zzzz”');
+  });
+});
+
 test.describe('the numbers and states are text (D85)', () => {
   test('the Defined cell says "defined"/"missing", with the glyph as decoration only', async ({
     page,

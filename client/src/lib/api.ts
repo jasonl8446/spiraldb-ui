@@ -582,7 +582,7 @@ export function searchObjects(q: string, limit = SEARCH_DEFAULT_LIMIT): Promise<
 /** Query-key prefix for every names query; one entry per type. */
 export function namesQueryKey(
   type: NamesType,
-  options?: { q?: string; limit?: number },
+  options?: { q?: string; limit?: number; category?: string },
 ): readonly unknown[] {
   return options === undefined ? ['names', type] : ['names', type, options];
 }
@@ -598,9 +598,11 @@ export interface NamesListOptions {
   q?: string;
   /** Max rows; the server validates it is a positive integer. */
   limit?: number;
+  /** Exact `string_table.category` (`strings` only, D186) — e.g. `QuestTitle`. */
+  category?: string;
 }
 
-/** Builds the `?q=`/`?limit=` query string, if any. */
+/** Builds the `?q=`/`?limit=`/`?category=` query string, if any. */
 function namesQueryString(options?: NamesListOptions): string {
   if (options === undefined) {
     return '';
@@ -611,6 +613,9 @@ function namesQueryString(options?: NamesListOptions): string {
   }
   if (options.limit !== undefined) {
     params.set('limit', String(options.limit));
+  }
+  if (options.category !== undefined && options.category !== '') {
+    params.set('category', options.category);
   }
   const query = params.toString();
   return query === '' ? '' : `?${query}`;
@@ -1315,8 +1320,11 @@ export function getQuestCoverage(): Promise<QuestCoverage> {
 
 /** TanStack Query key for one catalog read; the filter is part of the key, so the two lists
  * (all rows, missing-only rows) are separate cache entries rather than one that lies. */
-export function questCatalogQueryKey(missingOnly: boolean): readonly [string, boolean] {
-  return ['quest-catalog', missingOnly] as const;
+export function questCatalogQueryKey(
+  missingOnly: boolean,
+  q = '',
+): readonly [string, boolean, string] {
+  return ['quest-catalog', missingOnly, q] as const;
 }
 
 /**

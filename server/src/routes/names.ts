@@ -16,8 +16,8 @@ import {
  *
  * The LIST body is the spec envelope `{ "<type>": [row, …] }` using the requested
  * type name verbatim (`strings` → `{"strings": [...]}`); the single lookup body is
- * exactly one row object, never wrapped. Two optional LIST extensions (`?q=`,
- * `?limit=`) are handled by `parseListNamesQuery`; a bare URL is unchanged.
+ * exactly one row object, never wrapped. Three optional LIST extensions (`?q=`,
+ * `?limit=`, and `?category=` for `strings`, D186) are handled by `parseListNamesQuery`; a bare URL is unchanged.
  *
  * Every failure is a JSON `{ error }`: unknown type / unknown id / an id that
  * cannot be valid for the type → 404, malformed `q`/`limit` → 400.
@@ -58,7 +58,7 @@ export function createNamesRouter({ db }: NamesRouterOptions): Router {
       return;
     }
 
-    const parsed = parseListNamesQuery(req.query);
+    const parsed = parseListNamesQuery(req.query, type);
     if (!parsed.ok) {
       res.status(400).json({ error: parsed.error } satisfies ApiError);
       return;

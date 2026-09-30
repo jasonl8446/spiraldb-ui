@@ -42,7 +42,8 @@ import { termText } from './term';
 /* ------------------------------------------------------- the field inventory */
 
 /** How one Info-tab field renders, and what an edit of it means. */
-export type QuestFieldKind = 'readonly' | 'text' | 'number' | 'boolean' | 'select' | 'tags';
+export type QuestFieldKind =
+  'readonly' | 'text' | 'string-key' | 'number' | 'boolean' | 'select' | 'tags';
 
 /** The two columns of `docs/spec-ui-design.md` L296-298. */
 export type QuestFieldColumn = 'left' | 'right';
@@ -64,8 +65,8 @@ export interface QuestFieldSpec {
 /**
  * The spec's left-then-right list (L296-298), verbatim and in order.
  *
- * `m_questTitle` is a **text edit of the string-table key** with the resolved title
- * rendered beside it: the spec calls it "string table lookup display" without
+ * `m_questTitle` is an edit of the string-table key through a searchable `QuestTitle` picker
+ * (`string-key`, D186 — each option `Title text (QuestTitle_…)`, the key is what is stored): the spec calls it "string table lookup display" without
  * calling it read-only (only `m_questName` is), and leaving the key uneditable
  * would make it the one field of the 36 no part of this phase could ever change.
  */
@@ -78,7 +79,7 @@ export const QUEST_VISIBLE_FIELDS: readonly QuestFieldSpec[] = [
   },
   {
     key: 'm_questTitle',
-    kind: 'text',
+    kind: 'string-key',
     column: 'left',
     help: 'String table key for quest title',
   },

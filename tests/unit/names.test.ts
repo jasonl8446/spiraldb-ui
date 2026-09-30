@@ -585,6 +585,103 @@ describe('?limit= (optional list extension)', () => {
   });
 });
 
+describe('?category= (strings only, D186)', () => {
+  it('restricts strings to one category at the SQL level, ordered by value', async () => {
+    const { app } = setup();
+
+    const res = await request(app).get('/api/names/strings?category=QuestTitle');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      strings: [
+        { key: 'QuestTitle_1ED8A', value: 'Forged in Fire', category: 'QuestTitle' },
+        { key: 'QuestTitle_126346', value: 'Letters of Light', category: 'QuestTitle' },
+      ],
+    });
+  });
+
+  it('is an exact, case-sensitive category match', async () => {
+    const { app } = setup();
+
+    const res = await request(app).get('/api/names/strings?category=questtitle');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ strings: [] });
+  });
+
+  it('composes with q (either half) and limit', async () => {
+    const { app } = setup();
+
+    // `boots` matches Items_0001's value and GUI_0001's value, but only the category's rows return.
+    const none = await request(app).get('/api/names/strings?category=QuestTitle&q=boots');
+    expect(none.body).toEqual({ strings: [] });
+
+    const byKey = await request(app).get('/api/names/strings?category=QuestTitle&q=126346');
+    expect(byKey.body.strings.map((row: { key: string }) => row.key)).toEqual([
+      'QuestTitle_126346',
+    ]);
+
+    const byText = await request(app).get(
+      '/api/names/strings?category=QuestTitle&q=FORGED&limit=5',
+    );
+    expect(byText.body.strings.map((row: { key: string }) => row.key)).toEqual([
+      'QuestTitle_1ED8A',
+    ]);
+
+    const capped = await request(app).get('/api/names/strings?category=QuestTitle&limit=1');
+    expect(capped.body.strings).toHaveLength(1);
+  });
+
+  it('sorts rows with an empty value after the labelled ones', async () => {
+    const { app, db } = setup();
+    db.prepare('INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)').run(
+      'QuestTitle_0',
+      '',
+      'QuestTitle',
+    );
+
+    const res = await request(app).get('/api/names/strings?category=QuestTitle');
+
+    expect(res.body.strings.map((row: { key: string }) => row.key)).toEqual([
+      'QuestTitle_1ED8A',
+      'QuestTitle_126346',
+      'QuestTitle_0',
+    ]);
+  });
+
+  it('an empty category is no restriction, and the bare URL is unchanged', async () => {
+    const { app } = setup();
+
+    const res = await request(app).get('/api/names/strings?category=');
+
+    expect(res.body).toEqual({ strings: EXPECTED_LIST.strings });
+  });
+
+  it.each([
+    ['category=a%27%3B--'],
+    ['category=Quest%20Title'],
+    ['category=QuestTitle&category=GUI'],
+    [`category=${'x'.repeat(65)}`],
+  ])('rejects a malformed category (%s) with 400 { error }', async (query) => {
+    const { app } = setup();
+
+    const res = await request(app).get(`/api/names/strings?${query}`);
+
+    expect(res.status).toBe(400);
+    expect(Object.keys(res.body)).toEqual(['error']);
+    expect(res.body.error).toContain('category');
+  });
+
+  it('is refused on every other type (400), never silently ignored', async () => {
+    const { app } = setup();
+
+    const res = await request(app).get('/api/names/items?category=QuestTitle');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('only valid for strings');
+  });
+});
+
 describe('connection configuration', () => {
   it('sorts in memory, so a large ORDER BY never needs a SQLite temp file', () => {
     // Regression pin: with the default `temp_store = FILE` the 216,991-row

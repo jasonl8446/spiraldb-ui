@@ -35,6 +35,7 @@ import UnsavedChangesDialog from '../components/quest/UnsavedChangesDialog';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { useCardNames } from '../hooks/useCardNames';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useApiErrorToast } from '../hooks/useApiErrorToast';
 import { useServerValidation } from '../hooks/useServerValidation';
@@ -278,6 +279,9 @@ export function LoadedQuest({
   draft?: EditorDraft;
 }): JSX.Element {
   const isMobile = useIsMobile();
+  // The same cached `drop_tables` read the validation pass makes: the read-only Results tab links a
+  // reward to its DropTable editor only for a table the corpus holds (D187).
+  const dropTableNames = useCardNames(['drop_tables']).drop_tables;
   const navigate = useNavigate();
   /**
    * The right rail's state (story p6-08): **one** rail with two tabs, so `null` means closed and a
@@ -714,7 +718,12 @@ export function LoadedQuest({
           <div className="flex min-h-0 gap-4">
             <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
               <FieldValidationProvider messages={validation.messages}>
-                <QuestPreview quest={quest} className="h-[70vh]" panels={panels} />
+                <QuestPreview
+                  quest={quest}
+                  className="h-[70vh]"
+                  panels={panels}
+                  dropTableNames={dropTableNames}
+                />
               </FieldValidationProvider>
             </div>
             {/* Exactly one of the two rail surfaces is mounted (see `QuestJsonPanel`). */}

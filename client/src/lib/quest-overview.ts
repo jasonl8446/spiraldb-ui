@@ -2,6 +2,7 @@ import {
   goalCardTitle,
   requirementCardTitle,
   resultCardTitle,
+  resultDropTableName,
   type CardNames,
 } from './card-titles';
 import { goalName, startGoalNames } from './quest-goals';
@@ -75,6 +76,8 @@ export interface QuestOverview {
   completionDialog: string;
   requirements: OverviewRequirementLine[];
   rewards: string[];
+  /** Per reward, the drop table it names (`ResDropTable`) or `null` — for the view to link (D187). */
+  rewardDropTables: Array<string | null>;
 }
 
 /** The `m_goalLogic` entry keys the story reads, all tolerant of a missing or non-array value. */
@@ -328,5 +331,6 @@ export function buildQuestOverview(doc: unknown, names: CardNames): QuestOvervie
       closer === null ? 'No completion dialog' : `Completion dialog: spoken by ${closer}`,
     requirements,
     rewards: results.map((result) => resultCardTitle(result, names)),
+    rewardDropTables: results.map(resultDropTableName),
   };
 }

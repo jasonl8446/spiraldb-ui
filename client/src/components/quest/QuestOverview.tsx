@@ -10,6 +10,7 @@ import {
   type QuestOverview,
 } from '../../lib/quest-overview';
 import { suggestionTab, type Suggestion } from '../../lib/suggestions';
+import DropTableLink from '../shared/DropTableLink';
 import { Button } from '../ui/button';
 import { usePreviewTabSelect } from './QuestPreview';
 
@@ -37,8 +38,11 @@ export function QuestOverviewView({
   overview,
   pending,
   onOpenSuggestions,
+  dropTables,
 }: {
   overview: QuestOverview;
+  /** The drop tables the corpus holds; a reward naming one links to its editor (D187). */
+  dropTables?: ReadonlyMap<string, string>;
   /** The pending suggestion count; `0` renders no badge. */
   pending: number;
   onOpenSuggestions?: () => void;
@@ -109,9 +113,21 @@ export function QuestOverviewView({
           <p>{NO_REWARDS}</p>
         ) : (
           <ul data-testid="overview-rewards">
-            {overview.rewards.map((reward, index) => (
-              <li key={index}>{reward}</li>
-            ))}
+            {overview.rewards.map((reward, index) => {
+              const table = overview.rewardDropTables[index];
+              return (
+                <li key={index}>
+                  {table !== null && table !== undefined && reward.endsWith(table) ? (
+                    <>
+                      {reward.slice(0, reward.length - table.length)}
+                      <DropTableLink name={table} known={dropTables?.has(table) === true} />
+                    </>
+                  ) : (
+                    reward
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -128,7 +144,7 @@ export default function QuestOverviewPanel({
   suggestions: readonly Suggestion[];
 }): JSX.Element {
   const names = useCardNames(
-    ['npcs', 'spells', 'zones', 'quests'],
+    ['npcs', 'spells', 'zones', 'quests', 'drop_tables'],
     goalsOf(doc).flatMap(goalTitleStringKeys),
   );
   const selectTab = usePreviewTabSelect();
@@ -138,6 +154,7 @@ export default function QuestOverviewPanel({
     <QuestOverviewView
       overview={buildQuestOverview(doc, names)}
       pending={pending.length}
+      dropTables={names.drop_tables}
       onOpenSuggestions={target === null ? undefined : () => selectTab?.(target)}
     />
   );

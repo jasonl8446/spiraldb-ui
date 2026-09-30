@@ -256,6 +256,17 @@ function resultOperand(result: unknown, shortName: string, names: CardNames): st
 }
 
 /**
+ * The drop table a `ResDropTable` result awards — its `m_tableName`, or `null` for any other
+ * result (or a blank name). The one reading of "which drop table does this result name", shared by
+ * the card title, the Overview's rewards line and the read-only Results tab, so each can link the
+ * same name to the same editor (D187).
+ */
+export function resultDropTableName(result: unknown): string | null {
+  const spec = resultTypeSpecForResult(result);
+  return spec?.shortName === 'ResDropTable' ? text(resultField(result, 'm_tableName')) : null;
+}
+
+/**
  * A result card's title: the class label and what the result acts on (`Reward: drop table Pesky
  * Pirates`). The label alone when the result has no operand or its class is unknown.
  */

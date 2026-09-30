@@ -373,7 +373,7 @@ export const fields: Readonly<Record<string, GlossaryEntry>> = {
   m_goalText: e(
     'Goal text',
     'basic',
-    'docs/spec-api.md:528',
+    'docs/spec-api.md:545',
     "String-table key for the goal's own text, the field the evidence panel inserts goal text into. Not described in the spec beyond that insert target, and no corpus goal carries it yet; this wording is the editor’s reading.",
   ),
   m_goalUnderway: e(

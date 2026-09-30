@@ -10,7 +10,12 @@ import {
   firstPendingTab,
   suggestionBadgeText,
 } from '../../client/src/components/quest/QuestOverview';
-import { NO_CARD_NAMES, cardNamesFromRows } from '../../client/src/lib/card-titles';
+import {
+  NO_CARD_NAMES,
+  cardNamesFromRows,
+  resultDropTableName,
+} from '../../client/src/lib/card-titles';
+import { dropTablePath } from '../../client/src/lib/objects';
 import {
   ORDER_AS_STORED,
   ORDER_BY_LOGIC,
@@ -466,5 +471,43 @@ describe('the Overview never writes (D133; the Evidence panel’s D90(c) style)'
     ]) {
       expect(sample).toMatch(WRITES);
     }
+  });
+});
+
+describe('reward drop-table links (D187)', () => {
+  const RDROP = 'Imcodec.ObjectProperty.TypeCache.ResDropTable, Imcodec.ObjectProperty';
+  const RWAIT = 'Imcodec.ObjectProperty.TypeCache.ResWait, Imcodec.ObjectProperty';
+
+  it('names the drop table a ResDropTable reward awards, and only that', () => {
+    expect(resultDropTableName({ $type: RDROP, m_tableName: 'DS-ACAD-C01-001' })).toBe(
+      'DS-ACAD-C01-001',
+    );
+    expect(resultDropTableName({ $type: RDROP, m_tableName: '' })).toBeNull();
+    expect(resultDropTableName({ $type: RDROP })).toBeNull();
+    expect(resultDropTableName({ $type: RWAIT, m_secondsToWait: 5 })).toBeNull();
+    expect(resultDropTableName(null)).toBeNull();
+  });
+
+  it('the overview carries the table beside each reward line, in the same order', () => {
+    const overview = buildQuestOverview(
+      {
+        m_endResults: {
+          m_results: [
+            { $type: RDROP, m_tableName: 'T-ONE' },
+            { $type: RWAIT, m_secondsToWait: 5 },
+          ],
+        },
+      },
+      NO_CARD_NAMES,
+    );
+    expect(overview.rewardDropTables).toEqual(['T-ONE', null]);
+    expect(overview.rewards).toHaveLength(2);
+    // The line still ends with the table's name, which is what the view splits the link from.
+    expect(overview.rewards[0].endsWith('T-ONE')).toBe(true);
+  });
+
+  it('routes a table name to its DropTable editor, encoding it', () => {
+    expect(dropTablePath('DS-ACAD-C01-001')).toBe('/drop-tables/DS-ACAD-C01-001');
+    expect(dropTablePath('a b/c')).toBe('/drop-tables/a%20b%2Fc');
   });
 });
