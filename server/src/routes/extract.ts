@@ -13,9 +13,11 @@ import {
   createExtractionService,
   ExtractionCancelledError,
   ExtractionError,
+  type CaptureSuggestion,
   type ExecFileWithChild,
   type ExtractionService,
 } from '../services/extraction.js';
+import { sanitizeCaptureSource } from '../services/quests.js';
 
 /**
  * Extraction API — `POST /api/extract/quests` (task 2.3, story p2-04,
@@ -103,6 +105,11 @@ export interface ExtractRouterOptions {
   maxUploadBytes?: number;
   /** Injected post-request cleanup of the temp capture; default deletes it. */
   cleanupUpload?: (filePath: string) => Promise<void>;
+  /**
+   * Stores the run's capture suggestions as pending `quest_suggestions` rows (task 7.6), keyed by
+   * the uploaded file's sanitised base name. Absent → nothing is stored (the router's tests).
+   */
+  storeSuggestions?: (suggestions: CaptureSuggestion[], captureName: string) => unknown;
 }
 
 /** HTTP status for a thrown value — multer codes first, then our own errors. */
@@ -244,6 +251,23 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
     try {
       const quests = await run.result;
       const suggestions = await run.suggestions;
+      if (options.storeSuggestions !== undefined && suggestions.length > 0 && !aborted) {
+        // Stored on the extraction's answer, not on a later save (D161): a suggestion belongs to
+        // the capture that produced it, and the identity index makes a re-upload add nothing.
+        // A store failure is reported, never fatal: the quests are the extraction's result.
+        try {
+          options.storeSuggestions(
+            suggestions,
+            sanitizeCaptureSource(file.originalname) ?? path.basename(file.path),
+          );
+        } catch (storeError) {
+          process.emitWarning(
+            `[extract] could not store the capture suggestions: ${
+              storeError instanceof Error ? storeError.message : String(storeError)
+            }`,
+          );
+        }
+      }
       // `?census=1` (D139): what the reader ignored, from the same uploaded file. Never fails the request.
       const census =
         req.query.census === '1' && !aborted

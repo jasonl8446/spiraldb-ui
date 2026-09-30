@@ -1,0 +1,50 @@
+## Control A — the decision guard loses its rejected arm AND the insert overwrites on conflict
+$ sed -i -e 's/    `INSERT INTO quest_suggestions/    `INSERT OR REPLACE INTO quest_suggestions/' -e "s/AND (d.status = 'accepted' OR d.source = @source)/AND d.status = 'accepted'/" -e 's/     ON CONFLICT DO NOTHING`,/`,/' server/src/services/drafts.ts
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+178c178
+<     `INSERT INTO quest_suggestions
+---
+>     `INSERT OR REPLACE INTO quest_suggestions
+186c186
+<            AND (d.status = 'accepted' OR d.source = @source)
+---
+>            AND d.status = 'accepted'
+189c189
+<      ON CONFLICT DO NOTHING`,
+---
+> `,
+$ npx vitest run tests/unit/p7-drafts.test.ts -t "rejected"
+   × the builder on the fixture catalog (CI) > keeps a rejected suggestion rejected across a rebuild, and never resurrects it 14ms
+     → expected 7 to be +0 // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/unit/p7-drafts.test.ts > the builder on the fixture catalog (CI) > keeps a rejected suggestion rejected across a rebuild, and never resurrects it
+AssertionError: expected 7 to be +0 // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+      Tests  1 failed | 14 skipped (15)
+
+## Control B — ON CONFLICT DO NOTHING kept, the guard loses only its rejected arm (identity alone)
+$ sed -i "s/AND (d.status = 'accepted' OR d.source = @source)/AND d.status = 'accepted'/" server/src/services/drafts.ts
+186c186
+<            AND (d.status = 'accepted' OR d.source = @source)
+---
+>            AND d.status = 'accepted'
+$ npx vitest run tests/unit/p7-drafts.test.ts -t "reject"
+   ✓ the builder on the fixture catalog (CI) > keeps a rejected suggestion rejected across a rebuild, and never resurrects it 18ms
+   × the builder on the fixture catalog (CI) > keeps a rejection when a sync links the named quest to a different id 9ms
+     → expected [ 'rejected', 'pending' ] to deeply equal [ 'rejected' ]
+   ✓ the drafts and suggestions API (D141, D143) > reads a draft’s suggestions by name or id, and rejects once 22ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/unit/p7-drafts.test.ts > the builder on the fixture catalog (CI) > keeps a rejection when a sync links the named quest to a different id
+AssertionError: expected [ 'rejected', 'pending' ] to deeply equal [ 'rejected' ]
+[32m- Expected[39m
+[31m+ Received[39m
+      Tests  1 failed | 2 passed | 12 skipped (15)
+
+## Restored
+$ diff <backup> server/src/services/drafts.ts && echo identical
+identical
+$ npx vitest run tests/unit/p7-drafts.test.ts
+ ✓ tests/unit/p7-drafts.test.ts (15 tests) 140ms
+ Test Files  1 passed (1)
+      Tests  15 passed (15)

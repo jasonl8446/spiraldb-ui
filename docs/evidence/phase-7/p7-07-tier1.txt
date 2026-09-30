@@ -1,0 +1,6 @@
+Running 2 tests using 1 worker
+
+  ✓  1 [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:111:3 › Rebuild drafts (task 7.6) › sits in the progress section title row, spins while the rebuild runs, then toasts the inserted count (2.4s)
+  ✓  2 [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:145:3 › Rebuild drafts (task 7.6) › a 409 (a rebuild already running) is an info toast, not an error (447ms)
+
+  2 passed (4.1s)

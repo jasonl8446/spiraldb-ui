@@ -25,6 +25,7 @@
     "sync:spotcheck": "tsx scripts/sync-spotcheck.ts",
     "report:quest-refs": "tsx scripts/quest-refs-report.ts",
     "scaffold:quest": "tsx scripts/scaffold-quest.ts",
+    "drafts": "tsx scripts/build-drafts.ts",
     "census:quest-corpus": "node scripts/quest-corpus-census.mjs",
     "wad:census": "node scripts/wad-census.mjs",
     "verify:quest-catalog": "tsx scripts/quest-catalog-verify.ts",

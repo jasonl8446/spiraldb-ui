@@ -57,3 +57,11 @@ export function notifyErrorWithRetry(message: string, onRetry: () => void): void
 export function notifyWarning(message: string): void {
   toast.warning(message, { duration: TOAST_WARNING_DURATION_MS });
 }
+
+/**
+ * A success toast carrying one navigation action — the Rebuild drafts toast's link to `/drafts`
+ * (task 7.6, spec-ui-design "Rebuild Drafts"). Same duration as {@link notifySuccess}.
+ */
+export function notifySuccessWithAction(message: string, label: string, onClick: () => void): void {
+  toast.success(message, { duration: TOAST_DURATIONS.success, action: { label, onClick } });
+}

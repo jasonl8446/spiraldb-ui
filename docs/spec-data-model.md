@@ -368,6 +368,12 @@ LEFT JOIN quest_suggestions s
 GROUP BY d.quest_name, d.catalog_id;
 ```
 
+**As built (p7-07).** Migration `0005` writes the view as **two branches joined by `UNION ALL`** — named drafts
+joined on `quest_name`, unnamed drafts joined on `quest_name IS NULL AND catalog_id` — instead of the single `LEFT
+JOIN … ON (…) OR (…)` above, because SQLite cannot use an index for an OR-join and the single form scanned every
+suggestion once per draft. The column list is unchanged. **`sources` lists the sources of the draft's `pending`
+rows only**, the rows the queue ranks and filters on (the reference form above lists every status).
+
 - **`evidence_richness`** is the number of distinct document paths with a pending suggestion (Phase 7, chosen at
   p7-01). A draft with richness 0 is a **zero-evidence draft**: hidden from the queue by default, behind a visible
   toggle and count (D130).
@@ -382,10 +388,31 @@ sidecar ([domain reference](./spec-domain-reference.md#phase-7-the-suggestions-s
 `evidence-location` (location keys) and `evidence-requirements` (reference-derived requirements such as
 `ReqHasQuest`).
 
+**As built (p7-07; the per-source rules are D162).** Each source proposes into one path, and only when that path is
+empty in the draft's base document (its file, or the D118 skeleton for a quest with no file):
+
+| source | path | value | confidence |
+|---|---|---|---|
+| `evidence-title` | `m_questTitle` | a linked id's `quest_ids.title_key`; for a direct link with no id row, each `QuestTitle_*` key carrying `quests.title` | `1` direct, `0.78` inferred (D106), `1/n` for `n` keys sharing the text |
+| `evidence-dialogue` | `m_dialogList` | an `ActorDialogList` of the dialog blocks **other** corpus files record from this quest's own `WizQst` table, narrowed to those entries; the speakers the evidence ladder resolves are named in `evidence_ref` | `NULL` |
+| `evidence-goals` | `m_goals` | one `PersonaGoalTemplate` per `goal_gates` name, in the gate's zone when the WAD's zone path is a `zones` row | gates matching a file's goal name / all gates on defined quests, re-measured each run |
+| `evidence-location` | `m_goals[i].m_locationName` | the `ZoneLocName_*` key corpus goals use most in that goal's `m_destinationZone` (also for the goals `evidence-goals` proposes) | that key's share of the zone's goals |
+| `evidence-requirements` | `m_requirements` | a `RequirementList` holding one `ReqHasQuest` on the quest's **name-series predecessor** (`…-002` → `…-001`) when that name is a catalog row | files whose `ReqHasQuest` names their predecessor / files with one, re-measured each run |
+
+**Empty** (D162) means `null`, absent, `''`, `0`, `false`, `[]`, or an object whose every member except `$type` and
+`m_operator` is empty, so the skeleton's `{$type, m_dialogs: []}`, `{m_results: []}` and an empty `RequirementList`
+are empty while a requirement naming a quest is not. Capture rows are stored with `catalog_id = NULL` (the wrapper
+names the quest, never its id).
+
 **Lifecycle rules.**
 
 - **Idempotent.** Every write is an `INSERT … ON CONFLICT DO NOTHING` against the identity index, so a rebuild never
-  duplicates a row, never resurrects a `rejected` row and never re-proposes an `accepted` value.
+  duplicates a row, never resurrects a `rejected` row and never re-proposes an `accepted` value. **As built (p7-07,
+  D163)** the insert is also skipped when a decided row covers the proposal under a different identity: the same
+  draft (its `quest_name`, else its `catalog_id`), path and value **accepted from any source**, or **rejected from
+  the same source** — so a rejection survives a sync that links a named quest to a different id. A rebuild then
+  **deletes the `pending` `evidence-*` rows it did not propose** (their field was filled since, so they would break
+  the empty-field rule); it never touches an `accepted`/`rejected` row or a `capture-*` row.
 - **Existing files get suggestions only for fields that are empty in the file.**
 - **`pending → accepted` happens only after the save commits** (task 7.7). The save request names the suggestion ids
   it applied, and the server flips them in the same request once the pipeline's commit exists. A failed save leaves

@@ -151,7 +151,7 @@ export function scaffoldMetadataDescription(link: {
 }
 
 /** The catalog row a scaffold is built from. */
-interface CatalogRow {
+export interface CatalogRow {
   quest_name: string;
   title: string;
   has_definition: number;
@@ -173,7 +173,7 @@ interface CatalogRow {
  * happen to carry the same string, and choosing one would be a guess about identity —
  * which is why the scaffold writes no title instead.
  */
-function resolveLink(
+export function resolveLink(
   db: Db,
   row: CatalogRow,
 ): { kind: QuestScaffoldLinkKind; titleKey: string | null } {

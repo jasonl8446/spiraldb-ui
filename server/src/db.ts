@@ -62,6 +62,7 @@ const MIGRATION_FILES = [
   '0002_quest_catalog.sql',
   '0003_persona_index.sql',
   '0004_breadth_catalog.sql',
+  '0005_quest_suggestions.sql',
 ];
 
 /** The migration whose `quests` column adds are applied by a guarded step (see below). */
@@ -211,11 +212,12 @@ export function openDb(options: OpenDbOptions = {}): Db {
  * Idempotent by construction: 0001 and 0002 are `CREATE ... IF NOT EXISTS` only,
  * and 0002's four `ALTER TABLE` statements live in
  * {@link applyQuestCatalogColumnAdds}, which skips a column that already exists.
- * Running this repeatedly therefore leaves the same 16 tables, 1 view and 8
+ * Running this repeatedly therefore leaves the same 17 tables, 2 views and 11
  * indexes (see tests/unit/db.test.ts) — 0003_persona_index.sql (task 6.6) adds the
- * `persona_index` table and its one index, and 0004_breadth_catalog.sql (task 6.9)
- * adds `recipes`, `decks` and `decks`' one index, itself `CREATE ... IF NOT EXISTS`
- * only.
+ * `persona_index` table and its one index, 0004_breadth_catalog.sql (task 6.9)
+ * adds `recipes`, `decks` and `decks`' one index, and 0005_quest_suggestions.sql
+ * (task 7.6) adds `quest_suggestions`, its three indexes and the `quest_drafts` view,
+ * each file `CREATE ... IF NOT EXISTS` only.
  */
 export function initSchema(db: Db): void {
   for (const file of MIGRATION_FILES) {

@@ -1,0 +1,12 @@
+$ npx tsx -e "open data/__test-scratch__/p7-07-fresh.db three times with openDb(); list the 0005 objects"
+open 1 [{"type":"index","name":"idx_quest_suggestions_catalog"},{"type":"index","name":"idx_quest_suggestions_identity"},{"type":"index","name":"idx_quest_suggestions_quest"},{"type":"table","name":"quest_suggestions"},{"type":"view","name":"quest_drafts"}] [{"type":"index","n":11},{"type":"table","n":17},{"type":"view","n":2}]
+open 2 [{"type":"index","name":"idx_quest_suggestions_catalog"},{"type":"index","name":"idx_quest_suggestions_identity"},{"type":"index","name":"idx_quest_suggestions_quest"},{"type":"table","name":"quest_suggestions"},{"type":"view","name":"quest_drafts"}] [{"type":"index","n":11},{"type":"table","n":17},{"type":"view","n":2}]
+open 3 [{"type":"index","name":"idx_quest_suggestions_catalog"},{"type":"index","name":"idx_quest_suggestions_identity"},{"type":"index","name":"idx_quest_suggestions_quest"},{"type":"table","name":"quest_suggestions"},{"type":"view","name":"quest_drafts"}] [{"type":"index","n":11},{"type":"table","n":17},{"type":"view","n":2}]
+CREATE UNIQUE INDEX idx_quest_suggestions_identity
+  ON quest_suggestions(coalesce(quest_name, ''), coalesce(catalog_id, -1), path, source, value_json)
+no name, no id -> CHECK constraint failed: quest_name IS NOT NULL OR catalog_id IS NOT NULL
+unnamed insert 1 changes 1 | same identity again changes 0
+
+$ node: the dev DB (data/spiraldb-ui.db) after the dev server restarted onto 0005 — read only
+[{"type":"index","name":"idx_quest_suggestions_catalog"},{"type":"index","name":"idx_quest_suggestions_identity"},{"type":"index","name":"idx_quest_suggestions_quest"},{"type":"table","name":"quest_suggestions"},{"type":"view","name":"quest_drafts"}]
+{ drafts: 6365 } { rows: 0 }

@@ -320,6 +320,10 @@ it runs it shows a spinner and is disabled. On completion it shows a toast with 
 `/drafts`. A `409` (a rebuild is already running) is an info toast, not an error. Placement (Phase 7, chosen at
 p7-01): in the Per-Type Progress Section's title row, right-aligned.
 
+As built (p7-07): the toast reads `Drafts rebuilt: <inserted> new suggestions (<drafts> drafts)` and carries an
+**Open drafts** action that navigates to `/drafts`; the `/drafts` route itself lands with p7-08. Tier-1 spec:
+`tests/ui/p7-rebuild-drafts.spec.ts`.
+
 ---
 
 ### 2. Quest Extraction Page

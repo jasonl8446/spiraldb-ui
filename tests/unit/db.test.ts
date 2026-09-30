@@ -35,7 +35,9 @@ import {
  * has no `ADD COLUMN IF NOT EXISTS` and this runner re-execs every file on every
  * open. Task 6.6 adds migration 0003 — the **persona index** the evidence endpoint's
  * speaker ladder reads (one table, one index; `CREATE ... IF NOT EXISTS` only, so it
- * needs no guarded step). The `settings` seed matches L164-169 with the env/NODE_ENV precedence from
+ * needs no guarded step). Task 7.6 adds migration 0005 — `quest_suggestions`, its three indexes
+ * (one an expression index over the suggestion's identity) and the `quest_drafts` view, again
+ * `CREATE ... IF NOT EXISTS` only. The `settings` seed matches L164-169 with the env/NODE_ENV precedence from
  * the lead's decisions, and every step is idempotent.
  *
  * Every test uses `:memory:` or a throwaway file under `data/` (gitignored) —
@@ -52,6 +54,7 @@ const EXPECTED_TABLES = [
   'persona_index',
   'quest_catalog_refs',
   'quest_ids',
+  'quest_suggestions',
   'quests',
   'recipes',
   'settings',
@@ -71,10 +74,13 @@ const EXPECTED_INDEXES = [
   'idx_quest_catalog_refs_quest',
   'idx_quest_catalog_refs_wad',
   'idx_quest_ids_matched',
+  'idx_quest_suggestions_catalog',
+  'idx_quest_suggestions_identity',
+  'idx_quest_suggestions_quest',
 ];
 
-/** The one view (spec L183-191). */
-const EXPECTED_VIEWS = ['coverage'];
+/** The two views: `coverage` (spec L183-191) and `quest_drafts` (migration 0005, task 7.6). */
+const EXPECTED_VIEWS = ['coverage', 'quest_drafts'];
 
 /** The four `quests` columns migration 0002 adds, re-typed from spec L152-155. */
 const EXPECTED_QUEST_CATALOG_COLUMNS: Array<[string, string, number, string | null]> = [
@@ -152,17 +158,17 @@ afterEach(() => {
 });
 
 describe('schema introspection', () => {
-  it('creates exactly the 16 tables from the spec (11 + migrations 0002/0003/0004), on a fresh database', () => {
+  it('creates exactly the 17 tables from the spec (11 + migrations 0002/0003/0004/0005), on a fresh database', () => {
     const db = open();
 
-    expect(listTables(db)).toHaveLength(16);
+    expect(listTables(db)).toHaveLength(17);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
   });
 
-  it('creates the 8 named indexes from the spec (3 + migrations 0002/0003/0004)', () => {
+  it('creates the 11 named indexes from the spec (3 + migrations 0002/0003/0004/0005)', () => {
     const db = open();
 
-    expect(listIndexes(db)).toHaveLength(8);
+    expect(listIndexes(db)).toHaveLength(11);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
   });
 
@@ -451,17 +457,17 @@ describe('settings override precedence', () => {
 });
 
 describe('idempotency', () => {
-  it('re-running initSchema keeps 16 tables, 1 view, 8 indexes and the seeded rows', () => {
+  it('re-running initSchema keeps 17 tables, 2 views, 11 indexes and the seeded rows', () => {
     const db = open();
     seedSettings(db, { env: {}, now: FIXED_NOW, repoRoot: '/repo' });
 
     expect(() => initSchema(db)).not.toThrow();
     expect(() => initSchema(db)).not.toThrow();
 
-    expect(listTables(db)).toHaveLength(16);
+    expect(listTables(db)).toHaveLength(17);
     expect(listTables(db)).toEqual(EXPECTED_TABLES);
     expect(listViews(db)).toEqual(EXPECTED_VIEWS);
-    expect(listIndexes(db)).toHaveLength(8);
+    expect(listIndexes(db)).toHaveLength(11);
     expect(listIndexes(db)).toEqual(EXPECTED_INDEXES);
     expect(readSettings(db)).toEqual({
       aurorium_path: DEFAULT_AURORIUM_PATH,

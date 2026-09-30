@@ -19,6 +19,7 @@ import {
 } from '../services/questScaffold.js';
 import { createSavePipeline, type SavePipeline } from '../services/savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbIndex.js';
+import { DraftQueryError, parseStatusFilter, questSuggestionsByName } from './drafts.js';
 
 /**
  * Quests API — task 2.5, the three endpoints of docs/spec-api.md L164-180:
@@ -254,6 +255,27 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       }
       res.json(result.evidence);
     } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /**
+   * `GET /api/quests/:name/suggestions` — task 7.6 (D143). The same shape as the id-tier read;
+   * `?status=` defaults to `pending`. Registered before `/:name`, like the evidence read.
+   */
+  router.get('/:name/suggestions', (req, res) => {
+    try {
+      const body = questSuggestionsByName(db, req.params.name, parseStatusFilter(req.query.status));
+      if (body === undefined) {
+        res.status(404).json({ error: `Unknown quest "${req.params.name}"` } satisfies ApiError);
+        return;
+      }
+      res.json(body);
+    } catch (error) {
+      if (error instanceof DraftQueryError) {
+        res.status(400).json({ error: error.message } satisfies ApiError);
+        return;
+      }
       fail(res, error);
     }
   });

@@ -1,0 +1,101 @@
+$ git -C /home/jason/Documents/git-projects/spiraldb rev-parse --abbrev-ref HEAD; git -C … rev-parse --short HEAD; ls QuestTemplates/*.json | wc -l
+content/2026-09-28
+864bd44
+330
+
+$ rm -f data/__test-scratch__/p7-07.db && cp data/spiraldb-ui.db data/__test-scratch__/p7-07.db
+$ node -e (settings.spiraldb_path, quest_suggestions count, coverage) on the scratch copy
+{ value: '/home/jason/Documents/git-projects/spiraldb' }
+{ quest_suggestions: 0 }
+{
+  nameable: 1717,
+  id_space: 4823,
+  defined: 330,
+  missing: 1387,
+  references: 2855
+}
+
+$ npm run drafts   # no --db, no SPIRALDB_UI_DB: must refuse
+Refusing to pick a database implicitly: pass --db <file> (or set SPIRALDB_UI_DB). This command writes quest_suggestions rows into that database.
+Usage: npm run drafts -- [--db <file>] [--spiraldb <dir>]
+  --db        the database file; required unless SPIRALDB_UI_DB is set
+  --spiraldb  the SpiralDB root whose quest files are read (default: settings.spiraldb_path)
+exit=2
+
+$ time npm run --silent drafts -- --db data/__test-scratch__/p7-07.db   # run 1
+[spiraldb-ui] drafts database at data/__test-scratch__/p7-07.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 5458,
+  "unchanged": 0,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 64
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 228
+  },
+  "duration_ms": 5385
+}
+
+real	0m5.828s
+user	0m4.755s
+sys	0m1.403s
+exit=0
+
+$ time npm run --silent drafts -- --db data/__test-scratch__/p7-07.db   # run 2
+[spiraldb-ui] drafts database at data/__test-scratch__/p7-07.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 0,
+  "unchanged": 5458,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 64
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 228
+  },
+  "duration_ms": 5672
+}
+
+real	0m5.986s
+user	0m5.013s
+sys	0m1.286s
+exit=0

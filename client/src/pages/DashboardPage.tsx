@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import ActivityFeed from '../components/dashboard/ActivityFeed';
+import RebuildDraftsButton from '../components/dashboard/RebuildDraftsButton';
 import StatCards from '../components/dashboard/StatCards';
 import TypeProgressSection from '../components/dashboard/TypeProgressSection';
 import { Button } from '../components/ui/button';
@@ -82,7 +83,10 @@ export default function DashboardPage(): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
       <StatCards cards={dashboardCards(dashboard.data.overall)} />
-      <TypeProgressSection rows={typeProgressRows(dashboard.data)} />
+      <TypeProgressSection
+        rows={typeProgressRows(dashboard.data)}
+        action={<RebuildDraftsButton />}
+      />
       <ActivityFeed />
     </div>
   );

@@ -747,7 +747,10 @@ Both return one shape (Phase 7, chosen at p7-01). They are registered before `/a
 - `value` is the parsed `value_json`, not the string.
 - Rows are ordered by `path`, then `source`, then `id`, so a re-read never reorders the inline list.
 - An unknown name or id is a `404 {"error": "Unknown quest \"…\""}`. A known draft with no rows answers
-  `suggestions: []`.
+  `suggestions: []`. **As built (p7-07):** a name is known when it is a `quests` row **or** carries suggestion rows
+  (an extracted quest whose capture suggestions were stored before it had a catalog row); an id is known when it is
+  a `quest_ids` row, and the id route answers only the unnamed-tier rows (`quest_name IS NULL`) of that id. The
+  envelope's `catalog_id` for a name is its lowest linked `quest_ids.quest_id`, else `null`.
 
 ### POST /api/suggestions/:id/reject
 
@@ -843,6 +846,16 @@ synchronous, like `POST /api/sync`. A second request while one runs is a `409`.
 - `drafts` reconciles with `GET /api/quests/coverage`: `named_missing` = `missing`, `named_defined` = `defined`, and
   `unnamed` = the unlinked `quest_ids` rows.
 - The numbers above are illustrative. Every count is read from the run, never hard-coded.
+- **As built (p7-07, D163).** The body also carries `proposed` (the proposals this run made; `inserted +
+  unchanged`), `removed` (pending `evidence-*` rows the run no longer proposes — their field was filled since),
+  `drafts.zero_evidence` (the drafts the queue hides by default), and the two precisions the run re-measured on the
+  corpus, `gate_precision {matched, gates}` and `predecessor_precision {matched, files}`, which are the confidences of
+  `evidence-goals` and `evidence-requirements`. `by_source` counts the table's rows per source **after** the run,
+  every status, all seven keys present. `unchanged` also counts a proposal a decided row blocks (the data model's
+  idempotence rule). A missing `settings.spiraldb_path` is a `400`.
+- `npm run drafts -- --db <file> [--spiraldb <dir>]` runs the same builder and prints this body as JSON. It **refuses
+  to pick a database implicitly** (exit 2 without `--db` or `SPIRALDB_UI_DB`, D164), and it reads the SpiralDB root
+  without writing to it.
 
 ---
 
@@ -891,8 +904,10 @@ above is unchanged.
   verbatim. The server also stores each entry as a pending `quest_suggestions` row with `evidence_ref` =
   `capture:<file name>` (the base name, sanitised like `source`). The insert is idempotent through the identity
   index, so re-uploading the same capture adds nothing. Nothing is merged into `quests`.
-- As built (p7-06): the response carries `suggestions` exactly as the sidecar holds them. Storing them as
-  `quest_suggestions` rows needs migration `0005`, which task 7.6 (p7-07) adds; until then nothing is stored.
+- As built (p7-06): the response carries `suggestions` exactly as the sidecar holds them. As built (p7-07, D161):
+  they are stored **when the extraction answers** (not on a later save), with `catalog_id = NULL` and `evidence_ref =
+  capture:<file name>` sanitised by the save route's `sanitizeCaptureSource`. A store failure is reported as a
+  process warning and never fails the extraction. A rebuild never deletes these rows.
 - `census` is present only when the request asks for it with `?census=1`. It holds the `capture-census` rows for
   the same file. If the census binary is absent, `census` is `{ "skipped": "…reason…" }`, and the extraction itself
   still succeeds, the same posture as the sync's missing `wad-scan` (D55).

@@ -4,6 +4,7 @@ import type { ApiError } from '../../../shared/index.js';
 import { readSettings, type Db } from '../db.js';
 import { questEvidenceById } from '../services/questEvidence.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbIndex.js';
+import { DraftQueryError, parseStatusFilter, questSuggestionsById } from './drafts.js';
 
 /**
  * Quest-id evidence API — task 6.6, `GET /api/quest-ids/:id/evidence`
@@ -78,6 +79,33 @@ export function createQuestIdsRouter({ db }: QuestIdsRouterOptions): Router {
       }
       res.json(result.evidence);
     } catch (error) {
+      console.error('[spiraldb-ui] quest-ids API error:', error);
+      res.status(500).json({
+        error:
+          error instanceof Error && error.message ? error.message : 'The quest operation failed',
+      } satisfies ApiError);
+    }
+  });
+
+  /** `GET /api/quest-ids/:id/suggestions` — task 7.6 (D143): the unnamed tier's staged rows. */
+  router.get('/:id/suggestions', (req, res) => {
+    const rawId = req.params.id;
+    try {
+      const status = parseStatusFilter(req.query.status);
+      const questId = /^\d+$/.test(rawId) ? Number(rawId) : Number.NaN;
+      const body = Number.isSafeInteger(questId)
+        ? questSuggestionsById(db, questId, status)
+        : undefined;
+      if (body === undefined) {
+        res.status(404).json({ error: `Unknown quest "${rawId}"` } satisfies ApiError);
+        return;
+      }
+      res.json(body);
+    } catch (error) {
+      if (error instanceof DraftQueryError) {
+        res.status(400).json({ error: error.message } satisfies ApiError);
+        return;
+      }
       console.error('[spiraldb-ui] quest-ids API error:', error);
       res.status(500).json({
         error:

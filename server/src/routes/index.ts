@@ -4,6 +4,7 @@ import { mountPathFor, OBJECT_TYPES, type ObjectTypeConfig } from '../../../shar
 import { getDb } from '../db.js';
 import { createActivityRouter } from './activity.js';
 import { createDashboardRouter } from './dashboard.js';
+import { createDraftsRouter, createSuggestionsRouter } from './drafts.js';
 import { createExtractRouter } from './extract.js';
 import { createNamesRouter } from './names.js';
 import { createObjectRouter } from './objects.js';
@@ -14,6 +15,7 @@ import { createSearchRouter } from './search.js';
 import { createSettingsRouter } from './settings.js';
 import { createStatusRouter } from './status.js';
 import { createSyncRouter } from './sync.js';
+import { storeCaptureSuggestions } from '../services/drafts.js';
 import { validateDropTableSave } from '../services/dropTables.js';
 import type { ObjectSaveValidator } from '../services/objects.js';
 import { SIMPLE_OBJECT_FIELDS, validateSimpleObjectSave } from '../services/simpleObjectLists.js';
@@ -134,11 +136,21 @@ apiRouter.use('/search', (req, res, next) => {
  *
  * Mounted **directly**, not lazily like the five routers above: the extraction
  * router holds no database handle (architecture rule 4 — the CLI is the only
- * capture reader), so a request never needs `data/spiraldb-ui.db`. It is still
+ * capture reader); only its capture-suggestion store (task 7.6) reaches
+ * `data/spiraldb-ui.db`, and only from inside a request. It is still
  * free of import-time side effects: the service, the upload directory and
  * multer's `mkdirp` all resolve on the first request (`./extract.ts` header).
  */
-apiRouter.use('/extract', createExtractRouter());
+apiRouter.use(
+  '/extract',
+  createExtractRouter({
+    // Task 7.6: the capture suggestions are stored when the extraction answers. The database is
+    // reached only inside a request that carries suggestions, so the router still opens nothing
+    // at import time (D32).
+    storeSuggestions: (suggestions, captureName) =>
+      storeCaptureSuggestions(getDb(), suggestions, captureName),
+  }),
+);
 
 /**
  * Quests (task 2.5, story p2-06) — `GET /api/quests`, `GET /api/quests/:name`,
@@ -165,6 +177,24 @@ let questIdsRouter: Router | undefined;
 apiRouter.use('/quest-ids', (req, res, next) => {
   questIdsRouter ??= createQuestIdsRouter({ db: getDb() });
   questIdsRouter(req, res, next);
+});
+
+/**
+ * Drafts and suggestions (task 7.6, story p7-07) — `GET /api/drafts`, `POST /api/drafts/rebuild`
+ * and `POST /api/suggestions/:id/reject`. Lazily mounted like every router above (D32). They
+ * touch only SQLite; nothing here writes to SpiralDB.
+ */
+let draftsRouter: Router | undefined;
+let suggestionsRouter: Router | undefined;
+
+apiRouter.use('/drafts', (req, res, next) => {
+  draftsRouter ??= createDraftsRouter({ db: getDb() });
+  draftsRouter(req, res, next);
+});
+
+apiRouter.use('/suggestions', (req, res, next) => {
+  suggestionsRouter ??= createSuggestionsRouter({ db: getDb() });
+  suggestionsRouter(req, res, next);
 });
 
 /**

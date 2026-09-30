@@ -1117,6 +1117,27 @@ export function scaffoldQuest(questName: string): Promise<ScaffoldQuestResult> {
   });
 }
 
+/* -------------------------------------------------------------- drafts (task 7.6) */
+
+/** `POST /api/drafts/rebuild`'s body (D143) — every count read from the run. */
+export interface DraftRebuildResult {
+  proposed: number;
+  inserted: number;
+  unchanged: number;
+  removed: number;
+  by_source: Record<string, number>;
+  drafts: { named_missing: number; named_defined: number; unnamed: number; zero_evidence: number };
+  duration_ms: number;
+}
+
+/**
+ * `POST /api/drafts/rebuild` — runs the draft builder (the same code as `npm run drafts`) and
+ * answers when it is done; a `409` means one is already running. Touches only SQLite.
+ */
+export function postDraftsRebuild(): Promise<DraftRebuildResult> {
+  return apiFetch<DraftRebuildResult>('/api/drafts/rebuild', { method: 'POST' });
+}
+
 /* ------------------------------------------------- quests (coverage + catalog) */
 
 /**

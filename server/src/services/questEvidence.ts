@@ -218,8 +218,12 @@ interface PersonaRow {
   title_key: string | null;
 }
 
-/** Every lookup the builder needs, read once per request. */
-interface EvidenceTables {
+/**
+ * Every lookup the builder needs, read once per request — or once per **run** when a caller
+ * evaluates many quests (the draft builder, task 7.6, passes it through {@link EvidenceOptions.tables}
+ * instead of re-reading the 217k-row string table per quest).
+ */
+export interface EvidenceTables {
   /** `string_table.key → value` — the one lookup every ladder rung shares. */
   strings: ReadonlyMap<string, string>;
   /** persona object name → its `persona_index` row. */
@@ -230,7 +234,7 @@ interface EvidenceTables {
   textTables: ReadonlyMap<number, string>;
 }
 
-function readTables(db: Db): EvidenceTables {
+export function readEvidenceTables(db: Db): EvidenceTables {
   const strings = new Map<string, string>();
   for (const row of db
     .prepare<[], { key: string; value: string }>('SELECT key, value FROM string_table')
@@ -663,6 +667,8 @@ export interface EvidenceOptions {
   db: Db;
   /** The D19 content-keyed index over the SpiralDB root (the quest file's reader). */
   index: SpiraldbIndex;
+  /** Lookups read once by the caller; read per call when absent. */
+  tables?: EvidenceTables;
 }
 
 /** The quest file's document, or `undefined` when the name has no file (a catalog-only row). */
@@ -853,7 +859,7 @@ export function questEvidenceByName(options: EvidenceOptions, name: string): Evi
     return { kind: 'unknown' };
   }
 
-  const tables = readTables(db);
+  const tables = options.tables ?? readEvidenceTables(db);
   const document = readDocument(options, name);
   const linked = db
     .prepare<[string], QuestIdRow>(
@@ -908,7 +914,7 @@ export function questEvidenceById(options: EvidenceOptions, questId: number): Ev
     return { kind: 'unknown' };
   }
 
-  const tables = readTables(db);
+  const tables = options.tables ?? readEvidenceTables(db);
   const catalogName = idRow.matched_quest_name;
   const catalog =
     catalogName === null

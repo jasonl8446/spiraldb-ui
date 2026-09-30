@@ -1,0 +1,37 @@
+-- coverage view
+SELECT * FROM coverage
+[{"nameable":1717,"id_space":4823,"defined":330,"missing":1387,"references":2855}]
+
+-- quest_drafts by tier (named_missing / named_defined / unnamed) and with evidence
+SELECT CASE WHEN quest_name IS NULL THEN 'unnamed' WHEN has_definition=1 THEN 'named_defined' ELSE 'named_missing' END AS tier,
+        count(*) AS drafts, sum(evidence_richness>0) AS with_evidence, sum(evidence_richness=0) AS zero_evidence, sum(pending) AS pending_rows
+   FROM quest_drafts GROUP BY tier ORDER BY tier
+[{"tier":"named_defined","drafts":330,"with_evidence":3,"zero_evidence":327,"pending_rows":4},{"tier":"named_missing","drafts":1387,"with_evidence":1002,"zero_evidence":385,"pending_rows":1392},{"tier":"unnamed","drafts":4648,"with_evidence":4000,"zero_evidence":648,"pending_rows":4062}]
+
+-- unlinked quest_ids (the unnamed tier denominator)
+SELECT count(*) AS unlinked FROM quest_ids WHERE matched_quest_name IS NULL
+[{"unlinked":4648}]
+
+-- reconciliation checks (1 = holds)
+SELECT (SELECT count(*) FROM quest_drafts WHERE quest_name IS NOT NULL AND has_definition=0) = (SELECT missing FROM coverage) AS named_missing_eq_missing,
+        (SELECT count(*) FROM quest_drafts WHERE quest_name IS NOT NULL AND has_definition=1) = (SELECT defined FROM coverage) AS named_defined_eq_defined,
+        (SELECT count(*) FROM quest_drafts WHERE quest_name IS NULL) = (SELECT count(*) FROM quest_ids WHERE matched_quest_name IS NULL) AS unnamed_eq_unlinked,
+        (SELECT count(*) FROM quest_drafts) = (SELECT nameable FROM coverage) + (SELECT count(*) FROM quest_ids WHERE matched_quest_name IS NULL) AS drafts_eq_nameable_plus_unlinked
+[{"named_missing_eq_missing":1,"named_defined_eq_defined":1,"unnamed_eq_unlinked":1,"drafts_eq_nameable_plus_unlinked":1}]
+
+-- rows per source x tier
+SELECT source, CASE WHEN quest_name IS NULL THEN 'unnamed' ELSE 'named' END AS tier, count(*) AS n, count(DISTINCT coalesce(quest_name, '#'||catalog_id)) AS drafts FROM quest_suggestions GROUP BY 1,2 ORDER BY 1,2
+[{"source":"evidence-dialogue","tier":"unnamed","n":62,"drafts":62},{"source":"evidence-goals","tier":"named","n":836,"drafts":836},{"source":"evidence-location","tier":"named","n":85,"drafts":58},{"source":"evidence-requirements","tier":"named","n":449,"drafts":449},{"source":"evidence-title","tier":"named","n":26,"drafts":15},{"source":"evidence-title","tier":"unnamed","n":4000,"drafts":4000}]
+
+-- rows per status
+SELECT status, count(*) AS n FROM quest_suggestions GROUP BY status
+[{"status":"pending","n":5458}]
+
+-- duplicate identities (must be empty)
+SELECT coalesce(quest_name,''), coalesce(catalog_id,-1), path, source, value_json, count(*) c FROM quest_suggestions GROUP BY 1,2,3,4,5 HAVING c>1
+[]
+
+-- top 5 of the queue (GET /api/drafts order)
+SELECT quest_name, catalog_id, title, has_definition, reference_count, pending, evidence_richness, sources FROM quest_drafts WHERE evidence_richness>0 ORDER BY evidence_richness DESC, reference_count DESC, quest_name, catalog_id LIMIT 5
+[{"quest_name":"WC-PreMR-MAIN-001","catalog_id":null,"title":"WC-PreMR-MAIN-001","has_definition":0,"reference_count":8,"pending":5,"evidence_richness":5,"sources":"evidence-goals,evidence-location"},{"quest_name":"KT-WEAVE-MYTH-002","catalog_id":null,"title":"KT-WEAVE-MYTH-002","has_definition":0,"reference_count":5,"pending":5,"evidence_richness":5,"sources":"evidence-goals,evidence-location,evidence-requirements"},{"quest_name":"AV-MSRAID-001","catalog_id":null,"title":"AV-MSRAID-001","has_definition":0,"reference_count":4,"pending":5,"evidence_richness":5,"sources":"evidence-goals,evidence-location"},{"quest_name":"KT-WEAVE-STORM-002","catalog_id":null,"title":"KT-WEAVE-STORM-002","has_definition":0,"reference_count":6,"pending":4,"evidence_richness":4,"sources":"evidence-goals,evidence-location,evidence-requirements"},{"quest_name":"KT-WEAVE-LIFE-002","catalog_id":1594556,"title":"Thermite Makes Right","has_definition":0,"reference_count":4,"pending":4,"evidence_richness":4,"sources":"evidence-goals,evidence-location,evidence-requirements"}]
+
