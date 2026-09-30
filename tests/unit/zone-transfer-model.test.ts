@@ -471,7 +471,9 @@ describe.skipIf(!FORK_PRESENT)(
       const sample = db
         .prepare('SELECT display_name FROM zones WHERE zone_path = ?')
         .get('Aquila/AQ_Z00_Hub') as { display_name: string } | undefined;
-      expect(sample?.display_name).toBe('Aquila / AQ Z00 Hub');
+      // D120's ladder resolves `m_zoneDisplayName` through the string table; it was the humanised
+      // path 'Aquila / AQ Z00 Hub' while the table was corpus-derived (re-measured at p7-02, D145).
+      expect(sample?.display_name).toBe('Garden Of Hesperides');
     });
   },
 );

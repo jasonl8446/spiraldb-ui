@@ -146,7 +146,8 @@ const config = {
   imlightRunDir: path.join(repoRoot, 'tools', '.imlight-run'),
   auroriumRunDir: path.join(repoRoot, 'tools', '.aurorium-run'),
   ownershipFile: path.join(repoRoot, 'tools', '.aurorium-run', 'ownership.json'),
-  evidenceDir: path.join(repoRoot, 'docs', 'evidence', 'phase-6'),
+  /** Gitignored (D114), so a re-run never rewrites a committed artifact; `--evidence-dir` opts in. */
+  evidenceDir: path.join(repoRoot, 'tools', '.imlight-run', 'evidence'),
 };
 
 /**
@@ -1081,7 +1082,8 @@ function usage(): never {
       `  --spiraldb <dir>      (prove-count) the SpiralDB root; defaults to the D17 clone, and any\n` +
       `                        other value is refused — the boot reads and the restore covers the clone\n` +
       `  --timeout <seconds>   (boot, prove-count) per-boot deadline; default 900\n` +
-      `  --evidence-dir <dir>  (prove-count) where the raw logs and the report are written\n` +
+      `  --evidence-dir <dir>  (prove-count) where the raw logs and the report are written;\n` +
+      `                        default tools/.imlight-run/evidence (gitignored). Pass docs/evidence/<phase> to commit them\n` +
       `  --prefix <name>       (prove-count) evidence filename prefix; default p6-12\n` +
       `  --restore-clone       (prove-count) restore the D17 clone to its pre-scaffold snapshot\n` +
       `  --keep-services       (prove-count) leave a started Aurorium running (for the reuse arm)\n`,
