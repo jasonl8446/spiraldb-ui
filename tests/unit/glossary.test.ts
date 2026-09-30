@@ -269,7 +269,9 @@ describe('glossary entries — shape, help and sources', () => {
       const text = fs.readFileSync(abs, 'utf8').split('\n')[line - 1];
       checked += 1;
       if (text === undefined || !mentions(text, termOf(address))) {
-        bad.push(`${address}: ${entry.source} does not mention it`);
+        bad.push(
+          `${address}: ${entry.source} does not mention it (a spec edit shifted it? run node scripts/glossary-spotcheck.mjs --fix)`,
+        );
       }
     }
     expect(checked).toBeGreaterThan(200);
