@@ -420,23 +420,33 @@ which; `npm test` passes with the harness absent.
 
 ## Phase acceptance criteria
 
-- [ ] `node scripts/wad-census.mjs …` reproduces every number in the baseline table.
-- [ ] `npm run build:wadscan && tools/bin/wad-scan extract --select …` emits all 6,733 rows, timed and recorded.
-- [ ] `npm run sync`: catalog rows ≥ 1,447, `has_definition` equal to the corpus-under-test count, both coverage
+- [x] `node scripts/wad-census.mjs …` reproduces every number in the baseline table.
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-1 (183,676 objects, 142 rows, `TutorialQuestTemplate` 11, `QuestTemplate` 0; 40.9 s) and [p6-03.md](./evidence/phase-6/p6-03.md) ac2.
+- [x] `npm run build:wadscan && tools/bin/wad-scan extract --select …` emits all 6,733 rows, timed and recorded.
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-2 (6,733 rows, 0 failures, 5.3 s) and [p6-03.md](./evidence/phase-6/p6-03.md) ac3.
+- [x] `npm run sync`: catalog rows ≥ 1,447, `has_definition` equal to the corpus-under-test count, both coverage
       denominators correct; a second run is identical in counts.
-- [ ] Sync with `tools/bin/wad-scan` removed succeeds, catalog stage `skipped`.
-- [ ] Every section shows the pair where a friendly source exists, and matches either way: verified per family in the
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-3 (catalog rows 1,449; `defined` 322 = the clone's file count; two syncs identical) and [p6-05.md](./evidence/phase-6/p6-05.md).
+- [x] Sync with `tools/bin/wad-scan` removed succeeds, catalog stage `skipped`.
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-7 (`rc=0`, `catalog status: SKIPPED`) and [p6-03.md](./evidence/phase-6/p6-03.md) ac4.
+- [x] Every section shows the pair where a friendly source exists, and matches either way: verified per family in the
       table above, including the three that legitimately show the technical value alone.
-- [ ] One NPC resolves to a single entry with all its name aliases, and the NPC view lists its personas, dialogs,
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-5 (per family; DropTable and CreatureSpellbook render technical-only with the measured reason, D121/D135) and [p6-06.md](./evidence/phase-6/p6-06.md).
+- [x] One NPC resolves to a single entry with all its name aliases, and the NPC view lists its personas, dialogs,
       quests and NPC-keyed inventories with counts that match a direct query.
-- [ ] For one quest, the evidence panel shows title, used/available text split, dialogue with a named speaker, and
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-5 (`Gretta` is one NPC row) and [p6-07.md](./evidence/phase-6/p6-07.md) (`GET /api/npcs/:id`, counts 2/1/4/1, `p6-07-ac-npc-44169.json`). The NPC *view* is the API; the page for it landed in Phase 7 (D182(c)).
+- [x] For one quest, the evidence panel shows title, used/available text split, dialogue with a named speaker, and
       world goal gates; one insert round-trips into the file with a single-field diff.
-- [ ] One quest scaffolded from the catalog is **loaded by a live Imlight boot**, proven from its own
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-4 (title, 0 used / 30 available, speaker "Cyrus Drake", gates) and [p6-08-ac1-git-diff.txt](./evidence/phase-6/p6-08-ac1-git-diff.txt) (one `m_dialog` leaf changed).
+- [x] One quest scaffolded from the catalog is **loaded by a live Imlight boot**, proven from its own
       `SpiralDB loaded … quest templates` line rising by exactly one (task 6.11); "appears in game" is recorded in the
       PR as an owner post-run step, not claimed by the run.
-- [ ] `npm test` green including the injected-fake path and archive fixtures; `npm run lint` clean; tier-1 UI specs
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-6 (`323 -> 324 quest templates`, run live) and [p6-12.md](./evidence/phase-6/p6-12.md) (`322 -> 323`). Not met to the letter: PR #9's body does not carry the "appears in game is an owner post-run step" sentence; that record is D113 in `plan-overview.md`, and the run never claimed it.
+- [x] `npm test` green including the injected-fake path and archive fixtures; `npm run lint` clean; tier-1 UI specs
       green (each touched spec named in the PR).
-- [ ] P6-1…P6-16 present in plan-overview.md with D-numbers, and the three specs updated.
+      Evidence: [final-verify.md](./evidence/final-verify.md) step P6-8 (`npm test` 1,832 passed; lint rc=0; `test:ui` 418 passed) and [p6-12-gates.txt](./evidence/phase-6/p6-12-gates.txt). Not met to the letter: PR #9's body names only the failing specs, not each touched spec.
+- [x] P6-1…P6-16 present in plan-overview.md with D-numbers, and the three specs updated.
+      Evidence: [p6-01.md](./evidence/phase-6/p6-01.md) AC1 (P6-1..P6-20 recorded 1:1 as D96..D115) and AC2 (the three specs).
 
 ## Risks & mitigations
 
