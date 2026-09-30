@@ -6,7 +6,8 @@
 //   1. runs the committed fixture through tools/bin/imview-packet-reader,
 //   2. reads the corpus quest the fixture was generated from (JSON5 — the corpus is not strict JSON),
 //   3. compares quest name, title, level, mainline, goal count, goal names (in order), goal types,
-//      dialog block count, dialog entry count and the per-container dialog entry map,
+//      goal persona names (in order; task 7.3), dialog block count, dialog entry count and the
+//      per-container dialog entry map,
 //   4. regenerates the fixture with tools/bin/fixturegen and asserts it is byte-identical, i.e. the
 //      committed artifact really is reproduced by the command recorded in captures/README.md.
 //

@@ -1,0 +1,3 @@
+{"report":"observed-field","quest":"DS-ACAD-C01-003","path":"m_petOnlyQuest","source":"MSG_SENDQUEST.PetOnlyQuest","value":1,"reason":"the quest schema has no m_petOnlyQuest (only goals carry it)"}
+{"report":"observed-field","quest":"DS-ACAD-C01-003","path":"m_questComplete","source":"MSG_COMPLETEQUEST.CompleteText","value":"P7-PLANT-CompleteQuest-DS-ACAD-C01-003","reason":"m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value"}
+{"report":"observed-field","quest":"DS-ACAD-C01-003","path":"m_goals[1_WizardQuestGoals_UseItem].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-DS-ACAD-C01-003-g0","reason":"WaypointGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}

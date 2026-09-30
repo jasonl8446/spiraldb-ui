@@ -191,7 +191,7 @@ the schema rejects is reported and not written.
 The Phase 2 round-trip (`npm run verify:captures`) and `npm run audit:corpus` report the same 181 verified with 0
 failures on the D17 clone. The CLI's JSON contract (D45) is unchanged for fields not listed. The committed golden
 outputs are checked in CI against their inject specs, as in 7.2. `compareSnapshots` in
-`scripts/lib/quest-roundtrip.mjs` gains `m_personaName`, which is already non-empty on 405 goals in the D17 clone,
+`scripts/lib/quest-roundtrip.mjs` gains `m_personaName`, which is already non-empty on 405 goals in the D17 clone *(amended at p7-04 by measurement, D153: non-empty on **14** goals; 405 is the `GOAL_TYPE_PERSONA` goal count)*,
 so the corpus round-trip gets a free extra check.
 
 ### 7.4 Wrapper post-pass: reader defect repairs + more dialog — **M**

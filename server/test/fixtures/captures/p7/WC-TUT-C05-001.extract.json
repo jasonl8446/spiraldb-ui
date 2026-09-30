@@ -1,0 +1,45 @@
+[
+  {
+    "m_questName": "WC-TUT-C05-001",
+    "m_questNameID": 7700005,
+    "m_questTitle": "",
+    "m_questInfo": "P7-PLANT-QuestInfo-WC-TUT-C05-001",
+    "m_startGoals": [],
+    "m_goals": [
+      {
+        "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty",
+        "m_rank": 0,
+        "m_goalName": "1_",
+        "m_goalNameID": 0,
+        "m_goalTitle": "",
+        "m_completeText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0",
+        "m_locationName": "",
+        "m_displayImage1": "",
+        "m_displayImage2": "",
+        "m_autoQualify": false,
+        "m_autoComplete": false,
+        "m_destinationZone": "",
+        "m_goalType": "GOAL_TYPE_ACHIEVERANK",
+        "m_noQuestHelper": false,
+        "m_petOnlyQuest": false,
+        "m_hideGoalFloatyText": false
+      }
+    ],
+    "m_prepAlways": false,
+    "m_clientTags": [
+      "P7-PLANT-QuestTag-WC-TUT-C05-001-A",
+      "P7-PLANT-QuestTag-WC-TUT-C05-001-B"
+    ],
+    "m_questLevel": 0,
+    "m_questRepeat": 0,
+    "m_isHidden": false,
+    "m_outdated": false,
+    "m_noQuestHelper": true,
+    "m_mainline": false,
+    "m_skipQHAutoSelect": true,
+    "m_forceInteraction": false,
+    "m_checkInventoryForCrafting": false,
+    "m_playAsYourPetNPC": false,
+    "m_activityType": "ACTIVITY_Crafting"
+  }
+]

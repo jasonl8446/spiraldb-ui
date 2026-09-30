@@ -191,10 +191,23 @@ describe('p7 census goldens against their --inject specs (CI-bound)', () => {
       const rows = goldenOf(quest).rows;
       const row = (message: string, field: string): CensusRow | undefined =>
         rows.find((r) => r.message === message && r.field === field);
-      // Ignored today (7.3 flips these and regenerates the goldens): the census is the gap report.
-      expect(row('MSG_SENDGOAL', 'PersonaName')?.consumed).toBe(false);
-      expect(row('MSG_SENDQUEST', 'QuestNameID')?.consumed).toBe(false);
-      expect(row('MSG_COMPLETEGOAL', 'CompleteText')?.consumed).toBe(false);
+      // Still ignored (task 7.5 reads the rewards): the census is the gap report.
+      expect(row('MSG_SENDQUEST', 'Rewards')?.consumed).toBe(false);
+      // Read by the 7.3 observed-field post-pass (flipped in p7-04, goldens regenerated)…
+      for (const [message, field] of [
+        ['MSG_SENDGOAL', 'PersonaName'],
+        ['MSG_SENDQUEST', 'QuestNameID'],
+        ['MSG_SENDQUEST', 'QuestInfo'],
+        ['MSG_SENDQUEST', 'NoQuestHelper'],
+        ['MSG_SENDQUEST', 'SkipQHAutoSelect'],
+        ['MSG_SENDQUEST', 'ActivityType'],
+        ['MSG_SENDQUEST', 'ClientTags'],
+        ['MSG_SENDQUEST', 'PetOnlyQuest'],
+        ['MSG_COMPLETEGOAL', 'CompleteText'],
+        ['MSG_COMPLETEQUEST', 'CompleteText'],
+      ] as const) {
+        expect(row(message, field)?.consumed, `${message}.${field}`).toBe(true);
+      }
       // …while the fields the reader does read stay consumed.
       expect(row('MSG_SENDQUEST', 'QuestID')?.consumed).toBe(true);
       expect(row('MSG_SENDGOAL', 'GoalNameID')?.consumed).toBe(true);

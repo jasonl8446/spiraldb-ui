@@ -30,6 +30,13 @@ internal static class Program {
         The wrapper restores MSG_QUESTOFFER.Level, which the bundled reader drops
         (decision D46), and keeps the reader's diagnostics off stdout.
 
+        It also copies the observed fields the reader drops (Phase 7, D126/D127):
+        MSG_SENDQUEST QuestInfo/QuestNameID/NoQuestHelper/SkipQHAutoSelect/
+        ActivityType/ClientTags, MSG_SENDGOAL PersonaName/NoQuestHelper/PetOnlyQuest,
+        MSG_COMPLETEGOAL CompleteText and MSG_PERSONAINFO GoalHyperlink, joined by
+        QuestID/GoalID. A value it cannot write is reported on stderr as one JSON
+        line {"report":"observed-field","quest","path","source","value","reason"}.
+
         Exit codes: 0 = success, 1 = error (message on stderr).
         """;
 
@@ -62,7 +69,7 @@ internal static class Program {
         try {
             // Validate before handing the path to the builder: the builder silently returns an
             // empty list for anything it cannot match, so a non-capture would look like success.
-            var levels = ValidateCapture(options.InputPath);
+            var capture = ValidateCapture(options.InputPath);
 
             // The upstream builder writes diagnostics straight to Console.Out (a template-manifest
             // warning fires as soon as a dialog carries a persona), which would corrupt the JSON
@@ -77,7 +84,8 @@ internal static class Program {
                 Console.SetOut(stdout);
             }
 
-            ApplyOfferLevels(quests, levels);
+            ApplyOfferLevels(quests, ReadOfferLevels(capture));
+            ObservedFields.Apply(quests, capture, Console.Error.WriteLine);
             var json = JsonConvert.SerializeObject(quests, Formatting.Indented, s_jsonSettings);
 
             if (options.OutputPath is null or "-") {
@@ -106,8 +114,9 @@ internal static class Program {
     /// <summary>
     /// Reads and validates the capture file, throwing <see cref="CliException"/> with a
     /// user-facing message when it is missing, unreadable, not JSON, or not a packet capture.
+    /// Returns the parsed capture, which the post-passes (D46 levels, Phase 7 observed fields) re-read.
     /// </summary>
-    private static Dictionary<string, int> ValidateCapture(string path) {
+    private static JsonNode ValidateCapture(string path) {
         if (!File.Exists(path)) {
             throw new CliException($"input file not found: {path}");
         }
@@ -135,7 +144,7 @@ internal static class Program {
             );
         }
 
-        return ReadOfferLevels(root);
+        return root;
     }
 
     // An empty array is a valid capture with no packets; every entry must otherwise be an

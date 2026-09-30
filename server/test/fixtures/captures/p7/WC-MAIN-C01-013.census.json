@@ -72,13 +72,13 @@
       "message": "MSG_COMPLETEGOAL",
       "field": "CompleteText",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_COMPLETEGOAL",
       "field": "GoalID",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_COMPLETEGOAL",
@@ -90,13 +90,13 @@
       "message": "MSG_COMPLETEQUEST",
       "field": "CompleteText",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_COMPLETEQUEST",
       "field": "QuestID",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_QUESTOFFER",
@@ -126,7 +126,7 @@
       "message": "MSG_QUESTOFFER",
       "field": "QuestInfo",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_QUESTOFFER",
@@ -216,19 +216,19 @@
       "message": "MSG_SENDGOAL",
       "field": "NoQuestHelper",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "PersonaName",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
       "field": "PetOnlyQuest",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDGOAL",
@@ -246,25 +246,25 @@
       "message": "MSG_SENDQUEST",
       "field": "ActivityType",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
       "field": "ClientTags",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
       "field": "NoQuestHelper",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
       "field": "PetOnlyQuest",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
@@ -276,13 +276,13 @@
       "message": "MSG_SENDQUEST",
       "field": "QuestInfo",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
       "field": "QuestNameID",
       "count": 1,
-      "consumed": false
+      "consumed": true
     },
     {
       "message": "MSG_SENDQUEST",
@@ -300,7 +300,7 @@
       "message": "MSG_SENDQUEST",
       "field": "SkipQHAutoSelect",
       "count": 1,
-      "consumed": false
+      "consumed": true
     }
   ]
 }

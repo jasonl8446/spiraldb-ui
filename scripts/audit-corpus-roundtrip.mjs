@@ -7,8 +7,8 @@
 //     corpus quest -> tools/bin/fixturegen -> tools/bin/imview-packet-reader -> quest'
 //
 // and compares quest' against the source on the same field list (name, title, level, mainline, goal
-// count, goal names in order, goal types, dialog block count, dialog entry count, per-container dialog
-// entry map). FixtureGen encodes with the game's own Imcodec serializer and the reader is Imview's
+// count, goal names in order, goal types, goal persona names in order (task 7.3), dialog block count,
+// dialog entry count, per-container dialog entry map). FixtureGen encodes with the game's own Imcodec serializer and the reader is Imview's
 // QuestBuilder, so a pass over the real corpus is the strongest fidelity evidence available without a
 // recorded live capture; a mismatch is a concrete extraction defect with a named quest and field.
 //

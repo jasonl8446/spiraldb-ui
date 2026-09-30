@@ -4,6 +4,9 @@ import { mkdtemp, readFile as readFileAsync, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+import type { ZodTypeAny } from 'zod';
+
+import { GoalTemplateSchema, QuestTemplateSchema } from '../../../shared/quest/index.js';
 import { resolveRepoRoot } from '../db.js';
 
 /**
@@ -406,6 +409,120 @@ export function parseQuestArray(text: string, source: string): unknown[] {
 }
 
 // ---------------------------------------------------------------------------
+// The observed-field schema gate (task 7.3, D126/D127)
+// ---------------------------------------------------------------------------
+
+/** Quest-level keys the wrapper's observed-field post-pass writes (spec-domain-reference, Phase 7). */
+export const OBSERVED_QUEST_FIELDS = [
+  'm_questInfo',
+  'm_questNameID',
+  'm_noQuestHelper',
+  'm_skipQHAutoSelect',
+  'm_activityType',
+  'm_clientTags',
+] as const;
+
+/** Goal-level keys the post-pass writes. */
+export const OBSERVED_GOAL_FIELDS = [
+  'm_personaName',
+  'm_noQuestHelper',
+  'm_petOnlyQuest',
+  'm_completeText',
+  'm_hyperlink',
+] as const;
+
+/** One observed value the gate refused: the same fields as the wrapper's stderr report line. */
+export interface ObservedFieldReport {
+  quest: string;
+  path: string;
+  value: unknown;
+  reason: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Re-checks every observed key the wrapper wrote against the shared zod schema — the one place the
+ * corpus schema lives (the wrapper is C#). A rejected value is **reported and removed**, so it is never
+ * written, while the rest of the quest survives: one bad packet field must not cost the whole quest a
+ * 400 at save time. A key on a goal class whose schema does not declare it (e.g. `m_personaName` on a
+ * waypoint goal) counts as rejected too, because the passthrough object would otherwise wave it through.
+ * Only the observed keys are touched; every other field is the unchanged D45 payload. Mutates and
+ * returns `quests`.
+ */
+export function screenObservedFields(
+  quests: unknown[],
+  report: (entry: ObservedFieldReport) => void,
+): unknown[] {
+  const check = (
+    owner: Record<string, unknown>,
+    key: string,
+    schema: ZodTypeAny | undefined,
+    quest: string,
+    path: string,
+    missingReason: string,
+  ): void => {
+    if (!(key in owner)) {
+      return;
+    }
+    const value = owner[key];
+    const result = schema?.safeParse(value);
+    if (result?.success) {
+      return;
+    }
+    delete owner[key];
+    report({
+      quest,
+      path,
+      value,
+      reason: result
+        ? `the shared schema rejects it: ${result.error.issues.map((i) => i.message).join('; ')}`
+        : missingReason,
+    });
+  };
+
+  for (const quest of quests) {
+    if (!isRecord(quest)) {
+      continue;
+    }
+    const name = typeof quest.m_questName === 'string' ? quest.m_questName : '';
+    for (const key of OBSERVED_QUEST_FIELDS) {
+      check(
+        quest,
+        key,
+        QuestTemplateSchema.shape[key],
+        name,
+        key,
+        `the quest schema has no ${key}`,
+      );
+    }
+    for (const goal of Array.isArray(quest.m_goals) ? quest.m_goals : []) {
+      if (!isRecord(goal)) {
+        continue;
+      }
+      const member = GoalTemplateSchema.optionsMap.get(goal.$type as string);
+      if (!member) {
+        // An unknown $type is the save path's loud failure (invalid_discriminator), not this gate's.
+        continue;
+      }
+      const shape = member.shape as Record<string, ZodTypeAny>;
+      for (const key of OBSERVED_GOAL_FIELDS) {
+        check(
+          goal,
+          key,
+          shape[key],
+          name,
+          `m_goals[${String(goal.m_goalName)}].${key}`,
+          `the ${String(goal.$type).split(',')[0]} schema has no ${key}`,
+        );
+      }
+    }
+  }
+  return quests;
+}
+
+// ---------------------------------------------------------------------------
 // The service
 // ---------------------------------------------------------------------------
 
@@ -432,6 +549,8 @@ export interface ExtractionServiceOptions {
   fileExists?: (candidate: string) => boolean;
   /** Injected child-environment builder — the DOTNET_ROOT seam. */
   buildEnv?: (base: NodeJS.ProcessEnv) => NodeJS.ProcessEnv;
+  /** Where {@link screenObservedFields} reports a refused value; defaults to a process warning. */
+  reportObserved?: (entry: ObservedFieldReport) => void;
 }
 
 /**
@@ -474,6 +593,10 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
   const timeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const fileExists = options.fileExists ?? fs.existsSync;
   const buildEnv = options.buildEnv ?? ((base: NodeJS.ProcessEnv) => buildChildEnv(base));
+  const reportObserved =
+    options.reportObserved ??
+    ((entry: ObservedFieldReport) =>
+      process.emitWarning(`[extract] observed field not written: ${JSON.stringify(entry)}`));
   const readTextFile = options.readTextFile ?? ((file: string) => readFileAsync(file, 'utf8'));
   const removePath =
     options.removePath ?? ((target: string) => rm(target, { recursive: true, force: true }));
@@ -537,7 +660,7 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
 
     try {
       const { stdout } = await runCli(children, ['--input', capturePath], env);
-      return parseQuestArray(stdout, 'stdout');
+      return screenObservedFields(parseQuestArray(stdout, 'stdout'), reportObserved);
     } catch (error) {
       if (children.cancelled) {
         throw new ExtractionCancelledError();
@@ -559,7 +682,10 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
       const outFile = path.join(tempDir, 'quests.json');
       try {
         await runCli(children, ['--input', capturePath, '--output', outFile], env);
-        return parseQuestArray(await readTextFile(outFile), outFile);
+        return screenObservedFields(
+          parseQuestArray(await readTextFile(outFile), outFile),
+          reportObserved,
+        );
       } catch (retryError) {
         if (children.cancelled) {
           throw new ExtractionCancelledError();

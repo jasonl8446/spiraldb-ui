@@ -325,6 +325,10 @@ internal static partial class Program {
                 ["PetOnlyQuest"] = Wrap(goal.PetOnlyQuest ? 1 : 0),
                 ["UseTally"] = Wrap((byte) useTally),
                 ["GoalMadlibs"] = Wrap(madlibsHex),
+                // Declared by Imlight's QuestMessages.xml (not by the reader); the wrapper's post-pass
+                // copies it into m_personaName (task 7.3), so the round-trip can compare it. Last, so
+                // an --inject spec that plants PersonaName overwrites it in place.
+                ["PersonaName"] = Wrap(goal.Type == GOAL_TYPE.GOAL_TYPE_PERSONA ? goal.PersonaName : ""),
             };
 
             if (inject is null) {

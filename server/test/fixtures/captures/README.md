@@ -14,8 +14,8 @@ npm run verify:captures        # exit 0 = every committed fixture round-trips
 
 `verify:captures` (`scripts/verify-captures.mjs`) runs every fixture through
 `tools/bin/imview-packet-reader`, compares the reconstructed quest against the corpus source on
-quest name, title, level, mainline, goal count, goal names (in order), goal types, dialog block
-count, dialog entry count and the per-container dialog map, then regenerates each fixture with
+quest name, title, level, mainline, goal count, goal names (in order), goal types, goal persona
+names (in order; task 7.3), dialog block count, dialog entry count and the per-container dialog map, then regenerates each fixture with
 `tools/bin/fixturegen` and asserts the bytes are identical to the committed file (the reproducibility
 pin below). It needs the corpus clone; pass `--corpus <QuestTemplates dir>` to point it elsewhere.
 
@@ -29,17 +29,20 @@ tools/bin/fixturegen \
   --output server/test/fixtures/captures/<QUEST>.json
 ```
 
-Corpus pin: the `data/test-spiraldb` clone at commit `c55ccab175440c5f676b8d5315575ccd6d550332`.
+Corpus pin: the `data/test-spiraldb` clone at commit `18dc92477d54b1e911796960407ce7710e703697`
+(regenerated in p7-04, when every `MSG_SENDGOAL` gained the `PersonaName` field that Imlight's
+`QuestMessages.xml` declares, so the round-trip can compare `m_personaName`; the only byte change is that
+added field — first pinned at `c55ccab175440c5f676b8d5315575ccd6d550332`).
 A corpus refresh changes the bytes below and `verify:captures` fails until the fixtures are
 regenerated and these hashes updated.
 
 | Fixture (= quest name) | Corpus source | sha256 | Goals (k in GoalCompilation) | Goal types | Dialog blocks / entries | Level | Why it is in the set |
 |---|---|---|---|---|---|---|---|
-| `MB-YARD1-C01-001.json` | `QuestTemplates/questtemplates_MB-YARD1-C01-001.json` | `339bd29245af25a041e99592028c73c3eed320d23da90d03925cd1628c04ca87` | 15 (1) | WAYPOINT ×7, PERSONA ×6, BOUNTYCOLLECT ×2 | 7 / 9 | 1 | Multi-goal mainline — the goal-heaviest quest the generator accepts (rank 1/181) |
-| `WC-CYCLOPS-MAIN-002.json` | `QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json` | `e2c9137b20abd621a2520104e71cc6ce2402efb31a78be30e0bf56c77bee4941` | 6 (0) | PERSONA ×6 | 7 / 27 | 1 | Dialog-heavy — the entry-heaviest quest the generator accepts (rank 1/181; next: 20, 19, 14, 13) |
-| `WC-UNICORN-MAIN-004.json` | `QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json` | `a2eae4202bc9ee0a67fe00138066c5fac2c03a387882d98f8ffa0ce8b15fd047` | 7 (5) | USAGE ×4, BOUNTYCOLLECT, WAYPOINT, PERSONA | 3 / 8 | 0 | Rarest goal type: `GOAL_TYPE_USAGE` occurs 4 times in the whole corpus and all 4 are here; also a tally-madlib blob |
-| `WC-UNICORN-MAIN-007.json` | `QuestTemplates/questtemplates_WC-UNICORN-MAIN-007.json` | `69af8326966595ba96abd6b097cd4efdf6319979f32cc72b08d137a11ef75b9e` | 4 (1) | WAYPOINT ×2, BOUNTY, PERSONA | 5 / 8 | 0 | Rarest goal type: `GOAL_TYPE_BOUNTY` (4 corpus-wide); a goal-level `Prep` dialog; 2 tally-madlib blobs |
-| `WC-FIRECAT-MAIN-004.json` | `QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json` | `efaf06ab46504ea482e3e5d7b0e9978287cc1d52f78746649f00ff1d43c48d4b` | 5 (1) | SCAVENGE, PERSONA ×2, WAYPOINT, BOUNTYCOLLECT | 3 / 13 | 1 | `SCAVENGE` (43 corpus-wide) inside a multi-type quest |
+| `MB-YARD1-C01-001.json` | `QuestTemplates/questtemplates_MB-YARD1-C01-001.json` | `ac8332ec6112021d6a529224264f7762ea761078de7eb58b50af03e359b99a36` | 15 (1) | WAYPOINT ×7, PERSONA ×6, BOUNTYCOLLECT ×2 | 7 / 9 | 1 | Multi-goal mainline — the goal-heaviest quest the generator accepts (rank 1/181) |
+| `WC-CYCLOPS-MAIN-002.json` | `QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json` | `7e65514ccdc961b0791827336727a3c22194f4bbf0dad9f74cf6afb65c0f72b6` | 6 (0) | PERSONA ×6 | 7 / 27 | 1 | Dialog-heavy — the entry-heaviest quest the generator accepts (rank 1/181; next: 20, 19, 14, 13) |
+| `WC-UNICORN-MAIN-004.json` | `QuestTemplates/questtemplates_WC-UNICORN-MAIN-004.json` | `7014d89ced02b1b46e874e1c094011752441baf646adb9a65f741a7419c35704` | 7 (5) | USAGE ×4, BOUNTYCOLLECT, WAYPOINT, PERSONA | 3 / 8 | 0 | Rarest goal type: `GOAL_TYPE_USAGE` occurs 4 times in the whole corpus and all 4 are here; also a tally-madlib blob |
+| `WC-UNICORN-MAIN-007.json` | `QuestTemplates/questtemplates_WC-UNICORN-MAIN-007.json` | `1a74bfa4757a11b856a01da5190f2c4cfdd77aeaf99a49e918d0019b907b430d` | 4 (1) | WAYPOINT ×2, BOUNTY, PERSONA | 5 / 8 | 0 | Rarest goal type: `GOAL_TYPE_BOUNTY` (4 corpus-wide); a goal-level `Prep` dialog; 2 tally-madlib blobs |
+| `WC-FIRECAT-MAIN-004.json` | `QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json` | `3b85784c36d4fac05bea53f0177b712d3cbc65d3a48fdebf5c3b4fbfc6967e75` | 5 (1) | SCAVENGE, PERSONA ×2, WAYPOINT, BOUNTYCOLLECT | 3 / 13 | 1 | `SCAVENGE` (43 corpus-wide) inside a multi-type quest |
 
 Together they cover 6 of the 7 goal types present in the corpus. The 7th, `GOAL_TYPE_ACHIEVERANK`,
 **cannot** round-trip through this reader: its corpus goals carry an empty `m_goalTitle` and
@@ -161,3 +164,24 @@ sorted by message then field). The consumed table is data inside `tools/CaptureC
 entries and regenerate the goldens. `tests/unit/p7-capture-census.test.ts` checks every golden against its spec in
 CI (every planted field present with the planted count) and, where `tools/bin/capture-census`,
 `tools/bin/fixturegen` and the clone exist, regenerates and byte-compares both goldens and fixtures.
+
+### Wrapper goldens (task 7.3)
+
+`<QUEST>.extract.json` is the `imview-packet-reader` stdout for the fixture, and `<QUEST>.extract.reports.jsonl` the
+observed-field report lines it printed on stderr (one `{"report":"observed-field", quest, path, source, value,
+reason}` per value it could not write). Regenerate with:
+
+```bash
+npm run build:cli
+DOTNET_ROOT=$(dirname "$(readlink -f "$(command -v dotnet)")") \
+  tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/<QUEST>.json \
+  > server/test/fixtures/captures/p7/<QUEST>.extract.json 2> stderr.txt
+grep '^{"report":"observed-field"' stderr.txt > server/test/fixtures/captures/p7/<QUEST>.extract.reports.jsonl
+```
+
+`tests/unit/p7-observed-fields.test.ts` checks both in CI against the inject spec: every planted observed value is
+at its expected path exactly or reported with a reason, goals joined by `GoalID` -> `GoalNameID` as the wrapper
+joins them, never by position. Where the binary exists it regenerates both and compares them. Two kinds of planted
+value are reported by design: fields the schema has no home for (`MSG_SENDQUEST.PetOnlyQuest`,
+`MSG_COMPLETEQUEST.CompleteText`, `PersonaName` on a non-persona goal) and, in `WC-TUT-C05-001`, the values of the
+four ACHIEVERANK goals the reader drops as duplicates of `GoalNameID 0` (story 7.4 repairs that).

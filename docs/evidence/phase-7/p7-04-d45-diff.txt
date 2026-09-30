@@ -1,0 +1,70 @@
+# p7-04 D45 before/after: wrapper output of the 5 Phase 2 fixtures
+# before = HEAD (a36d0d7) imview-packet-reader on the HEAD fixtures (captured before any change: scratchpad/before/)
+# after  = p7-04 imview-packet-reader on the regenerated fixtures (PersonaName added to every MSG_SENDGOAL)
+# script: leaf-path JSON diff (d45diff.mjs, source at the end)
+
+$ node d45diff.mjs before/MB-YARD1-C01-001.json after/MB-YARD1-C01-001.json
+(identical)
+$ wc -l after/MB-YARD1-C01-001.stderr   # observed-field report lines
+0
+
+$ node d45diff.mjs before/WC-CYCLOPS-MAIN-002.json after/WC-CYCLOPS-MAIN-002.json
+(identical)
+$ wc -l after/WC-CYCLOPS-MAIN-002.stderr   # observed-field report lines
+0
+
+$ node d45diff.mjs before/WC-FIRECAT-MAIN-004.json after/WC-FIRECAT-MAIN-004.json
+(identical)
+$ wc -l after/WC-FIRECAT-MAIN-004.stderr   # observed-field report lines
+0
+
+$ node d45diff.mjs before/WC-UNICORN-MAIN-004.json after/WC-UNICORN-MAIN-004.json
+(identical)
+$ wc -l after/WC-UNICORN-MAIN-004.stderr   # observed-field report lines
+0
+
+$ node d45diff.mjs before/WC-UNICORN-MAIN-007.json after/WC-UNICORN-MAIN-007.json
+[0].m_goals[4_WizardQuestGoals_TalkNPC].m_personaName: undefined -> "WC-ST01-NPC01"
+$ wc -l after/WC-UNICORN-MAIN-007.stderr   # observed-field report lines
+0
+
+# raw text diff of the one fixture that changed
+$ diff before/WC-UNICORN-MAIN-007.json after/WC-UNICORN-MAIN-007.json
+327a328
+>         "m_personaName": "WC-ST01-NPC01",
+
+# control: the p7-04 binary on the UNCHANGED HEAD fixtures reproduces the HEAD output byte for byte
+$ cmp before/MB-YARD1-C01-001.json after/MB-YARD1-C01-001.headfixture.json && echo identical
+identical
+$ cmp before/WC-CYCLOPS-MAIN-002.json after/WC-CYCLOPS-MAIN-002.headfixture.json && echo identical
+identical
+$ cmp before/WC-FIRECAT-MAIN-004.json after/WC-FIRECAT-MAIN-004.headfixture.json && echo identical
+identical
+$ cmp before/WC-UNICORN-MAIN-004.json after/WC-UNICORN-MAIN-004.headfixture.json && echo identical
+identical
+$ cmp before/WC-UNICORN-MAIN-007.json after/WC-UNICORN-MAIN-007.headfixture.json && echo identical
+identical
+
+# fixture byte change (git diff --stat, all pure additions of "PersonaName")
+ .../test/fixtures/captures/MB-YARD1-C01-001.json   | 42 ++++++++++++++++++++++
+ .../fixtures/captures/WC-CYCLOPS-MAIN-002.json     | 18 ++++++++++
+ .../fixtures/captures/WC-FIRECAT-MAIN-004.json     | 12 +++++++
+ .../fixtures/captures/WC-UNICORN-MAIN-004.json     |  6 ++++
+ .../fixtures/captures/WC-UNICORN-MAIN-007.json     |  9 +++++
+ 5 files changed, 87 insertions(+)
+
+# d45diff.mjs
+// D45 before/after: every leaf path whose value differs between two wrapper outputs.
+import fs from 'node:fs';
+const [a, b] = process.argv.slice(2).map((f) => JSON.parse(fs.readFileSync(f, 'utf8')));
+const out = [];
+const walk = (x, y, p) => {
+  if (x !== null && y !== null && typeof x === 'object' && typeof y === 'object') {
+    for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) {
+      const name = Array.isArray(x) && x[k]?.m_goalName ? `[${x[k].m_goalName}]` : Array.isArray(x) ? `[${k}]` : `.${k}`;
+      walk(x[k], y[k], p + name);
+    }
+  } else if (JSON.stringify(x) !== JSON.stringify(y)) out.push(`${p}: ${JSON.stringify(x)} -> ${JSON.stringify(y)}`);
+};
+walk(a, b, '');
+console.log(out.length ? out.join('\n') : '(identical)');
