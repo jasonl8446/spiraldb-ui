@@ -70,7 +70,7 @@ goal targets and rewards come only from captures or a human.
 | G5 | The two harness-written scaffolds in the owner fork | Removed by the lead before launch at the owner's request: kept on the backup branch `harness-scaffolds-2026-09-29`, `content/2026-09-28` reset to `d57d891`, pins returned 330 → 328 (D145) |
 | G6 | Dev DB and dev server | Re-sync `data/spiraldb-ui.db` and rebuild drafts at launch and after the last story; stop the owner's dev server during the run and restart it fresh at the end, PID recorded |
 | G7 | A text-drafted dialogue block with no speaker | Accept is allowed; the block is written with an empty speaker and flagged "needs speaker" (validation warning + a draft-queue filter) |
-| G8 | Launch shape | One launch, one `.omc/prd.json`: Phase 7's four remaining stories first, then `p8-00`…`p8-08`, `gate-8` and Phase 8's three `final-*` |
+| G8 | Launch shape | One launch, one `.omc/prd.json`: Phase 7's four remaining stories first, then `p8-00`…`p8-08` (8.1b as `p8-01b`), `gate-8` and Phase 8's three `final-*` |
 | G9 | Upstream vs non-empty fields | Upstream may propose changes to filled fields, shown as "yours vs upstream (commit, PR)" and never auto-applied; this extends D162's empty-field rule for the `upstream-*` sources only |
 
 ## Tasks
@@ -84,7 +84,18 @@ edits.
 ### 8.1 Owner UI requests — **M** *(D186, D187)*
 The `m_questTitle` dropdown over the `QuestTitle` category shows `Title (key)`. Search matches either half, and an
 unknown value is kept (D57). `/quests/catalog` gets a search with `?q=` in SQL. A `ResDropTable` reward links to its
-DropTable editor, and a missing table renders as text.
+DropTable editor, and a missing table renders as text. Done at `0bf3c5f`.
+
+### 8.1b Search on `/drafts` — **S** *(owner request, 2026-09-30)*
+`/drafts` gets a search box. It matches the quest name, the title text, the title key or the catalog id (either half of
+the name pair), case-insensitively. It filters in the `GET /api/drafts` SQL (`?q=`, validated, ANDed with the named,
+has-file, source and zero-evidence filters), like the catalog search (D186). The count line says when a search narrows
+the queue, and a no-match state names the search text.
+
+**Acceptance:**
+- Server unit tests for `?q=`: each matched half, the AND with every filter, and the 400s.
+- A tier-1 spec for narrowing, combining and debounce.
+- No overflow at 375 px.
 
 ### 8.2 Builder correctness — **S**
 - A corpus file's `m_questTitle` claims its id: `quest_ids.matched_quest_name` is filled from it, and no unnamed draft is
