@@ -1,7 +1,7 @@
 # Phase 8 — Quest starting data for every quest
 
 **Status:** approved (2026-09-30) after the owner's grill-me interview (answers G1–G9 below); to run unattended under ralph
-**Depends on:** Phase 7 (branch `phase-7-coverage-usability`, gate-7 local half done at `25ed810`; its PR is pending
+**Depends on:** Phase 7 (PR #14, under owner review; review fixes at `509839c`, D195 — **rebase this branch onto it before 8.2; the 8.1 commit conflicts with the review fixes and needs a manual resolution**; branch `phase-7-coverage-usability`, gate-7 local half done at `25ed810`; its PR is pending
 the owner). Phase 8 is stacked on it as `phase-8-quest-starting-data` until Phase 7 merges.
 **New external dependency:** the owner's Imlight fork `jasonl8446/Imlight` as a git submodule (8.7, AGPL-3.0 stays in
 the fork). Nothing else.
@@ -106,6 +106,10 @@ the queue, and a no-match state names the search text.
 **Acceptance:** after a rebuild, 0 suggestions target a corpus-owned id (the 307 + 57 measured before), and ids 0 and
 0x42 are gone.
 
+**Also (PR #14 review 9b, deferred to here):** add an index on `string_table(category)`, and have the builder resolve
+title links from the title map it already holds in memory instead of the unindexed `LIKE 'QuestTitle\_%' AND value = ?`
+scan. Measured: 6,251 ms for 5,469 proposals, most of it in those two scans. Record the before/after time.
+
 ### 8.3 Every quest in the catalog — **M** *(D188)*
 The catalog lists the union: named quests, hex ids (with or without a title), and decimal-key titles. Each row shows its
 tier, has-file, has-title, has-text and has-draft, plus text-row counts. An unnamed row shows `Title (id)`. Filters cover
@@ -133,6 +137,10 @@ creates one `ActorDialog` block with its entries keyed to the real `WizQst` keys
   ±0.02 (hold-out).
 - Accepting a block and saving writes schema-valid `m_dialogList` entries whose `m_dialog` keys exist in `string_table`.
 - One quest built from text drafts loads in a live Imlight boot (+1, D113).
+
+**Also (PR #14 review 9h):** `planSuggestionAccept` checks the parent's type. A path whose parent exists but is a
+scalar returns "can't accept here" with the reason, never an accept that `applyEdits` then throws on. Text drafts create
+many nested dialogue paths.
 
 ### 8.5 Import upstream SpiralDB as suggestions — **M** *(D191)*
 A read-only upstream reader diffs the configured upstream refs against the corpus. It reads
@@ -162,6 +170,10 @@ An upload is idempotent by content hash. The dashboard shows the inbox's last ru
 **Acceptance:** dropping the 10 committed p7 fixtures into the inbox yields exactly their golden suggestions, and a
 second drop adds nothing. A malformed file lands in `failed/` with a reason. Producing real captures stays the owner's
 step, never claimed by the run.
+
+**Also (PR #14 review 9k):** when two extracted quests share one offer `MobileID` (the Prep-dialog repair joins
+through it), the wrapper reports it instead of silently sharing the first `QuestInfo`. Real multi-offer captures will
+reach the inbox.
 
 ### 8.7 Imlight fork as a submodule, and an automated play-test harness — **L** *(D192, D194; split 8.7a/8.7b per G3)*
 Add `jasonl8446/Imlight` as a submodule at `vendor/imlight`, pinned to a new fork branch `spiraldb-ui-harness`. This
