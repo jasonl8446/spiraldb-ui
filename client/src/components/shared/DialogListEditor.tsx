@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 
 import type { DocEdit, DocPath } from '@shared/document';
 
+import { hasAdvancedValue } from '../../lib/advanced';
 import { getName, nameLookupQueryKey } from '../../lib/api';
 import {
   ADD_DIALOG_ENTRY_LABEL,
@@ -55,7 +56,13 @@ import { useEvidenceCardFocus } from '../quest/EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import TermLabel from '../TermLabel';
 import { withValidationBorder } from '../../lib/quest-validation';
-import { FieldMessages, useFieldMessages, type FieldValidationMessage } from './FieldValidation';
+import { useAutoOpen } from './AdvancedDisclosure';
+import {
+  FieldMessages,
+  useAnyFieldMessages,
+  useFieldMessages,
+  type FieldValidationMessage,
+} from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
 
@@ -368,7 +375,7 @@ function DialogEntryCard({
         {view.readable ? (
           <div className="mt-3 flex min-w-0 flex-col gap-2">
             {DIALOG_ACCORDIONS.map((accordion) => (
-              <EntryAccordion key={accordion.id} accordion={accordion}>
+              <EntryAccordion key={accordion.id} accordion={accordion} state={state} view={view}>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-3 p-3 sm:grid-cols-2">
                   {dialogFieldsInAccordion(accordion).map((field) => (
                     <DialogFieldControl
@@ -408,12 +415,22 @@ function DialogEntryCard({
  */
 function EntryAccordion({
   accordion,
+  state,
+  view,
   children,
 }: {
   accordion: DialogAccordionSpec;
+  state: DialogListDocumentState;
+  view: DialogEntryView;
   children: JSX.Element;
 }): JSX.Element {
-  const [open, setOpen] = useState(accordion.openByDefault);
+  // Task 7.11 (D132): a non-Basic accordion opens on load when one of its fields differs from the
+  // skeleton default, and opens (and stays open) when one has a validation error, so neither a
+  // value nor an error is ever hidden. Basic is open by default.
+  const paths = dialogFieldsInAccordion(accordion).map((field) => [...view.path, field.key]);
+  const hasError = useAnyFieldMessages(paths);
+  const mustOpen = accordion.id !== 'Basic' && hasAdvancedValue(state, paths);
+  const [open, setOpen] = useAutoOpen(mustOpen, hasError, accordion.openByDefault);
   const id = useId();
   const panelId = `${id}-panel`;
   return (
@@ -423,7 +440,7 @@ function EntryAccordion({
         id={`${id}-button`}
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       >
         <span aria-hidden="true">{open ? '▾' : '▸'}</span>

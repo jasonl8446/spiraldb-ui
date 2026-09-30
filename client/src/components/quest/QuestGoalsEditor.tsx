@@ -35,7 +35,6 @@ import {
   RAW_FIELDS_LABEL,
   REORDER_HANDLE_LABEL,
   SET_START_GOAL_LABEL,
-  SHARED_BASE_FIELDS_LABEL,
   START_GOALS_PATH,
   START_GOAL_BADGE_LABEL,
   UNSET_START_GOAL_LABEL,
@@ -68,6 +67,7 @@ import {
 import {
   FieldMessages,
   fieldAriaInvalid,
+  useAnyFieldMessages,
   useFieldMessages,
   useFieldMessagesUnder,
   type FieldValidationMessage,
@@ -79,6 +79,9 @@ import { goalCardTitle, goalTitleStringKeys, type CardNames } from '../../lib/ca
 import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
 import TermLabel from '../TermLabel';
+import AdvancedDisclosure from '../shared/AdvancedDisclosure';
+import ReadOnlyEnumValue from '../shared/ReadOnlyEnumValue';
+import { hasAdvancedValue, singleLegalValue, splitByTier } from '../../lib/advanced';
 import { useEvidenceCardFocus, useEvidenceFieldFocus } from './EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Badge } from '../ui/badge';
@@ -401,8 +404,8 @@ function SummaryValue({ line }: { line: GoalSummaryLine }): JSX.Element {
 
 /**
  * The inline editor (no modal — the plan allows either, and an inline panel keeps the
- * card, its summary and its JSON in one view): the type's own fields, then the shared
- * base fields in a collapsible `<details>`, then the raw disclosure (on the card).
+ * card, its summary and its JSON in one view): the basic fields (the type's own and the shared
+ * base ones), then the Advanced disclosure, then the raw disclosure (on the card).
  */
 function GoalEditPanel({
   index,
@@ -413,24 +416,30 @@ function GoalEditPanel({
   goal: unknown;
   state: QuestDocumentState;
 }): JSX.Element {
+  // The type's own fields and the shared base fields, split by the glossary tier (task 7.11):
+  // basic first, advanced under the disclosure.
+  const { basic, advanced } = splitByTier([...goalTypeFields(goal), ...GOAL_EDITABLE_BASE_FIELDS]);
+  const advancedPaths = advanced.map((field) => [GOALS_PATH, index, field.key]);
+  const advancedHasError = useAnyFieldMessages(advancedPaths);
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-zinc-800 pt-3">
       <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
-        {goalTypeFields(goal).map((field) => (
+        {basic.map((field) => (
           <GoalFieldControl key={field.key} index={index} field={field} state={state} />
         ))}
       </div>
 
-      <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
-        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
-          {SHARED_BASE_FIELDS_LABEL}
-        </summary>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 border-t border-zinc-800 p-3 md:grid-cols-2">
-          {GOAL_EDITABLE_BASE_FIELDS.map((field) => (
+      <AdvancedDisclosure
+        count={advanced.length}
+        mustOpen={hasAdvancedValue(state, advancedPaths)}
+        hasError={advancedHasError}
+      >
+        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
+          {advanced.map((field) => (
             <GoalFieldControl key={field.key} index={index} field={field} state={state} />
           ))}
         </div>
-      </details>
+      </AdvancedDisclosure>
     </div>
   );
 }
@@ -471,26 +480,31 @@ function GoalFieldControl({
   // `<button>` cannot be named by `htmlFor`).
   if (field.kind === 'select') {
     const id = `${GOALS_PATH}-${index}-${field.key}`;
+    const only = singleLegalValue(field.options ?? [], value);
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <label htmlFor={id} className="text-xs text-zinc-400">
           <TermLabel term={{ field: field.key }} />
         </label>
-        <select
-          id={id}
-          aria-invalid={ariaInvalid}
-          value={goalSelectValue(value)}
-          className={inputClass}
-          onChange={(event) =>
-            state.edit(goalTextFieldEdit(index, field.key, present, event.target.value))
-          }
-        >
-          {goalSelectOptions(value, field.options ?? []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {goalOptionText(field.key, option)}
-            </option>
-          ))}
-        </select>
+        {only !== null ? (
+          <ReadOnlyEnumValue id={id} fieldKey={field.key} value={only} />
+        ) : (
+          <select
+            id={id}
+            aria-invalid={ariaInvalid}
+            value={goalSelectValue(value)}
+            className={inputClass}
+            onChange={(event) =>
+              state.edit(goalTextFieldEdit(index, field.key, present, event.target.value))
+            }
+          >
+            {goalSelectOptions(value, field.options ?? []).map((option) => (
+              <option key={option.value} value={option.value}>
+                {goalOptionText(field.key, option)}
+              </option>
+            ))}
+          </select>
+        )}
         <GoalFieldMessages messages={messages} id={messagesId} help={field.help} />
       </div>
     );

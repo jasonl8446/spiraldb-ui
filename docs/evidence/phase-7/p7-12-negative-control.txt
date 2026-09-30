@@ -1,0 +1,15 @@
+  ✓  1 [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:100:3 › Basic vs Advanced › a skeleton-shaped dialog entry shows at most 12 fields, advanced collapsed (1.6s)
+  ✘  2 [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:118:3 › Basic vs Advanced › a real clone quest with an advanced value opens the accordion that holds it (10.5s)
+  ✘  3 [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:137:3 › Basic vs Advanced › a validation message on an advanced field is visible unopened and cannot be hidden (10.6s)
+  ✘  4 [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:154:3 › Basic vs Advanced › the Info tab opens Advanced only for a value that differs from the default (10.8s)
+  1) [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:118:3 › Basic vs Advanced › a real clone quest with an advanced value opens the accordion that holds it 
+    Error: expect(locator).toHaveAttribute(expected) failed
+  2) [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:137:3 › Basic vs Advanced › a validation message on an advanced field is visible unopened and cannot be hidden 
+    Error: expect(locator).toHaveAttribute(expected) failed
+  3) [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:154:3 › Basic vs Advanced › the Info tab opens Advanced only for a value that differs from the default 
+    Error: expect(locator).toHaveAttribute(expected) failed
+  3 failed
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:118:3 › Basic vs Advanced › a real clone quest with an advanced value opens the accordion that holds it 
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:137:3 › Basic vs Advanced › a validation message on an advanced field is visible unopened and cannot be hidden 
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:154:3 › Basic vs Advanced › the Info tab opens Advanced only for a value that differs from the default 
+  1 passed (35.5s)

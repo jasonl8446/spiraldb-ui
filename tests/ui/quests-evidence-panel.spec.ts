@@ -404,8 +404,7 @@ test.describe('one-click insert, into the field it belongs to', () => {
     await openQuest(page, { search: '?panel=evidence' });
     await page.getByRole('tab', { name: 'Goals' }).click();
     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
-    // The shared base fields are a collapsed disclosure; opening it reveals m_locationName.
-    await goalCard(page, 0).getByText('Shared base fields').click();
+    // m_locationName is a basic field (task 7.11): it is on the card without opening Advanced.
     await goalCard(page, 0).getByLabel('Location Name (m_locationName)', { exact: true }).click();
 
     // Read the document first: the rail's JSON tab swaps the *body* only, so the focus report

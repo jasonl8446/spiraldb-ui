@@ -471,8 +471,6 @@ export const EDIT_GOAL_LABEL = 'Edit';
 export const DELETE_GOAL_LABEL = 'Delete';
 /** The drag handle's accessible name prefix (an ordinal and the goal name follow). */
 export const REORDER_HANDLE_LABEL = 'Reorder goal';
-/** The collapsible base-field section inside the inline editor. */
-export const SHARED_BASE_FIELDS_LABEL = 'Shared base fields';
 /** The read-only disclosure of complex + unmodelled keys. */
 export const RAW_FIELDS_LABEL = 'Raw fields';
 /** The empty-list message. */

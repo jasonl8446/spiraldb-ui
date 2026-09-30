@@ -39,9 +39,17 @@ import { docPathWords, fieldValueText, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import TermLabel from '../TermLabel';
+import { hasAdvancedValue, singleLegalValue, splitByTier } from '../../lib/advanced';
+import ReadOnlyEnumValue from './ReadOnlyEnumValue';
 import { requirementCardTitle } from '../../lib/card-titles';
 import { useCardNames } from '../../hooks/useCardNames';
-import { FieldMessages, useFieldMessages } from './FieldValidation';
+import {
+  FieldMessages,
+  useAnyFieldMessages,
+  useFieldMessages,
+  type FieldValidationMessage,
+} from './FieldValidation';
+import AdvancedDisclosure from './AdvancedDisclosure';
 import { Button } from '../ui/button';
 
 /**
@@ -358,6 +366,10 @@ function LeafCard({
   const id = useId();
   // Titled by meaning with the quest's resolved name (task 7.10).
   const title = requirementCardTitle(node.value, useCardNames(['quests']));
+  // Basic fields first, the rest under Advanced (task 7.11): the glossary's tier per field key.
+  const { basic: basicFields, advanced: advancedFields } = splitByTier(node.spec?.fields ?? []);
+  const advancedPaths = advancedFields.map((field) => [...node.path, field.key]);
+  const advancedHasError = useAnyFieldMessages(advancedPaths);
   return (
     <li className="min-w-0">
       <article
@@ -401,7 +413,7 @@ function LeafCard({
             </select>
           </Labelled>
 
-          {(node.spec?.fields ?? []).map((field) => (
+          {basicFields.map((field) => (
             <LeafField key={field.key} state={state} node={node} field={field} idPrefix={id} />
           ))}
 
@@ -447,6 +459,27 @@ function LeafCard({
               ))}
             </select>
           </Labelled>
+
+          {advancedFields.length === 0 ? null : (
+            <AdvancedDisclosure
+              className="sm:col-span-2"
+              count={advancedFields.length}
+              mustOpen={hasAdvancedValue(state, advancedPaths)}
+              hasError={advancedHasError}
+            >
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                {advancedFields.map((field) => (
+                  <LeafField
+                    key={field.key}
+                    state={state}
+                    node={node}
+                    field={field}
+                    idPrefix={id}
+                  />
+                ))}
+              </div>
+            </AdvancedDisclosure>
+          )}
         </div>
       </article>
     </li>
@@ -470,9 +503,16 @@ function LeafField({
   const present = state.has([...node.path, field.key]);
   const address = node.address;
   const describedBy = `${id}-help`;
+  const messages = useFieldMessages([...node.path, field.key]);
 
   return (
-    <Labelled id={id} fieldKey={field.key} help={field.help} helpId={describedBy}>
+    <Labelled
+      id={id}
+      fieldKey={field.key}
+      help={field.help}
+      helpId={describedBy}
+      messages={messages}
+    >
       <FieldControl
         state={state}
         node={node}
@@ -522,7 +562,13 @@ function FieldControl({
           onChange={(rawId) => state.edit(setLeafFieldEdit(node.path, field.key, present, rawId))}
         />
       );
-    case 'enum':
+    case 'enum': {
+      const only = singleLegalValue(field.options ?? [], value);
+      if (only !== null) {
+        return (
+          <ReadOnlyEnumValue id={id} fieldKey={field.key} value={only} describedBy={describedBy} />
+        );
+      }
       return (
         <select
           id={id}
@@ -540,6 +586,7 @@ function FieldControl({
           ))}
         </select>
       );
+    }
     case 'boolean':
       return (
         <input
@@ -602,12 +649,15 @@ function Labelled({
   fieldKey,
   help,
   helpId,
+  messages,
   children,
 }: {
   id: string;
   fieldKey: string;
   help?: string;
   helpId?: string;
+  /** This field's validation findings, rendered below the control (an Advanced field's too). */
+  messages?: readonly FieldValidationMessage[];
   children: ReactNode;
 }): JSX.Element {
   return (
@@ -621,6 +671,7 @@ function Labelled({
           {help}
         </p>
       )}
+      {messages === undefined ? null : <FieldMessages messages={messages} />}
     </div>
   );
 }

@@ -48,7 +48,17 @@ import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import TermLabel from '../TermLabel';
-import { FieldMessages, useFieldMessages, type FieldValidationMessage } from './FieldValidation';
+import { fieldTier } from '@shared/glossary';
+
+import { hasAdvancedValue, singleLegalValue } from '../../lib/advanced';
+import AdvancedDisclosure from './AdvancedDisclosure';
+import ReadOnlyEnumValue from './ReadOnlyEnumValue';
+import {
+  FieldMessages,
+  useAnyFieldMessages,
+  useFieldMessages,
+  type FieldValidationMessage,
+} from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
 
@@ -194,6 +204,11 @@ function ResultCard({
     isPlainObject(card.value) && typeof card.value.$type === 'string' ? card.value.$type : null;
   // Titled by meaning with resolved names (task 7.10); an unreadable node keeps the lenient title.
   const title = card.readable ? resultCardTitle(card.value, names) : card.title;
+  // Basic fields first, the rest under Advanced (task 7.11): the glossary's tier per field key.
+  const basicViews = card.fields.filter((view) => fieldTier(view.spec.key) === 'basic');
+  const advancedViews = card.fields.filter((view) => fieldTier(view.spec.key) === 'advanced');
+  const advancedPaths = advancedViews.map((view) => view.path);
+  const advancedHasError = useAnyFieldMessages(advancedPaths);
   return (
     <li className="min-w-0">
       <article
@@ -228,10 +243,24 @@ function ResultCard({
         {card.readable && card.spec !== null ? (
           <>
             <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-              {card.fields.map((view) => (
+              {basicViews.map((view) => (
                 <ResultFieldControl key={view.spec.key} state={state} card={card} view={view} />
               ))}
             </div>
+            {advancedViews.length === 0 ? null : (
+              <AdvancedDisclosure
+                className="mt-3"
+                count={advancedViews.length}
+                mustOpen={hasAdvancedValue(state, advancedPaths)}
+                hasError={advancedHasError}
+              >
+                <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                  {advancedViews.map((view) => (
+                    <ResultFieldControl key={view.spec.key} state={state} card={card} view={view} />
+                  ))}
+                </div>
+              </AdvancedDisclosure>
+            )}
             <RawFieldsDisclosure card={card} />
           </>
         ) : (
@@ -316,6 +345,13 @@ function ResultFieldControl({
               setResultBooleanFieldEdit(card.listPath, card.index, field.key, event.target.checked),
             )
           }
+        />
+      ) : field.kind === 'enum' && singleLegalValue(field.options ?? [], view.value) !== null ? (
+        <ReadOnlyEnumValue
+          id={id}
+          fieldKey={field.key}
+          value={view.value as string}
+          describedBy={describedBy}
         />
       ) : field.kind === 'enum' ? (
         <select
@@ -621,6 +657,8 @@ function RouterField({
                     )
                   }
                 />
+              ) : sub.kind === 'enum' && singleLegalValue(sub.options ?? [], subValue) !== null ? (
+                <ReadOnlyEnumValue id={subId} fieldKey={sub.key} value={subValue as string} />
               ) : sub.kind === 'enum' ? (
                 <select
                   id={subId}

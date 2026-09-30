@@ -310,6 +310,18 @@ async function liveAnnouncements(page: Page): Promise<string> {
   );
 }
 
+/**
+ * Opens a goal card's Advanced disclosure unless it opened itself (task 7.11: one that holds a
+ * value differing from the default is already open, and a bare click would close it).
+ */
+async function openAdvanced(scope: Locator): Promise<void> {
+  const disclosure = scope.getByTestId('advanced-disclosure');
+  if (!(await disclosure.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await disclosure.locator('summary').click();
+  }
+  await expect(disclosure).toHaveAttribute('open', '');
+}
+
 test.describe('the goal cards', () => {
   test('render the name, the type badge and the spec summary lines', async ({ page }) => {
     await openGoals(page);
@@ -374,11 +386,11 @@ test.describe('the goal cards', () => {
     await openGoals(page);
 
     const waypoint = card(page, 0);
-    await expect(waypoint.getByText('Shared base fields')).toHaveCount(0);
+    await expect(waypoint.getByText('Advanced (10)')).toHaveCount(0);
     await waypoint.getByRole('button', { name: 'Edit' }).click();
 
     // Inline, in the card — not a modal.
-    await expect(waypoint.getByText('Shared base fields')).toBeVisible();
+    await expect(waypoint.getByText('Advanced (10)')).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     // The type's own fields, labelled with the raw keys.
     await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toBeVisible();
@@ -388,12 +400,13 @@ test.describe('the goal cards', () => {
       waypoint.getByLabel('Proximity Tag (m_proximityTag)', { exact: true }),
     ).toHaveValue('');
 
-    // The base fields live behind the collapsible section: present in the DOM, not
-    // visible, until the user opens it (`exact` matters when they are: `m_goalName`
-    // also matches `m_goalNameID` by substring).
-    await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toBeHidden();
-    await waypoint.getByText('Shared base fields').click();
+    // The basic base fields are on the card (task 7.11); the advanced ones live behind the
+    // collapsible section: present in the DOM, not visible, until the user opens it (`exact`
+    // matters: `m_goalName` also matches `m_goalNameID` by substring).
     await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toBeVisible();
+    // This goal carries an advanced value, so its disclosure is already open (a bare click
+    // would close it).
+    await openAdvanced(waypoint);
     await expect(waypoint.getByLabel('Goal Name (m_goalName)', { exact: true })).toHaveValue(
       '1_WizardQuestGoals_00000058',
     );
@@ -664,7 +677,7 @@ test.describe('preservation (D5/D57)', () => {
 
     // Edit an unrelated base field, then compare the goal exactly.
     await waypoint.getByRole('button', { name: 'Edit' }).click();
-    await waypoint.getByText('Shared base fields').click();
+    await openAdvanced(waypoint);
     await waypoint.getByLabel('Auto Qualify (m_autoQualify)', { exact: true }).check();
 
     const doc = await copyPanelDocument(page);
@@ -710,7 +723,7 @@ test.describe('preservation (D5/D57)', () => {
     await expect(zone).toContainText(UNLISTED_ZONE);
 
     // An unrelated edit must not rewrite it.
-    await waypoint.getByText('Shared base fields').click();
+    await openAdvanced(waypoint);
     await waypoint.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }).check();
 
     await expect(waypoint.getByLabel('Zone (m_zoneTag)', { exact: true })).toContainText(
@@ -743,7 +756,6 @@ test.describe('string-table lookups on m_goalTitle', () => {
 
     // A key the table knows renders the resolved string beside it.
     await card(page, 0).getByRole('button', { name: 'Edit' }).click();
-    await card(page, 0).getByText('Shared base fields').click();
     await expect(card(page, 0).getByText('Collect', { exact: true })).toBeVisible();
     expect(recorded.nameLookups).toContain('WizardQuestGoals_00000058');
 
@@ -751,7 +763,6 @@ test.describe('string-table lookups on m_goalTitle', () => {
     await cardNamed(page, '3_WizardQuestGoals_00000070')
       .getByRole('button', { name: 'Edit' })
       .click();
-    await card(page, 2).getByText('Shared base fields').click();
     await expect(
       card(page, 2).getByText('WizardQuestGoals_Missing', { exact: true }),
     ).toBeVisible();

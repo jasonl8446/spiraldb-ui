@@ -390,7 +390,7 @@ export const fields: Readonly<Record<string, GlossaryEntry>> = {
   ),
   m_completeText: e(
     'Complete Text',
-    'advanced',
+    'basic',
     'docs/spec-domain-reference.md:338',
     'The text shown when the goal completes. The spec names this field but gives no description of it; this wording is the editor’s reading.',
   ),
@@ -1590,6 +1590,14 @@ export function groupTerm(name: string): GlossaryEntry | undefined {
 /** The friendly label of a document key, or the key itself when it has no entry (never a guess). */
 export function fieldLabel(key: string): string {
   return fieldTerm(key)?.label ?? key;
+}
+
+/**
+ * A document key's tier (D172): `advanced` only when the glossary says so. A key with no entry is
+ * `basic`, so the editor never hides a field the glossary has not classified.
+ */
+export function fieldTier(key: string): GlossaryTier {
+  return fieldTerm(key)?.tier ?? 'basic';
 }
 
 /** The label of a dialog section name, or the name itself. */

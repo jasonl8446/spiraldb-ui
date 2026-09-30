@@ -290,6 +290,18 @@ function accordion(cardLoc: Locator, label: string): Locator {
   return cardLoc.getByRole('button', { name: label, exact: true });
 }
 
+/**
+ * Opens an accordion unless it is already open (task 7.11: one holding a non-default value, or a
+ * validation message, opens on its own, so a bare click would close it).
+ */
+async function reveal(cardLoc: Locator, label: string): Promise<void> {
+  const button = accordion(cardLoc, label);
+  if ((await button.getAttribute('aria-expanded')) === 'false') {
+    await button.click();
+  }
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+}
+
 /** An accordion's body — `includeHidden` so a collapsed panel is assertable. */
 function panel(cardLoc: Locator, label: string): Locator {
   return cardLoc.getByRole('group', { name: `${label} fields`, exact: true, includeHidden: true });
@@ -452,18 +464,24 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
     for (const label of ['Basic', 'Camera', 'Sound', 'Animation', 'Advanced']) {
       await expect(accordion(questCard, label)).toBeVisible();
     }
-    // Spec L554: Basic open by default, the rest collapsed.
+    // Spec L554: Basic open by default, the rest collapsed, except an accordion that holds a value
+    // differing from the skeleton default (task 7.11): this entry carries `m_cameraHidePlayers: 2`
+    // (Camera) and `m_nameSTKey` (Advanced), so those two open on their own.
     await expect(accordion(questCard, 'Basic')).toHaveAttribute('aria-expanded', 'true');
     await expect(panel(questCard, 'Basic')).toBeVisible();
-    for (const label of ['Camera', 'Sound', 'Animation', 'Advanced']) {
+    for (const label of ['Sound', 'Animation']) {
       await expect(accordion(questCard, label)).toHaveAttribute('aria-expanded', 'false');
       await expect(panel(questCard, label)).toBeHidden();
     }
+    for (const label of ['Camera', 'Advanced']) {
+      await expect(accordion(questCard, label)).toHaveAttribute('aria-expanded', 'true');
+      await expect(panel(questCard, label)).toBeVisible();
+    }
 
     // Opening one reveals its fields; closing Basic hides them again.
-    await accordion(questCard, 'Camera').click();
-    await expect(panel(questCard, 'Camera')).toBeVisible();
-    await expect(questCard.getByLabel('Camera name (m_cameraName)', { exact: true })).toBeVisible();
+    await accordion(questCard, 'Sound').click();
+    await expect(panel(questCard, 'Sound')).toBeVisible();
+    await expect(questCard.getByLabel('Music file (m_musicFile)', { exact: true })).toBeVisible();
     await accordion(questCard, 'Basic').click();
     await expect(panel(questCard, 'Basic')).toBeHidden();
   });
@@ -482,7 +500,7 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
     ).toBeVisible();
 
     // Camera.
-    await accordion(questCard, 'Camera').click();
+    await reveal(questCard, 'Camera');
     await expect(
       questCard.getByLabel('Camera zone (m_cameraZoneName)', { exact: true }),
     ).toBeVisible();
@@ -491,17 +509,17 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
     ).toBeVisible();
 
     // Audio → the Sound accordion.
-    await accordion(questCard, 'Sound').click();
+    await reveal(questCard, 'Sound');
     await expect(questCard.getByLabel('Music file (m_musicFile)', { exact: true })).toBeVisible();
 
     // Animation & NPC → the Animation accordion.
-    await accordion(questCard, 'Animation').click();
+    await reveal(questCard, 'Animation');
     await expect(
       questCard.getByLabel('Dialog animations (m_dialogAnimationList)', { exact: true }),
     ).toBeVisible();
 
     // Duration & Timing + Walk-Away + UI Controls → Advanced.
-    await accordion(questCard, 'Advanced').click();
+    await reveal(questCard, 'Advanced');
     await expect(
       questCard.getByLabel('Show buttons on timed dialog (m_displayButtonsOnTimedDialog)', {
         exact: true,
@@ -798,7 +816,7 @@ test.describe('the reference and string-key fields', () => {
 
     // 0 means "none" in the corpus (1675 entries) and must not become an empty lookup. The
     // field lives in the Walk-Away group, i.e. the Advanced accordion.
-    await accordion(questCard, 'Advanced').click();
+    await reveal(questCard, 'Advanced');
     const walkAway = questCard.getByRole('combobox', {
       name: 'Walk-away NPC (m_walkAwayNpcTemplateID)',
       exact: true,
@@ -828,8 +846,8 @@ test.describe('the reference and string-key fields', () => {
     const { recorded } = await openDialog(page, seeded);
     const questList = list(page, QUEST_LIST);
     // `m_cameraZoneName` lives in the Camera group, so its accordion has to be opened first.
-    await accordion(card(questList, 1, QUEST_ADDRESS), 'Camera').click();
-    await accordion(card(questList, 1, EMPTY_TAG_ADDRESS), 'Camera').click();
+    await reveal(card(questList, 1, QUEST_ADDRESS), 'Camera');
+    await reveal(card(questList, 1, EMPTY_TAG_ADDRESS), 'Camera');
     const live = card(questList, 1, QUEST_ADDRESS).getByRole('combobox', {
       name: 'Camera zone (m_cameraZoneName)',
       exact: true,
@@ -892,7 +910,7 @@ test.describe('the reference and string-key fields', () => {
     };
     await openDialog(page, seeded);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
-    await accordion(questCard, 'Camera').click();
+    await reveal(questCard, 'Camera');
     const select = questCard.getByRole('combobox', {
       name: 'Hide players (m_cameraHidePlayers)',
       exact: true,
@@ -923,7 +941,7 @@ test.describe('the reference and string-key fields', () => {
     };
     await openDialog(page, seeded);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
-    await accordion(questCard, 'Animation').click();
+    await reveal(questCard, 'Animation');
     const animations = questCard.getByLabel('Dialog animations (m_dialogAnimationList)', {
       exact: true,
     });

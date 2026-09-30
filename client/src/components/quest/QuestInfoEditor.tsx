@@ -5,11 +5,14 @@ import {
   FieldMessages,
   fieldAriaInvalid,
   fieldDescribedBy,
+  useAnyFieldMessages,
   useFieldMessages,
   type FieldValidationMessage,
 } from '../shared/FieldValidation';
+import AdvancedDisclosure from '../shared/AdvancedDisclosure';
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { getName, nameLookupQueryKey } from '../../lib/api';
+import { hasAdvancedValue, splitByTier } from '../../lib/advanced';
 import { relativeTime } from '../../lib/display';
 import {
   activityTypeOptions,
@@ -66,8 +69,13 @@ export interface QuestInfoEditorProps {
 }
 
 export default function QuestInfoEditor({ state, modifiedAt }: QuestInfoEditorProps): JSX.Element {
-  const left = QUEST_VISIBLE_FIELDS.filter((field) => field.column === 'left');
-  const right = QUEST_VISIBLE_FIELDS.filter((field) => field.column === 'right');
+  // Basic first, Advanced under the disclosure: the split is the glossary's tier (D172, task 7.11),
+  // which agrees with the tab's own two lists (asserted by `tests/unit/quest-tiers.test.ts`).
+  const { basic, advanced } = splitByTier([...QUEST_VISIBLE_FIELDS, ...QUEST_ADVANCED_FIELDS]);
+  const left = basic.filter((field) => field.column === 'left');
+  const right = basic.filter((field) => field.column === 'right');
+  const advancedPaths = advanced.map((field) => [field.key]);
+  const advancedHasError = useAnyFieldMessages(advancedPaths);
 
   return (
     <section aria-label="Quest info editor" className="flex flex-col gap-6">
@@ -85,21 +93,17 @@ export default function QuestInfoEditor({ state, modifiedAt }: QuestInfoEditorPr
         </div>
       </div>
 
-      {/*
-        Native `<details>` rather than a hand-rolled disclosure: it is the element
-        that already carries the keyboard and screen-reader behaviour a collapse
-        needs, and it needs no state of its own.
-      */}
-      <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
-        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
-          Advanced
-        </summary>
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 border-t border-zinc-800 p-3 md:grid-cols-2">
-          {QUEST_ADVANCED_FIELDS.map((field) => (
+      <AdvancedDisclosure
+        count={advanced.length}
+        mustOpen={hasAdvancedValue(state, advancedPaths)}
+        hasError={advancedHasError}
+      >
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+          {advanced.map((field) => (
             <FieldEditor key={field.key} field={field} state={state} />
           ))}
         </div>
-      </details>
+      </AdvancedDisclosure>
     </section>
   );
 }

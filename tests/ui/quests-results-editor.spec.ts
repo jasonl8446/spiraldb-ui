@@ -71,7 +71,8 @@ const GOAL_A = '1_WizardQuestGoals_GotoZone';
 const GOAL_B = '2_WizardQuestGoals_KillMobs';
 
 /** The ARIA roles the 14 offered classes' fields render as. */
-type ControlRole = 'combobox' | 'spinbutton' | 'textbox' | 'checkbox' | 'region' | 'group';
+type ControlRole =
+  'combobox' | 'spinbutton' | 'textbox' | 'checkbox' | 'region' | 'group' | 'status';
 
 interface TypeCase {
   /** The class's short name — the selector's value and the card's title. */
@@ -201,7 +202,8 @@ const TYPES: TypeCase[] = [
       ['m_destinationZone', 'combobox'],
       ['m_exitTeleporter', 'spinbutton'],
       ['m_teleporterTag', 'spinbutton'],
-      ['m_teleportType', 'combobox'],
+      // A single-legal-value enum renders as read-only text (task 7.11), an `<output>`.
+      ['m_teleportType', 'status'],
       ['m_transitionID', 'spinbutton'],
     ],
   },
@@ -390,6 +392,22 @@ function addButton(scope: Locator): Locator {
 }
 
 /** Adds a result of {@link type} to {@link scope}. */
+/**
+ * Opens a card's Advanced disclosure unless it opened itself (task 7.11: one holding a value that
+ * differs from the default is already open, and a bare click would close it). A card with no
+ * advanced field has none.
+ */
+async function openAdvanced(cardLoc: Locator): Promise<void> {
+  const disclosure = cardLoc.getByTestId('advanced-disclosure');
+  if ((await disclosure.count()) === 0) {
+    return;
+  }
+  if (!(await disclosure.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await disclosure.locator('summary').click();
+  }
+  await expect(disclosure).toHaveAttribute('open', '');
+}
+
 async function addResult(scope: Locator, type: string): Promise<void> {
   await addSelector(scope).selectOption(type);
   await addButton(scope).click();
@@ -552,6 +570,7 @@ test.describe('AC1 — every one of the 14 offered types', () => {
     for (const [index, type] of TYPES.entries()) {
       const address = `m_startResults.m_results[${index}]`;
       await expect(card(start, type.name, address)).toBeVisible();
+      await openAdvanced(card(start, type.name, address));
       for (const [key, role] of type.controls) {
         const name =
           role === 'region' ? `Requirements for ${startWords(index)}` : (PAIRS[key] ?? key);
@@ -693,12 +712,14 @@ test.describe('the m_router sub-object', () => {
     const start = list(page, 'Start results');
     await addResult(start, 'ResPlaySound');
     const sound = card(start, 'ResPlaySound', 'm_startResults.m_results[0]');
+    await openAdvanced(sound);
     const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
     await expect(router).toBeVisible();
 
     // A new node carries the corpus's measured router, so the six controls show it.
     await expect(router.getByLabel('Location X (m_locX)', { exact: true })).toHaveValue('0');
-    await expect(router.getByLabel('Routing type (m_routingType)', { exact: true })).toHaveValue(
+    // One legal value, so it is read-only text rather than a one-option select (task 7.11).
+    await expect(router.getByLabel('Routing type (m_routingType)', { exact: true })).toContainText(
       'ROUTING_ACTOR',
     );
     await expect(
@@ -742,6 +763,7 @@ test.describe('the m_router sub-object', () => {
     };
     await openResults(page, seeded);
     const sound = card(list(page, 'Start results'), 'ResPlaySound', 'm_startResults.m_results[0]');
+    await openAdvanced(sound);
     const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
     await expect(sound.getByText(/the first edit writes it/)).toBeVisible();
     await expect(router.getByLabel('Location X (m_locX)', { exact: true })).toHaveValue('0');
@@ -789,6 +811,7 @@ test.describe('the m_router sub-object', () => {
     };
     await openResults(page, seeded);
     const sound = card(list(page, 'End results'), 'ResPlaySound', 'm_endResults.m_results[0]');
+    await openAdvanced(sound);
     const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
     await expect(
       router.getByLabel('Re-interact time (m_reinteractTime)', { exact: true }),
@@ -796,9 +819,9 @@ test.describe('the m_router sub-object', () => {
     await sound
       .getByRole('spinbutton', { name: 'Re-interact time (m_reinteractTime)', exact: true })
       .fill('3');
-    await router
-      .getByLabel('Routing type (m_routingType)', { exact: true })
-      .selectOption('ROUTING_ACTOR');
+    await expect(router.getByLabel('Routing type (m_routingType)', { exact: true })).toContainText(
+      'ROUTING_ACTOR',
+    );
 
     const node = itemsOf(await copyPanelDocument(page), 'm_endResults')[0] as Record<
       string,

@@ -164,13 +164,11 @@ function fieldMessages(page: Page, field: string): Locator {
 
 /**
  * Opens one goal card's editor. The field controls exist only while a card is expanded
- * (`GoalEditPanel` is conditional), and `m_destinationZone`/`m_goalName` live in the card's
- * collapsed **Shared base fields** disclosure — so both steps are the user's own path to the
- * control whose inline message this spec asserts.
+ * (`GoalEditPanel` is conditional). `m_destinationZone` and `m_goalName` are basic fields
+ * (task 7.11), so they are on the card without opening its Advanced disclosure.
  */
 async function expandCard(card: Locator): Promise<void> {
   await card.getByRole('button', { name: 'Edit' }).click();
-  await card.getByText('Shared base fields').click();
 }
 
 /* -------------------------------------------------------------------- tests */

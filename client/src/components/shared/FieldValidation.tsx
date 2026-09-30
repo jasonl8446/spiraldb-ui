@@ -115,6 +115,12 @@ export function useFieldMessagesUnder(path: DocPath): readonly FieldValidationMe
   return useContext(FieldValidationContext).under(path);
 }
 
+/** `true` when any of {@link paths} has a message: what keeps an Advanced disclosure open. */
+export function useAnyFieldMessages(paths: readonly DocPath[]): boolean {
+  const { at } = useContext(FieldValidationContext);
+  return paths.some((path) => at(path).length > 0);
+}
+
 /**
  * The border class a control adds to its own classes for a set of messages: red when any is
  * blocking, amber for warnings only, nothing when there are none. Exported as a function rather
