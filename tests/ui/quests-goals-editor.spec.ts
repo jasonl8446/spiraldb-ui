@@ -740,8 +740,11 @@ test.describe('string-table lookups on m_goalTitle', () => {
   }) => {
     const recorded = await openGoals(page);
 
-    // The Info tab is the landing tab and owns the quest title lookup…
-    expect(recorded.nameLookups).toContain('QuestTitle_1ED8D');
+    // The Info tab owns the quest title lookup. It is no longer the landing tab (p7-14, D133), so
+    // the lookup happens when the tab is opened; then back to Goals for the rest of the test…
+    await main_(page).getByRole('tab', { name: 'Info', exact: true }).click();
+    await expect.poll(() => recorded.nameLookups).toContain('QuestTitle_1ED8D');
+    await main_(page).getByRole('tab', { name: 'Goals', exact: true }).click();
 
     // …the empty `m_goalTitle` (26 corpus goals carry one) must add nothing at all.
     const before = recorded.nameLookups.length;

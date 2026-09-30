@@ -1,0 +1,49 @@
+$ sed: ORDER_AS_STORED shortened to "Order shown as stored."  (negative control)
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ❯ tests/unit/quest-overview.test.ts (24 tests | 5 failed) 33ms
+   × the Overview text of one real quest per goal class > WC-UNICORN-MAIN-004 6ms
+     → expected [ …(16) ] to deeply equal [ …(16) ]
+   × the Overview text of one real quest per goal class > WC-TUT-C03-001 1ms
+     → expected [ 'No Prep dialog speaker', …(27) ] to deeply equal [ 'No Prep dialog speaker', …(27) ]
+   × the Overview text of one real quest per goal class > WC-TUT-C05-001 1ms
+     → expected [ 'No Prep dialog speaker', …(13) ] to deeply equal [ 'No Prep dialog speaker', …(13) ]
+   × the Overview text of one real quest per goal class > Tutorial_Intro 1ms
+     → expected [ 'No Prep dialog speaker', …(9) ] to deeply equal [ 'No Prep dialog speaker', …(9) ]
+   × the no-goal-logic fallback > states array order for an absent, a null and an empty m_goalLogic 2ms
+     → expected [ …(12) ] to include 'Order shown as stored: this quest has…'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/quest-overview.test.ts > the Overview text of one real quest per goal class > WC-UNICORN-MAIN-004
+AssertionError: expected [ …(16) ] to deeply equal [ …(16) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[33m@@ -1,9 +1,9 @@[39m
+[2m  [[22m
+[2m    "Given by Lady Oriel (the Prep dialog speaker)",[22m
+[2m    "Steps",[22m
+[32m-   "Order shown as stored: this quest has no goal logic.",[39m
+[31m+   "Order shown as stored.",[39m
+[2m    "1. Use an object in Unicorn Way (Scavenge goal) · 1_WizardQuestGoals_00000015",[22m
+[2m    "2. Use an object in Unicorn Way (Scavenge goal) · 2_WizardQuestGoals_00000015",[22m
+[2m    "3. Use an object in Unicorn Way (Scavenge goal) · 3_WizardQuestGoals_00000015",[22m
+[2m    "4. Use an object in Unicorn Way (Scavenge goal) · 4_WizardQuestGoals_00000015",[22m
+[2m    "5. Defeat 2 enemies in Unicorn Way (Bounty goal) · 5_WizardQuestGoals_KillCollect",[22m
+
+ ❯ tests/unit/quest-overview.test.ts:231:36
+    229|   for (const [name, expected] of Object.entries(PINNED)) {
+    230|     it(`${name}`, () => {
+    231|       expect(render(quests[name])).toEqual(expected);
+       |                                    ^
+
+--- restored ---
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  02:28:01
+   Duration  469ms (transform 207ms, setup 0ms, collect 305ms, tests 19ms, environment 0ms, prepare 33ms)
+

@@ -412,6 +412,8 @@ test('a missing file saves as the D118 skeleton plus the accepted field, in one 
   await expect(page.getByText('Draft · no file yet')).toBeVisible();
   // Opening the draft wrote nothing.
   expect(cloneGit(['status', '--porcelain'])).toBe('');
+  // The draft lands on Overview (p7-14, D133); the title suggestion renders on the Info tab.
+  await openTab(page, 'Info');
   await page
     .getByTestId(`suggestion-${titleId}`)
     .getByRole('button', { name: /^Accept/ })
@@ -454,6 +456,8 @@ test('a rejection is immediate and survives a reload', async ({ page }) => {
   ]) as [number, number];
 
   await page.goto(`/drafts/quest/${NAME}`);
+  // Both suggestions are on the Info tab; the draft lands on Overview (p7-14, D133).
+  await openTab(page, 'Info');
   const line = page.getByTestId(`suggestion-${rejectId}`);
   const [response] = await Promise.all([
     page.waitForResponse(
@@ -466,6 +470,7 @@ test('a rejection is immediate and survives a reload', async ({ page }) => {
   expect(statusesOf([rejectId, keepId])).toEqual(['rejected', 'pending']);
 
   await page.reload();
+  await openTab(page, 'Info');
   await expect(page.getByTestId(`suggestion-${keepId}`)).toBeVisible();
   await expect(page.getByTestId(`suggestion-${rejectId}`)).toHaveCount(0);
   expect(statusesOf([rejectId])).toEqual(['rejected']);
@@ -592,6 +597,8 @@ test('an unnamed draft asks for a name pre-filled from its title key, refuses a 
   await page.goto('/drafts?named=0');
   await page.goto(`/drafts/id/${ID}`);
   await expect(page.locator('[data-draft="unnamed"]')).toBeVisible();
+  // The title suggestion is on the Info tab; the draft lands on Overview (p7-14, D133).
+  await openTab(page, 'Info');
   await page
     .getByTestId(`suggestion-${titleId}`)
     .getByRole('button', { name: /^Accept/ })

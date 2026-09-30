@@ -1,0 +1,215 @@
+diff --git a/tests/ui/a11y-keyboard.spec.ts b/tests/ui/a11y-keyboard.spec.ts
+index 2bb727f..85abf41 100644
+--- a/tests/ui/a11y-keyboard.spec.ts
++++ b/tests/ui/a11y-keyboard.spec.ts
+@@ -615,2 +615,4 @@ test.describe('AC#10 — the rendered surfaces expose a name for every control',
+           await expect(page.locator('[data-edit-mode="true"]')).toBeVisible();
++          // The page lands on Overview (p7-14, D133); the 20-control floor is the Info editor's.
++          await page.getByRole('tab', { name: 'Info', exact: true }).click();
+           await expect(page.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
+diff --git a/tests/ui/a11y.spec.ts b/tests/ui/a11y.spec.ts
+index ee86314..2eda506 100644
+--- a/tests/ui/a11y.spec.ts
++++ b/tests/ui/a11y.spec.ts
+@@ -521,4 +521,15 @@ const dropTableEdit = (page: Page): Locator => page.locator('[data-edit-mode="ed
+ 
+-/** The six tabs the quest detail page renders, in the order its tab strip holds them. */
+-const PREVIEW_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
++/**
++ * The tabs the quest detail page renders, in the order its tab strip holds them: Overview first
++ * and the landing tab (p7-14, D133), then the six editors.
++ */
++const PREVIEW_TABS = [
++  'Overview',
++  'Info',
++  'Goals',
++  'Goal Logic',
++  'Requirements',
++  'Results',
++  'Dialog',
++] as const;
+ 
+@@ -558,3 +569,3 @@ test.describe('§1 AC#13: zero critical/serious on the four key pages', () => {
+       await expect(editMode(page)).toBeVisible();
+-      if (tab !== 'Info') {
++      if (tab !== 'Overview') {
+         await page.getByRole('tab', { name: tab, exact: true }).click();
+diff --git a/tests/ui/p7-drafts.spec.ts b/tests/ui/p7-drafts.spec.ts
+index 1b52f58..58195ce 100644
+--- a/tests/ui/p7-drafts.spec.ts
++++ b/tests/ui/p7-drafts.spec.ts
+@@ -414,2 +414,4 @@ test('a missing file saves as the D118 skeleton plus the accepted field, in one
+   expect(cloneGit(['status', '--porcelain'])).toBe('');
++  // The draft lands on Overview (p7-14, D133); the title suggestion renders on the Info tab.
++  await openTab(page, 'Info');
+   await page
+@@ -456,2 +458,4 @@ test('a rejection is immediate and survives a reload', async ({ page }) => {
+   await page.goto(`/drafts/quest/${NAME}`);
++  // Both suggestions are on the Info tab; the draft lands on Overview (p7-14, D133).
++  await openTab(page, 'Info');
+   const line = page.getByTestId(`suggestion-${rejectId}`);
+@@ -468,2 +472,3 @@ test('a rejection is immediate and survives a reload', async ({ page }) => {
+   await page.reload();
++  await openTab(page, 'Info');
+   await expect(page.getByTestId(`suggestion-${keepId}`)).toBeVisible();
+@@ -594,2 +599,4 @@ test('an unnamed draft asks for a name pre-filled from its title key, refuses a
+   await expect(page.locator('[data-draft="unnamed"]')).toBeVisible();
++  // The title suggestion is on the Info tab; the draft lands on Overview (p7-14, D133).
++  await openTab(page, 'Info');
+   await page
+diff --git a/tests/ui/p7-glossary-help.spec.ts b/tests/ui/p7-glossary-help.spec.ts
+index b432220..0468318 100644
+--- a/tests/ui/p7-glossary-help.spec.ts
++++ b/tests/ui/p7-glossary-help.spec.ts
+@@ -38,2 +38,4 @@ test('the popover opens by keyboard and shows help, technical name and source',
+   const main = page.getByRole('main');
++  // The quest lands on Overview (p7-14, D133); Quest level is a field of the Info tab.
++  await main.getByRole('tab', { name: 'Info', exact: true }).click();
+   const trigger = main.getByRole('button', { name: 'What does this mean? Quest level' }).first();
+@@ -97,2 +99,3 @@ test('at 375px the popover and the glossary page do not overflow', async ({ page
+   await page.goto(`/quests/${NAME}`);
++  await page.getByRole('main').getByRole('tab', { name: 'Info', exact: true }).click();
+   await page
+diff --git a/tests/ui/quests-detail.spec.ts b/tests/ui/quests-detail.spec.ts
+index a9919dd..7ae5f01 100644
+--- a/tests/ui/quests-detail.spec.ts
++++ b/tests/ui/quests-detail.spec.ts
+@@ -36,2 +36,4 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
+ const SIX_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
++/** p7-14 (D133): the detail page's strip is the Overview plus the six. */
++const SEVEN_TABS = ['Overview', ...SIX_TABS] as const;
+ 
+@@ -101,3 +103,3 @@ test.describe('header', () => {
+     // The history timeline is a section of the page, not a seventh tab.
+-    await expect(main.getByRole('tab')).toHaveCount(SIX_TABS.length);
++    await expect(main.getByRole('tab')).toHaveCount(SEVEN_TABS.length);
+     await expect(main.getByRole('heading', { level: 2, name: 'Status History' })).toBeVisible();
+@@ -112,3 +114,3 @@ test.describe('tabs', () => {
+     const main = page_(page);
+-    for (const tab of SIX_TABS) {
++    for (const tab of SEVEN_TABS) {
+       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
+@@ -116,3 +118,4 @@ test.describe('tabs', () => {
+ 
+-    // Info is the landing tab and, since p3-03, the live editor; the other five became live
++    // Overview is the landing tab (p7-14, D133); Info has been the live editor since p3-03. The
++    // other five became live
+     // editors in p3-04 (Goals), p3-05 (Goal Logic), p3-06 (Requirements), p3-07 (Results) and
+@@ -120,2 +123,8 @@ test.describe('tabs', () => {
+     // page's preview keeps the read-only bodies and `extraction.spec.ts` still asserts that.
++    await expect(main.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
++      'aria-selected',
++      'true',
++    );
++    await expect(main.getByRole('region', { name: 'Quest overview' })).toBeVisible();
++    await main.getByRole('tab', { name: 'Info' }).click();
+     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
+diff --git a/tests/ui/quests-edit-mode.spec.ts b/tests/ui/quests-edit-mode.spec.ts
+index d7504cf..99241ea 100644
+--- a/tests/ui/quests-edit-mode.spec.ts
++++ b/tests/ui/quests-edit-mode.spec.ts
+@@ -131,2 +131,4 @@ async function openCleanQuest(
+   await page.goto('/quests/DS-ACAD1-C01-001');
++  // p7-14 (D133): the page lands on Overview; these specs drive the Info editor, so open it.
++  await page.getByRole('tab', { name: 'Info', exact: true }).click();
+   return recorded;
+diff --git a/tests/ui/quests-evidence-panel.spec.ts b/tests/ui/quests-evidence-panel.spec.ts
+index 8848054..9e7d260 100644
+--- a/tests/ui/quests-evidence-panel.spec.ts
++++ b/tests/ui/quests-evidence-panel.spec.ts
+@@ -288,4 +288,4 @@ test.describe('one right rail, two tabs', () => {
+     // The page has settled (its editors are on screen) and the panel's route was never hit. The
+-    // preview opens on Info, so that is the settled marker here.
+-    await expect(main_(page).getByRole('tab', { name: 'Info' })).toHaveAttribute(
++    // preview opens on Overview (p7-14, D133), so that is the settled marker here.
++    await expect(main_(page).getByRole('tab', { name: 'Overview' })).toHaveAttribute(
+       'aria-selected',
+diff --git a/tests/ui/quests-goals-editor.spec.ts b/tests/ui/quests-goals-editor.spec.ts
+index 3eaf7b5..b88b998 100644
+--- a/tests/ui/quests-goals-editor.spec.ts
++++ b/tests/ui/quests-goals-editor.spec.ts
+@@ -742,4 +742,7 @@ test.describe('string-table lookups on m_goalTitle', () => {
+ 
+-    // The Info tab is the landing tab and owns the quest title lookup…
+-    expect(recorded.nameLookups).toContain('QuestTitle_1ED8D');
++    // The Info tab owns the quest title lookup. It is no longer the landing tab (p7-14, D133), so
++    // the lookup happens when the tab is opened; then back to Goals for the rest of the test…
++    await main_(page).getByRole('tab', { name: 'Info', exact: true }).click();
++    await expect.poll(() => recorded.nameLookups).toContain('QuestTitle_1ED8D');
++    await main_(page).getByRole('tab', { name: 'Goals', exact: true }).click();
+ 
+diff --git a/tests/ui/quests-info-editor.spec.ts b/tests/ui/quests-info-editor.spec.ts
+index 0bcfd8c..fbc2fbb 100644
+--- a/tests/ui/quests-info-editor.spec.ts
++++ b/tests/ui/quests-info-editor.spec.ts
+@@ -89,2 +89,10 @@ async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
+ 
++/**
++ * p7-14 (D133): the quest page now lands on Overview, so every test that reads the Info editor
++ * opens the Info tab first. This click is the one added step, after each `goto`.
++ */
++async function openInfoTab(page: Page): Promise<void> {
++  await page.getByRole('tab', { name: 'Info', exact: true }).click();
++}
++
+ test.beforeEach(async ({ page }) => {
+@@ -97,2 +105,3 @@ test.describe('the two-column form', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -160,2 +169,3 @@ test.describe('the two-column form', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -181,2 +191,3 @@ test.describe('the Advanced section', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -220,2 +231,3 @@ test.describe('the Advanced section', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+     const before = await (async () => {
+@@ -239,2 +251,3 @@ test.describe('the string-table title lookup', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -253,2 +266,3 @@ test.describe('the string-table title lookup', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -274,2 +288,3 @@ test.describe('the string-table title lookup', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -291,2 +306,3 @@ test.describe('edits and the JSON panel', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -309,2 +325,3 @@ test.describe('edits and the JSON panel', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+     await openJson(page);
+@@ -322,2 +339,3 @@ test.describe('edits and the JSON panel', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+     await openJson(page);
+@@ -341,2 +359,3 @@ test.describe('edits and the JSON panel', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+     await openJson(page);
+@@ -364,2 +383,3 @@ test.describe('edits and the JSON panel', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -380,2 +400,3 @@ test.describe('edits and the JSON panel', () => {
+     await page.reload();
++    await openInfoTab(page);
+     const selectAgain = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
+@@ -395,2 +416,3 @@ test.describe('the detail page’s tabs are all live editors', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 
+@@ -439,2 +461,3 @@ test.describe('the detail page’s tabs are all live editors', () => {
+     await page.goto('/quests/DS-ACAD1-C01-001');
++    await openInfoTab(page);
+ 

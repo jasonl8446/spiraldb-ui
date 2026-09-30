@@ -11,6 +11,7 @@ import QuestDialogEditor from '../components/quest/QuestDialogEditor';
 import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
 import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
+import QuestOverviewPanel from '../components/quest/QuestOverview';
 import QuestRequirementsEditor from '../components/quest/QuestRequirementsEditor';
 import QuestResultsEditor from '../components/quest/QuestResultsEditor';
 import QuestSaveButton from '../components/quest/QuestSaveButton';
@@ -510,8 +511,17 @@ export function LoadedQuest({
     </>
   );
 
+  /**
+   * The Overview (task 7.13) is in both modes and read-only, so it is outside the view/edit split
+   * below: view mode passes it alone. It counts the pending suggestions in either mode, which the
+   * channel below (edit mode only) does not.
+   */
+  const overview = (
+    <QuestOverviewPanel doc={document.doc} suggestions={suggestions.data?.suggestions ?? []} />
+  );
   const panels = editMode
     ? {
+        Overview: overview,
         Info: withSuggestions(
           'Info',
           <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
@@ -545,7 +555,7 @@ export function LoadedQuest({
           <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />,
         ),
       }
-    : undefined;
+    : { Overview: overview };
 
   return (
     /**

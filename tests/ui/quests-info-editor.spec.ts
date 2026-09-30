@@ -87,6 +87,14 @@ async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
   return JSON.parse(text) as Record<string, unknown>;
 }
 
+/**
+ * p7-14 (D133): the quest page now lands on Overview, so every test that reads the Info editor
+ * opens the Info tab first. This click is the one added step, after each `goto`.
+ */
+async function openInfoTab(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Info', exact: true }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
 });
@@ -95,6 +103,7 @@ test.describe('the two-column form', () => {
   test('renders every field of spec L296-298 with its kind', async ({ page }) => {
     await mockQuestsApi(page, { names: { QuestTitle_1ED8D: 'Quest for Perfection' } });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const form = editor(page);
     await expect(form).toBeVisible();
@@ -158,6 +167,7 @@ test.describe('the two-column form', () => {
   test('the two columns are laid out side by side above md', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const nameBox = await editor(page)
       .getByLabel('Quest (m_questName)', { exact: true })
@@ -179,6 +189,7 @@ test.describe('the Advanced section', () => {
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const details = advanced(page);
     await expect(details).toHaveCount(1);
@@ -218,6 +229,7 @@ test.describe('the Advanced section', () => {
   test('does not inject a key merely by opening the section', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     const before = await (async () => {
       await openJson(page);
       return copyPanelDocument(page);
@@ -237,6 +249,7 @@ test.describe('the string-table title lookup', () => {
       names: { QuestTitle_1ED8D: 'Quest for Perfection' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await expect(editor(page).getByText('Quest for Perfection')).toBeVisible();
     // The key itself stays visible and editable — this is a lookup display, not a
@@ -251,6 +264,7 @@ test.describe('the string-table title lookup', () => {
     // `{}` = every key 404s, which is the corpus's own fallback path.
     const recorded = await mockQuestsApi(page, { names: {} });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await expect(editor(page).getByText('QuestTitle_1ED8D', { exact: true })).toBeVisible();
     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
@@ -272,6 +286,7 @@ test.describe('the string-table title lookup', () => {
       detail: { ...MOCK_QUEST, m_questTitle: '' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await expect(
       editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
@@ -289,6 +304,7 @@ test.describe('edits and the JSON panel', () => {
   }) => {
     await mockQuestsApi(page, { names: { QuestTitle_1ED8D: 'Quest for Perfection' } });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await openJson(page);
     const before = await copyPanelDocument(page);
@@ -307,6 +323,7 @@ test.describe('edits and the JSON panel', () => {
   test('a checkbox edit writes a boolean and leaves the other keys alone', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     await openJson(page);
     const before = await copyPanelDocument(page);
 
@@ -320,6 +337,7 @@ test.describe('edits and the JSON panel', () => {
   test('a tag edit writes an array, and clearing it deletes the key', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     await openJson(page);
 
     await editor(page)
@@ -339,6 +357,7 @@ test.describe('edits and the JSON panel', () => {
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     await openJson(page);
 
     // `m_questTitle` exists in the fixture.
@@ -362,6 +381,7 @@ test.describe('edits and the JSON panel', () => {
       detail: { ...MOCK_QUEST, m_activityType: 'ACTIVITY_Crafting' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const select = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
     await expect(select).toHaveValue('ACTIVITY_Crafting');
@@ -378,6 +398,7 @@ test.describe('edits and the JSON panel', () => {
       detail: { ...MOCK_QUEST, m_activityType: 'ACTIVITY_FutureThing' },
     });
     await page.reload();
+    await openInfoTab(page);
     const selectAgain = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
     await expect(selectAgain).toHaveValue('ACTIVITY_FutureThing');
     await expect(selectAgain.locator('option')).toHaveCount(7);
@@ -393,6 +414,7 @@ test.describe('the detail page’s tabs are all live editors', () => {
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     // The Info tab is the editor…
     await expect(editor(page).locator('input').first()).toBeVisible();
@@ -437,6 +459,7 @@ test.describe('the detail page’s tabs are all live editors', () => {
   test('the header Edit button is the real view/edit toggle (story p3-10)', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const edit = main_(page).getByRole('button', { name: 'Edit' });
     // Until p3-10 this asserted the opposite (`toBeDisabled()` plus the "Editing arrives in

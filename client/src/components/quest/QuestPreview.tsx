@@ -49,8 +49,15 @@ export interface QuestPreviewProps {
    * own entry: a missing key falls back to that tab's read-only body, so a caller never
    * has to know the tab list.
    */
-  panels?: Partial<Record<PreviewTab, ReactNode>>;
+  panels?: Partial<Record<QuestTab, ReactNode>>;
 }
+
+/**
+ * A tab of the quest detail page: the extraction preview's six plus the Overview (task 7.13, D133),
+ * which exists only where a caller supplies its panel — the detail page, in view and edit mode —
+ * and is then the first tab and the landing tab.
+ */
+export type QuestTab = 'Overview' | PreviewTab;
 
 /**
  * How a panel asks this component to switch tabs.
@@ -63,10 +70,10 @@ export interface QuestPreviewProps {
  * rendered on its own (a unit-style render, a future reuse) degrades to doing nothing rather
  * than throwing.
  */
-export const PreviewTabSelectContext = createContext<((tab: PreviewTab) => void) | null>(null);
+export const PreviewTabSelectContext = createContext<((tab: QuestTab) => void) | null>(null);
 
 /** The tab switch, or `null` when no preview is above this panel. */
-export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
+export function usePreviewTabSelect(): ((tab: QuestTab) => void) | null {
   return useContext(PreviewTabSelectContext);
 }
 
@@ -83,18 +90,20 @@ export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
  * *incomplete* (`tests/ui/a11y.spec.ts`, the `quest-detail:Goal Logic` arm). Both the `id` and
  * every lookup go through this one function, so the two can never drift.
  */
-function tabDomId(panelId: string, name: PreviewTab): string {
+function tabDomId(panelId: string, name: QuestTab): string {
   return `${panelId}-tab-${name.replace(/\s+/g, '-')}`;
 }
 
 export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
-  const [tab, setTab] = useState<PreviewTab>('Info');
+  const tabs: readonly QuestTab[] =
+    panels?.Overview === undefined ? PREVIEW_TABS : ['Overview', ...PREVIEW_TABS];
+  const [tab, setTab] = useState<QuestTab>(tabs[0]);
   const panelId = useId();
 
-  // A new quest starts on Info, so the pane never shows a stale section of the
-  // previous quest while appearing to describe this one.
+  // A new quest starts on its first tab (Overview where there is one, else Info), so the pane
+  // never shows a stale section of the previous quest while appearing to describe this one.
   useEffect(() => {
-    setTab('Info');
+    setTab(tabs[0]);
   }, [quest]);
 
   return (
@@ -104,7 +113,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
         aria-label="Quest preview sections"
         className="flex flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2"
       >
-        {PREVIEW_TABS.map((name, index) => {
+        {tabs.map((name, index) => {
           const selected = name === tab;
           return (
             <button
@@ -118,12 +127,12 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
               // APG tablist keys, the same automatic activation the click performs; the
               // rule is shared with the list pages' filter tabs (`lib/tablist.ts`).
               onKeyDown={(event) => {
-                const next = nextTabIndex(event.key, index, PREVIEW_TABS.length);
+                const next = nextTabIndex(event.key, index, tabs.length);
                 if (next === null) {
                   return;
                 }
                 event.preventDefault();
-                const target = PREVIEW_TABS[next];
+                const target = tabs[next];
                 setTab(target);
                 document.getElementById(tabDomId(panelId, target))?.focus();
               }}
@@ -160,15 +169,18 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
  * A tab absent from {@link QuestPreviewProps.panels} gets its own p2-07 body.
  */
 function renderPanel(
-  tab: PreviewTab,
+  tab: QuestTab,
   quest: QuestObject,
-  panels?: Partial<Record<PreviewTab, ReactNode>>,
+  panels?: Partial<Record<QuestTab, ReactNode>>,
 ): JSX.Element {
   const editor = panels?.[tab];
   if (editor !== undefined) {
     return <>{editor}</>;
   }
   switch (tab) {
+    case 'Overview':
+      // Only reachable when a caller supplies the panel; nothing here reads the network.
+      return <Empty text="No overview." />;
     case 'Info':
       return <InfoPanel quest={quest} />;
     case 'Goals':

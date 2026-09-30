@@ -613,6 +613,8 @@ test.describe('AC#10 — the rendered surfaces expose a name for every control',
           // `hook=0`/`data-edit-mode="false"` after the click. The hook is absent from
           // neither the DOM nor the page; it is `"true"` on load.
           await expect(page.locator('[data-edit-mode="true"]')).toBeVisible();
+          // The page lands on Overview (p7-14, D133); the 20-control floor is the Info editor's.
+          await page.getByRole('tab', { name: 'Info', exact: true }).click();
           await expect(page.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
         },
         floor: 20,

@@ -36,6 +36,8 @@ test('the popover opens by keyboard and shows help, technical name and source', 
   });
   await page.goto(`/quests/${NAME}`);
   const main = page.getByRole('main');
+  // The quest lands on Overview (p7-14, D133); Quest level is a field of the Info tab.
+  await main.getByRole('tab', { name: 'Info', exact: true }).click();
   const trigger = main.getByRole('button', { name: 'What does this mean? Quest level' }).first();
   await expect(trigger).toBeVisible();
   await trigger.focus();
@@ -95,6 +97,7 @@ test('at 375px the popover and the glossary page do not overflow', async ({ page
     onDetail: (route) => route.fulfill({ json: fixture.quests[NAME] }),
   });
   await page.goto(`/quests/${NAME}`);
+  await page.getByRole('main').getByRole('tab', { name: 'Info', exact: true }).click();
   await page
     .getByRole('main')
     .getByRole('button', { name: 'What does this mean? Quest level' })

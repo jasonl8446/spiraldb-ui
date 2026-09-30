@@ -286,8 +286,8 @@ test.describe('one right rail, two tabs', () => {
     const recorded = await openQuest(page);
     await expect(rail(page, 'Quest evidence')).toHaveCount(0);
     // The page has settled (its editors are on screen) and the panel's route was never hit. The
-    // preview opens on Info, so that is the settled marker here.
-    await expect(main_(page).getByRole('tab', { name: 'Info' })).toHaveAttribute(
+    // preview opens on Overview (p7-14, D133), so that is the settled marker here.
+    await expect(main_(page).getByRole('tab', { name: 'Overview' })).toHaveAttribute(
       'aria-selected',
       'true',
     );

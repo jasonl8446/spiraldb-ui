@@ -519,8 +519,19 @@ const editMode = (page: Page): Locator => page.locator('[data-edit-mode="true"]'
 const dropTableView = (page: Page): Locator => page.locator('[data-edit-mode="view"]');
 const dropTableEdit = (page: Page): Locator => page.locator('[data-edit-mode="edit"]');
 
-/** The six tabs the quest detail page renders, in the order its tab strip holds them. */
-const PREVIEW_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
+/**
+ * The tabs the quest detail page renders, in the order its tab strip holds them: Overview first
+ * and the landing tab (p7-14, D133), then the six editors.
+ */
+const PREVIEW_TABS = [
+  'Overview',
+  'Info',
+  'Goals',
+  'Goal Logic',
+  'Requirements',
+  'Results',
+  'Dialog',
+] as const;
 
 /* ------------------------------------------------- §1 the four pages, each in its own state */
 
@@ -556,7 +567,7 @@ test.describe('§1 AC#13: zero critical/serious on the four key pages', () => {
       // The page starts in edit mode (D66(b)); clicking `Edit` here would turn it OFF and scan
       // the read-only bodies, which is this story's named false-negative trap.
       await expect(editMode(page)).toBeVisible();
-      if (tab !== 'Info') {
+      if (tab !== 'Overview') {
         await page.getByRole('tab', { name: tab, exact: true }).click();
       }
       await expect(page.getByRole('tabpanel')).toBeVisible();
