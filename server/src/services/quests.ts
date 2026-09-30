@@ -9,6 +9,11 @@ import { validateQuest } from '../../../shared/quest/validation.js';
 import { blockingSummary, fieldErrorMap } from '../../../shared/quest/validation-messages.js';
 import type { Db } from '../db.js';
 import {
+  acceptSuggestions,
+  assertAcceptableSuggestions,
+  parseAcceptedSuggestions,
+} from './drafts.js';
+import {
   collectionSpec,
   objectKeyFromData,
   readSpiraldbJson,
@@ -271,6 +276,8 @@ export interface SaveQuestResult {
   metadata_outcome: SaveOutcome | null;
   status: SaveObjectResult['status'];
   warnings: string[];
+  /** The suggestion ids this save flipped to `accepted` after its commit (D141); `[]` when none. */
+  accepted_suggestions: number[];
 }
 
 export interface SaveQuestOptions {
@@ -278,7 +285,7 @@ export interface SaveQuestOptions {
   /** The shared D19 index (the router's per-root instance). */
   index: SpiraldbIndex;
   pipeline: SavePipeline;
-  /** The raw request body, validated here: `{ quest, notes?, source? }`. */
+  /** The raw request body, validated here: `{ quest, notes?, source?, accepted_suggestions? }`. */
   body: unknown;
 }
 
@@ -387,6 +394,12 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     );
   }
 
+  // Task 7.7 (D141): the suggestions this save applies are checked **before** anything is
+  // written — each must exist, be pending and be this quest's — and flipped only once the
+  // pipeline's commit exists, so a save that fails anywhere leaves every one of them pending.
+  const accepted = parseAcceptedSuggestions(body.accepted_suggestions);
+  assertAcceptableSuggestions(options.db, accepted, { quest_name: name, catalog_id: null });
+
   // `undefined` for an absent/blank/unsafe value — i.e. no note at all.
   const source = sanitizeCaptureSource(body.source);
 
@@ -422,6 +435,8 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     historyNotesOnCreate: source === undefined ? undefined : captureSourceNote(source),
   });
 
+  acceptSuggestions(options.db, accepted, { quest_name: name, catalog_id: null });
+
   if (duplicateTarget !== undefined) {
     // `metadataRelativePath` is the file the pipeline actually wrote; the resolver's path is the
     // fallback for a result shape that omits it. Either way the sentence is only ever uttered
@@ -451,5 +466,6 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     metadata_outcome: result.metadataOutcome,
     status: result.status,
     warnings,
+    accepted_suggestions: accepted,
   };
 }

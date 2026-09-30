@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,9 +24,12 @@ export function draftsRebuiltMessage(result: DraftRebuildResult): string {
  */
 export default function RebuildDraftsButton(): JSX.Element {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const rebuild = useMutation<DraftRebuildResult, Error>({
     mutationFn: postDraftsRebuild,
     onSuccess: (result) => {
+      // The `/drafts` header mounts this button too (task 7.7): its queue re-reads the new rows.
+      void queryClient.invalidateQueries({ queryKey: ['drafts'] });
       notifySuccessWithAction(draftsRebuiltMessage(result), 'Open drafts', () => {
         navigate('/drafts');
       });

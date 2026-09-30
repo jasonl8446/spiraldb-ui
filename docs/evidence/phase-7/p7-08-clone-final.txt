@@ -1,0 +1,10 @@
+$ git -C data/test-spiraldb status --short --branch; rev-parse HEAD; rev-list --count HEAD; show-ref --heads; ls QuestTemplates/*.json | wc -l
+## content/2026-09-27
+18dc92477d54b1e911796960407ce7710e703697
+42
+18dc92477d54b1e911796960407ce7710e703697 refs/heads/content/2026-09-26
+18dc92477d54b1e911796960407ce7710e703697 refs/heads/content/2026-09-27
+f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37 refs/heads/main
+322
+$ ss -ltn | grep the owned/run ports (3181 5181 3291 5291 12369 12500 12000 12333 8080)
+(none listening)

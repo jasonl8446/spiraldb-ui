@@ -1,0 +1,20 @@
+$ git -C data/test-spiraldb show --stat --format="%H %s" b432850  (the walkthrough save of the second run; unreachable after the restore, read from the object store)
+b432850307cba86e50882dec31a10194a0b0b295 spiraldb: create quest NV-PUERT-MAIN-012
+
+ .../questmetadata_NV-PUERT-MAIN-012.json           |   9 ++
+ .../questtemplates_NV-PUERT-MAIN-012.json          | 124 +++++++++++++++++++++
+ 2 files changed, 133 insertions(+)
+$ git -C data/test-spiraldb log --format="%h %s" -1 b432850^
+18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+$ npx tsx data/__test-scratch__/p7-08-check.mts <b432850:QuestTemplates/questtemplates_NV-PUERT-MAIN-012.json>
+key order equals the skeleton: true
+differs: m_questTitle "QuestTitle_17D617"
+differs: m_goals [{"$type":"Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty","m_goalName":"Goal 3","m_goalNameID":0,"m_goalTitle":"","m_goalUnderway
+differs: m_requirements {"$type":"Imcodec.ObjectProperty.TypeCache.RequirementList, Imcodec.ObjectProperty","m_applyNOT":false,"m_operator":"ROP_AND","m_requirements":[{"$type":"Imcode
+m_questTitle = suggestion 1005 | value identical: true | status accepted 2026-09-30 03:46:49
+m_goals = suggestion 1006 | value identical: true | status accepted 2026-09-30 03:46:49
+m_requirements = suggestion 1007 | value identical: true | status accepted 2026-09-30 03:46:49
+file bytes === serializeDoc(skeleton + the three accepted values): true
+unnamed 39199 after the cancelled dialog: {"matched_quest_name":null} | quests rows named QuestTitle_991F: 0
+$ cmp: the second run wrote the same bytes as the first (40409fc)
+identical

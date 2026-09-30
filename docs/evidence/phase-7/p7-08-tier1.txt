@@ -1,0 +1,8 @@
+$ npm run test:ui   (the p7-08 spec lines of the full run in p7-08-test-ui-full.txt)
+  ✓   82 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (3.2s)
+  ✓  103 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (6.0s)
+  ✓  146 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (5.7s)
+  ✓  188 [chromium] › tests/ui/p7-drafts.spec.ts:435:1 › a rejection is immediate and survives a reload (4.6s)
+  ✓  218 [chromium] › tests/ui/p7-drafts.spec.ts:476:1 › accept-all from each source, then Save, validates and commits (5.7s)
+  ✓  256 [chromium] › tests/ui/p7-drafts.spec.ts:574:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file (8.0s)
+  429 passed (1.9m)

@@ -927,10 +927,24 @@ test.describe('packet census disclosure (task 7.2, D139)', () => {
     await disclosure.locator('summary').click();
     await expect(disclosure.getByRole('table')).toBeVisible();
     await expect(disclosure.locator('tbody tr')).toHaveCount(ignored.length);
-    const personaRow = disclosure.locator('tbody tr').filter({ hasText: 'MSG_SENDGOAL' }).filter({
-      hasText: 'PersonaName',
-    });
-    await expect(personaRow).toHaveCount(1);
+    // Story p7-08 re-pin: since p7-04's post-pass (D153) the reader consumes
+    // MSG_SENDGOAL.PersonaName, and the golden says so (`consumed: true`); the ignored persona
+    // row is now MSG_ACTORDIALOG's. One of each, so both halves of the rule stay asserted.
+    const personaRow = (message: string) =>
+      disclosure
+        .locator('tbody tr')
+        .filter({ hasText: message })
+        .filter({ hasText: 'PersonaName' });
+    expect(
+      CENSUS_GOLDEN.rows
+        .filter((row) => row.field === 'PersonaName')
+        .map((row) => [row.message, row.consumed]),
+    ).toEqual([
+      ['MSG_ACTORDIALOG', false],
+      ['MSG_SENDGOAL', true],
+    ]);
+    await expect(personaRow('MSG_ACTORDIALOG')).toHaveCount(1);
+    await expect(personaRow('MSG_SENDGOAL')).toHaveCount(0);
     await expect(disclosure.locator('tbody tr').filter({ hasText: 'GoalNameID' })).toHaveCount(0);
   });
 
@@ -1241,7 +1255,9 @@ test.describe('save → browse, the P2 AC#13 chain', () => {
     // The committed artifact's on-disk length, asserted first so the file card's
     // text below cannot be satisfied by a substituted fixture (README pins this file
     // by SHA-256 at corpus commit `c55ccab…`).
-    expect(REAL_CAPTURE.byteLength).toBe(14_235);
+    // Story p7-08 re-pin: 14,235 → 14,351 bytes. p7-04 re-cut this fixture (FixtureGen now emits
+    // MSG_SENDGOAL.PersonaName, D153; +116 bytes, commit 2df452d) and left this pin behind.
+    expect(REAL_CAPTURE.byteLength).toBe(14_351);
 
     // The "before": the browse list this save is about to grow, and the numbers the
     // "after" is measured against. The capture's quest is absent from it, so the save
@@ -1262,7 +1278,8 @@ test.describe('save → browse, the P2 AC#13 chain', () => {
 
     // The file card names the uploaded file and shows its real size in KB.
     await expect(page.getByText(REAL_CAPTURE_NAME)).toBeVisible();
-    await expect(page.getByText('13.9 KB')).toBeVisible();
+    // 14,351 / 1024 = 14.01 (the p7-04 re-cut above; 13.9 KB before it).
+    await expect(page.getByText('14.0 KB')).toBeVisible();
     await expect(
       page.getByRole('status').filter({ hasText: /^Extracting quests\.\.\.$/ }),
     ).toBeVisible();

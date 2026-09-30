@@ -25,6 +25,7 @@ export type NavIconName =
   | 'upload'
   | 'list-checks'
   | 'library'
+  | 'file-pen'
   | 'backpack'
   | 'sparkles'
   | 'book-open'
@@ -70,6 +71,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Task 6.10 / story p6-11: the spec's QUESTS group ends with Catalog
       // (docs/spec-ui-design.md L148-152), which is the worklist over the catalog.
       { path: '/quests/catalog', label: 'Catalog', icon: 'library' },
+      // Task 7.7 / story p7-08 (D144): the draft review queue, after Catalog.
+      { path: '/drafts', label: 'Drafts', icon: 'file-pen' },
     ],
   },
   {
@@ -129,6 +132,11 @@ export const APP_ROUTES: readonly AppRoute[] = [
   // Catalog view is Phase 6's (task 6.10), and `/quests/:questName` stays after it.
   { path: '/quests/catalog', title: 'Quest Catalog', phase: 6 },
   { path: '/quests/:questName', title: 'Quest Detail', phase: 2 },
+
+  // Task 7.7 / story p7-08: the draft queue and the two file-less draft editors (D165).
+  { path: '/drafts', title: 'Drafts', phase: 7 },
+  { path: '/drafts/quest/:questName', title: 'Draft Quest', phase: 7 },
+  { path: '/drafts/id/:questId', title: 'Draft Quest', phase: 7 },
 
   { path: '/drop-tables', title: 'Drop Tables', phase: 4 },
   { path: '/drop-tables/:name', title: 'Drop Table Detail', phase: 4 },

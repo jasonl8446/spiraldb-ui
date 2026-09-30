@@ -267,34 +267,70 @@ export function rejectSuggestion(db: Db, id: number): SuggestionRow {
   );
 }
 
+/** The draft a save's accepted ids must belong to: its name, or its id while it is unnamed. */
+export interface SuggestionDraft {
+  quest_name: string | null;
+  catalog_id: number | null;
+}
+
 /**
- * The save routes' accept step (D141), for p7-08 to call after the pipeline's commit: every id
- * must exist, be pending and belong to the draft being saved, or nothing flips (400 naming the
- * id). All flip together in one transaction.
+ * `accepted_suggestions` of a save body (D141): absent or `null` → `[]`; otherwise an array of
+ * positive integer ids, de-duplicated in order. Anything else is a 400 before any write.
  */
-export function acceptSuggestions(
+export function parseAcceptedSuggestions(value: unknown): number[] {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  if (
+    !Array.isArray(value) ||
+    !value.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0)
+  ) {
+    throw new SuggestionDecisionError(
+      `accepted_suggestions must be an array of suggestion ids; got ${JSON.stringify(value)}`,
+      400,
+    );
+  }
+  return [...new Set(value as number[])];
+}
+
+/**
+ * The save routes' pre-write check (D141): every id must exist, be pending and belong to the
+ * draft being saved, or the request is a 400 naming the first bad id. Called **before** the
+ * pipeline writes anything, so a refused id never leaves a file behind.
+ */
+export function assertAcceptableSuggestions(
   db: Db,
   ids: readonly number[],
-  draft: { quest_name: string | null; catalog_id: number | null },
-): number {
+  draft: SuggestionDraft,
+): void {
   const read = db.prepare<[number], StoredSuggestionRow>(`${SELECT_ROW} WHERE id = ?`);
+  for (const id of ids) {
+    const row = read.get(id);
+    const belongs =
+      row !== undefined &&
+      ((draft.quest_name !== null && row.quest_name === draft.quest_name) ||
+        (draft.catalog_id !== null && row.catalog_id === draft.catalog_id));
+    if (row === undefined || row.status !== 'pending' || !belongs) {
+      throw new SuggestionDecisionError(
+        `Suggestion ${id} is not a pending suggestion of this quest`,
+        400,
+      );
+    }
+  }
+}
+
+/**
+ * The save routes' accept step (D141), called after the pipeline's commit exists: the ids are
+ * re-checked and all flip together in one transaction, or none does. Safe to call inside an outer
+ * transaction (better-sqlite3 nests it as a savepoint), which is how the naming save (D142) flips
+ * them together with the catalog rows it creates.
+ */
+export function acceptSuggestions(db: Db, ids: readonly number[], draft: SuggestionDraft): number {
   const flip = db.prepare(
     "UPDATE quest_suggestions SET status = 'accepted', decided_at = CURRENT_TIMESTAMP WHERE id = ?",
   );
   return db.transaction(() => {
-    for (const id of ids) {
-      const row = read.get(id);
-      const belongs =
-        row !== undefined &&
-        ((draft.quest_name !== null && row.quest_name === draft.quest_name) ||
-          (draft.catalog_id !== null && row.catalog_id === draft.catalog_id));
-      if (row === undefined || row.status !== 'pending' || !belongs) {
-        throw new SuggestionDecisionError(
-          `Suggestion ${id} is not a pending suggestion of this quest`,
-          400,
-        );
-      }
-    }
+    assertAcceptableSuggestions(db, ids, draft);
     for (const id of ids) {
       flip.run(id);
     }

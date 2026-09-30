@@ -15,10 +15,14 @@ import { listQuests, QuestRequestError, readQuest, saveQuest } from '../services
 import {
   parseScaffoldRequest,
   QuestScaffoldError,
+  resolveLink,
   scaffoldQuest,
+  type CatalogRow,
 } from '../services/questScaffold.js';
+import { buildQuestScaffold } from '../../../shared/quest/scaffold.js';
 import { createSavePipeline, type SavePipeline } from '../services/savePipeline.js';
 import { createSpiraldbIndex, type SpiraldbIndex } from '../services/spiraldbIndex.js';
+import { SuggestionDecisionError } from '../services/drafts.js';
 import { DraftQueryError, parseStatusFilter, questSuggestionsByName } from './drafts.js';
 
 /**
@@ -30,7 +34,9 @@ import { DraftQueryError, parseStatusFilter, questSuggestionsByName } from './dr
  * - `GET  /api/quests/catalog`         the catalog worklist, `?missing_only=` narrowing to has_definition = 0 (task 6.10)
  * - `GET  /api/quests/:name/evidence`  the per-quest evidence surface (task 6.6)
  * - `POST /api/quests`                 save `{ quest, notes?, source? }` through the task 2.4 pipeline
- * - `POST /api/quests/scaffold`        create the minimal skeleton for a catalog quest (task 6.8)
+ * - `POST /api/quests/scaffold`        create the minimal skeleton for a catalog quest (task 6.8);
+ *                                       task 7.7 adds `quest`, `catalog_id`, `accepted_suggestions`
+ * - `GET  /api/quests/:name/scaffold`   the skeleton a missing named draft starts from, unwritten (task 7.7)
  *
  * The spec fixes no response shape ("List all quests" / "Single quest JSON"), so
  * the shapes the client will consume are documented on the service types
@@ -162,6 +168,12 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       res.status(error.status).json({ error: error.message } satisfies ApiError);
       return;
     }
+    if (error instanceof SuggestionDecisionError) {
+      // Task 7.7 (D141): an `accepted_suggestions` id that is unknown, decided or another
+      // quest's — refused before anything was written.
+      res.status(error.status).json({ error: error.message } satisfies ApiError);
+      return;
+    }
     if (error instanceof DirtyRepoError) {
       res.status(409).json({ error: error.message } satisfies ApiError);
       return;
@@ -280,6 +292,51 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
     }
   });
 
+  /**
+   * `GET /api/quests/:name/scaffold` — task 7.7: the D118 skeleton a named draft with no file
+   * starts from in the editor, **built and not written**. It is the document `POST /scaffold`
+   * would write for this catalog row (the direct-link title included), so the draft's first
+   * save diffs as "the skeleton plus what was accepted". `404` for a name the catalog does not
+   * hold; `409` when the quest already has a file (open it instead).
+   */
+  router.get('/:name/scaffold', (req, res) => {
+    try {
+      const row = db
+        .prepare<[string], CatalogRow>(
+          'SELECT quest_name, title, has_definition, link_kind FROM quests WHERE quest_name = ?',
+        )
+        .get(req.params.name);
+      if (row === undefined) {
+        res.status(404).json({ error: `Unknown quest "${req.params.name}"` } satisfies ApiError);
+        return;
+      }
+      // The catalog's column, then the corpus itself: a file scaffolded since the last sync has
+      // `has_definition = 0` still, and its editor is the file's, not a fresh skeleton.
+      const root = (readSettings(db).spiraldb_path ?? '').trim();
+      let hasFile = row.has_definition === 1;
+      if (!hasFile && root !== '') {
+        const { index } = runtimeFor(root);
+        index.rebuildType('questtemplates');
+        hasFile = index.pathFor('questtemplates', row.quest_name) !== undefined;
+      }
+      if (hasFile) {
+        res.status(409).json({
+          error: `"${row.quest_name}" already has a definition; open it in the editor instead.`,
+        } satisfies ApiError);
+        return;
+      }
+      const link = resolveLink(db, row);
+      res.json({
+        quest_name: row.quest_name,
+        link_kind: link.kind,
+        title_key: link.titleKey,
+        quest: buildQuestScaffold({ name: row.quest_name, link }),
+      });
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
   router.get('/:name', (req, res) => {
     const root = spiraldbRoot(res);
     if (root === undefined) {
@@ -317,13 +374,24 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       return;
     }
     try {
-      const { name, notes } = parseScaffoldRequest(req.body);
+      const { name, notes, quest, catalogId, acceptedSuggestions } = parseScaffoldRequest(req.body);
       const { index, pipeline } = runtimeFor(root);
       // The catalog row and the string table are read from the database; the index must
       // reflect disk so the pipeline's create/update decision is not made against a stale
       // scan (the same reason `saveQuest` refreshes both families).
       index.rebuildType('questtemplates');
-      res.json(await scaffoldQuest({ db, index, pipeline, name, notes }));
+      res.json(
+        await scaffoldQuest({
+          db,
+          index,
+          pipeline,
+          name,
+          notes,
+          quest,
+          catalogId,
+          acceptedSuggestions,
+        }),
+      );
     } catch (error) {
       fail(res, error);
     }

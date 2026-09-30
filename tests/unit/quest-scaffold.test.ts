@@ -548,13 +548,17 @@ describe('p6-09 — the writer end to end', () => {
   });
 
   it('validates the request body the way POST /api/quests validates its own', () => {
+    // Task 7.7 (D141/D142) added three optional body fields; absent, they parse to "none".
+    const none = { quest: undefined, catalogId: undefined, acceptedSuggestions: [] };
     expect(parseScaffoldRequest({ quest_name: ' DM-GRAVE-MAIN-008 ' })).toEqual({
       name: 'DM-GRAVE-MAIN-008',
       notes: undefined,
+      ...none,
     });
     expect(parseScaffoldRequest({ quest_name: 'x', notes: 'body' })).toEqual({
       name: 'x',
       notes: 'body',
+      ...none,
     });
     expect(parseScaffoldRequest({ quest_name: 'x', notes: null }).notes).toBeUndefined();
     for (const body of [null, [], 'x', {}, { quest_name: '' }, { quest_name: 7 }]) {

@@ -100,6 +100,11 @@ const SPEC_ROUTES = [
   // oracle moves with them rather than the route table moving alone.
   '/quests/catalog',
   '/quests/:questName',
+  // Added deliberately by story p7-08 (D144): the draft queue is in the spec's URL table and
+  // the sidebar spec (spec-ui-design.md §12), and its two file-less editors (D165) with it.
+  '/drafts',
+  '/drafts/quest/:questName',
+  '/drafts/id/:questId',
   '/drop-tables',
   '/drop-tables/:name',
   '/npc-inventories',
@@ -139,6 +144,10 @@ describe('route table', () => {
     // The Catalog view is task 6.10's own page (story p6-11), so it carries Phase 6.
     expect(phase('/quests/catalog')).toBe(6);
     expect(phase('/quests/:questName')).toBe(2);
+    // The draft queue and its editors are task 7.7's (story p7-08).
+    expect(phase('/drafts')).toBe(7);
+    expect(phase('/drafts/quest/:questName')).toBe(7);
+    expect(phase('/drafts/id/:questId')).toBe(7);
     for (const path of [
       '/drop-tables',
       '/drop-tables/:name',
@@ -253,7 +262,7 @@ describe('navigation table', () => {
     );
 
     expect(byGroup.OVERVIEW).toEqual(['Dashboard']);
-    expect(byGroup.QUESTS).toEqual(['Extract Quests', 'Browse Quests', 'Catalog']);
+    expect(byGroup.QUESTS).toEqual(['Extract Quests', 'Browse Quests', 'Catalog', 'Drafts']);
     expect(byGroup.DATA).toEqual([
       'Drop Tables',
       'NPC Inventories',
@@ -278,6 +287,8 @@ describe('navigation table', () => {
       'list-checks',
       // Story p6-11: the Catalog nav item's icon, added with the item.
       'library',
+      // Story p7-08: the Drafts nav item's icon, added with the item.
+      'file-pen',
       'backpack',
       'sparkles',
       'book-open',

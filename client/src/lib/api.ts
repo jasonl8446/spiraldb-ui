@@ -22,6 +22,13 @@ import {
   type QuestCoverage,
 } from './quest-catalog';
 import type { SyncCounts } from './toast';
+import {
+  draftsRequestPath,
+  type DraftFilter,
+  type DraftList,
+  type Suggestion,
+  type SuggestionsBody,
+} from './suggestions';
 
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
 interface ApiErrorBody {
@@ -1010,6 +1017,11 @@ export function getQuestEvidence(name: string): Promise<QuestEvidence> {
   return apiFetch<QuestEvidence>(`/api/quests/${encodeURIComponent(name)}/evidence`);
 }
 
+/** `GET /api/quest-ids/:id/evidence` — the same shape for an unnamed-tier id (task 6.6). */
+export function getQuestIdEvidence(id: number): Promise<QuestEvidence> {
+  return apiFetch<QuestEvidence>(`/api/quest-ids/${id}/evidence`);
+}
+
 /* ------------------------------------------------------------- quests (save) */
 
 /**
@@ -1031,6 +1043,11 @@ export interface SaveQuestBody {
    * no note and never resets the status. Absent ⇒ exactly the old behaviour.
    */
   source?: string;
+  /**
+   * Task 7.7 (D141): the suggestion ids this document applies. Validated before the write and
+   * flipped to `accepted` only after the commit.
+   */
+  accepted_suggestions?: number[];
 }
 
 /** `POST /api/quests` success body (docs/spec-api.md L239-251, decision D49(a)). */
@@ -1049,6 +1066,8 @@ export interface SaveQuestResult {
   status: StatusEntry;
   /** The D48(d) duplicate-metadata report; empty when there is none. */
   warnings: string[];
+  /** Task 7.7: the ids this save flipped to `accepted` (absent on a pre-7.7 server). */
+  accepted_suggestions?: number[];
 }
 
 /**
@@ -1117,7 +1136,71 @@ export function scaffoldQuest(questName: string): Promise<ScaffoldQuestResult> {
   });
 }
 
+/**
+ * Task 7.7 (D142): a draft's first save — the scaffold route with the editor's in-memory document
+ * (`quest`), the ids it applies, and for an unnamed draft the `catalog_id` its chosen name is given
+ * to. `404`/`409`/`400` keep the scaffold's meanings; a naming refusal writes nothing.
+ */
+export interface ScaffoldDraftBody {
+  quest_name: string;
+  quest: QuestObject;
+  catalog_id?: number;
+  accepted_suggestions: number[];
+}
+
+export function scaffoldDraft(
+  body: ScaffoldDraftBody,
+): Promise<ScaffoldQuestResult & { named: boolean; accepted_suggestions: number[] }> {
+  return apiFetch('/api/quests/scaffold', { method: 'POST', body: JSON.stringify(body) });
+}
+
+/** `GET /api/quests/:name/scaffold` — the unwritten D118 skeleton a missing named draft opens on. */
+export interface QuestSkeleton {
+  quest_name: string;
+  link_kind: EvidenceTitleSource;
+  title_key: string | null;
+  quest: QuestObject;
+}
+
+export function getQuestSkeleton(questName: string): Promise<QuestSkeleton> {
+  return apiFetch<QuestSkeleton>(`/api/quests/${encodeURIComponent(questName)}/scaffold`);
+}
+
 /* -------------------------------------------------------------- drafts (task 7.6) */
+
+/** TanStack Query key of one draft-queue read; the filter is part of the key. */
+export function draftsQueryKey(filter: DraftFilter): readonly unknown[] {
+  return ['drafts', filter] as const;
+}
+
+/** `GET /api/drafts` — the queue, filtered and ranked by the server (D143). */
+export function listDrafts(filter: DraftFilter): Promise<DraftList> {
+  return apiFetch<DraftList>(draftsRequestPath(filter));
+}
+
+/** The draft whose suggestions are read: a catalog name, or an unnamed-tier id. */
+export type SuggestionDraftKey = { questName: string } | { catalogId: number };
+
+/** Prefix key of every suggestion read, so a save or reject can invalidate them all. */
+export const SUGGESTIONS_QUERY_KEY = ['suggestions'] as const;
+
+export function suggestionsQueryKey(draft: SuggestionDraftKey): readonly unknown[] {
+  return [...SUGGESTIONS_QUERY_KEY, draft] as const;
+}
+
+/** `GET /api/quests/:name/suggestions` or `GET /api/quest-ids/:id/suggestions` (pending rows). */
+export function getSuggestions(draft: SuggestionDraftKey): Promise<SuggestionsBody> {
+  return apiFetch<SuggestionsBody>(
+    'questName' in draft
+      ? `/api/quests/${encodeURIComponent(draft.questName)}/suggestions`
+      : `/api/quest-ids/${draft.catalogId}/suggestions`,
+  );
+}
+
+/** `POST /api/suggestions/:id/reject` — immediate and durable (D141). */
+export function rejectSuggestion(id: number): Promise<Suggestion> {
+  return apiFetch<Suggestion>(`/api/suggestions/${id}/reject`, { method: 'POST' });
+}
 
 /** `POST /api/drafts/rebuild`'s body (D143) — every count read from the run. */
 export interface DraftRebuildResult {

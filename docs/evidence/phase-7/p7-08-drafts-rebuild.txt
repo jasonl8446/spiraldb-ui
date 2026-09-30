@@ -1,0 +1,37 @@
+$ npm run drafts -- --db data/__test-scratch__/p7-08.db --spiraldb data/test-spiraldb
+
+> spiraldb-ui@0.1.0 drafts
+> tsx scripts/build-drafts.ts --db data/__test-scratch__/p7-08.db --spiraldb data/test-spiraldb
+
+[spiraldb-ui] drafts database at data/__test-scratch__/p7-08.db
+[spiraldb-ui] SpiralDB root   at data/test-spiraldb (read only)
+{
+  "proposed": 5469,
+  "inserted": 20,
+  "unchanged": 5449,
+  "removed": 9,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 66,
+    "evidence-goals": 842,
+    "evidence-location": 84,
+    "evidence-requirements": 451,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1352
+  },
+  "gate_precision": {
+    "matched": 0,
+    "gates": 44
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 227
+  },
+  "duration_ms": 6091
+}

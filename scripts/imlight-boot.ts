@@ -1028,6 +1028,7 @@ const KNOWN_FLAGS: readonly string[] = [
   'prefix',
   'restore-clone',
   'keep-services',
+  'save-cmd',
 ];
 
 function parseFlags(argv: readonly string[]): { mode: string; flags: Flags } {
@@ -1086,7 +1087,10 @@ function usage(): never {
       `                        default tools/.imlight-run/evidence (gitignored). Pass docs/evidence/<phase> to commit them\n` +
       `  --prefix <name>       (prove-count) evidence filename prefix; default p6-12\n` +
       `  --restore-clone       (prove-count) restore the D17 clone to its pre-scaffold snapshot\n` +
-      `  --keep-services       (prove-count) leave a started Aurorium running (for the reuse arm)\n`,
+      `  --keep-services       (prove-count) leave a started Aurorium running (for the reuse arm)\n` +
+      `  --save-cmd <command>  (prove-count) run this shell command as the write between the two\n` +
+      `                        boots instead of p6-09's scaffold (task 7.7: a save through a running\n` +
+      `                        server); --db is then not needed. It must write into the D17 clone\n`,
   );
   process.exit(2);
 }
@@ -1277,8 +1281,14 @@ async function main(): Promise<void> {
     const name = flagString(flags, 'name');
     const db = flagString(flags, 'db');
     const spiraldb = flagString(flags, 'spiraldb') ?? config.clone;
-    if (name === undefined || db === undefined) {
-      console.error('[harness] prove-count needs --name <QUEST_NAME> and --db <file>');
+    // Task 7.7 (p7-08): the write may be any command — a save of an accepted-suggestions draft
+    // through a running clone-backed server — rather than p6-09's scaffold. The proof around it
+    // (snapshot, two boots from Imlight's own log, restore) is unchanged.
+    const saveCmd = flagString(flags, 'save-cmd');
+    if (name === undefined || (db === undefined && saveCmd === undefined)) {
+      console.error(
+        '[harness] prove-count needs --name <QUEST_NAME> and --db <file> (or --save-cmd <command>)',
+      );
       usage();
     }
     // Fail closed, before anything is started: a write root that is not the clone the boot reads
@@ -1338,6 +1348,24 @@ async function main(): Promise<void> {
           logFile: path.join(evidenceDir, `${prefix}-imlight-boot-${label}.txt`),
         }),
       scaffold: async ({ name: questName }) => {
+        if (saveCmd !== undefined) {
+          try {
+            const stdout = execFileSync('sh', ['-c', saveCmd], {
+              cwd: repoRoot,
+              env: { ...process.env, QUEST_NAME: questName },
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'pipe'],
+            });
+            return { exitCode: 0, stdout, stderr: '' };
+          } catch (error) {
+            const failure = error as { status?: number; stdout?: string; stderr?: string };
+            return {
+              exitCode: failure.status ?? 1,
+              stdout: failure.stdout ?? '',
+              stderr: failure.stderr ?? (error instanceof Error ? error.message : String(error)),
+            };
+          }
+        }
         const args = [
           'run',
           'scaffold:quest',
@@ -1345,7 +1373,8 @@ async function main(): Promise<void> {
           '--name',
           questName,
           '--db',
-          db,
+          // Checked at the flag parse: without --save-cmd, --db is required.
+          db ?? '',
           '--spiraldb',
           spiraldb,
         ];
@@ -1371,17 +1400,26 @@ async function main(): Promise<void> {
           };
         }
       },
-      onEvent: (line) => console.log(line),
+      // The service names p6-09's scaffold as the write; with --save-cmd the write is that command.
+      onEvent: (line) =>
+        console.log(
+          saveCmd === undefined ? line : line.replace("(p6-09's own command)", '(--save-cmd)'),
+        ),
     });
 
     const baselineLine = readBootLine(run.baseline);
     const afterLine = readBootLine(run.after);
     printBootLine(baselineLine, "BASELINE — Imlight's own log line, before the scaffold");
     console.log('');
-    console.log("=== the scaffold (p6-09's own command, verbatim) ===");
-    console.log(
-      `  NODE_ENV=test SPIRALDB_UI_DB=${db} npm run scaffold:quest -- --name ${name} --spiraldb ${spiraldb}`,
-    );
+    if (saveCmd !== undefined) {
+      console.log('=== the write (--save-cmd, verbatim) ===');
+      console.log(`  QUEST_NAME=${name} sh -c ${JSON.stringify(saveCmd)}`);
+    } else {
+      console.log("=== the scaffold (p6-09's own command, verbatim) ===");
+      console.log(
+        `  NODE_ENV=test SPIRALDB_UI_DB=${db} npm run scaffold:quest -- --name ${name} --spiraldb ${spiraldb}`,
+      );
+    }
     console.log('');
     console.log(run.scaffold.stdout.trimEnd());
     printBootLine(afterLine, "AFTER — Imlight's own log line, after the scaffold");
@@ -1391,7 +1429,7 @@ async function main(): Promise<void> {
     const report = [
       '=== the count proof (p6-12-ac2) ===',
       `  baseline line : ${baselineLine.raw}`,
-      `  scaffold      : ${name} — exit ${run.scaffold.exitCode}, one file into ${spiraldb}`,
+      `  ${saveCmd === undefined ? 'scaffold' : 'save    '}      : ${name} — exit ${run.scaffold.exitCode}, one file into ${spiraldb}`,
       `  after line    : ${afterLine.raw}`,
       `  arithmetic    : ${run.proof.arithmetic}`,
       `  delta         : ${run.proof.delta} (expected 1)`,

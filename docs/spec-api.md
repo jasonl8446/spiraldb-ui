@@ -792,6 +792,18 @@ chosen at p7-01):
   (otherwise `400`). In one transaction the server creates the `quests` row, links the `quest_ids` row, and sets
   `quest_name` on that id's suggestion rows. It then follows the scaffold path. **A refused name writes nothing.**
 - A named draft keeps the Phase 6 status codes (`404` unknown name, `409` already has a file).
+- **As built (p7-08).** `quest` is validated as `POST /api/quests` validates a save (the shared schema, then the
+  blocking rules), so a refused document writes nothing. A `catalog_id` that is linked to a different name is a
+  `400`; an unknown one is a `404`. A name is a duplicate when a `quests` row **or** a quest file already carries it.
+  The response adds `catalog_id`, `named` (`true` when this save named an unnamed draft) and `accepted_suggestions`.
+  The new `quests` row is written the way the next sync writes a corpus file's row (`has_definition = 1`), and both
+  it and the `quest_ids` row get `link_kind = 'direct'`. The catalog writes and the accepted flips run in one
+  transaction **after** the commit, so a failed save leaves no catalog row and no flipped id.
+- **`GET /api/quests/:name/scaffold` (p7-08).** The unwritten D118 skeleton a named draft with no file opens on:
+  `{ quest_name, link_kind, title_key, quest }`, the exact document `POST /api/quests/scaffold` would write for that
+  catalog row, direct-link title included. `404` for a name the catalog does not hold, `409` when the quest already
+  has a file (in the catalog or on disk). Nothing is written. An unnamed id's skeleton has no name and no link, so the
+  client builds it from the shared builder with `#<id>` as a placeholder `m_questName`.
 
 ### GET /api/drafts
 
@@ -1213,6 +1225,8 @@ React Router v6 with `<BrowserRouter>`. Layout component wraps all routes with s
 /quests/catalog             → Quest Catalog: coverage, worklist, scaffold (Phase 6, P6-15)
 /quests/:questName          → Quest detail/edit
 /drafts                     → Draft review queue (Phase 7, task 7.7 / p7-08)
+/drafts/quest/:questName    → A named draft with no file, in the editor on its D118 skeleton (p7-08)
+/drafts/id/:questId         → An unnamed-tier draft, in the editor; its first Save names it (p7-08, D137)
 /glossary                   → Glossary: every field, class and enum label (Phase 7, task 7.12 / p7-13)
 /npcs/:npcId                → NPC view: personas, dialogs, quests, inventories (API Phase 6, D112; page Phase 7, task 7.14 / p7-15)
 /drop-tables                → DropTable list
@@ -1237,6 +1251,9 @@ React Router v6 with `<BrowserRouter>`. Layout component wraps all routes with s
 shadow them — `/quests/extract` and `/quests/catalog` both precede `/quests/:questName`, which is what
 `matchRoute` (`client/src/lib/routes.ts`) implements. A quest legitimately named `extract` or `catalog`
 is therefore unreachable by its detail route, exactly as it was before Phase 6.
+
+**As built (p7-08):** `/drafts` and its two file-less editors, `/drafts/quest/:questName` and `/drafts/id/:questId`,
+are in `APP_ROUTES` and in `SPEC_ROUTES`. A draft with a file opens at `/quests/:questName`.
 
 **Phase 7 routes land with their stories.** `/drafts`, `/glossary` and the `/npcs/:npcId` page are listed above ahead
 of the code that serves them. `tests/unit/ui-shell.test.ts` re-types this table as its `SPEC_ROUTES` oracle ("every

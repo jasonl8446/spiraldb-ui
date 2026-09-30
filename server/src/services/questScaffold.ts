@@ -1,9 +1,24 @@
 import path from 'node:path';
 
 import { buildQuestScaffold, type QuestScaffoldLinkKind } from '../../../shared/quest/scaffold.js';
-import { SaveQuestRequestSchema } from '../../../shared/quest/request.js';
+import {
+  describeSchemaIssues,
+  SaveQuestRequestSchema,
+  schemaFieldErrorMap,
+} from '../../../shared/quest/request.js';
+import { validateQuest } from '../../../shared/quest/validation.js';
+import { blockingSummary, fieldErrorMap } from '../../../shared/quest/validation-messages.js';
 import { NamingError } from '../../../shared/naming.js';
 import type { Db } from '../db.js';
+import {
+  acceptSuggestions,
+  assertAcceptableSuggestions,
+  parseAcceptedSuggestions,
+  type SuggestionDraft,
+} from './drafts.js';
+import { loadValidationReferences } from './names.js';
+import { QuestRequestError } from './quests.js';
+import { isPlainObject } from './sync/json.js';
 import { collectionSpec, createTargetPath } from './spiraldbFiles.js';
 import type { SavePipeline } from './savePipeline.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
@@ -265,16 +280,28 @@ export interface ScaffoldQuestOptions {
   db: Db;
   index: SpiraldbIndex;
   pipeline: SavePipeline;
-  /** The catalog name to scaffold — `quests.quest_name`. */
+  /** The catalog name to scaffold — `quests.quest_name`, or the name an unnamed draft is given. */
   name: string;
   /** Optional commit-message body. */
   notes?: string;
+  /**
+   * Task 7.7 (D142): the editor's in-memory document — the skeleton plus the fields the user
+   * accepted — written in the scaffold's single commit instead of the bare skeleton.
+   */
+  quest?: Record<string, unknown>;
+  /** Task 7.7 (D142): the draft's `quest_ids.quest_id`; an unlinked one is named by this save. */
+  catalogId?: number;
+  /** Task 7.7 (D141): the suggestion ids the document applies, flipped after the commit. */
+  acceptedSuggestions?: readonly number[];
 }
 
 /** The `POST /api/quests/scaffold` body, reduced to what the service needs. */
 export interface ScaffoldQuestRequest {
   name: string;
   notes: string | undefined;
+  quest: Record<string, unknown> | undefined;
+  catalogId: number | undefined;
+  acceptedSuggestions: number[];
 }
 
 /**
@@ -311,7 +338,32 @@ export function parseScaffoldRequest(body: unknown): ScaffoldQuestRequest {
       400,
     );
   }
-  return { name: name.trim(), notes: typeof record.notes === 'string' ? record.notes : undefined };
+  if (record.quest !== undefined && !isPlainObject(record.quest)) {
+    throw new QuestScaffoldError(
+      'Invalid quest: expected the in-memory quest document as a JSON object.',
+      400,
+    );
+  }
+  const catalogId = record.catalog_id;
+  if (
+    catalogId !== undefined &&
+    catalogId !== null &&
+    !(typeof catalogId === 'number' && Number.isSafeInteger(catalogId) && catalogId > 0)
+  ) {
+    throw new QuestScaffoldError(
+      `Invalid catalog_id: expected a quest id (a positive integer) but received ${JSON.stringify(
+        catalogId,
+      )}.`,
+      400,
+    );
+  }
+  return {
+    name: name.trim(),
+    notes: typeof record.notes === 'string' ? record.notes : undefined,
+    quest: record.quest as Record<string, unknown> | undefined,
+    catalogId: typeof catalogId === 'number' ? catalogId : undefined,
+    acceptedSuggestions: parseAcceptedSuggestions(record.accepted_suggestions),
+  };
 }
 
 export interface ScaffoldQuestResult {
@@ -332,6 +384,49 @@ export interface ScaffoldQuestResult {
   commit_message: string;
   /** The document that was written — what the editor is opened on. */
   quest: Record<string, unknown>;
+  /** The draft's `quest_ids.quest_id`, when the request named one (task 7.7); else `null`. */
+  catalog_id: number | null;
+  /** `true` when this save named an unnamed-tier draft and created its catalog row (D137/D142). */
+  named: boolean;
+  /** The suggestion ids flipped to `accepted` after the commit (D141); `[]` when none. */
+  accepted_suggestions: number[];
+}
+
+/** An unnamed-tier id a draft save names, as the catalog holds it. */
+interface CatalogIdRow {
+  quest_id: number;
+  title_key: string | null;
+  title: string | null;
+  matched_quest_name: string | null;
+}
+
+/**
+ * Validates a caller-supplied draft document (task 7.7) exactly as `POST /api/quests` validates
+ * its body: the name must be the one being saved, then the shared schema, then the blocking rules
+ * of the engine the editor runs. Every refusal happens before the pipeline is called.
+ *
+ * @throws {QuestScaffoldError} 400 when `m_questName` is not the save's name.
+ * @throws {QuestRequestError} 400 (with the per-field map) on a schema or blocking-rule failure.
+ */
+function assertDraftDocument(db: Db, name: string, quest: Record<string, unknown>): void {
+  if (quest.m_questName !== name) {
+    throw new QuestScaffoldError(
+      `The draft's m_questName (${JSON.stringify(quest.m_questName)}) must equal quest_name ` +
+        `"${name}": the file is keyed by it.`,
+      400,
+    );
+  }
+  const schema = SaveQuestRequestSchema.safeParse({ quest });
+  if (!schema.success) {
+    throw new QuestRequestError(
+      describeSchemaIssues(schema.error),
+      schemaFieldErrorMap(schema.error),
+    );
+  }
+  const rules = validateQuest(quest, { references: loadValidationReferences(db) });
+  if (rules.blocked) {
+    throw new QuestRequestError(blockingSummary(rules.blocking), fieldErrorMap(rules.blocking));
+  }
 }
 
 /**
@@ -345,6 +440,7 @@ export interface ScaffoldQuestResult {
  */
 export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<ScaffoldQuestResult> {
   const { db, index, pipeline, name } = options;
+  const accepted = [...(options.acceptedSuggestions ?? [])];
 
   // 1. ac3 — the guard is the writer's first statement. Nothing is read or written for a
   //    name that would land outside QuestTemplates/. Called for its refusal only: the pipeline
@@ -353,44 +449,103 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
   //    could only re-run a check the call already made.
   questTemplateTargetPath(index.root, name);
 
-  // 2. The catalog row decides whether there is anything to scaffold at all.
-  const row = db
-    .prepare<[string], CatalogRow>(
-      'SELECT quest_name, title, has_definition, link_kind FROM quests WHERE quest_name = ?',
-    )
-    .get(name);
-  if (row === undefined) {
-    throw new QuestScaffoldError(
-      `Unknown quest "${name}": the catalog holds no such row. Run a sync before scaffolding a ` +
-        `quest — the catalog is built from the game files (P6-4).`,
-      404,
-    );
-  }
-  if (row.has_definition === 1) {
-    throw new QuestScaffoldError(
-      `"${name}" already has a definition in ${QUEST_TEMPLATES_DIRECTORY}/. Open it in the editor ` +
-        `instead: a scaffold writes the minimal skeleton, and saving it over an authored quest ` +
-        `would clear every field it does not carry (D45(1)).`,
-      409,
-    );
+  // 2. Task 7.7 (D137/D142): a `catalog_id` whose row is not linked to any name makes this save
+  //    the one that **names** it. The name is the user's, so it must be new — to the catalog and
+  //    to the corpus — and a refusal here writes nothing at all.
+  let naming: CatalogIdRow | undefined;
+  if (options.catalogId !== undefined) {
+    const idRow = db
+      .prepare<[number], CatalogIdRow>(
+        'SELECT quest_id, title_key, title, matched_quest_name FROM quest_ids WHERE quest_id = ?',
+      )
+      .get(options.catalogId);
+    if (idRow === undefined) {
+      throw new QuestScaffoldError(
+        `Unknown quest id ${options.catalogId}: the catalog's id tier holds no such row.`,
+        404,
+      );
+    }
+    if (idRow.matched_quest_name === null) {
+      naming = idRow;
+    } else if (idRow.matched_quest_name !== name) {
+      throw new QuestScaffoldError(
+        `Quest id ${options.catalogId} already belongs to "${idRow.matched_quest_name}", not "${name}".`,
+        400,
+      );
+    }
   }
 
-  // 3. The linked title — direct only (ac2/D101/D106).
-  const link = resolveLink(db, row);
-  const quest = buildQuestScaffold({ name, link });
-
-  // 4. Validate with the save pipeline's own request schema before the write: a document
-  //    the POST /api/quests contract would reject must never reach disk.
-  const validation = SaveQuestRequestSchema.safeParse({ quest });
-  if (!validation.success) {
-    const issues = validation.error.issues
-      .map((issue) => `${issue.path.join('.') || '(body)'}: ${issue.message}`)
-      .join('; ');
-    throw new QuestScaffoldError(
-      `The scaffold for "${name}" does not validate against the quest schema: ${issues}`,
-      400,
-    );
+  let row: CatalogRow;
+  if (naming !== undefined) {
+    const taken =
+      db.prepare('SELECT 1 FROM quests WHERE quest_name = ?').get(name) !== undefined ||
+      index.pathFor('questtemplates', name) !== undefined;
+    if (taken) {
+      throw new QuestScaffoldError(
+        `"${name}" is already a quest name. Choose a name no catalog row or quest file uses: a ` +
+          `quest file is keyed by its name, so two quests cannot share one.`,
+        409,
+      );
+    }
+    row = { quest_name: name, title: naming.title ?? name, has_definition: 0, link_kind: 'none' };
+  } else {
+    // 2b. The catalog row decides whether there is anything to scaffold at all.
+    const catalogRow = db
+      .prepare<[string], CatalogRow>(
+        'SELECT quest_name, title, has_definition, link_kind FROM quests WHERE quest_name = ?',
+      )
+      .get(name);
+    if (catalogRow === undefined) {
+      throw new QuestScaffoldError(
+        `Unknown quest "${name}": the catalog holds no such row. Run a sync before scaffolding a ` +
+          `quest — the catalog is built from the game files (P6-4).`,
+        404,
+      );
+    }
+    if (catalogRow.has_definition === 1) {
+      throw new QuestScaffoldError(
+        `"${name}" already has a definition in ${QUEST_TEMPLATES_DIRECTORY}/. Open it in the editor ` +
+          `instead: a scaffold writes the minimal skeleton, and saving it over an authored quest ` +
+          `would clear every field it does not carry (D45(1)).`,
+        409,
+      );
+    }
+    row = catalogRow;
   }
+
+  // 3. The linked title — direct only (ac2/D101/D106). A named-by-this-save id has no link yet.
+  const link =
+    naming === undefined ? resolveLink(db, row) : { kind: 'none' as const, titleKey: null };
+  let quest: Record<string, unknown>;
+  if (options.quest === undefined) {
+    quest = buildQuestScaffold({ name, link });
+
+    // 4. Validate with the save pipeline's own request schema before the write: a document
+    //    the POST /api/quests contract would reject must never reach disk.
+    const validation = SaveQuestRequestSchema.safeParse({ quest });
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .map((issue) => `${issue.path.join('.') || '(body)'}: ${issue.message}`)
+        .join('; ');
+      throw new QuestScaffoldError(
+        `The scaffold for "${name}" does not validate against the quest schema: ${issues}`,
+        400,
+      );
+    }
+  } else {
+    // 4'. Task 7.7: the editor's document (the skeleton plus accepted fields), validated as
+    //     POST /api/quests validates a save — and written as sent, never rebuilt (D57).
+    quest = options.quest;
+    assertDraftDocument(db, name, quest);
+  }
+
+  // D141: the accepted ids are checked before the write. An unnamed draft's rows are keyed by
+  // its id (their `quest_name` is NULL until the naming transaction below sets it).
+  const draft: SuggestionDraft =
+    naming === undefined
+      ? { quest_name: name, catalog_id: null }
+      : { quest_name: null, catalog_id: naming.quest_id };
+  assertAcceptableSuggestions(db, accepted, draft);
 
   // 5. The real pipeline: file + companion metadata + one commit (D13/D100).
   const result = await pipeline.saveObject({
@@ -399,8 +554,29 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
     key: name,
     action: 'create',
     notes: options.notes,
-    metadataDescription: scaffoldMetadataDescription({ kind: link.kind, titleKey: link.titleKey }),
+    metadataDescription:
+      options.quest === undefined
+        ? scaffoldMetadataDescription({ kind: link.kind, titleKey: link.titleKey })
+        : draftMetadataDescription({
+            kind: link.kind,
+            accepted: accepted.length,
+            namedFromId: naming?.quest_id ?? null,
+          }),
   });
+
+  // 6. After the commit, in one transaction (D141/D142): the catalog row an unnamed draft gains,
+  //    its id's link, its suggestions' name — then the accepted flips. A save that failed above
+  //    reached none of this, so every id stays pending and no catalog row is invented.
+  db.transaction(() => {
+    if (naming !== undefined) {
+      nameUnnamedDraft(db, naming, name);
+    }
+    acceptSuggestions(
+      db,
+      accepted,
+      naming === undefined ? draft : { quest_name: name, catalog_id: naming.quest_id },
+    );
+  })();
 
   return {
     quest_name: result.key,
@@ -415,5 +591,48 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
     branch: result.branch,
     commit_message: result.commitMessage,
     quest,
+    catalog_id: naming?.quest_id ?? options.catalogId ?? null,
+    named: naming !== undefined,
+    accepted_suggestions: accepted,
   };
+}
+
+/**
+ * The metadata `Description` of a draft save (task 7.7): the scaffold's stable prefix, so the
+ * family stays recognisable, then what distinguishes a draft from a bare skeleton — how many
+ * accepted suggestions it carries and, for a named unnamed-tier draft, the id it was named from.
+ */
+export function draftMetadataDescription(draft: {
+  kind: QuestScaffoldLinkKind;
+  accepted: number;
+  namedFromId: number | null;
+}): string {
+  const named = draft.namedFromId === null ? '' : `; named from quest id ${draft.namedFromId}`;
+  return (
+    `${SCAFFOLD_METADATA_DESCRIPTION_PREFIX} (link_kind: ${draft.kind}; draft: the skeleton plus ` +
+    `${draft.accepted} accepted suggestion${draft.accepted === 1 ? '' : 's'}${named}).`
+  );
+}
+
+/**
+ * D137/D142's catalog writes for an unnamed draft the user just named: the `quests` row, the
+ * id's link to it, and the name on that id's suggestion rows.
+ *
+ * The row is written the way the next sync writes it for a corpus file (`has_definition = 1`,
+ * `execute.ts`'s corpus insert), because the file now exists. Both link columns say `direct`:
+ * the id is this quest's own by the user's act, and its title key — when it has one — is the
+ * quest's own title key.
+ */
+function nameUnnamedDraft(db: Db, id: CatalogIdRow, name: string): void {
+  db.prepare(
+    `INSERT INTO quests
+       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
+     VALUES (?, ?, NULL, NULL, 1, 'direct', ?, 0)`,
+  ).run(name, id.title ?? name, id.title_key === null ? 'none' : 'direct');
+  db.prepare(
+    "UPDATE quest_ids SET matched_quest_name = ?, link_kind = 'direct' WHERE quest_id = ?",
+  ).run(name, id.quest_id);
+  db.prepare(
+    'UPDATE quest_suggestions SET quest_name = ? WHERE quest_name IS NULL AND catalog_id = ?',
+  ).run(name, id.quest_id);
 }

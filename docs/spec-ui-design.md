@@ -552,6 +552,13 @@ Quest title (m_questTitle)   [ QuestTitle_1ED8D            ]
 - The suggestion's value renders through the same display rules as the field (the name pair for a reference), and
   its `source` and `confidence` are shown as text. An inferred value is always visibly marked as a suggestion and is
   never pre-applied (D127).
+- **As built (p7-08).** Each suggestion renders at the top of the editor tab that holds its field (Info, Goals, Goal
+  Logic, Requirements, Results or Dialog), labelled with its path, because the evidence paths are mostly whole
+  containers (`m_goals`, `m_dialogList`, `m_requirements`) edited by list editors rather than single inputs. A field
+  inside a container the document does not have yet (a goal's `m_locationName` before the goals are accepted) shows
+  Accept disabled with the container to accept first. A gold, XP or item reward (D159: `result: null`) is shown as an
+  observation, with Accept disabled and the reason as text, and Reject still available. Accept-all takes one value per
+  path. Discard clears the applied ids with the edits.
 
 #### JSON Side Panel
 
@@ -903,6 +910,12 @@ Route **`/drafts`** (nav: QUESTS → Drafts). This is the worklist of automatica
   both placements).
 - **Empty state**: with no catalog (no sync yet), the page says the catalog needs a sync, as the Catalog view does.
   With a catalog but no suggestions, it offers Rebuild.
+- **As built (p7-08).** Filters are three labelled selects (Named, Has file, Source). The toggle reads "Show
+  zero-evidence drafts (N hidden)". The first 100 rows are shown, with "Showing the first 100 of N" beneath. A named
+  draft without a file opens at `/drafts/quest/:questName`, and an unnamed one at `/drafts/id/:questId`. The name
+  dialog's pre-fill is the accepted `m_questTitle`, else the id's title suggestion (a `QuestTitle_*` key). After the
+  first save, the editor continues at `/quests/<name>`. A draft has no status yet, so its header shows "Draft · no file
+  yet" in place of the badge and the transitions. Tier-1: `tests/ui/p7-drafts.spec.ts`.
 
 ### 13. Glossary (Phase 7 — D131, task 7.12)
 
