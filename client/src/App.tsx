@@ -21,6 +21,7 @@ import QuestDetailPage from './pages/QuestDetailPage';
 import QuestCatalogPage from './pages/QuestCatalogPage';
 import DraftsPage from './pages/DraftsPage';
 import GlossaryPage from './pages/GlossaryPage';
+import NpcPage from './pages/NpcPage';
 import DraftEditorPage from './pages/DraftEditorPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -127,6 +128,9 @@ function elementFor(route: AppRoute): JSX.Element {
     case '/glossary':
       // Task 7.12 / story p7-13: every glossary term, searchable by either half.
       return <GlossaryPage />;
+    case '/npcs/:npcId':
+      // Task 7.14 / story p7-15: one NPC's aliases, personas, dialogs, quests and inventories.
+      return <NpcPage />;
     case '/drafts/quest/:questName':
     case '/drafts/id/:questId':
       return <DraftEditorPage />;

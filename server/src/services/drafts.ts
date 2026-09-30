@@ -35,7 +35,7 @@ import { parseQuestTitleKey, parseWizQstKey } from './sync/questRefs.js';
  *
  * | source | path | from |
  * |---|---|---|
- * | `evidence-title` | `m_questTitle` | the id's `quest_ids.title_key`; a direct link's key recovered from `quests.title` |
+ * | `evidence-title` | `m_questTitle` | the id's `quest_ids.title_key`; else the row's own `quests.title_key`; else a direct link's key recovered from `quests.title` |
  * | `evidence-dialogue` | `m_dialogList` | dialog blocks **other** corpus files record from this quest's own `WizQst` table, with the speakers the evidence ladder resolves |
  * | `evidence-goals` | `m_goals` | one goal per `goal_gates` name (the world's own gate on this quest) |
  * | `evidence-location` | `m_goals[i].m_locationName` | the `ZoneLocName_*` key corpus goals use most in the goal's `m_destinationZone` |
@@ -452,6 +452,7 @@ interface CatalogQuest {
   has_definition: number;
   link_kind: string | null;
   title_source: string | null;
+  title_key: string | null;
 }
 
 interface CatalogId {
@@ -690,7 +691,7 @@ export function proposeDrafts(db: Db, index: SpiraldbIndex): DraftProposals {
   const tables = readEvidenceTables(db);
   const quests = db
     .prepare<[], CatalogQuest>(
-      'SELECT quest_name, title, has_definition, link_kind, title_source FROM quests ORDER BY quest_name',
+      'SELECT quest_name, title, has_definition, link_kind, title_source, title_key FROM quests ORDER BY quest_name',
     )
     .all();
   const ids = db
@@ -896,6 +897,19 @@ export function proposeDrafts(db: Db, index: SpiraldbIndex): DraftProposals {
           ref: `quest_ids:${id.quest_id} (${id.link_kind ?? 'none'})`,
         });
       }
+    }
+    if (
+      titles.length === 0 &&
+      quest.title_key !== null &&
+      (quest.title_source === 'direct' || quest.title_source === 'inferred')
+    ) {
+      // The row's own key (migration 0006): exact, so the two-keys-one-text ambiguity below never
+      // arises for it. An inferred link carries D106's measured accuracy, a direct one 1.
+      titles.push({
+        key: quest.title_key,
+        confidence: quest.title_source === 'direct' ? 1 : INFERRED_LINK_CONFIDENCE,
+        ref: `quests.title_key (${quest.title_source})`,
+      });
     }
     if (titles.length === 0 && quest.title_source === 'direct' && quest.title !== '') {
       const keys = titleKeysByText.get(quest.title) ?? [];

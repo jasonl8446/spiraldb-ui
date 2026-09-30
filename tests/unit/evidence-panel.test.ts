@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { StaticRouter } from 'react-router-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import EvidencePanel from '../../client/src/components/quest/EvidencePanel';
@@ -173,6 +174,7 @@ function evidence(overrides: Partial<QuestEvidence> = {}): QuestEvidence {
           persona: 'WC-RAV-NPC02_Persona',
           override_key: null,
           st_key: 'NPCFormats_First_Last',
+          template_id: 9002,
         },
         portrait: 'GUI/NpcPortraits/Cyrus.dds',
         sound: null,
@@ -191,6 +193,7 @@ function evidence(overrides: Partial<QuestEvidence> = {}): QuestEvidence {
           persona: 'FIXTURE-ABSENT_Persona',
           override_key: null,
           st_key: 'NPCFormats_First_Last',
+          template_id: 9002,
         },
         portrait: null,
         sound: null,
@@ -232,16 +235,21 @@ function render(
   const onInsert = vi.fn();
   // `createElement`, not JSX: the render must stay in a `.ts` file so the node-environment vitest
   // run and `npm run typecheck:tests` (which includes only `**/*.ts`) both cover it.
+  // A resolved speaker name is a router `Link` (task 7.14, D144), so the panel renders in a router.
   const html = renderToStaticMarkup(
-    createElement(EvidencePanel, {
-      evidence: options.evidence ?? evidence(),
-      isLoading: options.isLoading ?? false,
-      isError: options.isError ?? false,
-      target: options.target === undefined ? GOAL_TARGET : options.target,
-      editable: options.editable ?? true,
-      doc: { m_goals: [{}, {}, {}] },
-      onInsert,
-    }),
+    createElement(
+      StaticRouter,
+      { location: '/quests/Q' },
+      createElement(EvidencePanel, {
+        evidence: options.evidence ?? evidence(),
+        isLoading: options.isLoading ?? false,
+        isError: options.isError ?? false,
+        target: options.target === undefined ? GOAL_TARGET : options.target,
+        editable: options.editable ?? true,
+        doc: { m_goals: [{}, {}, {}] },
+        onInsert,
+      }),
+    ),
   );
   return { html, onInsert };
 }

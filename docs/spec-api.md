@@ -356,7 +356,13 @@ carries no enum conversion (the CLI already emits the corpus spelling, D48(a)).
   logged to the server console.
 - Errors: body without a usable `quest`/`m_questName` → `400`; unset
   `settings.spiraldb_path` → `400`; dirty SpiralDB working tree (`DirtyRepoError`,
-  D14) → `409` with the actionable message; any other pipeline failure → `500`.
+  D14) → `409` with the actionable message; `settings.git_branch` naming a branch the working tree is not
+  on (`BranchMismatchError`, D119 as extended by task 7.14) → `409`, refused before anything is written or
+  checked out; any other pipeline failure → `500`. **This last refusal applies to every route that writes a
+  SpiralDB file and commits** (`POST /api/quests`, `POST /api/quests/scaffold` and the eight object families'
+  `POST /`), because it sits in the save pipeline they all pass through; a tree on `main` is exempt, since a
+  session branch created from `main` strands nothing. Routes that write only SQLite (`/api/sync`,
+  `/api/settings`, `PATCH /api/status/…`, the drafts and suggestions routes, `/api/extract/quests`) are exempt.
 
 **Added by story p3-09 — a 400 body may carry a per-field error map.** A body that
 fails the shared quest schema (task 3.1) or the shared **rule** validation (task 3.9,
@@ -590,6 +596,8 @@ on them rather than on a sample:
   will read another quest's text as this one's. `camera_name` is echoed as **data** and is never the speaker;
   `actor_template_id` is surfaced verbatim because the ladder below has no rung that uses it (see the note).
 - `dialogue[].speaker.override_key` / `.st_key` — which string-table key the override or the composition keyed on.
+- `dialogue[].speaker.template_id` — the manifest id the persona resolves to (`persona_index`), or `null` for a persona
+  the index cannot place. It is the `/npcs/:npcId` page's route parameter (task 7.14).
 - `warnings[]` carries the counted, never-dropped cases (the raw-persona fallback, and non-gate references).
 
 **The speaker ladder, and what it cannot do.** The order is `m_nameOverride` → `m_nameSTKey` composed through
@@ -660,6 +668,10 @@ unit-tested there). **This view endpoint does not ship with task 6.5**, and the 
 an omission: its `dialogs` and `quests` arms both need the **speaker ladder** (`m_nameOverride` → composed
 `nameSTKey` → template name) that task 6.6's evidence API builds, and serving those arms as empty arrays today
 would read as "this NPC has no dialogs" — a false claim. The view is therefore **carried to task 6.6**, which owns the ladder and the per-quest dialogue rows.
+
+**The page (task 7.14, D144).** The client route `/npcs/:npcId` renders this response (aliases, personas, dialogs,
+quests and inventories, each headed by its `counts` value) and adds no API. It is linked from an `npc` search row
+(`source_id`) and from a resolved speaker name in the Evidence panel (`speaker.template_id`).
 
 **Status: shipped by p6-07 (task 6.6).** With the speaker ladder and `persona_index` in place the view serves
 `personas` / `dialogs` / `quests` / `inventories` with `counts`, and the counts were verified against direct
@@ -1124,8 +1136,8 @@ than inferred: searching `Gretta` answers **one** row whose `aliases` are
 `["Gretta", "Gretta Darkkettle"]`, `label`/`name` are the full name, and `source_id` is the
 namespace's representative alias key (`WC-NPCs_00000003`, the category the corpus references most);
 a template with no alias row at all answers its template name alone with `source_id` = the template
-id. The row stays **informational** (`object_type`/`object_key`/`status` all `null`, counted in
-`unresolved`): the application has no `/npcs/:id` *page*, and the palette never invents a route.
+id. The row's wire fields stay `object_type`/`object_key`/`status` = `null` and it stays counted in `unresolved`, but since
+task 7.14 the palette opens `/npcs/<source_id>` for it and takes it back out of the "no page to open" notice.
 The group matches aliases and template names — **not** the template id, which is the four
 `TemplateID` families' join arm and `?q=` on the names API.
 

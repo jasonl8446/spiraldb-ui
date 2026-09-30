@@ -1,0 +1,13 @@
+# control: a known dump class (ClientBattleBookBehavior = 1538911188) must be found, or the search proves nothing
+vocab 400 depth 4
+HIT class ClientBattleBookBehavior
+# control 2: class BattleBookBehavior = 748767198, depth 3
+vocab 984 depth 3
+HIT class BattleBookBehavior
+# 0x217d4c2e = 561859630 (CombatAIData), depth 3 over the full 984-token vocabulary
+vocab 984 depth 3
+# depth 4 over the 250 most frequent tokens
+vocab 250 depth 4
+# depth 5 over a hand-picked 71-token combat/AI vocabulary
+vocab 71 depth 5
+# done: no HIT line for 561859630 above

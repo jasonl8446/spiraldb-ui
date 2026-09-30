@@ -140,6 +140,9 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/drafts/quest/:questName', title: 'Draft Quest', phase: 7 },
   { path: '/drafts/id/:questId', title: 'Draft Quest', phase: 7 },
   { path: '/glossary', title: 'Glossary', phase: 7 },
+  // Task 7.14 / story p7-15 (D144): the NPC view, reached from search rows and speaker names —
+  // it has no nav item.
+  { path: '/npcs/:npcId', title: 'NPC', phase: 7 },
 
   { path: '/drop-tables', title: 'Drop Tables', phase: 4 },
   { path: '/drop-tables/:name', title: 'Drop Table Detail', phase: 4 },

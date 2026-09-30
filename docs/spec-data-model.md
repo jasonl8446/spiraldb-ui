@@ -141,7 +141,7 @@ objects censused, zero `QuestTemplate`), so the quest *catalog* is a derived tab
 the world names, which ids the client holds text for, and what references each one. It is derived
 from the WADs by the sync and is **never hand-maintained**.
 
-`quests` gains four columns; its `quest_name` primary key is unchanged, and the table now holds
+`quests` gains four columns (a fifth, `title_key`, in migration 0006); its `quest_name` primary key is unchanged, and the table now holds
 **two row kinds** — corpus rows (a `QuestTemplates/` file exists → `has_definition = 1`) and
 catalog-only rows (the world names it, no file yet → `has_definition = 0`). **This amends D21**
 (P6-4): the `quests` table is no longer a corpus mirror; it is the catalog, and the corpus is the
@@ -153,6 +153,10 @@ ALTER TABLE quests ADD COLUMN has_definition INTEGER NOT NULL DEFAULT 0;  -- 1 =
 ALTER TABLE quests ADD COLUMN link_kind TEXT;      -- 'direct' | 'inferred' | 'none' (how the title/id link was established)
 ALTER TABLE quests ADD COLUMN title_source TEXT;   -- 'direct' | 'inferred' | 'none' (P6-11 provenance of that link)
 ALTER TABLE quests ADD COLUMN reference_count INTEGER NOT NULL DEFAULT 0;  -- referencing {wad, entry} pairs
+-- migration 0006 (task 7.14, D182): the QuestTitle_* key the sync resolved for the row. A corpus row holds its
+-- file's own m_questTitle; a row whose file names no title (or a catalog-only row) holds its direct or inferred
+-- link's key, so an inferred title survives a re-sync and a direct link whose text two keys share stays exact.
+ALTER TABLE quests ADD COLUMN title_key TEXT;
 
 -- World evidence per quest: what referenced it, where, and the goal gate it carries.
 CREATE TABLE IF NOT EXISTS quest_catalog_refs (

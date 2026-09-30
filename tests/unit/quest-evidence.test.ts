@@ -321,6 +321,8 @@ describe('the speaker ladder (ac1 — override → composed → template → raw
       persona: 'FIXTURE-NPC01_Persona',
       override_key: null,
       st_key: 'NPCFormats_First_Last',
+      // The persona's manifest id — what `/npcs/:npcId` opens (task 7.14).
+      template_id: 9002,
     });
     // The rung won *over* the persona's template name, which is deliberately different.
     expect(evidence.dialogue[0]?.speaker.name).not.toBe('Template Name Must Not Win');
@@ -332,6 +334,7 @@ describe('the speaker ladder (ac1 — override → composed → template → raw
       persona: 'FIXTURE-NPC02_Persona',
       override_key: 'WC-NPCs_00000027',
       st_key: null,
+      template_id: 9003,
     });
 
     // Rung 2 falls through (no components) → rung 3, the persona's template name.
@@ -344,6 +347,8 @@ describe('the speaker ladder (ac1 — override → composed → template → raw
       persona: 'FIXTURE-ABSENT_Persona',
       override_key: null,
       st_key: 'NPCFormats_First_Last',
+      // A persona the index cannot place has no NPC page to open.
+      template_id: null,
     });
     expect(evidence.warnings).toContain(
       '1 dialogue line resolve to the raw persona string: "FIXTURE-ABSENT_Persona" is absent from the manifest index (first at line 3)',

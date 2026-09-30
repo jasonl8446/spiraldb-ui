@@ -1,0 +1,242 @@
+# p7-15 focused runs
+$ npx vitest run tests/unit/write-route-branch-guard.test.ts tests/unit/speaker-ladder-counts.test.ts tests/unit/db.test.ts tests/unit/quest-catalog.test.ts tests/unit/quest-scaffold.test.ts tests/unit/sync-cli.test.ts tests/unit/sync-execute.test.ts tests/unit/search-ui.test.ts tests/unit/ui-shell.test.ts tests/unit/evidence-panel.test.ts tests/unit/quest-evidence.test.ts --reporter=verbose
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac2 — the scaffold document > emits 36 keys in the corpus order, which is not the schema’s declaration order 3ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac2 — the scaffold document > writes the skeleton values the corpus itself carries, with explicit nulls where it has them 1ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac2 — the scaffold document > has no top-level $type, and an annotated m_dialogList 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac2 — the scaffold document > writes m_questTitle only for a direct link that resolved exactly one key 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac2 — the scaffold document > validates against the corpus schema the save pipeline itself uses, and round-trips 2ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac2 — the scaffold document > refuses a nameless scaffold 1ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac3 — the target-path guard > refuses any target path that is not directly inside QuestTemplates/ 1ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac3 — the target-path guard > accepts the convention path — the positive partner of the refusal 1ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 ac3 — the target-path guard > refuses every hostile name through the writer’s own path resolution 1ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > writes the file + metadata + one commit for a direct link, and records the provenance 185ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > writes no title for an inferred link even when the catalog holds a title key 150ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > recovers the title key from a unique reverse lookup when the id tier has no row 150ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > writes no title when two keys share the text (never a guess) 148ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > writes the link's own key when two keys share the text, from quests.title_key (D182) 149ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > refuses a path outside QuestTemplates/ before writing anything, and the same call succeeds with a legitimate name (the positive partner) 162ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > refuses an unknown catalog name (404) and a quest that already has a definition (409) 21ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > validates the request body the way POST /api/quests validates its own 1ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the writer end to end > describes the provenance for every link kind 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the corpus (the frozen D17 clone) > re-derives the emitted key order from the 322 files: 320 canonical, 2 extractor-sparse 73ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — the corpus (the frozen D17 clone) > flips has_definition 0 → 1 on the next sync, on a real file the evidence service then reads as inferred 2042ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — POST /api/quests/scaffold (the surface task 6.10 calls) > answers 200 with the scaffold result, 400/404/409 for the four refusals 197ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > follows the checked-out branch when none is named, and moves the setting to it 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > refuses a named branch that is not checked out, and says what to do instead 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > names the setting as the remedy when the save pipeline is the caller (D182) 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > allows a branch that is not checked out only while the tree is on main (D182) 0ms
+ ✓ tests/unit/quest-scaffold.test.ts > p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > has no opinion outside a git working tree 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > classifies every write route: guarded (with a test below) or exempt (with a reason) 2ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/quests > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/quests/scaffold > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/drop-tables > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/npc-inventories > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/npc-spell-inventories > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/creature-spellbooks > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/npc-drop-tables > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/treasure-card-inventories > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/zone-transfers > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > post /api/global-registry > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > left the repository exactly as it was: same branch, no new branch, clean tree 13ms
+ ✓ tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > accepts every guarded route once the setting names the checked-out branch (positive partner) 1348ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — success path > replaces all seven tables and writes one success history row 10ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — success path > keeps both lexical forms of one numeric index as distinct rows (D33(e)) 4ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — success path > is idempotent: a second run leaves identical counts and no duplicates 4ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — success path > loads the manifest from the tree root and hands it to the tree scan (D35) 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — success path > round-trips every quest/zone/drop_table column 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — the quest catalog stage, inside the same transaction (task 6.4) > merges the catalog, replaces the refs, and recomputes link_kind/reference_count 4ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — the quest catalog stage, inside the same transaction (task 6.4) > is idempotent across two consecutive runs, refs and all 4ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — the quest catalog stage, inside the same transaction (task 6.4) > rolls the whole replace back when the catalog stage throws 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — the quest catalog stage, inside the same transaction (task 6.4) > reports the skipped tool on the result and still commits the corpus rows 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > rolls the whole data transaction back and writes a failed history row 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > fails loudly when the tree carries no readable manifest (D35) 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > keeps previous contents when a scan stage throws 4ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > reports a failed run without touching the tables when a path setting is empty 2ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > still guards the primary key: a synthetic id collision is dropped and reported 3ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > inserts the manifest-id spell space with 0 collisions at real scale (18,173 rows) 44ms
+ ✓ tests/unit/sync-execute.test.ts > runSync — failure path > skips the unpack entirely when a tree is supplied and reports it as reused 227ms
+ ✓ tests/unit/db.test.ts > schema introspection > creates exactly the 17 tables from the spec (11 + migrations 0002/0003/0004/0005), on a fresh database 8ms
+ ✓ tests/unit/db.test.ts > schema introspection > creates the 11 named indexes from the spec (3 + migrations 0002/0003/0004/0005) 3ms
+ ✓ tests/unit/db.test.ts > schema introspection > creates the coverage view, whose denominators are count(*) on their own tables 3ms
+ ✓ tests/unit/db.test.ts > schema introspection > adds the four migration-0002 columns to quests, keeping the PK unchanged (spec L152-155) 3ms
+ ✓ tests/unit/db.test.ts > schema introspection > applies the guarded quests column adds exactly once across repeated initSchema calls 4ms
+ ✓ tests/unit/db.test.ts > schema introspection > migration 0006 adds quests.title_key to a database opened before it, keeping its rows (task 7.14) 78ms
+ ✓ tests/unit/db.test.ts > schema introspection > matches the spec columns of entry_status, including the UNIQUE constraint 2ms
+ ✓ tests/unit/db.test.ts > schema introspection > creates the remaining tables with the spec primary keys 1ms
+ ✓ tests/unit/db.test.ts > schema introspection > openDb creates a missing parent directory before opening the file 40ms
+ ✓ tests/unit/db.test.ts > settings seed defaults > seeds exactly the five spec keys with the D3/D17 defaults 2ms
+ ✓ tests/unit/db.test.ts > settings seed defaults > uses the D3 prebuilt Imcodec binary and the D17 owner fork as defaults 0ms
+ ✓ tests/unit/db.test.ts > settings seed defaults > formats git_branch from the injected local date 0ms
+ ✓ tests/unit/db.test.ts > settings override precedence > lets an explicit SPIRALDB_PATH env var win over every default 0ms
+ ✓ tests/unit/db.test.ts > settings override precedence > points spiraldb_path at data/test-spiraldb when NODE_ENV=test 0ms
+ ✓ tests/unit/db.test.ts > settings override precedence > keeps the owner fork when NODE_ENV is not test 0ms
+ ✓ tests/unit/db.test.ts > settings override precedence > overrides every key from its documented env var 0ms
+ ✓ tests/unit/db.test.ts > settings override precedence > treats an empty env var as unset 0ms
+ ✓ tests/unit/db.test.ts > settings override precedence > does not overwrite existing settings on a second seeding run 1ms
+ ✓ tests/unit/db.test.ts > settings override precedence > seeds a partially emptied settings table only when it is completely empty 1ms
+ ✓ tests/unit/db.test.ts > idempotency > re-running initSchema keeps 17 tables, 2 views, 11 indexes and the seeded rows 2ms
+ ✓ tests/unit/db.test.ts > idempotency > re-opening an existing file database is idempotent 83ms
+ ✓ tests/unit/db.test.ts > repo root resolution > finds the project root by its package name, not by the directory name 0ms
+ ✓ tests/unit/db.test.ts > repo root resolution > resolves the same root from any start directory inside the project 0ms
+ ✓ tests/unit/db.test.ts > repo root resolution > throws when no package.json with the project name exists above the start directory 0ms
+ ✓ tests/unit/db.test.ts > database-file resolution (decision D44) > prefers SPIRALDB_UI_DB and falls back to the default file 0ms
+ ✓ tests/unit/db.test.ts > database-file resolution (decision D44) > resolveSyncDbFile honours --db/SPIRALDB_SYNC_DB, then SPIRALDB_UI_DB, then the default 0ms
+ ✓ tests/unit/db.test.ts > database-file resolution (decision D44) > getDb opens the override file and seeds it for tests (clone, not the owner fork) 47ms
+ ✓ tests/unit/quest-evidence.test.ts > the evidence shape (ac1/ac2 — committed fixtures) > answers every section for a corpus-shaped fixture quest 9ms
+ ✓ tests/unit/quest-evidence.test.ts > the evidence shape (ac1/ac2 — committed fixtures) > resolves every REFERENCE_FIELDS occurrence and renders it through the one display rule 3ms
+ ✓ tests/unit/quest-evidence.test.ts > the speaker ladder (ac1 — override → composed → template → raw) > answers each rung and records which one did, with the camera name never used 3ms
+ ✓ tests/unit/quest-evidence.test.ts > the speaker ladder (ac1 — override → composed → template → raw) > composes the two measured NPCFormats spans and refuses a format it cannot fill 0ms
+ ✓ tests/unit/quest-evidence.test.ts > the unknown arms (ac3) > answers `unknown` for a name the catalog does not hold, and for an unknown id 2ms
+ ✓ tests/unit/quest-evidence.test.ts > the unknown arms (ac3) > reports an id-only row with an honest title_source and no borrowed name 2ms
+ ✓ tests/unit/quest-evidence.test.ts > the unknown arms (ac3) > reads title_source from the catalog column, and surfaces the basis beside an inferred label 2ms
+ ✓ tests/unit/quest-evidence.test.ts > the unknown arms (ac3) > does not conflate the evidence title_source with the quests list endpoint’s per-file field 3ms
+ ✓ tests/unit/quest-evidence.test.ts > the routes (ac3 — the 404s, with the spec’s error text) > 404s an unknown quest name with `Unknown quest "…"` 13ms
+ ✓ tests/unit/quest-evidence.test.ts > the routes (ac3 — the 404s, with the spec’s error text) > 404s an unknown id — and a non-numeric one — with the same text 5ms
+ ✓ tests/unit/quest-evidence.test.ts > the routes (ac3 — the 404s, with the spec’s error text) > serves the id tier and the name tier through their routes 5ms
+ ✓ tests/unit/quest-evidence.test.ts > the routes (ac3 — the 404s, with the spec’s error text) > 404s an unknown NPC with `Unknown NPC "…"` 4ms
+ ✓ tests/unit/quest-evidence.test.ts > the NPC view (carried from p6-06 — counts equal a direct query) > answers one NPC’s personas, dialogs, quests and inventories, with matching counts 3ms
+ ✓ tests/unit/quest-evidence.test.ts > the NPC view (carried from p6-06 — counts equal a direct query) > accepts both key forms and answers the same entity 2ms
+ ✓ tests/unit/quest-evidence.test.ts > the NPC view (carried from p6-06 — counts equal a direct query) > serves the view through its route, wrapped in `npc` 3ms
+ ✓ tests/unit/quest-evidence.test.ts > the NPC view (carried from p6-06 — counts equal a direct query) > says why an alias-only entity’s arms are empty instead of claiming it has none 2ms
+ ✓ tests/unit/quest-catalog.test.ts > collectQuestCatalog — the wad-scan half (no process is spawned) > passes the measured extract command and reads the NDJSON the tool wrote 4ms
+ ✓ tests/unit/quest-catalog.test.ts > collectQuestCatalog — the wad-scan half (no process is spawned) > reports the typed skipped result for an absent binary, without spawning (D55) 1ms
+ ✓ tests/unit/quest-catalog.test.ts > collectQuestCatalog — the wad-scan half (no process is spawned) > writes no NDJSON at all on the skipped path 0ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > merges catalog rows, replaces the refs and ids, and recomputes every derived column 5ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > resolves an id claimed twice: the direct claim wins, the loser keeps no link, both counted 2ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > resolveIdOwnership is deterministic and prefers direct evidence 0ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > keeps NULL-goal_name references distinct, exactly as SQLite’s UNIQUE does 2ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > is idempotent: a second pass leaves every count identical 2ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > keeps an inferred title across a re-sync through quests.title_key (D182) 2ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > empties both catalog tables on the skipped path and keeps every corpus row defined 2ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > enforces the refs foreign key, which is why the replace deletes refs first 1ms
+ ✓ tests/unit/quest-catalog.test.ts > writeQuestCatalog — the merge, the refs, the ids and the coverage view > reports the skipped tool with its own message, and counts nothing it did not do 0ms
+ ✓ tests/unit/quest-catalog.test.ts > corpusQuestIdPairs — the anchors and the hold-out pair set > parses the same numeric id form the extractor uses, skipping unusable keys 0ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — rendering writes nothing > never calls the insert action during a render 15ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — rendering writes nothing > never calls the insert action when it renders the loading or error state 1ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the visible surfaces > splits the quest’s own text into used and available with the API’s own predicate 1ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the visible surfaces > offers one insert action per accepted row, naming the field it will write 2ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the visible surfaces > renders no button and states the reason when nothing is focused 1ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the visible surfaces > states the edit-mode reason in view mode, where no editor can focus a field 1ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the visible surfaces > refuses a dialogue row into a goal field with the row-level reason 1ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the visible surfaces > says an empty section is empty instead of dropping it 0ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — the inferred badge > renders the badge for an inferred title and not for direct or none 2ms
+ ✓ tests/unit/evidence-panel.test.ts > “the panel never writes” — the source-level assertion, with its sensitivity proven > finds no write-surface name in the shipped panel source 1ms
+ ✓ tests/unit/evidence-panel.test.ts > “the panel never writes” — the source-level assertion, with its sensitivity proven > is not oversensitive: a comment naming a writer is not a violation 0ms
+ ✓ tests/unit/evidence-panel.test.ts > “the panel never writes” — the source-level assertion, with its sensitivity proven > reports a violation in a deliberately mutated copy of the same source 1ms
+ ✓ tests/unit/evidence-panel.test.ts > “the panel never writes” — the source-level assertion, with its sensitivity proven > keeps the reducer’s own imports to the document primitives, so it has no writer to call 0ms
+ ✓ tests/unit/evidence-panel.test.ts > EvidencePanel — its value imports reach no write path > names only presentational, pure and type-only modules 0ms
+ ✓ tests/unit/ui-shell.test.ts > route table > contains every route from the spec-api L325-350 table, and nothing else 1ms
+ ✓ tests/unit/ui-shell.test.ts > route table > gives every route a title 1ms
+ ✓ tests/unit/ui-shell.test.ts > route table > maps stub phases per lead decision 7 0ms
+ ✓ tests/unit/ui-shell.test.ts > route table > orders static patterns before the dynamic ones that could shadow them 0ms
+ ✓ tests/unit/ui-shell.test.ts > route table > matches concrete paths, including dynamic detail routes 1ms
+ ✓ tests/unit/ui-shell.test.ts > route table > answers "Not found" for an unknown path 0ms
+ ✓ tests/unit/ui-shell.test.ts > route table > tolerates a trailing slash but not a partial segment match 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > has the four spec groups, in order 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > lists the exact items of the spec sidebar 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > points every nav item at a real route and a known icon 1ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > maps every nav path to itself 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > gives /quests/extract to the extract item, never to /quests 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > gives a detail route to the list item that owns it 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > owns the root only for the root 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > needs a segment boundary — a longer slug is not an owned prefix 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > normalizes a trailing slash 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > owns nothing for a pathname no nav item claims 0ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > systematically resolves each pathname to one owner — the longest match 1ms
+ ✓ tests/unit/ui-shell.test.ts > navigation table > reports the active group so it can be expanded 0ms
+ ✓ tests/unit/ui-shell.test.ts > NPC display format > always renders "Name (TemplateID)" 0ms
+ ✓ tests/unit/ui-shell.test.ts > NPC display format > falls back to the bare id when the name is missing 0ms
+ ✓ tests/unit/ui-shell.test.ts > zone humanization > renders the spec example exactly 0ms
+ ✓ tests/unit/ui-shell.test.ts > zone humanization > humanizes a single-segment zone and multi-word paths 0ms
+ ✓ tests/unit/ui-shell.test.ts > zone humanization > pairs the cached display_name with the path, and humanizes a blank label 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > shows the name for items, spells and drop tables 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > pairs the resolved quest title with the quest name, falling back to the name alone 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > collapses the quest identity pair — a title that fell back to the name is not a second name 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > shows a string value and falls back to its raw key 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > renders the raw key/id as-is on a lookup miss, never an error 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > reads the id-like field of every type 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > is the one construction of the pair, and `npcDisplayName` is it with a numeric id 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > pairs only when the friendly name differs from the technical value 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > reads the friendly half of a row through one accessor, per type 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > treats a body that is not a row as a miss, never a crash 0ms
+ ✓ tests/unit/ui-shell.test.ts > per-type display formats (lead decision 5) > builds searchable options that include the raw id 0ms
+ ✓ tests/unit/ui-shell.test.ts > cmdk option filtering (decision D8/D39 item 3) > caps the rendered options and reports the true total 8ms
+ ✓ tests/unit/ui-shell.test.ts > cmdk option filtering (decision D8/D39 item 3) > shows the first page when the query is empty 0ms
+ ✓ tests/unit/ui-shell.test.ts > cmdk option filtering (decision D8/D39 item 3) > does not claim truncation when everything matched is shown 0ms
+ ✓ tests/unit/ui-shell.test.ts > cmdk option filtering (decision D8/D39 item 3) > matches on the raw id too 0ms
+ ✓ tests/unit/ui-shell.test.ts > cmdk option filtering (decision D8/D39 item 3) > is case-insensitive 0ms
+ ✓ tests/unit/ui-shell.test.ts > cmdk option filtering (decision D8/D39 item 3) > returns nothing for a query that matches nothing 0ms
+ ✓ tests/unit/ui-shell.test.ts > useNames data path policy (decision D39 item 4) > bulk-loads exactly the six small types and never strings 0ms
+ ✓ tests/unit/ui-shell.test.ts > useNames data path policy (decision D39 item 4) > classifies types correctly 0ms
+ ✓ tests/unit/ui-shell.test.ts > useNames data path policy (decision D39 item 4) > requires a typed query before server-side string search 0ms
+ ✓ tests/unit/ui-shell.test.ts > useNames data path policy (decision D39 item 4) > normalizes a selected value to the raw id string 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > stacks bottom-right with at most 3 visible 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > uses 5s/10s/5s auto-dismiss durations 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > gives each spec type its exact left border (spec L115-117) 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > accent-covers every type sonner can emit — no silent gap 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > wires the accents into sonner so no two colours can share one toast 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > keeps the success checkmark visible briefly 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > reports the real returned counts in the sync success toast 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > defaults missing counts to zero instead of printing NaN 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > surfaces the server message on failure 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > has an actionable settings-save error and a plain success message 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > words the first-startup import toast like the plan 0ms
+ ✓ tests/unit/ui-shell.test.ts > toast policy (docs/spec-ui-design.md L111-123) > announces an import report exactly once, and only when there is one to announce 0ms
+ ✓ tests/unit/ui-shell.test.ts > swipe-to-close helper > closes on a long enough leftward swipe 0ms
+ ✓ tests/unit/ui-shell.test.ts > swipe-to-close helper > ignores a short swipe and a rightward swipe 0ms
+ ✓ tests/unit/ui-shell.test.ts > swipe-to-close helper > ignores a vertical scroll that happens to drift left 0ms
+ ✓ tests/unit/ui-shell.test.ts > swipe-to-close helper > honours a custom threshold 0ms
+ ✓ tests/unit/ui-shell.test.ts > sync history view helpers > renders NULL counts as zeros 0ms
+ ✓ tests/unit/ui-shell.test.ts > sync history view helpers > maps every stored status to a text label 0ms
+ ✓ tests/unit/ui-shell.test.ts > sync history view helpers > formats a local timestamp and the never-synced state 2ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > unwraps the { "<type>": [...] } envelope 2ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > sends ?q= and ?limit= for the strings path 0ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > rejects a body without the expected envelope 1ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > percent-encodes a slash-bearing id (zones) 0ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > POSTs a sync and returns the counts 0ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > unwraps the sync history envelope 0ms
+ ✓ tests/unit/ui-shell.test.ts > names + sync client wrappers > exposes stable query keys 0ms
+ ✓ tests/unit/sync-cli.test.ts > parseSyncArgs > accepts both --flag value and --flag=value 1ms
+ ✓ tests/unit/sync-cli.test.ts > parseSyncArgs > falls back to the environment, with flags winning 0ms
+ ✓ tests/unit/sync-cli.test.ts > parseSyncArgs > rejects unknown flags and flags with a missing value 0ms
+ ✓ tests/unit/sync-cli.test.ts > parseSyncArgs > recognises --help 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the revision, every table count, the timing split and the status 8ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the manifest provenance and the dropped (PK) line, zeroes included (D35) 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > reports a non-zero dropped (PK) count when the primary key forces rows out 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the speaker ladder's three fall-through classes with counts and shares (D124) 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the catalog stage, its counts and the sync-time hold-out (task 6.4) 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the breadth lines: both zone counts, the D35 join and the dropped rows 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the skipped breadth stage with its own message 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the skipped catalog stage with its own message 0ms
+ ✓ tests/unit/sync-cli.test.ts > formatSyncSummary > prints the error and no counts for a failed run 0ms
+ ✓ tests/unit/sync-cli.test.ts > runSyncCli > returns 0 and prints the summary on success 3ms
+ ✓ tests/unit/sync-cli.test.ts > runSyncCli > returns 1 and reports the error on the stderr stream when the sync fails 1ms
+ ✓ tests/unit/sync-cli.test.ts > runSyncCli > returns 2 for an unknown flag, without running the orchestrator 1ms
+ ✓ tests/unit/sync-cli.test.ts > runSyncCli > returns 0 and prints usage for --help, without running the orchestrator 1ms
+ ✓ tests/unit/sync-cli.test.ts > describeCorpusOverride > says nothing when the override is the setting, or when there is no setting 0ms
+ ✓ tests/unit/sync-cli.test.ts > describeCorpusOverride > names BOTH paths when they differ, and says which one a request will join 0ms
+ ✓ tests/unit/sync-cli.test.ts > describeCorpusOverride > is printed by the summary when present, and absent when not (the SUCCESS fixture has none) 0ms
+ ✓ tests/unit/speaker-ladder-counts.test.ts > countSpeakerFallThroughs (D124) > names the three classes, in rung order 2ms
+ ✓ tests/unit/speaker-ladder-counts.test.ts > countSpeakerFallThroughs (D124) > counts each class, and a row that falls through two rungs counts in both 1ms
+ ✓ tests/unit/search-ui.test.ts > searchResultKey — the identity cmdk and React both need > uses the type and the key for a navigable row 1ms
+ ✓ tests/unit/search-ui.test.ts > searchResultKey — the identity cmdk and React both need > uses the group and the friendly id for a routeless row, because names are not unique 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultHref — the existing D4 mapping, not a second one > is literally activityHref, for every type it accepts 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultHref — the existing D4 mapping, not a second one > answers the detail route the AC names, and null where no route exists 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultHref — the NPC group opens /npcs/:npcId (task 7.14, D144) > links an npc row by its source id, in either form the endpoint accepts 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultHref — the NPC group opens /npcs/:npcId (task 7.14, D144) > still answers null for an npc row with no id, and for every other routeless group 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultHref — the NPC group opens /npcs/:npcId (task 7.14, D144) > takes a linked npc row back out of the endpoint’s unresolved count 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultLabel — the pair, through the one display rule > pairs the row’s name with its key, and collapses the identity case 0ms
+ ✓ tests/unit/search-ui.test.ts > searchResultSecondary > carries an NPC row’s other name strings, and nothing for a single-name row 0ms
+ ✓ tests/unit/search-ui.test.ts > searchPaletteState — the five-state ladder > is idle when nothing is typed, whatever the request is doing 0ms
+ ✓ tests/unit/search-ui.test.ts > searchPaletteState — the five-state ladder > walks loading → error → empty → ready in that order 0ms
+ ✓ tests/unit/search-ui.test.ts > searchPath — the request the palette sends > percent-encodes the query, so a key with & or ? cannot reshape the request 0ms
+ ✓ tests/unit/search-ui.test.ts > searchPath — the request the palette sends > carries the per-group cap it was given, and defaults to 20 0ms
+ ✓ tests/unit/search-ui.test.ts > the palette’s sentences > names the query it found nothing for 0ms
+ ✓ tests/unit/search-ui.test.ts > the palette’s sentences > writes the unlinked notice in both numbers 0ms
+ ✓ tests/unit/search-ui.test.ts > the palette’s sentences > says the cap is per type, because the endpoint’s limit is 0ms
+ ✓ tests/unit/search-ui.test.ts > the palette’s sentences > prefers the server’s message and falls back to its own 0ms
+ ✓ tests/unit/search-ui.test.ts > the palette’s sentences > exposes one name for the trigger, and one for each non-results state 1ms
+ ✓ tests/unit/search-ui.test.ts > isSearchShortcut — ⌘K / Ctrl+K and nothing else > accepts the plan’s two combinations in either letter case 0ms
+ ✓ tests/unit/search-ui.test.ts > isSearchShortcut — ⌘K / Ctrl+K and nothing else > leaves the browser’s own combinations alone 0ms
+ Test Files  11 passed (11)
+      Tests  238 passed (238)

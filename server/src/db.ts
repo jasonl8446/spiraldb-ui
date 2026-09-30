@@ -63,10 +63,14 @@ const MIGRATION_FILES = [
   '0003_persona_index.sql',
   '0004_breadth_catalog.sql',
   '0005_quest_suggestions.sql',
+  '0006_quest_title_key.sql',
 ];
 
 /** The migration whose `quests` column adds are applied by a guarded step (see below). */
 const QUEST_CATALOG_MIGRATION = '0002_quest_catalog.sql';
+
+/** The migration whose one `quests` column add is applied by a guarded step. */
+const QUEST_TITLE_KEY_MIGRATION = '0006_quest_title_key.sql';
 
 /**
  * One `ALTER TABLE ... ADD COLUMN` a migration needs, with the exact spec DDL.
@@ -115,14 +119,32 @@ export const QUEST_CATALOG_COLUMN_ADDS: readonly ColumnAdd[] = [
   },
 ];
 
+/** The one `quests` column migration 0006 adds (task 7.14, D140/D182), guarded the same way. */
+export const QUEST_TITLE_KEY_COLUMN_ADDS: readonly ColumnAdd[] = [
+  {
+    table: 'quests',
+    column: 'title_key',
+    sql: 'ALTER TABLE quests ADD COLUMN title_key TEXT',
+  },
+];
+
 /**
  * Applies {@link QUEST_CATALOG_COLUMN_ADDS}, skipping every column that already
  * exists. Returns how many ALTERs it issued, so a test can prove the second call
  * is 0 without inspecting the schema twice.
  */
 export function applyQuestCatalogColumnAdds(db: Db): number {
+  return applyColumnAdds(db, QUEST_CATALOG_COLUMN_ADDS);
+}
+
+/** Applies {@link QUEST_TITLE_KEY_COLUMN_ADDS} (migration 0006); the return value is as above. */
+export function applyQuestTitleKeyColumnAdds(db: Db): number {
+  return applyColumnAdds(db, QUEST_TITLE_KEY_COLUMN_ADDS);
+}
+
+function applyColumnAdds(db: Db, adds: readonly ColumnAdd[]): number {
   let applied = 0;
-  for (const add of QUEST_CATALOG_COLUMN_ADDS) {
+  for (const add of adds) {
     const columns = db.pragma(`table_info(${add.table})`) as Array<{ name: string }>;
     if (columns.some((column) => column.name === add.column)) {
       continue;
@@ -217,7 +239,8 @@ export function openDb(options: OpenDbOptions = {}): Db {
  * `persona_index` table and its one index, 0004_breadth_catalog.sql (task 6.9)
  * adds `recipes`, `decks` and `decks`' one index, and 0005_quest_suggestions.sql
  * (task 7.6) adds `quest_suggestions`, its three indexes and the `quest_drafts` view,
- * each file `CREATE ... IF NOT EXISTS` only.
+ * each file `CREATE ... IF NOT EXISTS` only; 0006_quest_title_key.sql (task 7.14) adds
+ * `quests.title_key` through {@link applyQuestTitleKeyColumnAdds}, its file being comments only.
  */
 export function initSchema(db: Db): void {
   for (const file of MIGRATION_FILES) {
@@ -230,6 +253,9 @@ export function initSchema(db: Db): void {
     if (file === QUEST_CATALOG_MIGRATION) {
       // Before the file, so the `coverage` view is created against a complete table.
       applyQuestCatalogColumnAdds(db);
+    }
+    if (file === QUEST_TITLE_KEY_MIGRATION) {
+      applyQuestTitleKeyColumnAdds(db);
     }
     db.exec(fs.readFileSync(migrationPath, 'utf8'));
   }

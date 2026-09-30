@@ -2,7 +2,7 @@ import { Router, type Response } from 'express';
 
 import type { ApiError } from '../../../shared/index.js';
 import { readSettings, type Db } from '../db.js';
-import { DirtyRepoError } from '../services/git.js';
+import { BranchMismatchError, DirtyRepoError } from '../services/git.js';
 import { questEvidenceByName } from '../services/questEvidence.js';
 import {
   listQuestCatalog,
@@ -77,6 +77,7 @@ import { DraftQueryError, parseStatusFilter, questSuggestionsByName } from './dr
  * | `POST /scaffold` for a quest that already has a file | 409 |
  * | malformed `?missing_only=` (not 1/0/true/false) | 400 |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14) | 409 |
+ * | `settings.git_branch` is not the checked-out branch (`BranchMismatchError`, D119/D182) | 409 |
  * | anything else thrown by the pipeline         | 500    |
  *
  * **The 400 body (story p3-09).** `{ error }` is unchanged; a body that fails the schema pass
@@ -174,7 +175,7 @@ export function createQuestsRouter({ db }: QuestsRouterOptions): Router {
       res.status(error.status).json({ error: error.message } satisfies ApiError);
       return;
     }
-    if (error instanceof DirtyRepoError) {
+    if (error instanceof DirtyRepoError || error instanceof BranchMismatchError) {
       res.status(409).json({ error: error.message } satisfies ApiError);
       return;
     }

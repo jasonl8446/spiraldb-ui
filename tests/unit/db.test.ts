@@ -10,6 +10,7 @@ import {
   DEFAULT_SPIRALDB_PATH,
   MEMORY_DB,
   applyQuestCatalogColumnAdds,
+  applyQuestTitleKeyColumnAdds,
   buildSeedSettings,
   closeDb,
   defaultDbFile,
@@ -225,6 +226,8 @@ describe('schema introspection', () => {
       ['link_kind', 'TEXT'],
       ['title_source', 'TEXT'],
       ['reference_count', 'INTEGER'],
+      // Migration 0006 (task 7.14, D182): the key the sync resolved for the row.
+      ['title_key', 'TEXT'],
     ]);
     // The existing primary key is unchanged (task 6.4's first bullet).
     expect(columns.filter((column) => column.pk > 0).map((column) => column.name)).toEqual([
@@ -254,7 +257,29 @@ describe('schema introspection', () => {
     expect(() => initSchema(db)).not.toThrow();
     expect(() => initSchema(db)).not.toThrow();
     expect(applyQuestCatalogColumnAdds(db)).toBe(0);
-    expect(db.pragma('table_info(quests)')).toHaveLength(9);
+    expect(applyQuestTitleKeyColumnAdds(db)).toBe(0);
+    expect(db.pragma('table_info(quests)')).toHaveLength(10);
+  });
+
+  it('migration 0006 adds quests.title_key to a database opened before it, keeping its rows (task 7.14)', () => {
+    const file = path.join(makeTempDir(), 'pre-0006.db');
+    const before = open(file);
+    // Rebuild the pre-0006 shape: drop the one column, as a database from before 0006 lacks it.
+    before.exec('ALTER TABLE quests DROP COLUMN title_key');
+    before.prepare("INSERT INTO quests (quest_name, title) VALUES ('Q-OLD-001', 'Old')").run();
+    expect((before.pragma('table_info(quests)') as unknown[]).length).toBe(9);
+    before.close();
+
+    const after = open(file);
+    expect(
+      (after.pragma('table_info(quests)') as Array<{ name: string }>).map((c) => c.name),
+    ).toContain('title_key');
+    expect(after.prepare('SELECT quest_name, title_key FROM quests').all()).toEqual([
+      { quest_name: 'Q-OLD-001', title_key: null },
+    ]);
+    // Every further open is a no-op, not a duplicate-column error.
+    after.close();
+    expect(() => open(file)).not.toThrow();
   });
 
   it('matches the spec columns of entry_status, including the UNIQUE constraint', () => {
@@ -512,6 +537,7 @@ describe('idempotency', () => {
       'link_kind',
       'title_source',
       'reference_count',
+      'title_key',
     ]);
     expect(readSettings(second).user_name).toBe('');
   });

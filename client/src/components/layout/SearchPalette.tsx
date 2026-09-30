@@ -25,6 +25,7 @@ import {
   SEARCH_PLACEHOLDER,
   SEARCH_TITLE,
   truncatedSearchMessage,
+  unresolvedSearchCount,
   unresolvedSearchMessage,
 } from '../../lib/search';
 import { StatusDot } from '../objects/ObjectTable';
@@ -113,7 +114,7 @@ export default function SearchPalette({ open, onOpenChange }: SearchPaletteProps
   });
 
   const groups = search.data?.groups ?? [];
-  const unresolved = search.data?.unresolved ?? 0;
+  const unresolved = search.data === undefined ? 0 : unresolvedSearchCount(search.data);
   const truncated = search.data?.truncated ?? false;
   const limit = search.data?.limit ?? SEARCH_DEFAULT_LIMIT;
 
@@ -221,7 +222,7 @@ function SearchResultItem({
   row: SearchResultRow;
   onActivate: (href: string) => void;
 }): JSX.Element {
-  const href = searchResultHref(row);
+  const href = searchResultHref(row, groupType);
   const secondary = searchResultSecondary(row);
   const value = searchResultKey(groupType, row);
 

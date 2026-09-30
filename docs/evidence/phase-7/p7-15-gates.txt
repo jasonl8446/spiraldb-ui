@@ -1,0 +1,57 @@
+# p7-15 gates (raw tails)
+
+## npm test
+
+ Test Files  106 passed (106)
+      Tests  2176 passed (2176)
+   Start at  03:05:34
+   Duration  73.09s (transform 1.73s, setup 0ms, collect 6.67s, tests 52.15s, environment 9ms, prepare 3.16s)
+
+
+## npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+## npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+## npm run typecheck:scripts
+
+> spiraldb-ui@0.1.0 typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+
+## npm run test:ui — run 1 (FULL): 452 passed / 2 failed; both are the rotating load-flake family owned by p7-16 (D69(h)/D77(d))
+  ✓  232 [chromium] › tests/ui/quests-browse.spec.ts:430:3 › loading and failure › a failed list shows the server message and recovers on Try again (2.9s)
+  ✓  244 [chromium] › tests/ui/extraction.spec.ts:1114:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (1.6s)
+  ✓  253 [chromium] › tests/ui/quests-edit-mode.spec.ts:384:3 › the save pipeline (AC4) › a failed save reports the server message and keeps the guard armed (1.4s)
+  ✘  293 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (4.6s)
+  ✓  319 [chromium] › tests/ui/quests-status.spec.ts:268:3 › failure paths › a failed PATCH rolls the badge back and shows the error in the dialog (1.7s)
+  ✘   41 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (1.0m)
+  2 failed
+  452 passed (2.1m)
+
+## the two failures re-run once, alone
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓  2 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (847ms)
+  ✓  1 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (1.7s)
+  2 passed (3.0s)
+
+## npm run test:ui — run 2 (FULL)
+  454 passed (2.1m)
+
+real	2m8.361s
+user	8m27.566s
+sys	2m17.284s
+
+## clone
+18dc924 spiraldb: extract quest WC-CYCLOPS-MAIN-002
+0
+0

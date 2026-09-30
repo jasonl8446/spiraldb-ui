@@ -488,6 +488,28 @@ describe('p6-09 — the writer end to end', () => {
     expect(file.m_questTitle).toBeNull();
   });
 
+  it("writes the link's own key when two keys share the text, from quests.title_key (D182)", async () => {
+    const { repo, db } = scaffoldRig('p7-15-title-key-', (database) => {
+      database
+        .prepare(
+          `INSERT INTO quests (quest_name, title, has_definition, link_kind, title_source, title_key)
+           VALUES (?, ?, 0, 'direct', 'direct', ?)`,
+        )
+        .run('DM-BLACK-SIDE-003', 'The Great Esapery', 'QuestTitle_00002208');
+      const insert = database.prepare(
+        'INSERT INTO string_table (key, value, category) VALUES (?, ?, ?)',
+      );
+      insert.run('QuestTitle_00002152', 'The Great Esapery', 'QuestTitle');
+      insert.run('QuestTitle_00002208', 'The Great Esapery', 'QuestTitle');
+    });
+
+    const { index, pipeline } = runtime(db, repo.dir);
+    const result = await scaffoldQuest({ db, index, pipeline, name: 'DM-BLACK-SIDE-003' });
+    expect(result.title_key).toBe('QuestTitle_00002208');
+    const file = readSpiraldbJson(path.join(repo.dir, result.file)) as Record<string, unknown>;
+    expect(file.m_questTitle).toBe('QuestTitle_00002208');
+  });
+
   it('refuses a path outside QuestTemplates/ before writing anything, and the same call succeeds with a legitimate name (the positive partner)', async () => {
     const { repo, db } = scaffoldRig('p6-09-guard-', (database) => {
       database
@@ -1026,6 +1048,35 @@ describe('p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap)'
     expect(
       resolveScaffoldBranch({ settingsBranch: '', currentBranch: '', requested: 'main' }),
     ).toEqual({ kind: 'use', branch: 'main', updateSetting: true });
+  });
+
+  it('names the setting as the remedy when the save pipeline is the caller (D182)', () => {
+    const decision = resolveScaffoldBranch({
+      settingsBranch: 'content/2099-01-01',
+      currentBranch: 'content/2026-09-27',
+      requested: 'content/2099-01-01',
+      requestedFrom: 'setting',
+    });
+    expect(decision.kind).toBe('refuse');
+    if (decision.kind === 'refuse') {
+      expect(decision.message).toContain('Refusing to save on branch "content/2099-01-01"');
+      expect(decision.message).toContain('the working tree is on "content/2026-09-27"');
+      expect(decision.message).toContain('set git_branch to "content/2026-09-27" in Settings');
+      expect(decision.message).not.toContain('--branch');
+    }
+  });
+
+  it('allows a branch that is not checked out only while the tree is on main (D182)', () => {
+    // From main the new branch starts with the contents the tree already has: nothing strands,
+    // and the spec's session-branch creation keeps working.
+    expect(
+      resolveScaffoldBranch({
+        settingsBranch: 'content/2099-01-01',
+        currentBranch: 'main',
+        requested: 'content/2099-01-01',
+        requestedFrom: 'setting',
+      }),
+    ).toEqual({ kind: 'use', branch: 'content/2099-01-01', updateSetting: false });
   });
 
   it('has no opinion outside a git working tree', () => {

@@ -4,7 +4,7 @@ import type { ApiError } from '../../../shared/index.js';
 import type { ObjectTypeConfig } from '../../../shared/objectTypes.js';
 import { ULong } from '../../../shared/ulong.js';
 import { readSettings, type Db } from '../db.js';
-import { DirtyRepoError } from '../services/git.js';
+import { BranchMismatchError, DirtyRepoError } from '../services/git.js';
 import {
   listObjects,
   objectRuntimeFor,
@@ -41,6 +41,7 @@ import {
  * | `settings.spiraldb_path` not configured               | 400    |
  * | unknown key (GET `/:key`)                             | 404    |
  * | dirty SpiralDB working tree (`DirtyRepoError`, D14)   | 409    |
+ * | `settings.git_branch` is not the checked-out branch (`BranchMismatchError`, D119/D182) | 409 |
  * | anything else thrown by the pipeline                  | 500    |
  *
  * A 500 is deliberately used for every other pipeline failure — including the
@@ -94,7 +95,7 @@ export function createObjectRouter({ db, config, validate }: ObjectRouterOptions
       } satisfies ApiError & { fields?: Record<string, string[]> });
       return;
     }
-    if (error instanceof DirtyRepoError) {
+    if (error instanceof DirtyRepoError || error instanceof BranchMismatchError) {
       res.status(409).json({ error: error.message } satisfies ApiError);
       return;
     }

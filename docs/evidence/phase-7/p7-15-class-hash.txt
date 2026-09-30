@@ -1,0 +1,16 @@
+== 1. the instrument, validated on every class the two dumps name
+   client r756936 (ClientDump.json): 6754 of 6754 dump hashes reproduced from the class name
+   server r806919: 6981 of 6981 dump hashes reproduced from the class name
+   largest hash in either dump: 2147332134  (2**31 = 2147483648; hashes >= 2**31: 0)
+== 2. 0xb2de6601 is not a class hash
+   0xb2de6601 = 3000919553 > 2**31, so no StringHash.Compute result can equal it.
+   compute('class TemplateManifest') = 171021254  (Imcodec binds Root.wad/TemplateManifest.xml to 171021254)
+== 3. names for the other six, from the file each class was measured in
+   0x3cdbe781 (1021044609) [trigger_groups.xml (3,377 zone WADs)] -> ['class TriggerGroupList']
+   0x217d4c2e (561859630) [Combat/CombatAIData.xml + CombatAIDataBruteForce.xml] -> no match
+   0x45d3c534 (1171506484) [Root.wad/HighScoreConfig.xml] -> ['class HighScoreConfig']
+   0x56c56c0f (1455778831) [Root.wad/MonsterMagicWorldLoot.xml] -> ['class MonsterMagicWorldLootList']
+   0x0f775b20 (259480352) [Root.wad/WhirlyBurlyConfig.xml] -> ['class WhirlyBurlyConfig']
+   0x32a408e1 (849610977) [Root.wad/NPCServices.xml] -> ['class NPCServices']
+== 4. CombatAIData: a wider token search (the C twin, p7-15-class-hash-search.c, ran the full grid)
+   depth<=4 over 20 tokens -> no match

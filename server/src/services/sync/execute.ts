@@ -42,6 +42,7 @@ import {
   type PersonaIndexRow,
 } from './personaIndex.js';
 import { resolveRevision } from './revision.js';
+import { measureSpeakerLadder, type SpeakerLadderReport } from './speakerLadder.js';
 import { buildStringTableRows, type StringTableRow } from './stringtable.js';
 import { scanTemplateTree, type ItemRow, type NpcRow, type SpellRow } from './templates.js';
 import { runUnpack, UnpackError } from './unpack.js';
@@ -288,6 +289,11 @@ export interface RunSyncResult {
   /** The breadth stage's outcome, raw counts and dropped rows (task 6.9). Always present. */
   breadth: BreadthReport;
   /**
+   * The speaker ladder's per-class fall-through counts over the corpus (D124, task 7.14).
+   * Optional, so result fixtures and a failed run need not carry it.
+   */
+  speakerLadder?: SpeakerLadderReport;
+  /**
    * Set when this run's corpus override differs from `settings.spiraldb_path`, so the
    * summary can say the tables and the app's reads name different corpora
    * ({@link describeCorpusOverride}). Optional, so result fixtures need not carry it.
@@ -375,8 +381,8 @@ function replaceTables(
   const insertNpc = db.prepare('INSERT INTO npcs (template_id, name, npc_type) VALUES (?, ?, ?)');
   const insertQuest = db.prepare(
     `INSERT INTO quests
-       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
-     VALUES (?, ?, ?, ?, 1, 'none', 'none', 0)`,
+       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count, title_key)
+     VALUES (?, ?, ?, ?, 1, 'none', 'none', 0, ?)`,
   );
   const insertDropTable = db.prepare('INSERT INTO drop_tables (name, description) VALUES (?, ?)');
   // The speaker ladder's index (task 6.6): one row per persona object name, written inside the
@@ -413,7 +419,7 @@ function replaceTables(
       insertNpc.run(row.template_id, row.name, null);
     }
     for (const row of rows.quests) {
-      insertQuest.run(row.quest_name, row.title, row.level, row.is_mainline ? 1 : 0);
+      insertQuest.run(row.quest_name, row.title, row.level, row.is_mainline ? 1 : 0, row.titleKey);
     }
     for (const row of rows.drop_tables) {
       insertDropTable.run(row.name, row.description);
@@ -674,6 +680,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     // store that is live on both paths is the earlier one (a second identical store here was dead).
     const breadthReport = written.breadth;
     timings.writeMs = Date.now() - writeStarted;
+    const speakerLadder = await measureSpeakerLadder(db, spiraldbPath);
 
     return {
       status: 'success',
@@ -688,6 +695,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       timings,
       catalog,
       breadth: breadthReport,
+      speakerLadder,
       corpusOverrideWarning,
     };
   } catch (error) {

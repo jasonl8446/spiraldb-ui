@@ -852,7 +852,7 @@ the alias-keyed namespace and its `notes` — and it is unit-tested. **No `/npcs
 entry points this section used to promise exists. Recorded by the final-deslop pass as a spec-vs-reality
 gap (a promise is a claim to re-test — D121's rule).
 
-**Phase 7 builds the page (D136, task 7.14).** Route `/npcs/:npcId`, over the existing `GET /api/npcs/:id` with no
+**Phase 7 built the page (D136, task 7.14; p7-15).** Route `/npcs/:npcId`, over the existing `GET /api/npcs/:id` with no
 new API. It shows aliases, personas, dialogs, quests and inventories, and each count matches a direct query. Tier-1
 coverage ships with it. Two entry points ship with it (Phase 7, chosen at p7-01): the search palette's `npc` rows
 link here (`searchResultHref` stops returning `null`), and a resolved speaker name in the Evidence panel links here.

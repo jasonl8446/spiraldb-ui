@@ -366,6 +366,8 @@ describe('runSync — success path', () => {
         link_kind: 'none',
         title_source: 'none',
         reference_count: 0,
+        // Migration 0006 (D182): the corpus row's own `m_questTitle` key.
+        title_key: 'QuestTitle_1ED8A',
       },
       {
         quest_name: 'WC-PreCel-MAIN-002',
@@ -377,6 +379,7 @@ describe('runSync — success path', () => {
         link_kind: 'none',
         title_source: 'none',
         reference_count: 0,
+        title_key: 'QuestTitle_126346',
       },
     ]);
     expect(db.prepare('SELECT zone_path, display_name, world FROM zones').get()).toEqual({

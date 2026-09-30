@@ -3,7 +3,13 @@ import path from 'node:path';
 
 import type { ObjectFileType } from '../../../shared/naming.js';
 import { readSettings, writeSetting, type Db } from '../db.js';
-import { createGitService, type GitService } from './git.js';
+import {
+  BranchMismatchError,
+  createGitService,
+  resolveScaffoldBranch,
+  sessionBranchName,
+  type GitService,
+} from './git.js';
 import {
   buildQuestMetadata,
   collectionSpec,
@@ -469,7 +475,21 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     // 1. D14 — fail closed before anything is written or checked out.
     await git.assertClean();
 
-    // 2. Branch strategy (docs/spec-data-model.md L206-214).
+    // 2. Branch strategy (docs/spec-data-model.md L206-214), behind the D119 guard: the one
+    //    helper the scaffold CLI uses refuses a `settings.git_branch` the tree is not on, before
+    //    the branch is created from main and the tree replaced (task 7.14, D182). This is the
+    //    single chokepoint every route's write passes through.
+    const storedBranch = (readSettings(db).git_branch ?? '').trim();
+    const decision = resolveScaffoldBranch({
+      settingsBranch: storedBranch,
+      currentBranch: await git.currentBranch(),
+      // A blank setting means `content/{today}` (what `ensureSessionBranch` would create).
+      requested: storedBranch === '' ? sessionBranchName(timestamp) : storedBranch,
+      requestedFrom: 'setting',
+    });
+    if (decision.kind === 'refuse') {
+      throw new BranchMismatchError(decision.message);
+    }
     const session = await git.ensureSessionBranch({ date: timestamp });
 
     // 3. The payload. An update merges into the file on disk so omitted nulls

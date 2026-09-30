@@ -107,6 +107,9 @@ const SPEC_ROUTES = [
   '/drafts/id/:questId',
   // Added deliberately by story p7-13 (D144): the glossary page, after Drafts in QUESTS.
   '/glossary',
+  // Added deliberately by story p7-15 (D144): the NPC page, reached from search rows and speaker
+  // names, with no nav item.
+  '/npcs/:npcId',
   '/drop-tables',
   '/drop-tables/:name',
   '/npc-inventories',
@@ -150,6 +153,7 @@ describe('route table', () => {
     expect(phase('/drafts')).toBe(7);
     expect(phase('/drafts/quest/:questName')).toBe(7);
     expect(phase('/drafts/id/:questId')).toBe(7);
+    expect(phase('/npcs/:npcId')).toBe(7);
     for (const path of [
       '/drop-tables',
       '/drop-tables/:name',

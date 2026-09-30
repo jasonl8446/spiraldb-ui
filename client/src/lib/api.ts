@@ -961,6 +961,8 @@ export interface QuestEvidenceSpeaker {
   persona: string;
   override_key: string | null;
   st_key: string | null;
+  /** The persona's manifest id — the NPC page's route param; `null` when the persona is unindexed. */
+  template_id: number | null;
 }
 
 /** One `NPCDialogEntry` the quest file records. */
@@ -1020,6 +1022,63 @@ export function getQuestEvidence(name: string): Promise<QuestEvidence> {
 /** `GET /api/quest-ids/:id/evidence` — the same shape for an unnamed-tier id (task 6.6). */
 export function getQuestIdEvidence(id: number): Promise<QuestEvidence> {
   return apiFetch<QuestEvidence>(`/api/quest-ids/${id}/evidence`);
+}
+
+/* ------------------------------------------------------------------- NPC view */
+
+/** One persona of an NPC (`GET /api/npcs/:id`, spec-api "NPC View"). */
+export interface NpcViewPersona {
+  persona_key: string;
+  first: string | null;
+  last: string | null;
+  template_id: number | null;
+}
+
+/** One dialogue line an NPC speaks in a corpus quest file. */
+export interface NpcViewDialog {
+  quest_name: string;
+  index: number;
+  text: string | null;
+}
+
+/** One NPC-keyed inventory file. */
+export interface NpcViewInventoryRow {
+  key: string;
+  file: string;
+}
+
+/** The NPC view: aliases, personas, dialogs, quests and inventories, with matching `counts`. */
+export interface NpcView {
+  npc_key: string;
+  template_id: number | null;
+  display_name: string;
+  aliases: string[];
+  personas: NpcViewPersona[];
+  dialogs: NpcViewDialog[];
+  quests: string[];
+  inventories: {
+    npc_inventories: NpcViewInventoryRow[];
+    npc_spell_inventories: NpcViewInventoryRow[];
+    npc_drop_tables: NpcViewInventoryRow[];
+  };
+  counts: { aliases: number; personas: number; dialogs: number; quests: number };
+  /** Why an arm is empty when the reason is not "there are no rows". */
+  notes: string[];
+}
+
+/** TanStack Query key for one NPC view (the id, in either accepted form, is part of the key). */
+export function npcQueryKey(id: string): readonly [string, string] {
+  return ['npc', id] as const;
+}
+
+/**
+ * `GET /api/npcs/:id` — the NPC view (task 6.6, D112) that the `/npcs/:npcId` page (task 7.14)
+ * reads. `id` is a template id or an alias key; an unknown NPC is a 404 whose message is the
+ * server's own (`Unknown NPC "…"`).
+ */
+export async function getNpc(id: string): Promise<NpcView> {
+  const response = await apiFetch<{ npc: NpcView }>(`/api/npcs/${encodeURIComponent(id)}`);
+  return response.npc;
 }
 
 /* ------------------------------------------------------------- quests (save) */

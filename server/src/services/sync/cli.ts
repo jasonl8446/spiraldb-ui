@@ -203,6 +203,44 @@ export function formatCatalogSummary(result: RunSyncResult): string[] {
   return lines;
 }
 
+/**
+ * The speaker ladder's fall-through counts (D124, task 7.14): one line per class, each with its
+ * count and its share of the dialogue rows examined, under the corpus they were measured on.
+ */
+export function formatSpeakerLadderSummary(result: RunSyncResult): string[] {
+  const ladder = result.speakerLadder;
+  if (ladder === undefined) {
+    return [];
+  }
+  const share = (count: number): string =>
+    ladder.lines === 0 ? '0.0%' : percent(count / ladder.lines);
+  const line = (label: string, count: number, meaning: string): string =>
+    field(label, `${n(count)} of ${n(ladder.lines)} rows (${share(count)}) — ${meaning}`);
+  return [
+    field(
+      'speaker ladder',
+      `${n(ladder.lines)} dialogue rows in ${n(ladder.files)} quest files (${n(
+        ladder.unreadable,
+      )} unreadable) — ${ladder.corpus}`,
+    ),
+    line(
+      '  override missing',
+      ladder.classes['override-key-missing'],
+      'm_nameOverride names no string-table key',
+    ),
+    line(
+      '  composition unfilled',
+      ladder.classes['composition-unfilled'],
+      'm_nameSTKey has no format or the persona lacks a component',
+    ),
+    line(
+      '  persona not indexed',
+      ladder.classes['persona-not-indexed'],
+      'raw persona string used as the speaker name',
+    ),
+  ];
+}
+
 /** Aligned `label : value` line. */
 function field(label: string, value: string): string {
   return `  ${label.padEnd(20)}: ${value}`;
@@ -275,6 +313,7 @@ export function formatSyncSummary(result: RunSyncResult): string[] {
     );
     lines.push(...formatCatalogSummary(result));
     lines.push(...formatBreadthSummary(result));
+    lines.push(...formatSpeakerLadderSummary(result));
   } else {
     lines.push(field('error', result.errorMessage ?? '(no message)'));
     lines.push(field('sync_history', `failed row written at ${result.timestamp}`));

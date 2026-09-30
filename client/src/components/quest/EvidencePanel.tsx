@@ -26,6 +26,7 @@ import type {
   QuestEvidenceTextRow,
 } from '../../lib/api';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 import { parseDocPath } from '@shared/document';
 
@@ -40,6 +41,7 @@ import {
   type EvidenceInsertRow,
   type EvidenceInsertTarget,
 } from '../../lib/evidence-insert';
+import { npcPagePath } from '../../lib/npcs';
 import { docPathWords, fieldAddressText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import TermLabel from '../TermLabel';
@@ -464,7 +466,18 @@ function DialogueSection({
           <li key={row.id} className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2">
               <span className="min-w-0 truncate text-xs text-zinc-200" title={entry.speaker.name}>
-                {entry.speaker.name}
+                {entry.speaker.template_id === null ? (
+                  entry.speaker.name
+                ) : (
+                  // D144: a resolved speaker opens that NPC's page (`/npcs/:npcId`).
+                  <Link
+                    to={npcPagePath(entry.speaker.template_id)}
+                    data-testid={`evidence-speaker-link-${entry.index}`}
+                    className="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    {entry.speaker.name}
+                  </Link>
+                )}
                 {entry.own_table ? null : (
                   <span className="ml-1 text-zinc-400">(sibling table)</span>
                 )}

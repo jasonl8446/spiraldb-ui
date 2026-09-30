@@ -135,6 +135,7 @@ export const MOCK_EVIDENCE = {
         persona: 'WC-RAV-NPC02_Persona',
         override_key: null,
         st_key: 'NPCFormats_First_Last',
+        template_id: 9002,
       },
       portrait: null,
       sound: null,

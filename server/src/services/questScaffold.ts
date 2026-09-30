@@ -177,10 +177,12 @@ export interface CatalogRow {
  * Reads the row's link and the title key this scaffold is allowed to write.
  *
  * The direct link's key is resolved in the order the catalog persists it:
- * `quest_ids.title_key` for the linked id, else a **unique** reverse lookup of
- * `quests.title` in the `QuestTitle_*` keys. Measured on the clone's real sync: of 285
- * `link_kind = 'direct'` rows, 170 resolve through the id tier, 105 through a unique
- * reverse lookup, and 10 are ambiguous (two keys share the text) — those write no title.
+ * `quest_ids.title_key` for the linked id, else `quests.title_key` (migration 0006, the
+ * link's own key, exact even when two keys share a text), else — for a database synced
+ * before 0006 — a **unique** reverse lookup of `quests.title` in the `QuestTitle_*` keys.
+ * Measured on the owner fork's sync before 0006: of 285 `link_kind = 'direct'` rows, 170
+ * resolve through the id tier, 105 through a unique reverse lookup, and 10 were ambiguous
+ * (two keys share the text) — those wrote no title; `quests.title_key` resolves all 285.
  *
  * The reverse lookup is a recovery, not an inference: the text in `quests.title` **is**
  * the value of the link's own key (the sync resolved it from `record.link.title_key`),
@@ -206,6 +208,15 @@ export function resolveLink(
     return { kind, titleKey: idRow.title_key };
   }
 
+  const ownKey = db
+    .prepare<[string], { title_key: string | null }>(
+      'SELECT title_key FROM quests WHERE quest_name = ?',
+    )
+    .get(row.quest_name);
+  if (ownKey?.title_key) {
+    return { kind, titleKey: ownKey.title_key };
+  }
+
   const candidates = db
     .prepare<[string], { key: string }>(
       "SELECT key FROM string_table WHERE key LIKE 'QuestTitle\\_%' ESCAPE '\\' AND value = ? ORDER BY key",
@@ -214,67 +225,7 @@ export function resolveLink(
   return { kind, titleKey: candidates.length === 1 ? candidates[0].key : null };
 }
 
-/**
- * Which branch a scaffold commits to, decided from the three facts the caller has (added after
- * the trap this story's own first CLI run hit).
- *
- * **The trap, measured.** `settings.git_branch` is what the save pipeline commits to
- * (`ensureSessionBranch`), and when that branch does not exist locally it is **created from
- * `main` and checked out** — which replaces the working tree with main's contents. A scratch
- * database seeded today carries `content/{today}`; a clone sitting on `content/2026-09-27` then
- * loses whatever exists only on that branch (measured: the clone's two branch-only files) *and*
- * keeps the new branch afterwards. That is D76(b)'s shape one level deeper: not a `reset --hard`
- * that strands a branch, but **a database branch name that disagrees with the tree**.
- *
- * The rule this function encodes, and the decision it represents:
- *
- * 1. **No explicit branch (`--branch` absent) — follow the working tree.** The caller pointed the
- *    command at a *repository*; the only branch that cannot strand work is the one already checked
- *    out, so the setting is moved to it (`updateSetting: true`) and the caller says so. The
- *    alternative — refusing — would make the safe case need a manual `UPDATE`; the other
- *    alternative — checking a branch out from inside the tool — mutates git state the operator
- *    owns, which a scaffold command has no business doing.
- * 2. **An explicit branch that is not the checked-out one — refuse.** Creating it from `main` is
- *    precisely the stranding behaviour, and the fix belongs in git (`git -C <root> checkout`), not
- *    in a database setting. Refusing keeps the decision visible where it can be reviewed.
- * 3. **No repository context (`currentBranch` empty) or no setting — no opinion.** Nothing to
- *    follow; the pipeline's own default (`content/{today}`) applies unchanged.
- */
-export type ScaffoldBranchDecision =
-  { kind: 'use'; branch: string; updateSetting: boolean } | { kind: 'refuse'; message: string };
-
-export function resolveScaffoldBranch(input: {
-  /** `settings.git_branch`, trimmed (empty when unset). */
-  settingsBranch: string;
-  /** The working tree's current branch (`''` when the root is not a git working tree). */
-  currentBranch: string;
-  /** `--branch`, when the caller named one. */
-  requested?: string;
-}): ScaffoldBranchDecision {
-  const requested = input.requested?.trim();
-  const current = input.currentBranch.trim();
-  const stored = input.settingsBranch.trim();
-
-  if (requested !== undefined && requested !== '') {
-    if (current === '' || requested === current) {
-      return { kind: 'use', branch: requested, updateSetting: stored !== requested };
-    }
-    return {
-      kind: 'refuse',
-      message:
-        `Refusing to scaffold on branch "${requested}": the working tree is on "${current}". ` +
-        `Committing to a branch that is not checked out creates it from main and replaces the ` +
-        `tree with main's contents, stranding anything that exists only on "${current}". ` +
-        `Check it out first (git -C <root> checkout ${requested}) or drop --branch to commit on ` +
-        `"${current}".`,
-    };
-  }
-
-  if (current === '') {
-    return { kind: 'use', branch: stored, updateSetting: false };
-  }
-  return { kind: 'use', branch: current, updateSetting: stored !== current };
-}
+export { resolveScaffoldBranch, type ScaffoldBranchDecision } from './git.js';
 
 export interface ScaffoldQuestOptions {
   db: Db;
@@ -626,9 +577,9 @@ export function draftMetadataDescription(draft: {
 function nameUnnamedDraft(db: Db, id: CatalogIdRow, name: string): void {
   db.prepare(
     `INSERT INTO quests
-       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
-     VALUES (?, ?, NULL, NULL, 1, 'direct', ?, 0)`,
-  ).run(name, id.title ?? name, id.title_key === null ? 'none' : 'direct');
+       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count, title_key)
+     VALUES (?, ?, NULL, NULL, 1, 'direct', ?, 0, ?)`,
+  ).run(name, id.title ?? name, id.title_key === null ? 'none' : 'direct', id.title_key);
   db.prepare(
     "UPDATE quest_ids SET matched_quest_name = ?, link_kind = 'direct' WHERE quest_id = ?",
   ).run(name, id.quest_id);

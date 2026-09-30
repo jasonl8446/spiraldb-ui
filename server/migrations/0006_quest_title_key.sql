@@ -1,0 +1,16 @@
+-- SpiralDB UI — quests.title_key (task 7.14, Phase 7; D140, D182)
+--
+-- `quests` gains one column, `title_key`: the `QuestTitle_*` key the sync resolved for the row.
+-- A corpus row carries its file's own `m_questTitle`; a catalog-only or file-without-title row
+-- carries the key of its direct or inferred link (quest_catalog's `link.title_key`). Keeping the
+-- key beside the text makes two things exact that were guesses before it: an inferred quest's
+-- title survives a sync instead of falling back to its name, and the 10 of 285 direct links whose
+-- text is shared by two keys (`The Great Esapery`) keep the one key their link named.
+--
+-- SQLite has no `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` and `initSchema` execs every migration
+-- file on every open, so the ALTER is not written here: `applyQuestTitleKeyColumnAdds` in
+-- server/src/db.ts reads `PRAGMA table_info(quests)` and issues it only when the column is
+-- missing (the pattern of 0002's `applyQuestCatalogColumnAdds`). This file therefore holds no
+-- statement; it exists so the migration is listed, numbered and read like the others.
+--
+-- The column is filled by the next sync (a sync replaces `quests`); until then it is NULL.
