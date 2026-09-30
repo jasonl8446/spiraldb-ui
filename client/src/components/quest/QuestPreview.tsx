@@ -10,6 +10,7 @@ import {
   shortTypeName,
   type PreviewTab,
 } from '../../lib/extract';
+import { goalCardTitle, NO_CARD_NAMES } from '../../lib/card-titles';
 import { nextTabIndex } from '../../lib/tablist';
 import { termText, valueTermOf } from '../../lib/term';
 import { cn } from '../../lib/utils';
@@ -205,7 +206,11 @@ function GoalsPanel({ quest }: { quest: QuestObject }): JSX.Element {
       {goals.map((goal, index) => (
         <article key={index} className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3">
           <header className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm text-zinc-100">
+            {/* Fetch-free by contract: no resolved names, so a title falls back as far as it must. */}
+            <span className="text-sm font-medium text-zinc-100">
+              {goalCardTitle(goal, NO_CARD_NAMES)}
+            </span>
+            <span className="font-mono text-xs text-zinc-400">
               {fieldText(goal, 'm_goalName') ?? `Goal ${index + 1}`}
             </span>
             <GoalTypeBadge goal={goal} />

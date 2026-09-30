@@ -330,10 +330,16 @@ const TITLES: Record<string, string> = {
 
 /**
  * A card by its **exact** document address (its `data-path`; task 7.9 keeps a path out of every
- * label) and its class (the pair its accessible name starts with).
+ * label) and its class. Task 7.10 titles a card by meaning: the class's glossary label, then its
+ * operand (`Teach spell: Fireball`, `Reward: drop table Pesky Pirates`), so the accessible name
+ * starts with the label, followed by `:` or a space.
  */
 function card(scope: Locator, title: string, address: string): Locator {
-  return scope.locator(`article[data-path="${address}"][aria-label^="${TITLES[title] ?? title} "]`);
+  const label = (TITLES[title] ?? title).replace(/ \(\w+\)$/, '');
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return scope
+    .getByRole('article', { name: new RegExp(`^${escaped}(?::| )`) })
+    .and(scope.locator(`[data-path="${address}"]`));
 }
 
 /** The glossary pair of each field key a card's control is named by (task 7.9). */

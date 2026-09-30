@@ -75,6 +75,8 @@ import {
 import { withValidationBorder } from '../../lib/quest-validation';
 import { prefersReducedMotion } from '../../lib/reduced-motion';
 import { fieldValueText, termText, valueTermOf } from '../../lib/term';
+import { goalCardTitle, goalTitleStringKeys, type CardNames } from '../../lib/card-titles';
+import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
 import TermLabel from '../TermLabel';
 import { useEvidenceCardFocus, useEvidenceFieldFocus } from './EvidenceFocus';
@@ -130,6 +132,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
   const goals = arrayOf(state.value([GOALS_PATH]));
   const startGoals = state.value([START_GOALS_PATH]);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const names = useCardNames(['npcs', 'zones'], goals.flatMap(goalTitleStringKeys));
   const [newType, setNewType] = useState<GoalShortTypeName>('Waypoint');
 
   // Positional ids: `m_goalName` is editable, so a name-keyed id would remount a card
@@ -171,6 +174,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
                   index={index}
                   goal={goal}
                   startGoals={startGoals}
+                  names={names}
                   state={state}
                   expanded={expanded === index}
                   onToggleEdit={() => setExpanded(expanded === index ? null : index)}
@@ -234,6 +238,7 @@ function GoalCard({
   index,
   goal,
   startGoals,
+  names,
   state,
   expanded,
   onToggleEdit,
@@ -242,6 +247,7 @@ function GoalCard({
   index: number;
   goal: unknown;
   startGoals: unknown;
+  names: CardNames;
   state: QuestDocumentState;
   expanded: boolean;
   onToggleEdit: () => void;
@@ -256,6 +262,10 @@ function GoalCard({
     isDragging,
   } = useSortable({ id });
   const name = goalName(goal);
+  // The card is titled by meaning (task 7.10); the generated goal id stays as secondary text (D144)
+  // and ends the accessible names, which keeps two goals with the same title distinguishable.
+  const title = goalCardTitle(goal, names);
+  const goalId = name ?? String(index + 1);
   const start = isStartGoal(goal, startGoals);
   // The finding about the goal itself (its own path), not its fields: `goal-unreachable` is the
   // only rule whose subject is the node, and this card is the node's surface.
@@ -296,13 +306,14 @@ function GoalCard({
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            aria-label={`${REORDER_HANDLE_LABEL} ${name ?? index + 1}`}
+            aria-label={`${REORDER_HANDLE_LABEL} ${title}, ${goalId}`}
             className="cursor-grab rounded-md border border-zinc-700 px-2 py-1 text-sm text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:cursor-grabbing"
           >
             ☰
           </button>
 
-          <span className="font-mono text-sm text-zinc-100">{name ?? `Goal ${index + 1}`}</span>
+          <span className="text-sm font-medium text-zinc-100">{title}</span>
+          <span className="font-mono text-xs text-zinc-400">{name ?? `Goal ${index + 1}`}</span>
 
           <Badge variant="outline" className={goalBadgeClass(goal)}>
             <TermLabel term={goalTypeTerm(goal)} />
@@ -317,7 +328,7 @@ function GoalCard({
               type="button"
               size="sm"
               variant="ghost"
-              aria-label={`${DELETE_GOAL_LABEL} ${name ?? index + 1}`}
+              aria-label={`${DELETE_GOAL_LABEL} ${title}, ${goalId}`}
               onClick={() => state.edit(deleteGoalEdit(index))}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />

@@ -39,6 +39,8 @@ import { docPathWords, fieldValueText, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import TermLabel from '../TermLabel';
+import { requirementCardTitle } from '../../lib/card-titles';
+import { useCardNames } from '../../hooks/useCardNames';
 import { FieldMessages, useFieldMessages } from './FieldValidation';
 import { Button } from '../ui/button';
 
@@ -354,10 +356,12 @@ function LeafCard({
 }): JSX.Element {
   const address = node.address;
   const id = useId();
+  // Titled by meaning with the quest's resolved name (task 7.10).
+  const title = requirementCardTitle(node.value, useCardNames(['quests']));
   return (
     <li className="min-w-0">
       <article
-        aria-label={`${node.title} ${docPathWords(node.path)}`}
+        aria-label={`${title} ${docPathWords(node.path)}`}
         data-path={address}
         className={cn(
           'min-w-0 rounded-md border border-zinc-800 border-l-4 bg-zinc-900/40 p-3',
@@ -365,9 +369,12 @@ function LeafCard({
         )}
       >
         <header className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-zinc-100">
-            {node.typeString === null ? node.title : <TermLabel term={{ type: node.typeString }} />}
-          </span>
+          <span className="text-sm text-zinc-100">{title}</span>
+          {node.typeString === null ? null : (
+            <span className="text-xs text-zinc-400">
+              <TermLabel term={{ type: node.typeString }} />
+            </span>
+          )}
           <div className="ml-auto">
             <DeleteButton state={state} path={node.path} address={address} />
           </div>

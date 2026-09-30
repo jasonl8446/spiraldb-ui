@@ -113,6 +113,12 @@ const ALLOWED_LABELS: ReadonlyArray<{ file: string; match: string; reason: strin
     reason: 'A field path and the editor that owns it, for a discovery message.',
   },
   {
+    file: 'client/src/lib/card-titles.ts',
+    match: '`${meaning} (${noun})`',
+    reason:
+      'A card title: its meaning and the goal class noun the glossary label ends in, not a name pair.',
+  },
+  {
     file: 'client/src/pages/ObjectDetailPage.tsx',
     match: 'Saved ${result.key} (${result.outcome})',
     reason: 'A save toast: the key plus the outcome word, not a friendly/technical pair.',

@@ -202,7 +202,9 @@ test.describe('AC1 — a dangling m_startGoals reference blocks the save', () =>
     await expect(saveButton(page)).toHaveAttribute('data-blocked', 'false');
 
     // The AC's own flow: the Goals tab deletes the goal `m_startGoals` still names.
-    await cardNamed(region, '1_Start').getByRole('button', { name: 'Delete 1_Start' }).click();
+    await cardNamed(region, '1_Start')
+      .getByRole('button', { name: /^Delete .+, 1_Start$/ })
+      .click();
 
     // 1. The inline error, on the `m_startGoals` surface, with a red border (L547).
     const inline = page.getByTestId('start-goals-validation');

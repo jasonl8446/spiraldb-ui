@@ -82,7 +82,11 @@ function itemTree(page: Page, item: number): ReturnType<Page['locator']> {
 }
 
 /** A requirement class's glossary pair (task 7.9) — the leading words of a tree card's name. */
-const CARD_TITLES: Record<string, string> = { ReqHasQuest: 'Requires quest (ReqHasQuest)' };
+const CARD_TITLES: Record<string, RegExp> = {
+  // Task 7.10: a leaf is titled by its class label, then its operand once it has one
+  // (`Requires quest: <name>`), with `Not: ` in front when negated.
+  ReqHasQuest: /^(?:Not: )?Requires quest(?::| (?!registry))/,
+};
 
 /**
  * A tree card by its exact document address (`Items[0].Requirements[0]`, its `data-path`; task 7.9
@@ -94,9 +98,9 @@ function treeCard(
   title: string,
   address: string,
 ): ReturnType<Page['locator']> {
-  return itemTree(page, item).locator(
-    `article[data-path="${address}"][aria-label^="${CARD_TITLES[title] ?? title} "]`,
-  );
+  return itemTree(page, item)
+    .getByRole('article', { name: CARD_TITLES[title] })
+    .and(itemTree(page, item).locator(`[data-path="${address}"]`));
 }
 
 /** The live document, read through the JSON panel's own `[Copy]` affordance (key order included). */

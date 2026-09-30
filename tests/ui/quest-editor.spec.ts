@@ -309,7 +309,7 @@ test.describe('AC#13 chain 2 — deleting a referenced start goal blocks the sav
     await goalsEditor(page)
       .getByRole('article')
       .first()
-      .getByRole('button', { name: `Delete ${START_GOAL}` })
+      .getByRole('button', { name: new RegExp(`^Delete .+, ${START_GOAL}$`) })
       .click();
 
     // 1. The inline error on the `m_startGoals` surface (the field's own red-bordered strip).
@@ -389,7 +389,7 @@ test.describe('AC#13 chain 3 — adding a requirement leaf serializes into the p
     // The visible tree agrees with the document it wrote.
     await expect(
       tree.getByRole('article', {
-        name: 'Requires quest (ReqHasQuest) Requirements 1',
+        name: 'Requires quest Requirements 1',
         exact: true,
       }),
     ).toBeVisible();

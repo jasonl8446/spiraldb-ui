@@ -172,10 +172,11 @@ test.describe('tabs', () => {
     await expect(main.getByRole('region', { name: 'Quest results editor' })).toBeVisible();
     await expect(main.getByRole('region', { name: 'End results', exact: true })).toBeVisible();
     // The card by its address (`data-path`) and its class pair (task 7.9: the accessible name
-    // reads the address in words and starts with the class's glossary pair).
+    // reads the address in words and starts with the card's title, task 7.10: the class's label,
+    // then the drop table it names when the node is one the editor models).
     await expect(
       main.locator(
-        'article[data-path="m_endResults.m_results[0]"][aria-label^="Reward: drop table (ResDropTable) "]',
+        'article[data-path="m_endResults.m_results[0]"][aria-label^="Reward: drop table "]',
       ),
     ).toBeVisible();
     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();

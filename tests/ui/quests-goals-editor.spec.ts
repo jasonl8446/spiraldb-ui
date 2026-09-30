@@ -411,7 +411,7 @@ test.describe('the goal cards', () => {
   test('the drag handle is a labelled button, not the card', async ({ page }) => {
     await openGoals(page);
     const handle = card(page, 0).getByRole('button', {
-      name: 'Reorder goal 1_WizardQuestGoals_00000058',
+      name: /^Reorder goal .+, 1_WizardQuestGoals_00000058$/,
     });
     await expect(handle).toBeVisible();
     // The card keeps its own role: dnd-kit's attributes live on the handle only.
@@ -500,7 +500,7 @@ test.describe('reordering', () => {
     await openJson(page);
 
     const handle = card(page, 0).getByRole('button', {
-      name: 'Reorder goal 1_WizardQuestGoals_00000058',
+      name: /^Reorder goal .+, 1_WizardQuestGoals_00000058$/,
     });
     await handle.focus();
     // Space lifts, ArrowDown steps one sortable down, Space drops (dnd-kit's
@@ -544,7 +544,7 @@ test.describe('reordering', () => {
     await openJson(page);
 
     const handle = card(page, 0).getByRole('button', {
-      name: 'Reorder goal 1_WizardQuestGoals_00000058',
+      name: /^Reorder goal .+, 1_WizardQuestGoals_00000058$/,
     });
     // The pane scrolls: `boundingBox()` without this can be outside the viewport (or
     // under the tab strip), and a raw `mouse.down` is dispatched at the coordinates

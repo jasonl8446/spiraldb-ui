@@ -43,6 +43,8 @@ import {
   type ResultShortTypeName,
 } from '../../lib/quest-results';
 import { docPathWords, fieldValueText, termText } from '../../lib/term';
+import { resultCardTitle, type CardNames } from '../../lib/card-titles';
+import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import TermLabel from '../TermLabel';
@@ -152,6 +154,7 @@ export default function ResultListEditor({
   const wrapperIsObject = isPlainObject(wrapper);
   const cards = readResultCards(path, wrapper);
   const items = state.value([...path, 'm_results']);
+  const names = useCardNames(['spells', 'npcs', 'zones']);
 
   return (
     <section aria-label={label} className={cn('flex min-w-0 flex-col gap-3', className)}>
@@ -162,7 +165,7 @@ export default function ResultListEditor({
       ) : (
         <ul className="flex min-w-0 flex-col gap-3">
           {cards.map((card) => (
-            <ResultCard key={card.address} state={state} card={card} />
+            <ResultCard key={card.address} state={state} card={card} names={names} />
           ))}
         </ul>
       )}
@@ -181,24 +184,31 @@ export default function ResultListEditor({
 function ResultCard({
   state,
   card,
+  names,
 }: {
   state: ResultListDocumentState;
   card: ResultCardView;
+  names: CardNames;
 }): JSX.Element {
   const typeString =
     isPlainObject(card.value) && typeof card.value.$type === 'string' ? card.value.$type : null;
+  // Titled by meaning with resolved names (task 7.10); an unreadable node keeps the lenient title.
+  const title = card.readable ? resultCardTitle(card.value, names) : card.title;
   return (
     <li className="min-w-0">
       <article
-        aria-label={`${card.title} ${docPathWords(card.path)}`}
+        aria-label={`${title} ${docPathWords(card.path)}`}
         data-path={card.address}
         className="min-w-0 rounded-md border border-zinc-800 border-l-4 border-l-blue-500 bg-zinc-900/40 p-3"
       >
         <header className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-zinc-400">{card.index + 1}</span>
-          <span className="text-sm text-zinc-100">
-            {typeString === null ? card.title : <TermLabel term={{ type: typeString }} />}
-          </span>
+          <span className="text-sm text-zinc-100">{title}</span>
+          {typeString === null ? null : (
+            <span className="text-xs text-zinc-400">
+              <TermLabel term={{ type: typeString }} />
+            </span>
+          )}
           {card.spec === null ? (
             <span className="text-xs text-amber-400">
               $type this editor does not model — kept verbatim

@@ -197,15 +197,17 @@ function prepTree(page: Page): Locator {
 }
 
 /**
- * A card's title: `Group`, or a class's glossary pair (task 7.9) — the leading words of the card's
- * accessible name.
+ * A card's title, as the pattern the leading words of its accessible name match (task 7.10): a
+ * leaf is titled `<class label>` and, once it has an operand, `<class label>: <operand>`; a negated
+ * one carries a `Not: ` in front. `Requires quest` is a prefix of `Requires quest registry entry`,
+ * so its pattern excludes that continuation.
  */
-const CARD_TITLES: Record<string, string> = {
-  Group: 'Group',
-  ReqHasQuest: 'Requires quest (ReqHasQuest)',
-  ReqHasEntry: 'Requires quest registry entry (ReqHasEntry)',
-  ReqSchoolOfFocus: 'Requires school of focus (ReqSchoolOfFocus)',
-  ReqIsSchool: 'Requires target school (ReqIsSchool)',
+const CARD_TITLES: Record<string, RegExp> = {
+  Group: /^Group /,
+  ReqHasQuest: /^(?:Not: )?Requires quest(?::| (?!registry))/,
+  ReqHasEntry: /^(?:Not: )?Requires quest registry entry(?::| )/,
+  ReqSchoolOfFocus: /^(?:Not: )?Requires school of focus(?::| )/,
+  ReqIsSchool: /^(?:Not: )?Requires target school(?::| )/,
 };
 
 /**
@@ -215,9 +217,9 @@ const CARD_TITLES: Record<string, string> = {
  * leading words, so a card of another class at that address does not match either.
  */
 function card(page: Page, title: string, address: string): Locator {
-  return tree(page).locator(
-    `article[data-path="${address}"][aria-label^="${CARD_TITLES[title] ?? title} "]`,
-  );
+  return tree(page)
+    .getByRole('article', { name: CARD_TITLES[title] })
+    .and(tree(page).locator(`[data-path="${address}"]`));
 }
 
 /** A group card. */
