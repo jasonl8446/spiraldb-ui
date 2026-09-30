@@ -616,7 +616,10 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
     });
 
     it('validates every corpus file without mutating one', () => {
-      expect(corpus.length).toBe(328);
+      // 330 at the owner fork's `864bd44` (the Phase 7 baseline, D145(b)): 328 at `d57d891` plus the two
+      // harness-authored scaffolds `7e34bed`/`864bd44` (an owner post-run review item; if the owner drops
+      // them this returns to 328).
+      expect(corpus.length).toBe(330);
       const before = corpus.map((quest) => serializeDoc(quest.doc));
       for (const quest of corpus) {
         validateQuest(quest.doc, { references });

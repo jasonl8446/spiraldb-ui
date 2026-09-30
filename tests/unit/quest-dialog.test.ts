@@ -85,9 +85,9 @@ import {
  * {@link DIALOG_ENTRY_KEY_SHAPES}, so the test cannot prove the model agrees with itself while
  * the model still cannot disagree with the measurement (D79).
  *
- * The measured corpus facts (**328** files, **797** lists, **769** list-mounted tag groups out
+ * The measured corpus facts (**330** files, **799** lists, **769** list-mounted tag groups out
  * of the corpus's 774, **1876** entries in those groups — 1884 with the 5 typed `ActorDialog`
- * blocks, which the results sweep owns — the **five** entry shapes 1860/7/6/2/1, 43 empty lists,
+ * blocks, which the results sweep owns — the **five** entry shapes 1860/7/6/2/1, 45 empty lists,
  * tags Completion 442 / Prep 322 / "" 5 / Hyperlink 5) are re-measured at the owner's `f9a1055`
  * baseline (D79; the 322-file numbers were 767/739/1706 in three shapes 1698/6/2 and tags
  * 418/316/5). The sweep at the bottom does the measuring and prints the numbers; it skips with an
@@ -439,7 +439,7 @@ describe('the read helpers', () => {
       expect(view.typeString).toBeNull();
     }
 
-    // The measured empty-array state (43 of 797 lists) is a readable list with no groups.
+    // The measured empty-array state (45 of 799 lists) is a readable list with no groups.
     const empty = readDialogList(['m_dialogList'], { $type: LIST_TYPE, m_dialogs: [] });
     expect(empty.readable).toBe(true);
     expect(empty.typeString).toBe(LIST_TYPE);
@@ -1206,7 +1206,7 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
             realLists += 1;
           }
           const wrapper = getAtPath(doc, slot) as Record<string, unknown>;
-          // The list is exactly {$type, m_dialogs}, in that order, in 797/797 measured lists.
+          // The list is exactly {$type, m_dialogs}, in that order, in 799/799 measured lists.
           expect(Object.keys(wrapper), `${file} ${slot.join('.')}`).toEqual(['$type', 'm_dialogs']);
           if (hasAtPath(wrapper, ['$type'])) {
             taggedLists += 1;
@@ -1339,15 +1339,18 @@ describe.skipIf(QUEST_CORPORA.length === 0)('the real corpus of dialog lists', (
     // The measured totals, asserted against the real checkout when it exists (CI has only the
     // clone, which is why these are conditional rather than hard).
     if (existsSync(REAL_QUEST_DIR)) {
-      expect(realFiles).toBe(328);
-      expect(realLists).toBe(797);
+      // 330 files / 799 lists at the owner fork's `864bd44` (the Phase 7 baseline, D145(b)): 328 / 797 at
+      // `d57d891` plus the two harness-authored scaffolds `7e34bed`/`864bd44` (an owner post-run review
+      // item; if the owner drops them these pins return to 328 / 797 and empty lists return to 43).
+      expect(realFiles).toBe(330);
+      expect(realLists).toBe(799);
       // The sweep walks the `m_dialogList` slots the editor mounts: 769 of the corpus's 774
       // groups. The other 5 are the typed `ActorDialog` blocks inside `ResActorDialog.m_dialog`
       // (8 entries, all full 66-key), which the results sweep and D79's byte-exact check cover.
       expect(realGroups).toBe(769);
       expect(realEntries).toBe(1876);
       expect(realShapeCounts.get('full')).toBe(1860);
-      expect(realEmptyLists).toBe(43);
+      expect(realEmptyLists).toBe(45);
       expect(realShapeCounts.get('sparse60')).toBe(1);
       expect(realShapeCounts.get('truncated45')).toBe(6);
       expect(realShapeCounts.get('noDialogEvent65')).toBe(7);

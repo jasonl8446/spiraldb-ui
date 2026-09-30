@@ -58,7 +58,9 @@ const RECORDED = JSON.parse(
  *
  * The file count comes from the **recording** (`RECORDED.corpusFiles`) rather than a fresh
  * `readdir`: that is the p3-01 style (the recording is the measurement of record, and the live
- * grep above it asserts the strings). It is 328 at the owner's `f9a1055` baseline.
+ * grep above it asserts the strings). It is 330 at the owner fork's `864bd44` (the Phase 7 baseline, D145(b)): 328 at `d57d891` plus the two
+ * harness-authored scaffolds `7e34bed`/`864bd44` (an owner post-run review item; if the owner drops them
+ * the recording returns to 328 files / 8,746 occurrences / ActorDialogList 797).
  */
 const CORPUS_DIR =
   process.env.SPIRALDB_QUEST_CORPUS ?? path.join(DEFAULT_SPIRALDB_PATH, 'QuestTemplates');
@@ -113,8 +115,8 @@ describe('the recorded corpus measurement (committed fixture)', () => {
     const measured = Object.keys(RECORDED.typeStringCounts);
     expect(measured).toHaveLength(29);
     expect(RECORDED.distinctTypeStrings).toBe(29);
-    expect(RECORDED.corpusFiles).toBe(328);
-    expect(RECORDED.totalTypeOccurrences).toBe(8746);
+    expect(RECORDED.corpusFiles).toBe(330);
+    expect(RECORDED.totalTypeOccurrences).toBe(8748);
     expect(measured.every((value) => isKnownTypeString(value))).toBe(true);
 
     // The corpus table's values are exactly the 29 recorded strings — nothing extra is

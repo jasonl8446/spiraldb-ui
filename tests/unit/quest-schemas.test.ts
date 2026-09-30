@@ -475,7 +475,9 @@ describe('the POST /api/quests request schema', () => {
 
 /**
  * The corpus-wide claim ("schemas must accept every corpus value") is asserted against the
- * live checkout when it is present — **328** files (322 before the owner's `f9a1055` merge, D79),
+ * live checkout when it is present — **330** files (328 at `d57d891` plus the two harness-authored scaffolds `7e34bed`/`864bd44` — an owner
+ * post-run review item; if the owner drops them this returns to 328 — at the owner fork's `864bd44`, the
+ * Phase 7 baseline, D145(b); 322 before the `f9a1055` merge, D79),
  * no fixtures — and skipped with a reason otherwise (CI has no sibling repository; task 3.2 owns
  * the committed-fixture round-trip). This arm is what proves the schema extension: the 3 quests
  * carrying `ResActorDialog`/`ActorDialog` parse, and the 2 dialog entries with **no `$type`**
@@ -486,9 +488,9 @@ const CORPUS_DIR =
 const CORPUS_PRESENT = existsSync(CORPUS_DIR);
 
 describe.skipIf(!CORPUS_PRESENT)('the live corpus (owner run)', () => {
-  it('accepts all 328 corpus quests and loses nothing on parse', () => {
+  it('accepts all 330 corpus quests and loses nothing on parse', () => {
     const quests = readdirSync(CORPUS_DIR).filter((file) => file.endsWith('.json'));
-    expect(quests).toHaveLength(328);
+    expect(quests).toHaveLength(330);
 
     const rejected: string[] = [];
     const changed: string[] = [];
