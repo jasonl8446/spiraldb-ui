@@ -6,7 +6,7 @@ import { expect, test, type Locator, type Page, type Route } from '@playwright/t
  *
  * The phase's seven *keyed* families each have a list page built on `ObjectListPage` (task 4.1)
  * and a detail page built on `ObjectDetailLayout`; the eighth, **GlobalRegistry**, has no list
- * page at all — its single route *is* its editor (docs/spec-api.md L474, D75(a)) — so the
+ * page at all — its single route *is* its editor (docs/spec-api.md §"URL Routes (Frontend)", D75(a)) — so the
  * card-list half of the criterion has no referent there and this file says so instead of
  * inventing one.
  *
@@ -14,7 +14,7 @@ import { expect, test, type Locator, type Page, type Route } from '@playwright/t
  *
  * The criterion says **≤768px**. The app's own switch is `useIsMobile`'s
  * `(max-width: 767px)` — Tailwind's `md` boundary, i.e. the spec's "below md"
- * (docs/spec-ui-design.md L234/L270/L340). So this spec asserts the mobile surface at **375**
+ * (docs/spec-ui-design.md §"Results Phase" / §"Data Table" / §"JSON Side Panel"). So this spec asserts the mobile surface at **375**
  * (a real phone) and at **767** (the widest viewport the app calls mobile, and therefore the
  * strongest reading of "≤768"), and asserts the **converse** at **768** (where the desktop table
  * and the tablet 300px side panel mount — 300, not 400: story p5-06 added the spec's tablet tier,
@@ -73,7 +73,7 @@ type Drive =
 interface FamilyFixture {
   readonly fileType: string;
   readonly label: string;
-  /** Backend base path (docs/spec-api.md L310-319). */
+  /** Backend base path (docs/spec-api.md §"Other Object Types"). */
   readonly urlPath: string;
   /** D4 plural status route, or `null` for the editor-only family (Q1). */
   readonly routeType: string | null;

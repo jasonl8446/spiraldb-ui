@@ -202,7 +202,7 @@ const REAL_CAPTURE_QUEST = {
   m_dialogList: null,
 } as const;
 
-/** A `SaveQuestResult` body (docs/spec-api.md L239-251) for one saved quest. */
+/** A `SaveQuestResult` body (docs/spec-api.md §"Quests") for one saved quest. */
 function saveResultFor(quest: Record<string, unknown>): Record<string, unknown> {
   const name = String(quest.m_questName ?? '');
   return {
@@ -266,7 +266,7 @@ interface MockOptions {
   browseRows?: MockQuestRow[];
 }
 
-/** A `GET /api/quests` body (docs/spec-api.md L190-208) for the given names. */
+/** A `GET /api/quests` body (docs/spec-api.md §"Quests") for the given names. */
 function questListResult(names: string[]): Record<string, unknown> {
   return {
     quests: names.map((quest_name) => ({
@@ -469,6 +469,10 @@ async function openResults(page: Page): Promise<void> {
   await openExtractionPage(page);
   await uploadCapture(page);
   await expect(page.getByRole('listbox', { name: 'Extracted quests' })).toBeVisible();
+  // The progress notice ends with the extraction (D183). Left up, it settled over `Save All` /
+  // `Save Selected`, and a click that landed on it parked the pointer there, which pauses
+  // sonner's timer: the next click then waited on a toast that never left (the 60 s timeouts).
+  await expect(toast(page, 'Extracting quests... this may take a moment')).toHaveCount(0);
 }
 
 /** One sonner toast, matched by its text (sonner marks every toast `li`). */

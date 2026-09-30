@@ -49,7 +49,7 @@ afterAll(() => {
   }
 });
 
-describe('lenient JSON reading (spec-data-model.md L234-246)', () => {
+describe('lenient JSON reading (spec-data-model.md §"SpiralDB JSON Parsing")', () => {
   it('recovers legacy files with trailing commas and still reads strict JSON', () => {
     expect(() => JSON.parse('{ "a": 1, }')).toThrow();
     expect(parseJsonLenient('{ "a": 1, }')).toEqual({ a: 1 });
@@ -63,7 +63,7 @@ describe('lenient JSON reading (spec-data-model.md L234-246)', () => {
   });
 });
 
-describe('zone display names (spec-domain-reference.md L700-702)', () => {
+describe('zone display names (spec-domain-reference.md §"Zone Display Names")', () => {
   it('humanizes a zone path', () => {
     expect(humanizeZonePath('WizardCity/WC_Hub')).toBe('Wizard City / WC Hub');
     // The spec's prose says "underscores and slashes to spaces", but its own
@@ -232,7 +232,7 @@ describe('buildZoneRows — corpus-derived zones (D21)', () => {
   });
 });
 
-describe('buildDropTableRows — DropTables corpus (spec-data-model.md L121-126)', () => {
+describe('buildDropTableRows — DropTables corpus (spec-data-model.md §"Friendly Name Tables")', () => {
   it('reads Name and Description, and tolerates a missing Description', async () => {
     const dir = makeDir({
       'droptable_ds-acad1-c01-001.json': 'droptable_ds-acad1-c01-001.json',

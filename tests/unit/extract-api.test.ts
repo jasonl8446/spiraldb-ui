@@ -27,7 +27,7 @@ import {
 } from '@server/services/extraction';
 
 /**
- * Task 2.3/p2-04 — `POST /api/extract/quests` (docs/spec-api.md L208-231).
+ * Task 2.3/p2-04 — `POST /api/extract/quests` (docs/spec-api.md §"Extraction").
  *
  * Hermetic: the extraction service is injected, so no CLI process is ever spawned
  * and .NET is never needed. The app under test is the real composition — the

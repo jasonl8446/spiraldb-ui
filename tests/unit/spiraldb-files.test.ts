@@ -31,7 +31,7 @@ import { SCRATCH_PARENT } from '../helpers/temp-git-repo';
  * the naming table and the import scan, key normalisation, JSON5-tolerant reads,
  * clean-JSON writes, convention paths (including the zone slash case), the
  * null/absent-preserving merge behind D45(1), and the exact quest-metadata shape
- * of docs/spec-data-model.md L191-204.
+ * of docs/spec-data-model.md §"Metadata Files".
  *
  * Everything runs in a throwaway directory under `data/__test-scratch__/`; no
  * corpus file, no clone, no owner repository (decision D17).
@@ -78,7 +78,7 @@ describe('the collection table', () => {
 
       // The naming table's Key Source column is a field name for eight rows and the
       // descriptive wording "quest name" for quest metadata, whose file stores it in
-      // `Name` (docs/spec-data-model.md L198).
+      // `Name` (docs/spec-data-model.md §"Metadata Files").
       const expectedSource =
         collection.fileType === 'questmetadata' ? 'quest name' : collection.keyField;
       expect(naming?.keySource).toBe(expectedSource);
@@ -361,7 +361,7 @@ describe('mergePreservingAbsent (D45(1))', () => {
   });
 });
 
-describe('quest metadata (docs/spec-data-model.md L191-204)', () => {
+describe('quest metadata (docs/spec-data-model.md §"Metadata Files")', () => {
   const INPUT = { now: '2026-09-26T10:30:00.000Z', user: 'p2-05 tester' };
 
   it('builds exactly the seven spec keys, in spec order', () => {

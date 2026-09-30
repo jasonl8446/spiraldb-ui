@@ -90,13 +90,13 @@ import {
 
 /* ------------------------------------------------------------------ routes */
 
-/** Every route the spec-api L325-350 table lists, verbatim. */
+/** Every route the spec-api §"URL Routes (Frontend)" table lists, verbatim. */
 const SPEC_ROUTES = [
   '/',
   '/quests',
   '/quests/extract',
   // Added deliberately by story p6-11: the Catalog view's route is in the spec's URL
-  // table (spec-api.md L1003) and in the sidebar spec (spec-ui-design.md L152), so this
+  // table (spec-api.md §"URL Routes (Frontend)") and in the sidebar spec (spec-ui-design.md §"Sidebar"), so this
   // oracle moves with them rather than the route table moving alone.
   '/quests/catalog',
   '/quests/:questName',
@@ -129,7 +129,7 @@ const SPEC_ROUTES = [
 ] as const;
 
 describe('route table', () => {
-  it('contains every route from the spec-api L325-350 table, and nothing else', () => {
+  it('contains every route from the spec-api §"URL Routes (Frontend)" table, and nothing else', () => {
     expect(APP_ROUTES.map((route) => route.path).sort()).toEqual([...SPEC_ROUTES].sort());
   });
 
@@ -188,7 +188,7 @@ describe('route table', () => {
     expect(pageTitleForPath('/')).toBe('Dashboard');
     expect(pageTitleForPath('/settings')).toBe('Settings');
     expect(pageTitleForPath('/quests/extract')).toBe('Extract Quests');
-    // The static catalog route wins over `/quests/:questName` (spec-api.md L1023-1027).
+    // The static catalog route wins over `/quests/:questName` (spec-api.md §"URL Routes (Frontend)").
     expect(pageTitleForPath('/quests/catalog')).toBe('Quest Catalog');
     expect(pageTitleForPath('/quests/DS-ACAD1-C01-001')).toBe('Quest Detail');
     expect(pageTitleForPath('/npc-spell-inventories/12345')).toBe('NPC Spell Inventory Detail');
@@ -591,7 +591,7 @@ describe('per-type display formats (lead decision 5)', () => {
   });
 
   it('treats a body that is not a row as a miss, never a crash', () => {
-    // The single lookup answers the bare row or 404 (spec-api L32-44); anything else —
+    // The single lookup answers the bare row or 404 (spec-api §"GET /api/names/:type/:id"); anything else —
     // the seven-table envelope a careless mock returns, an error object, an empty body —
     // must degrade to the technical value alone. This is the guard that kept the
     // ZoneTransfer detail page from white-screening on exactly such a body.
@@ -705,7 +705,7 @@ describe('useNames data path policy (decision D39 item 4)', () => {
 
 /* ------------------------------------------------------------- toast policy */
 
-describe('toast policy (docs/spec-ui-design.md L111-123)', () => {
+describe('toast policy (docs/spec-ui-design.md §"Toast Notifications")', () => {
   it('stacks bottom-right with at most 3 visible', () => {
     expect(TOASTER_POSITION).toBe('bottom-right');
     expect(TOASTER_VISIBLE_TOASTS).toBe(3);

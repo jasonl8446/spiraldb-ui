@@ -20,7 +20,7 @@ import {
 import { applyStatusChange, STATUS_OBJECT_TYPES } from '@server/services/status';
 
 /**
- * Task 1.6 acceptance for the corpus import (docs/spec-data-model.md L254-279):
+ * Task 1.6 acceptance for the corpus import (docs/spec-data-model.md §"Existing Data Import"):
  * the skip list, per-type key extraction with `TemplateID` stored as a string,
  * tolerance of legacy trailing commas, unparsable files counted but never fatal,
  * missing directories tolerated, duplicate keys reported without aborting, ONE
@@ -89,7 +89,7 @@ beforeAll(() => {
   );
 
   // Never scanned: metadata rides along with a quest, GlobalRegistry has no
-  // per-entry lifecycle (docs/spec-data-model.md L277, plan-overview Q1).
+  // per-entry lifecycle (docs/spec-data-model.md §"Existing Data Import", plan-overview §"Spec gaps & open questions" Q1).
   writeFile('QuestMetadatas/questmetadata.json', '{"Name":"IGNORED-METADATA"}');
   writeFile('GlobalRegistry/global.json', '{"Name":"IGNORED-GLOBAL"}');
 
@@ -389,7 +389,7 @@ describe('legacy trailing commas', () => {
     const content = fs.readFileSync(file, 'utf8');
 
     // Non-vacuous: the fixture really is invalid strict JSON, and the lenient
-    // reader (the corpus rule, docs/spec-data-model.md L238-253) parses it.
+    // reader (the corpus rule, docs/spec-data-model.md §"Reading SpiralDB Files") parses it.
     expect(content).toContain(',\n}');
     expect(() => JSON.parse(content)).toThrow();
     expect(JSON5.parse(content)).toEqual({

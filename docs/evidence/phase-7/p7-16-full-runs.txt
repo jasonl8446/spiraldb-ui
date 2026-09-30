@@ -1,0 +1,87 @@
+
+==================================================================
+== npm run test:ui — full run 1 (time)
+==================================================================
+  ✓  436 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-spell-inventories: cards below md, table from md (512ms)
+  ✓  437 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /creature-spellbooks: cards below md, table from md (585ms)
+  ✓  438 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-drop-tables: cards below md, table from md (577ms)
+  ✓  439 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /treasure-card-inventories: cards below md, table from md (557ms)
+  ✓  440 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /zone-transfers: cards below md, table from md (574ms)
+  ✓  441 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 768: the object table’s wrapper is the horizontal scroll container (332ms)
+  ✓  442 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1024: the object table’s wrapper is the horizontal scroll container (337ms)
+  ✓  443 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1279: the object table’s wrapper is the horizontal scroll container (312ms)
+  ✓  444 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 375px: the four stat cards occupy 1 column(s) (312ms)
+  ✓  445 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 640px: the four stat cards occupy 1 column(s) (317ms)
+  ✓  446 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 767px: the four stat cards occupy 1 column(s) (290ms)
+  ✓  447 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 768px: the four stat cards occupy 2 column(s) (352ms)
+  ✓  448 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1024px: the four stat cards occupy 2 column(s) (380ms)
+  ✓  449 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1279px: the four stat cards occupy 2 column(s) (359ms)
+  ✓  450 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1280px: the four stat cards occupy 4 column(s) (317ms)
+  ✓  451 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1440px: the four stat cards occupy 4 column(s) (324ms)
+  ✓  452 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 375px: the palette is centred and inside the viewport (617ms)
+  ✓  453 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 768px: the palette is centred and inside the viewport (670ms)
+  ✓  454 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (616ms)
+
+  454 passed (2.1m)
+
+real	2m7.646s
+user	8m40.144s
+sys	2m20.132s
+
+==================================================================
+== npm run test:ui — full run 2 (time)
+==================================================================
+  ✓  436 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-spell-inventories: cards below md, table from md (620ms)
+  ✓  437 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /creature-spellbooks: cards below md, table from md (545ms)
+  ✓  438 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-drop-tables: cards below md, table from md (517ms)
+  ✓  439 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /treasure-card-inventories: cards below md, table from md (481ms)
+  ✓  440 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /zone-transfers: cards below md, table from md (498ms)
+  ✓  441 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 768: the object table’s wrapper is the horizontal scroll container (313ms)
+  ✓  442 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1024: the object table’s wrapper is the horizontal scroll container (348ms)
+  ✓  443 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1279: the object table’s wrapper is the horizontal scroll container (353ms)
+  ✓  444 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 375px: the four stat cards occupy 1 column(s) (298ms)
+  ✓  445 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 640px: the four stat cards occupy 1 column(s) (318ms)
+  ✓  446 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 767px: the four stat cards occupy 1 column(s) (307ms)
+  ✓  447 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 768px: the four stat cards occupy 2 column(s) (290ms)
+  ✓  448 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1024px: the four stat cards occupy 2 column(s) (290ms)
+  ✓  449 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1279px: the four stat cards occupy 2 column(s) (304ms)
+  ✓  450 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1280px: the four stat cards occupy 4 column(s) (346ms)
+  ✓  451 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1440px: the four stat cards occupy 4 column(s) (304ms)
+  ✓  452 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 375px: the palette is centred and inside the viewport (642ms)
+  ✓  453 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 768px: the palette is centred and inside the viewport (741ms)
+  ✓  454 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (643ms)
+
+  454 passed (2.1m)
+
+real	2m9.199s
+user	8m49.027s
+sys	2m21.431s
+
+==================================================================
+== npm run test:ui — full run 3 (time)
+==================================================================
+  ✓  436 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-spell-inventories: cards below md, table from md (716ms)
+  ✓  437 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /creature-spellbooks: cards below md, table from md (589ms)
+  ✓  438 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /npc-drop-tables: cards below md, table from md (584ms)
+  ✓  439 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /treasure-card-inventories: cards below md, table from md (577ms)
+  ✓  440 [chromium] › tests/ui/responsive.spec.ts:836:5 › §4 AC#12: every list route is a card list at mobile and a table at 768 › /zone-transfers: cards below md, table from md (557ms)
+  ✓  441 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 768: the object table’s wrapper is the horizontal scroll container (345ms)
+  ✓  442 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1024: the object table’s wrapper is the horizontal scroll container (349ms)
+  ✓  443 [chromium] › tests/ui/responsive.spec.ts:865:5 › §5 AC#12: at tablet a wide table scrolls in its own container › tablet 1279: the object table’s wrapper is the horizontal scroll container (352ms)
+  ✓  444 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 375px: the four stat cards occupy 1 column(s) (338ms)
+  ✓  445 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 640px: the four stat cards occupy 1 column(s) (346ms)
+  ✓  446 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 767px: the four stat cards occupy 1 column(s) (330ms)
+  ✓  447 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 768px: the four stat cards occupy 2 column(s) (322ms)
+  ✓  448 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1024px: the four stat cards occupy 2 column(s) (341ms)
+  ✓  449 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1279px: the four stat cards occupy 2 column(s) (353ms)
+  ✓  450 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1280px: the four stat cards occupy 4 column(s) (339ms)
+  ✓  451 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1440px: the four stat cards occupy 4 column(s) (324ms)
+  ✓  452 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 375px: the palette is centred and inside the viewport (634ms)
+  ✓  453 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 768px: the palette is centred and inside the viewport (649ms)
+  ✓  454 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (813ms)
+
+  454 passed (2.2m)
+
+real	2m11.794s
+user	9m1.629s
+sys	2m24.046s

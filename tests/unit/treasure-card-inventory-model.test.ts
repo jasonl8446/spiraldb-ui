@@ -46,7 +46,8 @@ import {
 
 /**
  * Story p4-05's model + save-path test — plan task 4.7, `TreasureCardInventory`
- * (docs/spec-domain-reference.md L183-208) and the one warn-not-block rule (L542-546).
+ * (docs/spec-domain-reference.md §"TreasureCardInventory") and the one warn-not-block rule
+ * (§"General Validation").
  *
  * Three things are pinned here, and the third is the AC itself:
  *

@@ -679,7 +679,7 @@ function group(result: SearchResult, type: string) {
  * four `TemplateID` families (`npcs`), ZoneTransfer (`zones`) and CreatureSpellbook
  * (`decks`, added by task 6.9) — and for no other family, because the join is *derived*
  * from `shared/objectTypes.ts`'s `friendlyNamesType` rather than hand-listed
- * (spec-api L769-785).
+ * (spec-api §"GET /api/search").
  */
 describe('the join table is the friendly-name table, per family', () => {
   it('is non-null exactly for the families whose friendlyNamesType is set', () => {
@@ -802,7 +802,7 @@ describe('the join table is the friendly-name table, per family', () => {
   it('gives drop_table no name arm, on purpose, and CreatureSpellbook one from `decks`', () => {
     const db = memoryDb();
     // A drop table whose key is its name — `description` is NULL in 316 of 317 rows, so a
-    // name arm over the key could only duplicate the key arm (spec-api L781-783).
+    // name arm over the key could only duplicate the key arm (spec-api §"GET /api/search").
     seedEntry(db, 'drop_table', 'WC-UNICORN-MAIN-007');
     db.prepare('INSERT INTO drop_tables (name, description) VALUES (?, ?)').run(
       'WC-UNICORN-MAIN-007',
@@ -890,7 +890,7 @@ describe('the npc group: one row per NPC, its strings as aliases', () => {
     const zarek = group(searchAll(db, { q: 'Zarek', limit: 20 }), 'npc');
     expect(zarek?.results[0]?.name).toBe('Zarek Pickmaster');
     expect(zarek?.results[0]?.source_id).toBe('126322');
-    // The spec's group matches aliases and template names, not the id (spec-api L537-539);
+    // The spec's group matches aliases and template names, not the id (spec-api §"GET /api/npcs/:id");
     // the id is the four families' join arm and the names API's search.
     expect(group(searchAll(db, { q: '126322', limit: 20 }), 'npc')).toBeUndefined();
   });

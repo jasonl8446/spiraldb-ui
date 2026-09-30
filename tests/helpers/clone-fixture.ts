@@ -88,3 +88,58 @@ export function resetClone(point: string | null): void {
     throw new Error(`the D17 clone is still dirty after reset: ${porcelain}`);
   }
 }
+
+/**
+ * The tier-1 clone lock (D183). Playwright runs spec files on several workers at once, and two of
+ * them meet in the clone: `p7-drafts.spec.ts` saves a real quest file into it (and `reset --hard`s it
+ * back in `afterEach`), while `a11y.spec.ts`'s corpus arm reads the server's quest list and then
+ * counts `QuestTemplates/` — two readings of the directory taken at different instants. A save
+ * landing between them read 323 files against 322 rows (measured in p7-16 with a probe that repeats
+ * the arm beside `p7-drafts`: 3 of 400). The writer holds this lock from its snapshot to its
+ * verified restore and the reader holds it across both readings, so neither sees the other's half.
+ *
+ * A file created with `wx` is the mutex (atomic on one filesystem, across processes). It records
+ * the holder's pid, so a lock left by a worker that died is recognised and taken over instead of
+ * wedging every later run.
+ */
+const CLONE_LOCK = path.join(CLONE, '..', '.test-spiraldb.tier1.lock');
+
+function lockHolderIsGone(): boolean {
+  let pid: number;
+  try {
+    pid = Number(fs.readFileSync(CLONE_LOCK, 'utf8'));
+  } catch {
+    return false;
+  }
+  // An empty file is a holder that has created the lock and not yet written its pid.
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return false;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'ESRCH';
+  }
+}
+
+/** Waits for the clone lock and returns its release. */
+export async function lockClone(): Promise<() => void> {
+  // CI has no clone (`data/` is gitignored), and the corpus arm still takes the lock there.
+  fs.mkdirSync(path.dirname(CLONE_LOCK), { recursive: true });
+  for (;;) {
+    try {
+      fs.writeFileSync(CLONE_LOCK, String(process.pid), { flag: 'wx' });
+      return () => fs.rmSync(CLONE_LOCK, { force: true });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+        throw error;
+      }
+    }
+    if (lockHolderIsGone()) {
+      fs.rmSync(CLONE_LOCK, { force: true });
+      continue;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}

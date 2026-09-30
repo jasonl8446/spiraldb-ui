@@ -12,7 +12,7 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  *
  * What this file proves, clause by clause of `p3-03-ac1`:
  *
- * - the spec's two columns (docs/spec-ui-design.md L296-298): `m_questName`
+ * - the spec's two columns (docs/spec-ui-design.md §"Tabbed Sections"): `m_questName`
  *   read-only, `m_questTitle` as a string-table key with the resolved string beside
  *   it, `m_questLevel` and `m_questRepeat` as number inputs, `m_mainline` /
  *   `m_isHidden` as checkboxes, `m_activityType` as a select, the two script inputs,

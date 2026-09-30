@@ -11,7 +11,7 @@ import { NAMES_TYPE_SPECS } from '@server/services/names';
 
 /**
  * Task 1.5 acceptance: `GET /api/names/:type` and `GET /api/names/:type/:id` for
- * all seven types (docs/spec-api.md L5-44, P1 AC#8), with the row shapes the lead
+ * all seven types (docs/spec-api.md §"Names", P1 AC#8), with the row shapes the lead
  * fixed (the spec only exemplifies `items`), a 404 `{ error }` for every miss, the
  * optional `?q=` / `?limit=` list extensions (400 on malformed values), and no
  * change to the bare-URL response.
@@ -20,7 +20,7 @@ import { NAMES_TYPE_SPECS } from '@server/services/names';
  * opened (decision D17); the last case asserts exactly that for a bare import.
  */
 
-/** The seven types, re-typed from docs/spec-api.md L13 — not imported from the router. */
+/** The seven types, re-typed from docs/spec-api.md §"GET /api/names/:type" — not imported from the router. */
 const NAMES_TYPES = [
   'items',
   'spells',
@@ -422,7 +422,7 @@ describe('?q= (optional list extension)', () => {
 
   /**
    * D105/P6-16 (story p6-06): `?q=` matches the **id column** as well as the label, for
-   * the six types that have two columns — spec-api L55-67's table. Each query below is
+   * the six types that have two columns — spec-api §"GET /api/names/:type/:id"'s table. Each query below is
    * discriminating: the id column matches and the label column does not, so the row can
    * only come back through the widening. `drop_tables` is the seventh: its id *is* its
    * label, so it adds no column and is asserted as such.

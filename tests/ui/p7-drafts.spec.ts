@@ -7,7 +7,14 @@ import { serializeDoc } from '@shared/document';
 import { buildQuestScaffold } from '@shared/quest/scaffold';
 import { TYPE_STRINGS } from '@shared/quest/typeConstants';
 
-import { CLONE, cloneAxes, cloneGit, resetClone, type CloneAxes } from '../helpers/clone-fixture';
+import {
+  CLONE,
+  cloneAxes,
+  cloneGit,
+  lockClone,
+  resetClone,
+  type CloneAxes,
+} from '../helpers/clone-fixture';
 
 /**
  * Story p7-08's tier-1 specs (plan task 7.7; D129, D130, D137, D141, D142, D144, D165):
@@ -170,6 +177,7 @@ function lastCommitChangedLines(file: string): string[] {
 }
 
 let snapshot: CloneAxes | null = null;
+let releaseClone: (() => void) | null = null;
 let savedSettings: Record<string, unknown> | null = null;
 
 async function pointBranchAtClone(request: APIRequestContext): Promise<void> {
@@ -186,17 +194,25 @@ test.describe.configure({ mode: 'serial' });
 
 test.beforeEach(async ({ request }) => {
   cleanupRows();
+  // Held until `afterEach` has verified the restore: another worker's corpus count must never
+  // see this test's quest file (D183).
+  releaseClone = await lockClone();
   snapshot = cloneAxes();
   expect(snapshot.porcelain, 'the D17 clone must be clean before a write spec').toBe('');
   await pointBranchAtClone(request);
 });
 
 test.afterEach(async ({ request }) => {
-  if (snapshot !== null) {
-    resetClone(snapshot.head);
-    cloneGit(['clean', '-fdq', '--', 'QuestTemplates', 'QuestMetadatas']);
-    expect(cloneAxes(), 'the clone is back on every axis').toEqual(snapshot);
-    snapshot = null;
+  try {
+    if (snapshot !== null) {
+      resetClone(snapshot.head);
+      cloneGit(['clean', '-fdq', '--', 'QuestTemplates', 'QuestMetadatas']);
+      expect(cloneAxes(), 'the clone is back on every axis').toEqual(snapshot);
+      snapshot = null;
+    }
+  } finally {
+    releaseClone?.();
+    releaseClone = null;
   }
   if (savedSettings !== null) {
     const { user_name, git_branch, spiraldb_path } = savedSettings;

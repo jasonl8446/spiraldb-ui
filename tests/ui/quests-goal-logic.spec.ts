@@ -21,7 +21,7 @@ import { mockQuestsApi } from './quests-mocks';
  * - adding a `GoalLogicEntry` from the toolbar writes a corpus-shaped entry into the live
  *   `m_goalLogic`, read back through the JSON panel's own `[Copy]` affordance;
  * - deleting a goal from a node's context menu strands its dependants and raises the
- *   warning banner with the spec's verbatim sentence (spec-ui-design.md L384);
+ *   warning banner with the spec's verbatim sentence (spec-ui-design.md §"Controls");
  * - deleting a *dependency edge* (select + `Delete`) rewrites the entry's own condition
  *   list — and, honestly, does **not** raise the banner: removing a condition can only make
  *   an entry easier to satisfy, never strand a goal (see the module header of
@@ -42,7 +42,7 @@ import { mockQuestsApi } from './quests-mocks';
 
 const WAYPOINT = 'Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty';
 
-/** The banner's sentence, verbatim from docs/spec-ui-design.md L384. */
+/** The banner's sentence, verbatim from docs/spec-ui-design.md §"Controls". */
 const BANNER_TEXT =
   '⚠️ Goal logic has disconnected nodes. All goals must be reachable from start goals.';
 

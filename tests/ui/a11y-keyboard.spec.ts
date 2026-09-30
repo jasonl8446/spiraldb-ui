@@ -292,12 +292,18 @@ test.describe('AC#8 — the four flows, keyboard only', () => {
       );
     }
     expect(reached, 'the dropzone button was not reached by Tab').toBe(true);
+    // The keyboard opens the real file chooser; Playwright intercepts the native dialog — but
+    // only once the browser has been told to (D183). Subscribing to `filechooser` switches the
+    // interception on with a message Playwright does not await, and `keyboard.press` is a single
+    // protocol send with no actionability round trips before it (a `click()` has several), so
+    // under load the Enter could reach the page first: the input opened a real headless chooser,
+    // which cancelled at once (a `cancel` event, measured in p7-16) and no `filechooser` ever came.
+    // Subscribing first and then awaiting the focus assertion puts one full round trip between
+    // the two, so the interception is in force before the key goes out.
+    const chooserOpened = page.waitForEvent('filechooser');
     await expect(dropzone).toBeFocused();
-    // The keyboard opens the real file chooser; Playwright intercepts the native dialog.
-    const [chooser] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      page.keyboard.press('Enter'),
-    ]);
+    await page.keyboard.press('Enter');
+    const chooser = await chooserOpened;
     await chooser.setFiles({
       name: 'keyboard-only.json',
       mimeType: 'application/json',

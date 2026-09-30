@@ -217,20 +217,30 @@ async function openJson(page: Page): Promise<Locator> {
  * predecessor's clipboard in file order and failed alone (`Timeout 10000ms`, no JSON
  * within 10 s). After the wipe the only writer of the clipboard is this click, which is
  * what makes the caller's assertion a claim about *this* document.
+ *
+ * **It waits on the panel's own success toast, not on the clipboard (task 7.15, D183).** The
+ * panel toasts "Quest JSON copied to the clipboard" only after `writeText` has resolved, so the
+ * toast is the write's completion signal and one read after it is enough. A clipboard poll could
+ * not tell "not written yet" from "never written": when the click was swallowed (see the
+ * pointer-drag arm) it polled an empty clipboard until it timed out, whatever its budget. Only a
+ * toast this click raised counts, because an earlier copy's toast can still be up for its 5 s,
+ * so the toasts already on screen are marked before the click.
  */
 async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
   await page.evaluate(() => navigator.clipboard.writeText(''));
+  await page
+    .locator('li[data-sonner-toast]')
+    .evaluateAll((toasts) => toasts.forEach((toast) => toast.setAttribute('data-copy-seen', '')));
   await page.getByRole('button', { name: 'Copy' }).click();
-  // The click starts an async serialize-then-write; reading the clipboard straight after
-  // can catch it empty. Poll until the panel's JSON is there.
-  let text = '';
-  await expect
-    .poll(async () => {
-      text = await page.evaluate(() => navigator.clipboard.readText());
-      return text.trim().startsWith('{');
-    })
-    .toBe(true);
-  return JSON.parse(text) as Record<string, unknown>;
+  await expect(
+    page
+      .locator('li[data-sonner-toast][data-type="success"]:not([data-copy-seen])')
+      .filter({ hasText: 'Quest JSON copied to the clipboard' }),
+  ).toBeVisible();
+  return JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as Record<
+    string,
+    unknown
+  >;
 }
 
 /** `doc.m_goals` as the panel serialized it. */
@@ -272,7 +282,7 @@ test.beforeEach(async ({ page }) => {
 
 /**
  * The card's summary is a `<dl>` whose `<dt>Label:</dt>` and `<dd>value</dd>` are separate
- * flex items, so the colon-space the design ASCII draws (spec-ui-design.md L305–309) is a
+ * flex items, so the colon-space the design ASCII draws (spec-ui-design.md §"Tabbed Sections") is a
  * **gap**, not a character in `textContent`. Match label and value with optional whitespace
  * between them rather than pinning a space the DOM does not contain — the readable pairing
  * is what the spec asks for, and a `<dl>` already announces it as a pair.
@@ -335,7 +345,7 @@ test.describe('the goal cards', () => {
     await expect(typeBadge(waypoint, 'WaypointGoalTemplate')).toHaveText(
       'Reach a zone (Waypoint goal) (WaypointGoalTemplate)',
     );
-    // The type badge is the spec's colour (docs/spec-ui-design.md L360-365).
+    // The type badge is the spec's colour (docs/spec-ui-design.md §"Node Design").
     expect(await typeBadge(waypoint, 'WaypointGoalTemplate').getAttribute('class')).toContain(
       'border-blue-500',
     );
@@ -608,6 +618,16 @@ test.describe('reordering', () => {
     // passes over, so the move to the drop point is incremental.
     await page.mouse.move(target!.x + target!.width / 2, dropY, { steps: 20 });
     await page.mouse.up();
+    // **A drop swallows the next 50 ms of clicks (task 7.15, D183).** dnd-kit's pointer sensor
+    // stops the propagation of every document `click` from activation until
+    // `setTimeout(removeAll, 50)` after the pointer is released, so a drop is never also read as
+    // a click. This arm's `Copy` click used to land inside that window whenever the reorder
+    // rendered quickly: measured in p7-16, 13 clicks 40-45 ms after the drop's mouseup never
+    // reached the panel (no `writeText`, the clipboard empty for good) while 7 clicks 45-57 ms
+    // after it did. The fence is dnd-kit's own timer, not a guess at a delay: `mouse.up` resolves once
+    // the page has handled the release, so a 50 ms timer set in the page now is queued behind
+    // dnd-kit's and cannot fire before its listener is gone.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)));
     // Await the drop's effect before reading the document: the panel is fed by the same
     // live document, so copying immediately can still capture the pre-drop order.
     //

@@ -187,7 +187,7 @@ describe('the 4 allowed requirement classes', () => {
       'ReqSchoolOfFocus',
       'ReqIsSchool',
     ]);
-    // `ReqHasGoal` and `ReqEntryValue` (spec-domain-reference.md L436) are absent, not
+    // `ReqHasGoal` and `ReqEntryValue` (spec-domain-reference.md §"Requirement Types — Complete Enumeration") are absent, not
     // merely unused: nothing in the table names them.
     const names = REQUIREMENT_TYPE_SPECS.flatMap((spec) => [
       spec.shortName,

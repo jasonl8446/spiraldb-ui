@@ -95,7 +95,7 @@ test.describe('header', () => {
     await page.goto('/quests/DS-ACAD1-C01-001');
 
     const main = page_(page);
-    // The spec's exact button labels (docs/spec-data-model.md L16-17). The fixture
+    // The spec's exact button labels (docs/spec-data-model.md §"Verification Status Lifecycle"). The fixture
     // row is `extracted`, so neither action is the entry's own status and both are
     // available; the disabled-own-status case is asserted in `quests-status.spec.ts`.
     await expect(main.getByRole('button', { name: 'Mark Reviewed' })).toBeEnabled();

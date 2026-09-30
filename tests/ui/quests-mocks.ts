@@ -534,7 +534,7 @@ export async function mockQuestsApi(
   });
 
   await page.route('**/api/quests', async (route) => {
-    // `POST /api/quests` is the same path as the list read (docs/spec-api.md L164-180), so the
+    // `POST /api/quests` is the same path as the list read (docs/spec-api.md §"Quests"), so the
     // handler branches on the method. Story p3-10's Save is the only caller; the answer is the
     // Phase-2 pipeline outcome shape (D49(a)) with the row's own status echoed back, which is
     // what makes "an edit+save does not change the verification status" assertable.

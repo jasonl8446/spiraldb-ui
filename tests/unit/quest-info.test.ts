@@ -30,7 +30,7 @@ import {
 describe('the field inventory covers all 36 top-level keys', () => {
   it('partitions them into visible / Advanced / other-tab with nothing left over', () => {
     // The corpus-measured key list: all 322 QuestTemplates carry exactly these 36
-    // keys (docs/spec-domain-reference.md L240-279).
+    // keys (docs/spec-domain-reference.md §"Top-level Fields").
     expect(QUEST_TOP_LEVEL_KEYS).toHaveLength(36);
     expect(new Set(QUEST_TOP_LEVEL_KEYS).size).toBe(36);
 

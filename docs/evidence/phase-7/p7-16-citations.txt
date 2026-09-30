@@ -1,0 +1,215 @@
+$ grep -rnE "(spec|plan)-[a-z-]+(\.md)?[ :]*L?[0-9]+" tests/ | wc -l
+BEFORE: 90
+
+BEFORE (full listing)
+tests/ui/quests-validation.spec.ts:136:  // (spec-domain-reference L693-695) — never a request that reaches the dev stack.
+tests/ui/quests-mocks.ts:537:    // `POST /api/quests` is the same path as the list read (docs/spec-api.md L164-180), so the
+tests/ui/treasure-card-inventory-editor.spec.ts:6: * (docs/spec-domain-reference.md L183-208, L542-546).
+tests/ui/quests-requirements-editor.spec.ts:15: *   nor `ReqEntryValue` appears anywhere in the tab (spec-domain-reference.md L436);
+tests/ui/quests-requirements-editor.spec.ts:246:/** The class's left-border colour assertion (spec-ui-design.md L388-416). */
+tests/ui/npc-drop-table-editor.spec.ts:53: * (docs/spec-domain-reference.md L174) — is deliberately **absent**, because it has no
+tests/unit/corpus.test.ts:52:describe('lenient JSON reading (spec-data-model.md L234-246)', () => {
+tests/unit/corpus.test.ts:66:describe('zone display names (spec-domain-reference.md L700-702)', () => {
+tests/unit/corpus.test.ts:235:describe('buildDropTableRows — DropTables corpus (spec-data-model.md L121-126)', () => {
+tests/ui/extraction.spec.ts:205:/** A `SaveQuestResult` body (docs/spec-api.md L239-251) for one saved quest. */
+tests/ui/extraction.spec.ts:269:/** A `GET /api/quests` body (docs/spec-api.md L190-208) for the given names. */
+tests/ui/shell.spec.ts:80:  // Story p6-11 added the Catalog item to the QUESTS group (spec-ui-design.md L148-152), so the
+tests/ui/shell.spec.ts:463:  // docs/spec-api.md L474 gives this family one route and it is the editor, because the directory
+tests/ui/shell.spec.ts:501:  // The fixture is the spec's own worked example (docs/spec-api.md L148-163): its
+tests/ui/shell.spec.ts:592:        // (docs/spec-api.md L148-163, spec-ui-design L135-179): the Total card's number, the
+tests/ui/shell.spec.ts:734:        // a list (docs/spec-api.md L474), so this branch asserts the editor's own literals: the
+tests/ui/shell.spec.ts:936:    // save pipeline generates it (`content/YYYY-MM-DD`, spec-data-model L206-214) and
+tests/ui/responsive.spec.ts:9: * The acceptance criterion, quoted (`docs/plan-phase-5-dashboard-polish.md` L60):
+tests/ui/responsive.spec.ts:273:    // never the list envelope (spec-api L32-44). Story p6-06's detail headers read it for
+tests/ui/responsive.spec.ts:364:    // The quests list + one bare quest document (docs/spec-api.md L190-208).
+tests/ui/responsive.spec.ts:718:      // The spec's number, measured on the element itself (docs/spec-ui-design.md L518).
+tests/ui/responsive.spec.ts:874:      // (docs/spec-ui-design.md L518 "Tables scroll horizontally"). Asserted structurally, on
+tests/unit/zone-transfer-model.test.ts:54: * docs/spec-domain-reference.md L281-309 / L700-702 / L542-546, docs/spec-data-model.md L184,
+tests/ui/zone-transfer-editor.spec.ts:6: * docs/spec-domain-reference.md L281-309 (the schema), L700-702 (the zone display derivation),
+tests/ui/zone-transfer-editor.spec.ts:7: * L542-546 (the general validation section) and docs/spec-data-model.md L184 (the filename).
+tests/ui/quests-info-editor.spec.ts:15: * - the spec's two columns (docs/spec-ui-design.md L296-298): `m_questName`
+tests/ui/global-registry-editor.spec.ts:191:/** Opens the editor, which is the family's single route (docs/spec-api.md L474). */
+tests/ui/status-integration.spec.ts:164:    // (docs/spec-api.md L474, p4-07). The list's rows are file **stems**, hence `rows` below.
+tests/unit/object-status-pipeline.test.ts:26: * Story p4-08, AC2 (`docs/plan-phase-4-object-editors.md` §4.10): **a create via `POST`
+tests/unit/db.test.ts:31: * Task 1.2 acceptance: the migration matches docs/spec-data-model.md L21-162
+tests/unit/db.test.ts:34: * (docs/spec-data-model.md L137-220): two tables, three indexes, the `coverage`
+tests/unit/drop-table-model.test.ts:41: * Story p4-02's model + rules test — plan task 4.2, docs/spec-domain-reference.md L77-91 and
+tests/unit/naming.test.ts:166:describe('the nine spec-table rows round-trip (docs/spec-data-model.md L175-185)', () => {
+tests/unit/server.test.ts:8: * envelope (docs/spec-api.md L227) instead of the SPA HTML for unknown routes,
+tests/ui/dashboard.spec.ts:175:/** The one detail route per family, hand-typed from docs/spec-api.md L456-474. */
+tests/ui/quests-goals-editor.spec.ts:275: * flex items, so the colon-space the design ASCII draws (spec-ui-design.md L305–309) is a
+tests/ui/quests-goals-editor.spec.ts:338:    // The type badge is the spec's colour (docs/spec-ui-design.md L360-365).
+tests/unit/treasure-card-inventory-model.test.ts:49: * (docs/spec-domain-reference.md L183-208) and the one warn-not-block rule (L542-546).
+tests/unit/search.test.ts:682: * (spec-api L769-785).
+tests/unit/search.test.ts:805:    // name arm over the key could only duplicate the key arm (spec-api L781-783).
+tests/unit/search.test.ts:893:    // The spec's group matches aliases and template names, not the id (spec-api L537-539);
+tests/ui/quests-detail.spec.ts:98:    // The spec's exact button labels (docs/spec-data-model.md L16-17). The fixture
+tests/unit/extraction-service.test.ts:243:    // The spec's 50 MB cap (docs/spec-domain-reference.md L606).
+tests/unit/quest-edit-isolation.test.ts:20: * Story p3-10, AC1 — **real-quest edit isolation** (plan task 3.10; plan-phase-3 §3.10's
+tests/unit/evidence-insert.test.ts:25: * Story p6-08 — the **insert reducer** (plan task 6.7; docs/spec-ui-design.md L437-444).
+tests/unit/evidence-insert.test.ts:448:    // spec-data-model L209-214: the list endpoint answers `resolved | rawKey | missing` for the
+tests/unit/extract-api.test.ts:30: * Task 2.3/p2-04 — `POST /api/extract/quests` (docs/spec-api.md L208-231).
+tests/ui/quests-goal-logic.spec.ts:24: *   warning banner with the spec's verbatim sentence (spec-ui-design.md L384);
+tests/ui/quests-goal-logic.spec.ts:45:/** The banner's sentence, verbatim from docs/spec-ui-design.md L384. */
+tests/ui/object-mobile.spec.ts:9: * page at all — its single route *is* its editor (docs/spec-api.md L474, D75(a)) — so the
+tests/ui/object-mobile.spec.ts:17: * (docs/spec-ui-design.md L234/L270/L340). So this spec asserts the mobile surface at **375**
+tests/ui/object-mobile.spec.ts:76:  /** Backend base path (docs/spec-api.md L310-319). */
+tests/unit/quest-info.test.ts:33:    // keys (docs/spec-domain-reference.md L240-279).
+tests/ui/status-filter-url.spec.ts:9: * The AC it covers (`docs/plan-phase-5-dashboard-polish.md` L53):
+tests/unit/dashboard.test.ts:35: * (docs/spec-api.md L144-164: `157/322 → 48.8`, `70/180 → 38.9`, `45/95 → 47.4`,
+tests/unit/dashboard.test.ts:52:/** The eight detail routes of docs/spec-api.md L456-474, typed by hand. */
+tests/ui/a11y.spec.ts:14: * The acceptance criterion, quoted (`docs/plan-phase-5-dashboard-polish.md` L61):
+tests/ui/a11y.spec.ts:305:    // 5. The quests list + one bare quest document (docs/spec-api.md L190-208, D49).
+tests/unit/quests-api.test.ts:43: * Task 2.5 / story p2-06 — the quests API (docs/plan-phase-2-quest-extraction.md
+tests/unit/quests-api.test.ts:44: * §2.5, docs/spec-api.md L164-180).
+tests/unit/quests-api.test.ts:1001:  // `entry_status` row insert, not the file outcome (plan §2.4, spec-api L122).
+tests/unit/objects-api.test.ts:653: * docs/spec-api.md L310-319, `GET /` / `GET /:key` / `POST /`, the 400/404/409/500
+tests/unit/objects-api.test.ts:681:  it('mounts exactly the eight base paths of docs/spec-api.md L310-319', () => {
+tests/unit/objects-api.test.ts:1084:    // table. A row with no pair therefore still says why, which is spec-ui-design L65-69.
+tests/unit/quest-evidence.test.ts:26: * (plan task 6.6; docs/spec-api.md L420-550).
+tests/unit/quest-evidence.test.ts:529:    // `direct` (spec-data-model L209-214 records the collision).
+tests/unit/status-transition.test.ts:64:  it('uses the lifecycle table`s exact button labels (spec-data-model L16-17)', () => {
+tests/unit/settings.test.ts:27: * (docs/spec-api.md L291-321), `PUT /api/settings` persists a partial update and
+tests/unit/import.test.ts:23: * Task 1.6 acceptance for the corpus import (docs/spec-data-model.md L254-279):
+tests/unit/import.test.ts:92:  // per-entry lifecycle (docs/spec-data-model.md L277, plan-overview Q1).
+tests/unit/import.test.ts:392:    // reader (the corpus rule, docs/spec-data-model.md L238-253) parses it.
+tests/unit/sync-api.test.ts:12: * Task 1.4g — the three sync endpoints (docs/spec-api.md L235-287).
+tests/unit/npc-names.test.ts:190:    // The spec's own example shape (spec-api L515-529).
+tests/unit/npc-drop-table-model.test.ts:46: * (docs/spec-domain-reference.md L166-181) and the two facts the story turns on:
+tests/unit/ui-shell.test.ts:93:/** Every route the spec-api L325-350 table lists, verbatim. */
+tests/unit/ui-shell.test.ts:99:  // table (spec-api.md L1003) and in the sidebar spec (spec-ui-design.md L152), so this
+tests/unit/ui-shell.test.ts:132:  it('contains every route from the spec-api L325-350 table, and nothing else', () => {
+tests/unit/ui-shell.test.ts:191:    // The static catalog route wins over `/quests/:questName` (spec-api.md L1023-1027).
+tests/unit/ui-shell.test.ts:594:    // The single lookup answers the bare row or 404 (spec-api L32-44); anything else —
+tests/unit/ui-shell.test.ts:708:describe('toast policy (docs/spec-ui-design.md L111-123)', () => {
+tests/unit/spiraldb-files.test.ts:34: * of docs/spec-data-model.md L191-204.
+tests/unit/spiraldb-files.test.ts:81:      // `Name` (docs/spec-data-model.md L198).
+tests/unit/spiraldb-files.test.ts:364:describe('quest metadata (docs/spec-data-model.md L191-204)', () => {
+tests/unit/names.test.ts:14: * all seven types (docs/spec-api.md L5-44, P1 AC#8), with the row shapes the lead
+tests/unit/names.test.ts:23:/** The seven types, re-typed from docs/spec-api.md L13 — not imported from the router. */
+tests/unit/names.test.ts:425:   * the six types that have two columns — spec-api L55-67's table. Each query below is
+tests/unit/requirement-tree.test.ts:190:    // `ReqHasGoal` and `ReqEntryValue` (spec-domain-reference.md L436) are absent, not
+tests/unit/git-service.test.ts:31: * exact commit message/author of D13/docs/spec-data-model.md L216-232, and N
+tests/unit/git-service.test.ts:124:describe('the session branch (docs/spec-data-model.md L206-214)', () => {
+tests/unit/git-service.test.ts:234:describe('committing one saved object (D13, docs/spec-data-model.md L216-232)', () => {
+
+MAPPING (file:line | old citation | new citation (headings) | commit used to resolve)
+tests/ui/quests-validation.spec.ts:136 | spec-domain-reference L693-695 | spec-domain-reference §"Missing Keys" | 3981d4d
+tests/ui/quests-mocks.ts:537 | spec-api L164-180 | spec-api §"GET /api/dashboard" / §"Quests" | 99e9756
+tests/ui/treasure-card-inventory-editor.spec.ts:6 | spec-domain-reference L183-208, L542-546 | spec-domain-reference §"TreasureCardInventory" / §"TreasureCardEntry" / §"General Validation" | 7dc47b8
+tests/ui/quests-requirements-editor.spec.ts:15 | spec-domain-reference L436 | spec-domain-reference §"ReqIsSchool" | a93359e
+tests/ui/quests-requirements-editor.spec.ts:246 | spec-ui-design L388-416 | spec-ui-design §"6. Requirement Tree Editor" | a93359e
+tests/ui/npc-drop-table-editor.spec.ts:53 | spec-domain-reference L174 | spec-domain-reference §"NpcDropTable" | ed11f28
+tests/unit/corpus.test.ts:52 | spec-data-model L234-246 | spec-data-model §"SpiralDB JSON Parsing" / §"Reading SpiralDB Files" | 1653abf
+tests/unit/corpus.test.ts:66 | spec-domain-reference L700-702 | spec-domain-reference §"Zone Display Names" | 1653abf
+tests/unit/corpus.test.ts:235 | spec-data-model L121-126 | spec-data-model §"Friendly Name Tables" | 1653abf
+tests/ui/extraction.spec.ts:205 | spec-api L239-251 | spec-api §"Quests" | 4408eba
+tests/ui/extraction.spec.ts:269 | spec-api L190-208 | spec-api §"Quests" | 4408eba
+tests/ui/shell.spec.ts:80 | spec-ui-design L148-152 | spec-ui-design §"Sidebar" | 74c18dc
+tests/ui/shell.spec.ts:463 | spec-api L474 | spec-api §"URL Routes (Frontend)" | db22d9d
+tests/ui/shell.spec.ts:501 | spec-api L148-163 | spec-api §"GET /api/dashboard" | d561ab4
+tests/ui/shell.spec.ts:592 | spec-api L148-163; spec-ui-design L135-179 | spec-api §"GET /api/dashboard"; spec-ui-design §"Stats Cards Row" / §"Recent Activity Feed" | d561ab4
+tests/ui/shell.spec.ts:734 | spec-api L474 | spec-api §"URL Routes (Frontend)" | db22d9d
+tests/ui/shell.spec.ts:936 | spec-data-model L206-214 | spec-data-model §"Git Branch Strategy" | 6bfb316
+tests/ui/responsive.spec.ts:9 | phase-plan file mention: * The acceptance criterion, quoted (`docs/plan-phase-5-dashboard-polish.md` L60): | reworded as 'the Phase N plan' + section heading (§"Acceptance Criteria" / §4.10 / §3.10 / §2.5) | git blame line; heading looked up in current docs/plan-phase-*.md
+tests/ui/responsive.spec.ts:273 | spec-api L32-44 | spec-api §"GET /api/names/:type/:id" | 56ca314
+tests/ui/responsive.spec.ts:364 | spec-api L190-208 | spec-api §"Quests" | a22c86f
+tests/ui/responsive.spec.ts:718 | spec-ui-design L518 | spec-ui-design §"Responsive Breakpoints" | a22c86f
+tests/ui/responsive.spec.ts:874 | spec-ui-design L518 | spec-ui-design §"Responsive Breakpoints" | a22c86f
+tests/unit/zone-transfer-model.test.ts:54 | spec-domain-reference L281-309 / L700-702 / L542-546; spec-data-model L184 | spec-domain-reference §"WizardZoneData (ZoneTransfer)" / §"Zone Display Names" / §"General Validation"; spec-data-model §"File Naming Conventions" | 22f3665
+tests/ui/zone-transfer-editor.spec.ts:6 | spec-domain-reference L281-309 | spec-domain-reference §"WizardZoneData (ZoneTransfer)" | 22f3665
+tests/ui/zone-transfer-editor.spec.ts:7 | spec-data-model L184 | spec-data-model §"File Naming Conventions" | 22f3665
+tests/ui/quests-info-editor.spec.ts:15 | spec-ui-design L296-298 | spec-ui-design §"Tabbed Sections" | 36f06a6
+tests/ui/global-registry-editor.spec.ts:191 | spec-api L474 | spec-api §"URL Routes (Frontend)" | db22d9d
+tests/ui/status-integration.spec.ts:164 | spec-api L474 | spec-api §"URL Routes (Frontend)" | 4f4fb8a
+tests/unit/object-status-pipeline.test.ts:26 | phase-plan file mention: * Story p4-08, AC2 (`docs/plan-phase-4-object-editors.md` §4.10): **a create via `POST` | reworded as 'the Phase N plan' + section heading (§"Acceptance Criteria" / §4.10 / §3.10 / §2.5) | git blame line; heading looked up in current docs/plan-phase-*.md
+tests/unit/db.test.ts:31 | spec-data-model L21-162 | spec-data-model §"SQLite Schema" / §"Settings" | 56fa0e7
+tests/unit/db.test.ts:34 | spec-data-model L137-220 | spec-data-model §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)" | 918ed0d
+tests/unit/drop-table-model.test.ts:41 | spec-domain-reference L77-91 | spec-domain-reference §"DropTable" | 4920e8a
+tests/unit/naming.test.ts:166 | spec-data-model L175-185 | spec-data-model §"File Naming Conventions" | 6bd3cca
+tests/unit/server.test.ts:8 | spec-api L227 | spec-api §"POST /api/extract/quests" | 77502a8
+tests/ui/dashboard.spec.ts:175 | spec-api L456-474 | spec-api §"URL Routes (Frontend)" | d561ab4
+tests/ui/quests-goals-editor.spec.ts:275 | spec-ui-design L305–309 | spec-ui-design §"Tabbed Sections" | 57986e1
+tests/ui/quests-goals-editor.spec.ts:338 | spec-ui-design L360-365 | spec-ui-design §"Node Design" | 57986e1
+tests/unit/treasure-card-inventory-model.test.ts:49 | spec-domain-reference L183-208 | spec-domain-reference §"TreasureCardInventory" / §"TreasureCardEntry" | 7dc47b8
+tests/unit/search.test.ts:682 | spec-api L769-785 | spec-api §"GET /api/search" | 56ca314
+tests/unit/search.test.ts:805 | spec-api L781-783 | spec-api §"GET /api/search" | 56ca314
+tests/unit/search.test.ts:893 | spec-api L537-539 | spec-api §"GET /api/npcs/:id" | 56ca314
+tests/ui/quests-detail.spec.ts:98 | spec-data-model L16-17 | spec-data-model §"Verification Status Lifecycle" | 6bfb316
+tests/unit/extraction-service.test.ts:243 | spec-domain-reference L606 | spec-domain-reference §"Node.js Integration" | b9577d2
+tests/unit/quest-edit-isolation.test.ts:20 | phase-plan file mention: * Story p3-10, AC1 — **real-quest edit isolation** (plan task 3.10; plan-phase-3 §3.10's | reworded as 'the Phase N plan' + section heading (§"Acceptance Criteria" / §4.10 / §3.10 / §2.5) | git blame line; heading looked up in current docs/plan-phase-*.md
+tests/unit/evidence-insert.test.ts:25 | spec-ui-design L437-444 | spec-ui-design §"Evidence Panel (Phase 6 — P6-7…P6-10, D102–D105)" | fce3513
+tests/unit/evidence-insert.test.ts:448 | spec-data-model L209-214 | spec-data-model §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)" | fce3513
+tests/unit/extract-api.test.ts:30 | spec-api L208-231 | spec-api §"Extraction" / §"POST /api/extract/quests" | b9577d2
+tests/ui/quests-goal-logic.spec.ts:24 | spec-ui-design L384 | spec-ui-design §"Controls" | fe24005
+tests/ui/quests-goal-logic.spec.ts:45 | spec-ui-design L384 | spec-ui-design §"Controls" | fe24005
+tests/ui/object-mobile.spec.ts:9 | spec-api L474 | spec-api §"URL Routes (Frontend)" | 6ec5074
+tests/ui/object-mobile.spec.ts:17 | spec-ui-design L234/L270/L340 | spec-ui-design §"Results Phase" / §"Data Table" / §"JSON Side Panel" | 6ec5074
+tests/ui/object-mobile.spec.ts:76 | spec-api L310-319 | spec-api §"Other Object Types" | 6ec5074
+tests/unit/quest-info.test.ts:33 | spec-domain-reference L240-279 | spec-domain-reference §"Top-level Fields" | 36f06a6
+tests/ui/status-filter-url.spec.ts:9 | phase-plan file mention: * The AC it covers (`docs/plan-phase-5-dashboard-polish.md` L53): | reworded as 'the Phase N plan' + section heading (§"Acceptance Criteria" / §4.10 / §3.10 / §2.5) | git blame line; heading looked up in current docs/plan-phase-*.md
+tests/unit/dashboard.test.ts:35 | spec-api L144-164 | spec-api §"GET /api/dashboard" | d561ab4
+tests/unit/dashboard.test.ts:52 | spec-api L456-474 | spec-api §"URL Routes (Frontend)" | d561ab4
+tests/ui/a11y.spec.ts:14 | phase-plan file mention: * The acceptance criterion, quoted (`docs/plan-phase-5-dashboard-polish.md` L61): | reworded as 'the Phase N plan' + section heading (§"Acceptance Criteria" / §4.10 / §3.10 / §2.5) | git blame line; heading looked up in current docs/plan-phase-*.md
+tests/ui/a11y.spec.ts:305 | spec-api L190-208 | spec-api §"Quests" | 3f66ff4
+tests/unit/quests-api.test.ts:43 | phase-plan file mention: * Task 2.5 / story p2-06 — the quests API (docs/plan-phase-2-quest-extraction.md | reworded as 'the Phase N plan' + section heading (§"Acceptance Criteria" / §4.10 / §3.10 / §2.5) | git blame line; heading looked up in current docs/plan-phase-*.md
+tests/unit/quests-api.test.ts:44 | spec-api L164-180 | spec-api §"GET /api/dashboard" / §"Quests" | 8f19f87
+tests/unit/quests-api.test.ts:1001 | spec-api L122 | spec-api §"GET /api/status/:type/:key/history" | 4408eba
+tests/unit/objects-api.test.ts:653 | spec-api L310-319 | spec-api §"Other Object Types" | b130dc9
+tests/unit/objects-api.test.ts:681 | spec-api L310-319 | spec-api §"Other Object Types" | b130dc9
+tests/unit/objects-api.test.ts:1084 | spec-ui-design L65-69 | spec-ui-design §"Names: the friendly/technical pair (D105 / P6-16)" | 82f94d7
+tests/unit/quest-evidence.test.ts:26 | spec-api L420-550 | spec-api §"Quests" / §"GET /api/npcs/:id" | 93c4ec0
+tests/unit/quest-evidence.test.ts:529 | spec-data-model L209-214 | spec-data-model §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)" | 93c4ec0
+tests/unit/status-transition.test.ts:64 | spec-data-model L16-17 | spec-data-model §"Verification Status Lifecycle" | 6bfb316
+tests/unit/settings.test.ts:27 | spec-api L291-321 | spec-api §"Settings" / §"PUT /api/settings" | c27f2af
+tests/unit/import.test.ts:23 | spec-data-model L254-279 | spec-data-model §"Writing SpiralDB Files" / §"Friendly Name Sync Strategy" | a8e4e6a
+tests/unit/import.test.ts:92 | spec-data-model L277 | spec-data-model §"Existing Data Import" | a8e4e6a
+tests/unit/import.test.ts:392 | spec-data-model L238-253 | spec-data-model §"Reading SpiralDB Files" / §"Writing SpiralDB Files" | a8e4e6a
+tests/unit/sync-api.test.ts:12 | spec-api L235-287 | spec-api §"Sync" / §"GET /api/sync/history" | ff9c3c7
+tests/unit/npc-names.test.ts:190 | spec-api L515-529 | spec-api §"GET /api/npcs/:id" | 56ca314
+tests/unit/npc-drop-table-model.test.ts:46 | spec-domain-reference L166-181 | spec-domain-reference §"NpcDropTable" | ed11f28
+tests/unit/ui-shell.test.ts:93 | spec-api L325-350 | spec-api §"URL Routes (Frontend)" | 81de694
+tests/unit/ui-shell.test.ts:99 | spec-api L1003; spec-ui-design L152 | spec-api §"GET /api/search"; spec-ui-design §"Sidebar" | 74c18dc
+tests/unit/ui-shell.test.ts:132 | spec-api L325-350 | spec-api §"URL Routes (Frontend)" | 81de694
+tests/unit/ui-shell.test.ts:191 | spec-api L1023-1027 | spec-api §"GET /api/search" / §"URL Routes (Frontend)" | 74c18dc
+tests/unit/ui-shell.test.ts:594 | spec-api L32-44 | spec-api §"GET /api/names/:type/:id" | 56ca314
+tests/unit/ui-shell.test.ts:708 | spec-ui-design L111-123 | spec-ui-design §"Toast Notifications" | 81de694
+tests/unit/spiraldb-files.test.ts:34 | spec-data-model L191-204 | spec-data-model §"Metadata Files" | 97fd60e
+tests/unit/spiraldb-files.test.ts:81 | spec-data-model L198 | spec-data-model §"Metadata Files" | 97fd60e
+tests/unit/spiraldb-files.test.ts:364 | spec-data-model L191-204 | spec-data-model §"Metadata Files" | 97fd60e
+tests/unit/names.test.ts:14 | spec-api L5-44 | spec-api §"Names" / §"GET /api/names/:type/:id" | 61db901
+tests/unit/names.test.ts:23 | spec-api L13 | spec-api §"GET /api/names/:type" | 61db901
+tests/unit/names.test.ts:425 | spec-api L55-67 | spec-api §"GET /api/names/:type/:id" | 56ca314
+tests/unit/requirement-tree.test.ts:190 | spec-domain-reference L436 | spec-domain-reference §"ReqIsSchool" | a93359e
+tests/unit/git-service.test.ts:31 | spec-data-model L216-232 | spec-data-model §"Git Branch Strategy" / §"User Identity" | 97fd60e
+tests/unit/git-service.test.ts:124 | spec-data-model L206-214 | spec-data-model §"Git Branch Strategy" | 97fd60e
+tests/unit/git-service.test.ts:234 | spec-data-model L216-232 | spec-data-model §"Git Branch Strategy" / §"User Identity" | 97fd60e
+
+NOTE: plan-overview Q1 (import.test.ts:92) -> plan-overview §"Spec gaps & open questions — ALL RESOLVED (2026-09-25)" Q1 (GlobalRegistry tracking); resolved against current doc.
+
+AFTER
+$ grep -rnE "(spec|plan)-[a-z-]+(\.md)?[ :]*L?[0-9]+" tests/
+(no output)
+$ ... | wc -l
+0
+
+TOOLS (tail)
+$ npx prettier --check tests/ ; npm run lint ; npm run typecheck:tests
+Checking formatting...
+All matched files use Prettier code style!
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+
+NOTE on the mapping column: it lists every heading the cited lines fell under at the introducing commit. Where a range spanned
+adjacent headings, the single most specific/relevant one was used in the source (e.g. L436 ReqIsSchool -> "Requirement Types — Complete Enumeration",
+the parent of the note; L164-180 / L239-251 / L190-208 / L420-550 -> "Quests"; L1003 and L1023-1027 (ui-shell.test.ts) -> "URL Routes (Frontend)";
+L769-785 (search.test.ts) -> "GET /api/search"; L254-279 (import.test.ts) -> "Existing Data Import").

@@ -51,7 +51,8 @@ import { humanizeZone } from '../../client/src/lib/display';
 
 /**
  * Story p4-06's model + drift-guard test — plan task 4.8, `WizardZoneData` (`ZoneTransfer/`),
- * docs/spec-domain-reference.md L281-309 / L700-702 / L542-546, docs/spec-data-model.md L184,
+ * docs/spec-domain-reference.md §"WizardZoneData (ZoneTransfer)" / §"Zone Display Names" /
+ * §"General Validation", docs/spec-data-model.md §"File Naming Conventions",
  * and the AC's two clauses.
  *
  * Four things are pinned, and the first two are the ACs themselves:

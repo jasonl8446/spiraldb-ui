@@ -240,7 +240,7 @@ describe('extraction service — happy path', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].file).toBe(CLI);
     expect(calls[0].args).toEqual(['--input', '/tmp/capture.json', '--suggestions', SIDECAR]);
-    // The spec's 50 MB cap (docs/spec-domain-reference.md L606).
+    // The spec's 50 MB cap (docs/spec-domain-reference.md §"Node.js Integration").
     expect(calls[0].options.maxBuffer).toBe(50 * 1024 * 1024);
   });
 

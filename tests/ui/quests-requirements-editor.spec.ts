@@ -12,7 +12,7 @@ import { mockQuestsApi, type QuestsMockRecorded } from './quests-mocks';
  * What this file proves, clause by clause of the story's acceptance criteria:
  *
  * - the type selector offers **exactly the four** allowed classes and neither `ReqHasGoal`
- *   nor `ReqEntryValue` appears anywhere in the tab (spec-domain-reference.md L436);
+ *   nor `ReqEntryValue` appears anywhere in the tab (spec-domain-reference.md §"Requirement Types — Complete Enumeration");
  * - `AND(ReqHasQuest{NOT}, OR(ReqSchoolOfFocus, ReqHasEntry))` can be **built through the
  *   UI** — add condition, add group, type changes, the quest dropdown, the NOT box, the
  *   operator toggle — and the document it produces equals a **hand-written** expectation
@@ -243,7 +243,7 @@ function control(scope: Locator, verb: string, address: string): Locator {
   return scope.locator(`button[data-path="${address}"][aria-label^="${verb} "]`);
 }
 
-/** The class's left-border colour assertion (spec-ui-design.md L388-416). */
+/** The class's left-border colour assertion (spec-ui-design.md §"6. Requirement Tree Editor"). */
 async function expectBorder(locator: Locator, colour: string): Promise<void> {
   expect(await locator.getAttribute('class')).toContain(colour);
 }

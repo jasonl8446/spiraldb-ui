@@ -23,7 +23,7 @@ import { seedNpc, seedString } from '../helpers/seed';
 
 /**
  * Story p6-07 — the per-quest **evidence** surface and the **NPC view**
- * (plan task 6.6; docs/spec-api.md L420-550).
+ * (plan task 6.6; docs/spec-api.md §"Quests").
  *
  * The suite runs on the **committed fixture corpus**
  * (`server/test/fixtures/evidence-corpus/`) — never on the 19 GB game tree and never
@@ -526,7 +526,7 @@ describe('the unknown arms (ac3)', () => {
       'direct',
     );
     // The list endpoint reports its own per-file resolution for the same quest — `resolved`, not
-    // `direct` (spec-data-model L209-214 records the collision).
+    // `direct` (spec-data-model §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)" records the collision).
     const listed = await listQuests({ db, spiraldbPath: FIXTURE_ROOT });
     const row = listed.quests.find((quest) => quest.quest_name === 'P6-EVIDENCE-001');
     expect(row?.title_source).toBe('resolved');

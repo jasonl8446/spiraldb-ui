@@ -1,0 +1,34 @@
+
+==================================================================
+== npm test
+==================================================================
+ ✓ tests/unit/a11y-units.test.ts (9 tests) 4ms
+ ✓ tests/unit/a11y-icon-labels.test.ts (2 tests) 4ms
+
+ Test Files  106 passed (106)
+      Tests  2176 passed (2176)
+   Start at  03:57:14
+   Duration  73.64s (transform 1.81s, setup 0ms, collect 6.73s, tests 52.35s, environment 10ms, prepare 3.35s)
+
+
+==================================================================
+== lint / typecheck:tests / typecheck:scripts / build:client
+==================================================================
+$ npm run lint
+
+Checking formatting...
+All matched files use Prettier code style!
+rc=0
+$ npm run typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+rc=0
+$ npm run typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+rc=0
+$ npm run build:client
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.76s
+rc=0

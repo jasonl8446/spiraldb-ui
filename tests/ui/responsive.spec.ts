@@ -6,7 +6,7 @@ import { MOCK_COVERAGE } from './quests-mocks';
  * Story p5-06's tier-1 responsive spec (plan task 5.6, **Phase-5 AC#12**; decisions D23 tier 1,
  * D40/D44, D67(d), D78(d), D81).
  *
- * The acceptance criterion, quoted (`docs/plan-phase-5-dashboard-polish.md` L60):
+ * The acceptance criterion, quoted (the Phase 5 plan, §"Acceptance Criteria"):
  *
  * > Responsive checklist complete at 375/768/1440px for all routes: sidebar hamburger +
  * > swipe-close at 375px; tables→cards; JSON panel→overlay; tablet sidebar 200px.
@@ -270,7 +270,7 @@ async function mockResponsiveApi(page: Page): Promise<string[]> {
     }
 
     // The single lookup (`GET /api/names/:type/:id`) answers **the bare row or 404** —
-    // never the list envelope (spec-api L32-44). Story p6-06's detail headers read it for
+    // never the list envelope (spec-api §"GET /api/names/:type/:id"). Story p6-06's detail headers read it for
     // the pair, so this fixture is load-bearing: an envelope here is not a row, and a
     // mock that cannot tell the two apart is exactly what D90(a) forbids. The zone key
     // carries slashes, which is why the id is read from the *decoded* tail of the path.
@@ -361,7 +361,7 @@ async function mockResponsiveApi(page: Page): Promise<string[]> {
       return route.fulfill({ status: 404, json: { error: `unmocked status ${path}` } });
     }
 
-    // The quests list + one bare quest document (docs/spec-api.md L190-208).
+    // The quests list + one bare quest document (docs/spec-api.md §"Quests").
     //
     // Story p6-11's two static reads are matched **before** the `/:key` prefix below: the browse
     // page and the new Catalog route now mount a coverage header, and the prefix branch would
@@ -715,7 +715,7 @@ test.describe('§2 AC#12: the shell rules, stated in numbers', () => {
       await page.locator('[data-stat="total"]').first().waitFor({ state: 'visible' });
 
       await expect(rail(page)).toBeVisible();
-      // The spec's number, measured on the element itself (docs/spec-ui-design.md L518).
+      // The spec's number, measured on the element itself (docs/spec-ui-design.md §"Responsive Breakpoints").
       expect(await widthOf(rail(page))).toBe(SIDEBAR_TABLET_PX);
       await expect(hamburger(page)).toBeHidden();
       await expectNoHorizontalOverflow(page, width);
@@ -871,7 +871,7 @@ test.describe('§5 AC#12: at tablet a wide table scrolls in its own container', 
       await expect(page.getByRole('table')).toBeVisible();
 
       // The spec's remedy for a too-wide table is a scroll container, **not** a narrower child
-      // (docs/spec-ui-design.md L518 "Tables scroll horizontally"). Asserted structurally, on
+      // (docs/spec-ui-design.md §"Responsive Breakpoints" "Tables scroll horizontally"). Asserted structurally, on
       // `window.getComputedStyle`: the table's own wrapper is `overflow-x: auto`, so a table wider
       // than the column scrolls inside it instead of pushing the page sideways. That the current
       // fixtures fit (clientWidth == scrollWidth) is not the claim and is not asserted.

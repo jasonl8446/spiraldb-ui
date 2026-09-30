@@ -24,7 +24,7 @@ import {
 
 /**
  * Task 1.3 acceptance: `GET /api/settings` returns the five flat string keys
- * (docs/spec-api.md L291-321), `PUT /api/settings` persists a partial update and
+ * (docs/spec-api.md §"Settings"), `PUT /api/settings` persists a partial update and
  * answers with the full updated map, and an invalid body is rejected with a 400
  * carrying an actionable message — without persisting any of its good keys.
  *

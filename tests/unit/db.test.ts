@@ -28,10 +28,10 @@ import {
 } from '@server/db';
 
 /**
- * Task 1.2 acceptance: the migration matches docs/spec-data-model.md L21-162
+ * Task 1.2 acceptance: the migration matches docs/spec-data-model.md §"SQLite Schema"
  * column-for-column (the 11 initial tables, 3 named indexes, the entry_status
  * UNIQUE constraint); task 6.4 adds migration 0002 — the quest catalog
- * (docs/spec-data-model.md L137-220): two tables, three indexes, the `coverage`
+ * (docs/spec-data-model.md §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)"): two tables, three indexes, the `coverage`
  * view and four `quests` columns applied by a PRAGMA-guarded step because SQLite
  * has no `ADD COLUMN IF NOT EXISTS` and this runner re-execs every file on every
  * open. Task 6.6 adds migration 0003 — the **persona index** the evidence endpoint's

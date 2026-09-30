@@ -32,7 +32,7 @@ import {
  * route (D4), the feed's state ladder, and the copy the tier-1 spec will address.
  *
  * The percentage expectations are the **spec's own worked examples**
- * (docs/spec-api.md L144-164: `157/322 → 48.8`, `70/180 → 38.9`, `45/95 → 47.4`,
+ * (docs/spec-api.md §"GET /api/dashboard": `157/322 → 48.8`, `70/180 → 38.9`, `45/95 → 47.4`,
  * `272/597 → 45.6`), not values this module produced — so the test witnesses the rule
  * rather than restating the implementation.
  */
@@ -49,7 +49,7 @@ const EXPECTED_OBJECT_TYPES: StatusObjectType[] = [
   'zone_transfer',
 ];
 
-/** The eight detail routes of docs/spec-api.md L456-474, typed by hand. */
+/** The eight detail routes of docs/spec-api.md §"URL Routes (Frontend)", typed by hand. */
 const EXPECTED_DETAIL_ROUTE: Record<StatusObjectType, string> = {
   quest: '/quests',
   drop_table: '/drop-tables',

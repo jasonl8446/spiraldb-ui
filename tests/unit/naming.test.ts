@@ -163,7 +163,7 @@ describe('OBJECT_FILE_SPECS — the spec table as data', () => {
   });
 });
 
-describe('the nine spec-table rows round-trip (docs/spec-data-model.md L175-185)', () => {
+describe('the nine spec-table rows round-trip (docs/spec-data-model.md §"File Naming Conventions")', () => {
   it.each(SPEC_ROWS)('$type writes $example', ({ type, key, example }) => {
     expect(fileNameFor(type, key)).toBe(example);
   });

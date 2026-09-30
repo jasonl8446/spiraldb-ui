@@ -172,7 +172,7 @@ const FAMILIES: readonly FamilyFixture[] = [
   },
 ];
 
-/** The one detail route per family, hand-typed from docs/spec-api.md L456-474. */
+/** The one detail route per family, hand-typed from docs/spec-api.md §"URL Routes (Frontend)". */
 const DETAIL_ROUTE: Record<string, string> = {
   quest: '/quests',
   drop_table: '/drop-tables',

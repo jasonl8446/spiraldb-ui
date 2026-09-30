@@ -22,8 +22,14 @@ export function notifySuccess(message: string): void {
   toast.success(message, { duration: TOAST_DURATIONS.success });
 }
 
-export function notifyInfo(message: string): void {
-  toast.info(message, { duration: TOAST_DURATIONS.info });
+/** Returns the toast's id, so a notice about a state that has ended can be taken down early. */
+export function notifyInfo(message: string): string | number {
+  return toast.info(message, { duration: TOAST_DURATIONS.info });
+}
+
+/** Takes a toast down before its duration ends (see `hooks/useExtraction.ts`, D183). */
+export function dismissNotification(id: string | number): void {
+  toast.dismiss(id);
 }
 
 export function notifyError(message: string): void {

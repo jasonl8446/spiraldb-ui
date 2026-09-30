@@ -23,7 +23,7 @@ import {
 } from '../helpers/temp-git-repo';
 
 /**
- * Story p4-08, AC2 (`docs/plan-phase-4-object-editors.md` §4.10): **a create via `POST`
+ * Story p4-08, AC2 (the Phase 4 plan §4.10 "Status integration for all types"): **a create via `POST`
  * tracks the entry as `extracted` with the history note `Created via UI`, and an edit does
  * not change the status** — asserted, as the story asks, **per tracked type** rather than
  * re-implemented.

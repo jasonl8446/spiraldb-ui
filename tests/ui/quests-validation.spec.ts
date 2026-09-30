@@ -133,7 +133,7 @@ async function openQuest(
     route.fulfill({ json: { quests: QUEST_ROWS } }),
   );
   // A single-id lookup for a value that is not in the cached list is the documented miss
-  // (spec-domain-reference L693-695) — never a request that reaches the dev stack.
+  // (spec-domain-reference §"Missing Keys") — never a request that reaches the dev stack.
   for (const type of ['zones', 'spells', 'npcs', 'drop_tables', 'quests']) {
     await page.route(`**/api/names/${type}/*`, (route) =>
       route.fulfill({ status: 404, json: { error: `Unknown ${type} id` } }),
