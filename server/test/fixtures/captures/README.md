@@ -96,3 +96,68 @@ because a goal that carries dialogs is delivered by the `GoalCompilation` (the r
 a dialog to a compilation goal), 26 goal-name/26 goal-id problems in the 4 ACHIEVERANK quests, 11
 quests with no goals, 5 unrepresentable quest-level dialog tags, 2 duplicate `m_goalNameID`s and 1
 duplicate quest-level dialog tag.
+
+## p7: planted-value fixtures (task 7.2 / D128)
+
+`p7/` holds five captures generated with `tools/FixtureGen --inject`, each beside the spec that produced it and
+the census golden that `tools/CaptureCensus` prints for it. They plant values that cannot occur by accident
+(`P7-PLANT-…`, `QuestNameID 77000nn`, …) so stories 7.3-7.5 can diff extraction output against them exactly.
+The Phase 2 fixtures above are untouched: without `--inject`, `fixturegen` output stays byte-identical
+(`verify:captures` regenerates them without it).
+
+```bash
+npm run build:fixturegen && npm run build:census
+tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_<QUEST>.json \
+  --inject server/test/fixtures/captures/p7/<QUEST>.inject.json \
+  --output server/test/fixtures/captures/p7/<QUEST>.json
+tools/bin/capture-census --input server/test/fixtures/captures/p7/<QUEST>.json \
+  --output server/test/fixtures/captures/p7/<QUEST>.census.json
+```
+
+Corpus pin: the `data/test-spiraldb` clone at `18dc92477d54b1e911796960407ce7710e703697`.
+
+| Fixture (= quest) | Goal class | Goals | sha256 (capture) |
+|---|---|---|---|
+| `WC-MAIN-C01-013` | Waypoint; **single goal** (7.5: no chain) | 1 | `2873f5ef831841ab6c254b53abec74a403ec8994e0f0ac4120007c8212372a09` |
+| `DS-ACAD-C01-003` | Persona (goal 1; goal 0 is a Waypoint) | 2 | `7b9791740d0231986cb34820a00c953068f9b3daceb1e3c58e2f65131094300e` |
+| `WC-UNICORN-MAIN-002` | Bounty (goal 0) then Persona | 2 | `98bc790ee2f884ef542a0772f262d5eeb308b834d978daf74d549da2cc9b0e3b` |
+| `DS-ACAD1-C04-001` | Scavenge (goal 0) then Persona | 2 | `5fbf0d11af4d909dca98dbea9dc40cac6ad72f3401b3ad8d8473939e7d88f06c` |
+| `WC-TUT-C05-001` | AchieveRank x5 (opt-in, see below) | 5 | `d5979a4ff98a9d01734cfc5ce7600dd1f68bda435836b6ea5749f732c25ff7b3` |
+
+### The inject spec
+
+Strict JSON: `{ description, allowAchieveRank?, sendQuestFields, sequence[] }`.
+
+- `sendQuestFields` are extra envelope fields planted on `MSG_SENDQUEST` (`QuestNameID`, `QuestInfo`,
+  `NoQuestHelper`, `SkipQHAutoSelect`, `ActivityType` (2 = `ACTIVITY_Crafting`), `ClientTags`, `PetOnlyQuest`,
+  `Rewards`). Field names are Imlight's `QuestMessages.xml`; a planted field is written whether or not Imview's
+  message definition declares it (that is what the census then reports as ignored).
+- `sequence` is the deliberate message order after `MSG_QUESTOFFER`, `MSG_SENDQUEST` and the quest-level dialogs.
+  Each step is `{ message, goal?, fields? }`, `message` one of `MSG_SENDGOAL`, `MSG_PERSONAINFO`,
+  `MSG_COMPLETEGOAL`, `MSG_REMOVEGOAL`, `MSG_COMPLETEQUEST`; `goal` indexes the corpus `m_goals`; `fields` are
+  planted on that envelope (ids are filled in; `MSG_SENDGOAL` carries the whole corpus goal). Under `--inject`
+  `MSG_SENDGOAL` is emitted only from the sequence (a goal's own dialogs follow its first send); every goal the
+  `GoalCompilation` does not carry must be sent. A compilation goal may be sent too; the reader skips it as a
+  duplicate by `GoalNameID`.
+- A field value `{"$blob":"ClientTagList","tags":[…]}` (mask 1) or `{"$blob":"LootInfoList","gold":n,"magicXp":n}`
+  (mask 31, the mask of Imcodec's `LootTableTest`) is serialised with `ObjectSerializer` to the hex string on the
+  wire; the LootInfoList is decode-checked before it is written. Both classes exist in Imview's net9 Imcodec build.
+- Order used by all five: per goal `MSG_SENDGOAL`, `MSG_PERSONAINFO` (persona goals), `MSG_COMPLETEGOAL`, then
+  `MSG_REMOVEGOAL` unless it is the last goal; `MSG_COMPLETEQUEST` closes the quest. So goal A completes and is
+  removed, follow-on goal B is sent on the same `QuestID`, and the goal completed right before
+  `MSG_COMPLETEQUEST` (no remove) is the terminal one. The single-goal quest has no remove and no follow-on.
+
+### GOAL_TYPE_ACHIEVERANK under `--inject`
+
+The default refusal stays (see above). A spec with `"allowAchieveRank": true` plants the corpus goals as they are
+(empty `m_goalTitle`, `m_goalNameID 0`). What the reader does with `WC-TUT-C05-001` today: 5 goals in the
+capture, **1** goal out, named `1_` (`m_goalNameID 0`, `GOAL_TYPE_ACHIEVERANK`): the first goal takes the empty
+title, and the other four are skipped because their `GoalNameID` 0 is already present. Story 7.4 repairs this.
+
+### Census goldens
+
+`<QUEST>.census.json` is `capture-census` output (`{input, messages, rows:[{message, field, count, consumed}]}`,
+sorted by message then field). The consumed table is data inside `tools/CaptureCensus/Program.cs`; 7.3/7.4 flip
+entries and regenerate the goldens. `tests/unit/p7-capture-census.test.ts` checks every golden against its spec in
+CI (every planted field present with the planted count) and, where `tools/bin/capture-census`,
+`tools/bin/fixturegen` and the clone exist, regenerates and byte-compares both goldens and fixtures.

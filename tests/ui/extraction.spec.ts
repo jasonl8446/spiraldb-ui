@@ -367,7 +367,7 @@ async function mockApi(page: Page, options: MockOptions = {}): Promise<Recorded>
     await route.fulfill({ json: { ...settings } });
   });
 
-  await page.route('**/api/extract/quests', async (route) => {
+  await page.route('**/api/extract/quests*', async (route) => {
     recorded.extractRequests += 1;
     if (options.onExtract !== undefined) {
       await options.onExtract(route);
@@ -689,7 +689,7 @@ test.describe('upload phase', () => {
       .poll(() =>
         page.evaluate(() => (window as unknown as { __abortedFetches: string[] }).__abortedFetches),
       )
-      .toContain('/api/extract/quests');
+      .toContain('/api/extract/quests?census=1');
     // …and the network layer agrees.
     await expect.poll(() => failedRequests.join(' | ')).toMatch(/ERR_ABORTED/);
 
@@ -882,6 +882,86 @@ test.describe('results phase', () => {
  * the existing names are on screen before anything is written, and a `POST
  * /api/quests` cannot happen before the user confirms.
  */
+/**
+ * Task 7.2 (p7-03, D139): the extraction page always asks `?census=1` and lists what the reader
+ * ignored in an "Ignored by the reader (n)" disclosure. The mocked census is the **committed golden**
+ * for the planted-value fixture `WC-UNICORN-MAIN-002` (CI has no .NET binary, D55), so the rows the
+ * spec sees are the rows the real `capture-census` printed.
+ */
+const CENSUS_GOLDEN = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../server/test/fixtures/captures/p7/WC-UNICORN-MAIN-002.census.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+) as { messages: number; rows: Array<{ message: string; field: string; consumed: boolean }> };
+
+test.describe('packet census disclosure (task 7.2, D139)', () => {
+  test('asks for ?census=1 and lists the ignored message/field rows behind a count', async ({
+    page,
+  }) => {
+    const seen: string[] = [];
+    await mockApi(page, {
+      onExtract: (route) => {
+        seen.push(route.request().url());
+        return route.fulfill({
+          json: { quests: QUESTS, count: QUESTS.length, census: CENSUS_GOLDEN },
+        });
+      },
+    });
+    await openResults(page);
+
+    expect(seen.map((url) => new URL(url).search)).toEqual(['?census=1']);
+
+    const ignored = CENSUS_GOLDEN.rows.filter((row) => !row.consumed);
+    expect(ignored.length).toBeGreaterThan(0);
+    const disclosure = page.getByTestId('ignored-fields');
+    await expect(disclosure.locator('summary')).toHaveText(
+      `Ignored by the reader (${ignored.length})`,
+    );
+
+    // Closed until opened; then every ignored row is listed and no consumed one is.
+    await expect(disclosure.getByRole('table')).toBeHidden();
+    await disclosure.locator('summary').click();
+    await expect(disclosure.getByRole('table')).toBeVisible();
+    await expect(disclosure.locator('tbody tr')).toHaveCount(ignored.length);
+    const personaRow = disclosure.locator('tbody tr').filter({ hasText: 'MSG_SENDGOAL' }).filter({
+      hasText: 'PersonaName',
+    });
+    await expect(personaRow).toHaveCount(1);
+    await expect(disclosure.locator('tbody tr').filter({ hasText: 'GoalNameID' })).toHaveCount(0);
+  });
+
+  test('says so when the census could not run, instead of implying nothing was ignored', async ({
+    page,
+  }) => {
+    await mockApi(page, {
+      onExtract: (route) =>
+        route.fulfill({
+          json: {
+            quests: QUESTS,
+            count: QUESTS.length,
+            census: { skipped: 'capture-census not found. Build it with: npm run build:census' },
+          },
+        }),
+    });
+    await openResults(page);
+
+    await expect(page.getByTestId('census-skipped')).toContainText('npm run build:census');
+    await expect(page.getByTestId('ignored-fields')).toHaveCount(0);
+  });
+
+  test('shows no census UI when the response carries none', async ({ page }) => {
+    await mockApi(page);
+    await openResults(page);
+
+    await expect(page.getByTestId('ignored-fields')).toHaveCount(0);
+    await expect(page.getByTestId('census-skipped')).toHaveCount(0);
+  });
+});
+
 test.describe('overwrite confirmation (gap A)', () => {
   const EXISTING = 'WC-UNICORN-MAIN-004';
   const NEW_QUEST = 'DS-ACAD1-C01-001';

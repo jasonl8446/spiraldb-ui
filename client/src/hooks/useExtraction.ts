@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { extractQuests, type QuestObject } from '../lib/api';
+import { extractQuests, type ExtractCensus, type QuestObject } from '../lib/api';
 import { extractErrorMessage, EXTRACTING_TOAST_MESSAGE } from '../lib/extract';
 import { notifyError, notifyInfo } from '../lib/notify';
 
@@ -34,6 +34,8 @@ export interface ExtractionState {
   quests: QuestObject[];
   /** `count` as the API returned it — informational; `quests.length` is rendered. */
   count: number;
+  /** The packet census of the capture (D139), when the server answered with one. */
+  census: ExtractCensus | undefined;
   /** The capture being extracted (or the last one tried), for the file card. */
   file: File | null;
   /**
@@ -56,6 +58,7 @@ const INITIAL: ExtractionState = {
   status: 'idle',
   quests: [],
   count: 0,
+  census: undefined,
   file: null,
   error: null,
 };
@@ -81,7 +84,7 @@ export function useExtraction(): ExtractionController {
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    setState({ status: 'extracting', quests: [], count: 0, file, error: null });
+    setState({ status: 'extracting', quests: [], count: 0, census: undefined, file, error: null });
     notifyInfo(EXTRACTING_TOAST_MESSAGE);
 
     extractQuests(file, { signal: controller.signal })
@@ -94,6 +97,7 @@ export function useExtraction(): ExtractionController {
           status: 'results',
           quests: result.quests,
           count: result.count,
+          census: result.census,
           file,
           error: null,
         });
@@ -104,7 +108,14 @@ export function useExtraction(): ExtractionController {
         }
         controllerRef.current = null;
         const message = extractErrorMessage(error);
-        setState({ status: 'idle', quests: [], count: 0, file: null, error: message });
+        setState({
+          status: 'idle',
+          quests: [],
+          count: 0,
+          census: undefined,
+          file: null,
+          error: message,
+        });
         notifyError(message);
       });
   }, []);

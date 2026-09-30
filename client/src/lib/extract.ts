@@ -16,6 +16,8 @@
  * are L119-123.
  */
 
+import type { CensusRow, ExtractCensus } from './api';
+
 /* ------------------------------------------------------------------- upload */
 
 /**
@@ -53,6 +55,21 @@ export const CANCEL_LABEL = 'Cancel';
 export const SAVE_ALL_LABEL = 'Save All to SpiralDB';
 export const SAVE_SELECTED_LABEL = 'Save Selected';
 export const DISCARD_LABEL = 'Discard';
+
+/**
+ * The census disclosure's summary (D139): the number is the count of ignored message/field rows, so a
+ * capture whose every field was read says `(0)` rather than hiding the disclosure.
+ */
+export function ignoredByReaderLabel(count: number): string {
+  return `Ignored by the reader (${count})`;
+}
+
+/** The census rows the reader does not read, in the census' own (message, field) order. */
+export function ignoredCensusRows(census: ExtractCensus | undefined): CensusRow[] {
+  return census === undefined || 'skipped' in census
+    ? []
+    : census.rows.filter((row) => !row.consumed);
+}
 
 /** The `new` status badge every freshly extracted quest carries (spec L224). */
 export const NEW_BADGE_LABEL = 'new';

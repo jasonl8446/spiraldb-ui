@@ -1,0 +1,70 @@
+{
+  "description": "p7 inject spec for DS-ACAD-C01-003: Waypoint then Persona. Order per goal: MSG_SENDGOAL, MSG_PERSONAINFO (persona goals), MSG_COMPLETEGOAL, then MSG_REMOVEGOAL unless it is the last goal; MSG_COMPLETEQUEST closes the quest, so the goal completed right before it is the terminal one.",
+  "sendQuestFields": {
+    "QuestNameID": 7700002,
+    "QuestInfo": "P7-PLANT-QuestInfo-DS-ACAD-C01-003",
+    "NoQuestHelper": 1,
+    "SkipQHAutoSelect": 1,
+    "ActivityType": 2,
+    "ClientTags": {
+      "$blob": "ClientTagList",
+      "tags": [
+        "P7-PLANT-QuestTag-DS-ACAD-C01-003-A",
+        "P7-PLANT-QuestTag-DS-ACAD-C01-003-B"
+      ]
+    },
+    "PetOnlyQuest": 1,
+    "Rewards": {
+      "$blob": "LootInfoList",
+      "gold": 1002,
+      "magicXp": 502
+    }
+  },
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-DS-ACAD-C01-003-g0"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-DS-ACAD-C01-003-g0"
+      }
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 1,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-DS-ACAD-C01-003-g1"
+      }
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "goal": 1,
+      "fields": {
+        "GoalHyperlink": "P7-PLANT-GoalHyperlink-DS-ACAD-C01-003-g1"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 1,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-DS-ACAD-C01-003-g1"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteQuest-DS-ACAD-C01-003"
+      }
+    }
+  ]
+}

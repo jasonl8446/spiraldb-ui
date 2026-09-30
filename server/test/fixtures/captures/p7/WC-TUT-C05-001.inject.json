@@ -1,0 +1,118 @@
+{
+  "description": "p7 inject spec for WC-TUT-C05-001: AchieveRank x5 (the empty-title / GoalNameID 0 reader defect, opted in explicitly). Order per goal: MSG_SENDGOAL, MSG_PERSONAINFO (persona goals), MSG_COMPLETEGOAL, then MSG_REMOVEGOAL unless it is the last goal; MSG_COMPLETEQUEST closes the quest, so the goal completed right before it is the terminal one.",
+  "allowAchieveRank": true,
+  "sendQuestFields": {
+    "QuestNameID": 7700005,
+    "QuestInfo": "P7-PLANT-QuestInfo-WC-TUT-C05-001",
+    "NoQuestHelper": 1,
+    "SkipQHAutoSelect": 1,
+    "ActivityType": 2,
+    "ClientTags": {
+      "$blob": "ClientTagList",
+      "tags": [
+        "P7-PLANT-QuestTag-WC-TUT-C05-001-A",
+        "P7-PLANT-QuestTag-WC-TUT-C05-001-B"
+      ]
+    },
+    "PetOnlyQuest": 1,
+    "Rewards": {
+      "$blob": "LootInfoList",
+      "gold": 1005,
+      "magicXp": 505
+    }
+  },
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-WC-TUT-C05-001-g0"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0"
+      }
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 1,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-WC-TUT-C05-001-g1"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 1,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1"
+      }
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 1
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 2,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-WC-TUT-C05-001-g2"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 2,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2"
+      }
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 2
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 3,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-WC-TUT-C05-001-g3"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 3,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3"
+      }
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 3
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 4,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-WC-TUT-C05-001-g4"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 4,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteQuest-WC-TUT-C05-001"
+      }
+    }
+  ]
+}

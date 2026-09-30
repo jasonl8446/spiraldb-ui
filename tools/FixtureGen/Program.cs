@@ -30,7 +30,7 @@ namespace FixtureGen;
 /// GoalID→goal map empty, so a goal-level dialog only survives on a packet-delivered goal — that
 /// is enforced below and never papered over.
 /// </summary>
-internal static class Program {
+internal static partial class Program {
 
     private const uint PropSave = 1;
     private const uint PropAuthorityTransmit = 16;
@@ -58,7 +58,7 @@ internal static class Program {
     };
 
     private const string Usage = """
-        Usage: fixturegen --quest <path> --output <capture.json> [--persona <name>]
+        Usage: fixturegen --quest <path> --output <capture.json> [--persona <name>] [--inject <spec.json>]
 
         Generates an Imview packet capture from a SpiralDB corpus QuestTemplate so that
         `imview-packet-reader` reconstructs the same quest. Nothing is written to stdout; the
@@ -71,6 +71,11 @@ internal static class Program {
                              committed fixtures independent of the template manifest; a non-empty
                              persona is safe now that the CLI keeps the reader's diagnostics off
                              stdout (decision D46).
+          --inject  <spec>   Phase 7 (D128): plant known values into the capture in a deliberate
+                             message order (see server/test/fixtures/captures/README.md, "p7").
+                             Without it the output is byte-identical to the Phase 2 fixtures.
+                             GOAL_TYPE_ACHIEVERANK is refused unless the spec opts in with
+                             "allowAchieveRank": true.
           -h, --help         Show this help and exit.
 
         Exit codes: 0 = capture written, 1 = refused to write (message on stderr).
@@ -107,6 +112,7 @@ internal static class Program {
 
     private static string Generate(Options options) {
         var quest = LoadQuest(options.QuestPath);
+        var inject = options.InjectPath is null ? null : LoadInject(options.InjectPath);
 
         // ---- validations (all reported at once; nothing is written when any fails) ----------
         var problems = new List<string>();
@@ -123,7 +129,11 @@ internal static class Program {
             var goal = quest.Goals[i];
             var expectedName = $"{i + 1}_{goal.Title}";
 
-            if (!string.Equals(goal.Name, expectedName, StringComparison.Ordinal)) {
+            // The inject spec's explicit opt-in (D146): an ACHIEVERANK goal is planted as it is in the
+            // corpus (empty title, m_goalNameID 0) so the reader's defect is reproducible from a fixture.
+            var optedIn = IsOptedInAchieveRank(inject, goal);
+
+            if (!optedIn && !string.Equals(goal.Name, expectedName, StringComparison.Ordinal)) {
                 problems.Add(
                     $"goal[{i}] m_goalName '{goal.Name}' is not '{expectedName}': QuestBuilder derives the "
                     + "goal name as \"{n}_{m_goalTitle}\", so this quest cannot round-trip on goal names "
@@ -135,7 +145,7 @@ internal static class Program {
                 problems.Add($"goal[{i}] type {goal.Type} is not supported by QuestBuilder.GetGoalFromType");
             }
 
-            if (goal.NameId == 0) {
+            if (goal.NameId == 0 && !IsOptedInAchieveRank(inject, goal)) {
                 problems.Add(
                     $"goal[{i}] has m_goalNameID 0: a packet-delivered goal would be skipped by "
                     + "QuestBuilder's duplicate check (and the first one would swallow the rest).");
@@ -143,14 +153,16 @@ internal static class Program {
         }
 
         for (var i = 0; i < Math.Min(quest.StartGoals.Count, quest.Goals.Count); i++) {
-            if (!string.Equals(quest.StartGoals[i], quest.Goals[i].Name, StringComparison.Ordinal)) {
+            if (!IsOptedInAchieveRank(inject, quest.Goals[i])
+                && !string.Equals(quest.StartGoals[i], quest.Goals[i].Name, StringComparison.Ordinal)) {
                 problems.Add(
                     $"m_startGoals[{i}] '{quest.StartGoals[i]}' does not match m_goals[{i}].m_goalName "
                     + $"'{quest.Goals[i].Name}': the compilation-prefix assumption does not hold.");
             }
         }
 
-        foreach (var duplicate in quest.Goals.GroupBy(g => g.NameId).Where(g => g.Count() > 1).Select(g => g.Key)) {
+        foreach (var duplicate in quest.Goals.Where(g => !IsOptedInAchieveRank(inject, g))
+                     .GroupBy(g => g.NameId).Where(g => g.Count() > 1).Select(g => g.Key)) {
             problems.Add(
                 $"m_goalNameID {duplicate} appears on more than one goal: QuestBuilder skips a packet "
                 + "whose GoalNameID is already present, which would shift every later goal name.");
@@ -197,6 +209,10 @@ internal static class Program {
             }
         }
 
+        if (inject is not null) {
+            problems.AddRange(ValidateInject(inject, quest.Goals.Count, quest.StartGoals.Count));
+        }
+
         if (problems.Count > 0) {
             throw new FixtureException(
                 $"refusing to generate a capture from '{options.QuestPath}' — {problems.Count} problem(s):\n"
@@ -234,20 +250,34 @@ internal static class Program {
 
         // MSG_SENDQUEST: lets the reader map QuestTitle -> QuestID, which the completion dialog and
         // every goal packet are matched against.
-        packets.Add(Envelope("MSG_SENDQUEST", new JObject {
+        var sendQuestFields = new JObject {
             ["QuestID"] = Wrap(questId),
             ["QuestTitle"] = Wrap(quest.Title),
-        }));
+        };
 
-        // MSG_SENDGOAL: every goal the compilation does not already carry.
-        var goalIds = new List<ulong>();
+        if (inject is not null) {
+            foreach (var planted in inject.SendQuestFields) {
+                sendQuestFields[planted.Key] = new JObject { ["value"] = planted.Value!.DeepClone() };
+            }
+        }
+
+        packets.Add(Envelope("MSG_SENDQUEST", sendQuestFields));
+
+        // MSG_SENDGOAL: every goal the compilation does not already carry (under --inject the
+        // spec's sequence decides where each one goes, and may also re-send a compilation goal).
         var tallyGoals = 0;
         var clientTagGoals = 0;
+        var sendGoalBase = new Dictionary<int, JObject>();
 
-        for (var i = 0; i < packetGoals.Count; i++) {
-            var goal = packetGoals[i];
-            var goalId = StableId($"{quest.Name}#{quest.StartGoals.Count + i}", "goal");
-            goalIds.Add(goalId);
+        for (var index = 0; index < quest.Goals.Count; index++) {
+            var isPacketGoal = index >= quest.StartGoals.Count;
+
+            if (!isPacketGoal && inject is null) {
+                continue;
+            }
+
+            var goal = quest.Goals[index];
+            var goalId = GoalId(quest.Name, index);
 
             var useTally = 0;
             var madlibsHex = "";
@@ -266,7 +296,7 @@ internal static class Program {
                     PropSave,
                     $"MadlibBlock({goal.Name})");
                 useTally = 1;
-                tallyGoals++;
+                tallyGoals += isPacketGoal ? 1 : 0;
             }
 
             var clientTagsHex = "";
@@ -274,10 +304,10 @@ internal static class Program {
             if (goal.ClientTags.Count > 0) {
                 clientTagsHex = SerializeBlob(
                     new ClientTagList { m_clientTags = [.. goal.ClientTags] }, PropSave, $"ClientTagList({goal.Name})");
-                clientTagGoals++;
+                clientTagGoals += isPacketGoal ? 1 : 0;
             }
 
-            packets.Add(Envelope("MSG_SENDGOAL", new JObject {
+            var fields = new JObject {
                 ["QuestID"] = Wrap(questId),
                 ["GoalID"] = Wrap(goalId),
                 ["GoalNameID"] = Wrap(goal.NameId),
@@ -295,33 +325,68 @@ internal static class Program {
                 ["PetOnlyQuest"] = Wrap(goal.PetOnlyQuest ? 1 : 0),
                 ["UseTally"] = Wrap((byte) useTally),
                 ["GoalMadlibs"] = Wrap(madlibsHex),
-            }));
+            };
+
+            if (inject is null) {
+                packets.Add(Envelope("MSG_SENDGOAL", fields));
+            }
+            else {
+                sendGoalBase[index] = fields;
+            }
+        }
+
+        var injectedSendGoals = 0;
+        var injectedOther = 0;
+
+        if (inject is not null) {
+            // Quest-level dialogs first, then the sequence; a goal's own dialogs follow its first
+            // MSG_SENDGOAL so a packet never refers to a goal the capture has not introduced yet.
+            AddQuestDialogs(quest, mobileId, questId, options.Persona, packets, notes);
+
+            var dialogsEmitted = new HashSet<int>();
+
+            foreach (var step in inject.Sequence) {
+                var fields = step.Message switch {
+                    "MSG_SENDGOAL" => (JObject) sendGoalBase[step.Goal!.Value].DeepClone(),
+                    "MSG_PERSONAINFO" => new JObject {
+                        ["MobileID"] = Wrap(mobileId),
+                        ["QuestID"] = Wrap(questId),
+                        ["GoalID"] = Wrap(GoalId(quest.Name, step.Goal!.Value)),
+                    },
+                    "MSG_COMPLETEQUEST" => new JObject { ["QuestID"] = Wrap(questId) },
+                    _ => new JObject {
+                        ["QuestID"] = Wrap(questId),
+                        ["GoalID"] = Wrap(GoalId(quest.Name, step.Goal!.Value)),
+                    },
+                };
+
+                foreach (var planted in step.Fields) {
+                    fields[planted.Key] = new JObject { ["value"] = planted.Value!.DeepClone() };
+                }
+
+                packets.Add(Envelope(step.Message, fields));
+
+                if (step.Message != "MSG_SENDGOAL") {
+                    injectedOther++;
+                    continue;
+                }
+
+                injectedSendGoals++;
+
+                if (step.Goal!.Value >= quest.StartGoals.Count && dialogsEmitted.Add(step.Goal.Value)) {
+                    AddGoalDialogs(quest, step.Goal.Value, mobileId, options.Persona, packets, notes);
+                }
+            }
         }
 
         // MSG_ACTORDIALOG: one packet per corpus dialog, in corpus order (quest level first, then
-        // per goal). Each blob is the corpus ActorDialog re-serialized with mask 16.
-        foreach (var dialog in quest.QuestDialogs) {
-            var isPrep = (dialog.m_dialogTag ?? "").Equals("Prep", StringComparison.OrdinalIgnoreCase);
-            var blob = SerializeBlob(dialog, PropAuthorityTransmit, $"ActorDialog({quest.Name}/{dialog.m_dialogTag})");
-            SelfCheckActorDialog(blob, dialog, notes);
+        // per goal). Each blob is the corpus ActorDialog re-serialized with mask 16. (Under --inject
+        // they were already emitted above, interleaved with the sequence.)
+        if (inject is null) {
+            AddQuestDialogs(quest, mobileId, questId, options.Persona, packets, notes);
 
-            packets.Add(Envelope("MSG_ACTORDIALOG", ActorDialogFields(
-                mobileId, questId, 0, isPrep ? "QuestInfo" : "Completion", blob, options.Persona)));
-        }
-
-        for (var i = 0; i < packetGoals.Count; i++) {
-            foreach (var dialog in packetGoals[i].Dialogs) {
-                var blob = SerializeBlob(
-                    dialog, PropAuthorityTransmit, $"ActorDialog({packetGoals[i].Name}/{dialog.m_dialogTag})");
-                SelfCheckActorDialog(blob, dialog, notes);
-
-                // QuestID is 0 on a goal-scoped dialog on purpose: AddCompletionDialogToQuestTemplate
-                // matches on CompletionType == "Completion" && QuestID == quest.Id and *ignores*
-                // GoalID, so writing the quest id here makes QuestBuilder copy the first goal-level
-                // Completion dialog onto the quest as a second (bogus) quest-level dialog.
-                // AddDialogToGoals only needs GoalID, so nothing is lost.
-                packets.Add(Envelope("MSG_ACTORDIALOG", ActorDialogFields(
-                    mobileId, 0, goalIds[i], dialog.m_dialogTag ?? "", blob, options.Persona)));
+            for (var i = quest.StartGoals.Count; i < quest.Goals.Count; i++) {
+                AddGoalDialogs(quest, i, mobileId, options.Persona, packets, notes);
             }
         }
 
@@ -341,6 +406,11 @@ internal static class Program {
             $"  dialogs          {dialogBlocks} block(s) / {dialogEntries} dialog entry(ies); {quest.QuestDialogs.Count} quest-level, {dialogBlocks - quest.QuestDialogs.Count} goal-level"));
         summary.AppendLine(FormattableString.Invariant(
             $"  packets          {packets.Count} ({packetGoals.Count} MSG_SENDGOAL, {dialogBlocks} MSG_ACTORDIALOG); tally madlib blobs: {tallyGoals}, client-tag blobs: {clientTagGoals}"));
+        if (inject is not null) {
+            summary.AppendLine(FormattableString.Invariant(
+                $"  inject           {options.InjectPath}: {inject.SendQuestFields.Count} MSG_SENDQUEST extra(s), {inject.Sequence.Count} sequence step(s) ({injectedSendGoals} MSG_SENDGOAL, {injectedOther} other)"));
+        }
+
         summary.AppendLine(FormattableString.Invariant(
             $"  ids              MobileID={mobileId} QuestID={questId}"));
         summary.AppendLine($"  output           {Path.GetFullPath(options.OutputPath)}");
@@ -350,6 +420,40 @@ internal static class Program {
         }
 
         return summary.ToString().TrimEnd();
+    }
+
+    /// <summary>The GoalID of the goal at <paramref name="index"/> of the corpus m_goals list.</summary>
+    private static ulong GoalId(string questName, int index) => StableId($"{questName}#{index}", "goal");
+
+    private static void AddQuestDialogs(
+        CorpusQuest quest, ulong mobileId, ulong questId, string persona, JArray packets, List<string> notes) {
+        foreach (var dialog in quest.QuestDialogs) {
+            var isPrep = (dialog.m_dialogTag ?? "").Equals("Prep", StringComparison.OrdinalIgnoreCase);
+            var blob = SerializeBlob(dialog, PropAuthorityTransmit, $"ActorDialog({quest.Name}/{dialog.m_dialogTag})");
+            SelfCheckActorDialog(blob, dialog, notes);
+
+            packets.Add(Envelope("MSG_ACTORDIALOG", ActorDialogFields(
+                mobileId, questId, 0, isPrep ? "QuestInfo" : "Completion", blob, persona)));
+        }
+    }
+
+    private static void AddGoalDialogs(
+        CorpusQuest quest, int goalIndex, ulong mobileId, string persona, JArray packets, List<string> notes) {
+        var goal = quest.Goals[goalIndex];
+
+        foreach (var dialog in goal.Dialogs) {
+            var blob = SerializeBlob(
+                dialog, PropAuthorityTransmit, $"ActorDialog({goal.Name}/{dialog.m_dialogTag})");
+            SelfCheckActorDialog(blob, dialog, notes);
+
+            // QuestID is 0 on a goal-scoped dialog on purpose: AddCompletionDialogToQuestTemplate
+            // matches on CompletionType == "Completion" && QuestID == quest.Id and *ignores*
+            // GoalID, so writing the quest id here makes QuestBuilder copy the first goal-level
+            // Completion dialog onto the quest as a second (bogus) quest-level dialog.
+            // AddDialogToGoals only needs GoalID, so nothing is lost.
+            packets.Add(Envelope("MSG_ACTORDIALOG", ActorDialogFields(
+                mobileId, 0, GoalId(quest.Name, goalIndex), dialog.m_dialogTag ?? "", blob, persona)));
+        }
     }
 
     private static JObject ActorDialogFields(
@@ -644,20 +748,21 @@ internal static class Program {
             ? [.. array.Where(item => item.Type == JTokenType.String).Select(item => item.Value<string>() ?? "")]
             : [];
 
-    private sealed record Options(string QuestPath, string OutputPath, string Persona, bool Help);
+    private sealed record Options(string QuestPath, string OutputPath, string Persona, string? InjectPath, bool Help);
 
     private static bool TryParseArguments(string[] args, out Options options, out string error) {
-        options = new Options("", "", "", false);
+        options = new Options("", "", "", null, false);
         error = "";
 
         string? questPath = null;
         string? outputPath = null;
         var persona = "";
+        string? injectPath = null;
 
         for (var i = 0; i < args.Length; i++) {
             switch (args[i]) {
                 case "-h" or "--help":
-                    options = new Options("", "", "", true);
+                    options = new Options("", "", "", null, true);
                     return true;
 
                 case "--quest":
@@ -684,6 +789,14 @@ internal static class Program {
                     persona = personaValue;
                     break;
 
+                case "--inject":
+                    if (!TryTakeValue(args, ref i, args[i], out var injectValue, out error)) {
+                        return false;
+                    }
+
+                    injectPath = injectValue;
+                    break;
+
                 default:
                     error = $"unknown argument: {args[i]}";
                     return false;
@@ -700,7 +813,7 @@ internal static class Program {
             return false;
         }
 
-        options = new Options(questPath, outputPath, persona, false);
+        options = new Options(questPath, outputPath, persona, injectPath, false);
         return true;
     }
 

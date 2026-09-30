@@ -8,6 +8,7 @@ import multer from 'multer';
 
 import { resolveRepoRoot } from '../db.js';
 import type { ApiError } from '../../../shared/index.js';
+import { createCensusService, type CensusService } from '../services/census.js';
 import {
   createExtractionService,
   ExtractionCancelledError,
@@ -85,6 +86,8 @@ export function defaultUploadDir(): string {
 export interface ExtractRouterOptions {
   /** Injected extraction service (tests pass a fake `exec`). */
   service?: ExtractionService;
+  /** Injected census service for `?census=1` (tests pass a fake). */
+  census?: CensusService;
   /** CLI path handed to the default service. */
   cliPath?: string;
   /** Injected process runner handed to the default service. */
@@ -152,6 +155,10 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
       env: options.env,
       maxBufferBytes: options.maxBufferBytes,
     }));
+
+  let censusService = options.census;
+  const getCensus = (): CensusService =>
+    (censusService ??= createCensusService({ env: options.env }));
 
   let resolvedUploadDir = options.uploadDir;
   const getUploadDir = (): string => (resolvedUploadDir ??= defaultUploadDir());
@@ -235,8 +242,17 @@ export function createExtractRouter(options: ExtractRouterOptions = {}): Router 
 
     try {
       const quests = await run.result;
+      // `?census=1` (D139): what the reader ignored, from the same uploaded file. Never fails the request.
+      const census =
+        req.query.census === '1' && !aborted
+          ? await getCensus().run(file.path, run.children)
+          : undefined;
       if (!aborted) {
-        res.json({ quests, count: quests.length });
+        res.json(
+          census === undefined
+            ? { quests, count: quests.length }
+            : { quests, count: quests.length, census },
+        );
       }
     } catch (error) {
       if (aborted || error instanceof ExtractionCancelledError) {

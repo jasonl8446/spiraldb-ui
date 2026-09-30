@@ -242,7 +242,7 @@ test.describe('AC#8 — the four flows, keyboard only', () => {
     );
     // The extraction endpoint (the .NET CLI's HTTP surface) answers with one quest, so the
     // flow is hermetic (D81/D40) — no CLI, no SpiralDB repo.
-    await page.route('**/api/extract/quests', (route) =>
+    await page.route('**/api/extract/quests*', (route) =>
       route.fulfill({
         json: { quests: [{ m_questName: QUEST, m_questLevel: 7, m_goals: [] }], count: 1 },
       }),

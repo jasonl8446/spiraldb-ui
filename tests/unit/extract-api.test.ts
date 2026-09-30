@@ -16,6 +16,7 @@ import {
   UPLOAD_FORMAT_HINT,
   UPLOAD_MAX_BYTES,
 } from '@server/routes/extract';
+import type { CensusService } from '@server/services/census';
 import {
   ChildRegistry,
   ExtractionError,
@@ -122,6 +123,67 @@ describe('POST /api/extract/quests — success', () => {
   it('keeps the spec cap at 512 MB (D2)', () => {
     expect(UPLOAD_MAX_BYTES).toBe(512 * 1024 * 1024);
     expect(ALLOWED_UPLOAD_EXTENSION).toBe('.json');
+  });
+});
+
+describe('POST /api/extract/quests?census=1 (D139)', () => {
+  const CENSUS = {
+    messages: 3,
+    rows: [{ message: 'MSG_SENDGOAL', field: 'PersonaName', count: 2, consumed: false }],
+  };
+
+  function censusReturning(outcome: Awaited<ReturnType<CensusService['run']>>) {
+    const paths: string[] = [];
+    const census: CensusService = {
+      run: (capturePath) => {
+        paths.push(capturePath);
+        return Promise.resolve(outcome);
+      },
+    };
+    return { census, paths };
+  }
+
+  function appWith(service: ExtractionService, census: CensusService): Express {
+    return createTestApp(createExtractRouter({ service, census, uploadDir }));
+  }
+
+  it('adds the census of the same uploaded file next to the quests', async () => {
+    const service = serviceReturning([{ m_questName: 'A' }]);
+    const { census, paths } = censusReturning(CENSUS);
+
+    const res = await request(appWith(service, census))
+      .post('/api/extract/quests?census=1')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ quests: [{ m_questName: 'A' }], count: 1, census: CENSUS });
+    expect(paths).toEqual(service.startedPaths);
+  });
+
+  it('returns { skipped } in place of the census when the tool is missing, and still succeeds', async () => {
+    const { census } = censusReturning({ skipped: 'capture-census not found' });
+
+    const res = await request(appWith(serviceReturning([]), census))
+      .post('/api/extract/quests?census=1')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      quests: [],
+      count: 0,
+      census: { skipped: 'capture-census not found' },
+    });
+  });
+
+  it('does not run the census without the query flag (the response keeps its Phase 2 shape)', async () => {
+    const { census, paths } = censusReturning(CENSUS);
+
+    const res = await request(appWith(serviceReturning([]), census))
+      .post('/api/extract/quests')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.body).toEqual({ quests: [], count: 0 });
+    expect(paths).toEqual([]);
   });
 });
 

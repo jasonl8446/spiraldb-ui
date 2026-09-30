@@ -1,0 +1,70 @@
+{
+  "description": "p7 inject spec for DS-ACAD1-C04-001: Scavenge then Persona. Order per goal: MSG_SENDGOAL, MSG_PERSONAINFO (persona goals), MSG_COMPLETEGOAL, then MSG_REMOVEGOAL unless it is the last goal; MSG_COMPLETEQUEST closes the quest, so the goal completed right before it is the terminal one.",
+  "sendQuestFields": {
+    "QuestNameID": 7700004,
+    "QuestInfo": "P7-PLANT-QuestInfo-DS-ACAD1-C04-001",
+    "NoQuestHelper": 1,
+    "SkipQHAutoSelect": 1,
+    "ActivityType": 2,
+    "ClientTags": {
+      "$blob": "ClientTagList",
+      "tags": [
+        "P7-PLANT-QuestTag-DS-ACAD1-C04-001-A",
+        "P7-PLANT-QuestTag-DS-ACAD1-C04-001-B"
+      ]
+    },
+    "PetOnlyQuest": 1,
+    "Rewards": {
+      "$blob": "LootInfoList",
+      "gold": 1004,
+      "magicXp": 504
+    }
+  },
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-DS-ACAD1-C04-001-g0"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-DS-ACAD1-C04-001-g0"
+      }
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "goal": 0
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 1,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-DS-ACAD1-C04-001-g1"
+      }
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "goal": 1,
+      "fields": {
+        "GoalHyperlink": "P7-PLANT-GoalHyperlink-DS-ACAD1-C04-001-g1"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 1,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-DS-ACAD1-C04-001-g1"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteQuest-DS-ACAD1-C04-001"
+      }
+    }
+  ]
+}

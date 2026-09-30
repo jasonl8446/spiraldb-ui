@@ -762,14 +762,28 @@ export interface QuestObject {
   [key: string]: unknown;
 }
 
-/** `POST /api/extract/quests` success body (docs/spec-api.md L303-307). */
+/** One `capture-census` row (D139): a message type's field, how many messages carry it, and whether the reader reads it. */
+export interface CensusRow {
+  message: string;
+  field: string;
+  count: number;
+  consumed: boolean;
+}
+
+/** The census of the uploaded capture, or why it could not run (D55 posture). */
+export type ExtractCensus = { messages: number; rows: CensusRow[] } | { skipped: string };
+
+/** `POST /api/extract/quests` success body (docs/spec-api.md L303-307; `census` only with `?census=1`, D139). */
 export interface ExtractQuestsResult {
   quests: QuestObject[];
   count: number;
+  census?: ExtractCensus;
 }
 
 /** The extraction endpoint and its multipart field name (docs/spec-api.md L301). */
 export const EXTRACT_QUESTS_PATH = '/api/extract/quests';
+/** The extraction page always asks for the census (D139), so the upload result can show what was ignored. */
+export const EXTRACT_QUESTS_CENSUS_PATH = `${EXTRACT_QUESTS_PATH}?census=1`;
 export const EXTRACT_FILE_FIELD = 'file';
 
 /**
@@ -789,7 +803,7 @@ export function extractQuests(
 ): Promise<ExtractQuestsResult> {
   const body = new FormData();
   body.append(EXTRACT_FILE_FIELD, file);
-  return apiFetch<ExtractQuestsResult>(EXTRACT_QUESTS_PATH, {
+  return apiFetch<ExtractQuestsResult>(EXTRACT_QUESTS_CENSUS_PATH, {
     method: 'POST',
     body,
     signal: options.signal,
