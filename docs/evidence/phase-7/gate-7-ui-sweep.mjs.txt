@@ -1,0 +1,384 @@
+// gate-7 sweep: the Phase 1-6 UI walkthrough arms, driven with the repo's pinned Playwright chromium (D148: the
+// playwright-mcp browser cannot launch on this host) against the throwaway clone-backed stack on :3292.
+// Usage: node ui.mjs <arm> [...]   (run from the repo root, PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers)
+import fs from 'node:fs';
+import path from 'node:path';
+
+import AxeBuilder from '@axe-core/playwright';
+import { chromium } from '@playwright/test';
+
+const BASE = process.env.BASE ?? 'http://localhost:3292';
+const SHOTS = process.env.SHOTS;
+const log = (arm, line) => console.log(`[${arm}] ${line}`);
+const flat = (s) => s.replace(/\s+/g, ' ').trim();
+const toasts = async (page) => (await page.locator('li[data-sonner-toast]').allInnerTexts()).map(flat);
+const editBtn = (page) => page.getByRole('main').getByRole('button', { name: 'Edit', exact: true }).first();
+// Quest pages land in edit mode (p7-14, D133); object pages land in view mode. Enter edit mode only when not in it.
+const ensureEdit = async (page) => {
+  const root = page.getByRole('main').locator('[data-edit-mode]').first();
+  if ((await root.count()) && (await root.getAttribute('data-edit-mode')) === 'true') return;
+  await editBtn(page).click();
+};
+// A goal card's own editor opens one card at a time through the card's "Edit" button.
+const openCard = (page, n = 0) =>
+  page.getByRole('tabpanel').getByRole('article').nth(n).getByRole('button', { name: 'Edit', exact: true }).click();
+const shot = (page, name) => SHOTS && page.screenshot({ path: path.join(SHOTS, `${name}.png`) });
+
+const arms = {
+  async p1_6(page) {
+    const A = 'P1-6';
+    await page.goto(`${BASE}/settings`);
+    await page.getByRole('button', { name: 'Sync Now' }).waitFor();
+    log(A, `settings main text: ${flat(await page.getByRole('main').innerText()).slice(0, 700)}`);
+    await page.getByRole('button', { name: 'Sync Now' }).click();
+    const toast = page.locator('li[data-sonner-toast]').filter({ hasText: 'Sync complete' });
+    await toast.waitFor({ timeout: 180_000 });
+    log(A, `toast: ${flat(await toast.innerText())}`);
+    await shot(page, 'p1-06-settings-sync-toast');
+  },
+
+  async p1_6b(page) {
+    const A = 'P1-6';
+    await page.goto(`${BASE}/npc-inventories/87112`);
+    const edit = editBtn(page);
+    if (await edit.isVisible().catch(() => false)) await edit.click();
+    const combo = page.getByRole('combobox').first();
+    await combo.waitFor();
+    log(A, `combo aria-label: ${await combo.getAttribute('aria-label')}; trigger: ${flat(await combo.innerText())}`);
+    await combo.click();
+    const search = page.getByRole('combobox', { name: /^Search / }).or(page.getByPlaceholder(/Search/)).last();
+    await search.fill('Gretta');
+    await page.waitForTimeout(800);
+    const opts = (await page.getByRole('option').allInnerTexts()).map(flat);
+    log(A, `typed "Gretta" -> ${JSON.stringify(opts.slice(0, 5))}`);
+    await page.getByRole('option').first().click();
+    log(A, `after select: trigger "${flat(await combo.innerText())}"; hidden inputs ${JSON.stringify(await page.locator('input[type=hidden]').evaluateAll((els) => els.map((e) => `${e.name}=${e.value}`)))}`);
+    await shot(page, 'p1-06-dropdown-selected');
+  },
+
+  async p2_4(page) {
+    const A = 'P2-4';
+    await page.goto(`${BASE}/quests/extract`);
+    await page.locator('input[type=file]').setInputFiles(process.env.TWO_QUESTS);
+    const list = page.getByRole('listbox', { name: 'Extracted quests' });
+    await list.waitFor({ timeout: 60_000 });
+    log(A, `results: ${JSON.stringify((await list.getByRole('option').allInnerTexts()).map(flat))}`);
+    log(A, `tabs: ${JSON.stringify((await page.getByRole('tab').allInnerTexts()).map(flat))}`);
+    await shot(page, 'p2-04-results');
+    await page.getByRole('button', { name: 'Save All to SpiralDB' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.waitFor();
+    log(A, `confirm dialog: ${flat(await dialog.innerText())}`);
+    await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.locator('li[data-sonner-toast]').filter({ hasText: 'saved and committed' }).nth(1).waitFor({ timeout: 60_000 });
+    log(A, `toasts: ${JSON.stringify(await toasts(page))}`);
+  },
+
+  async p2_8(page) {
+    const A = 'P2-8';
+    await page.goto(`${BASE}/quests`);
+    await page.getByPlaceholder('Search quests...').fill('MB-YARD1');
+    await page.waitForTimeout(800);
+    log(A, `rows: ${JSON.stringify((await page.locator('tbody tr').allInnerTexts()).map(flat))}`);
+    await page.locator('tbody tr').first().getByRole('link').first().click();
+    await page.waitForURL('**/quests/MB-YARD1-C01-001**');
+    await page.getByRole('button', { name: 'Mark Reviewed' }).click();
+    const dialog = page.getByRole('dialog');
+    log(A, `dialog: ${flat(await dialog.innerText())}`);
+    await dialog.getByLabel(/Notes/).fill('gate-7 browse walkthrough');
+    await dialog.getByRole('button', { name: 'Mark Reviewed' }).click();
+    await page.locator('li[data-sonner-toast]').filter({ hasText: 'marked reviewed' }).waitFor();
+    log(A, `toast: ${JSON.stringify(await toasts(page))}`);
+    log(A, `badge: ${JSON.stringify(await page.locator('[aria-label^="Status: "]').evaluateAll((e) => e.map((x) => x.getAttribute('aria-label'))))}`);
+    const hist = page.getByRole('list', { name: 'Status history' });
+    if (await hist.count()) log(A, `history: ${flat(await hist.innerText())}`);
+  },
+
+  async p3_3(page) {
+    const A = 'P3-3';
+    await page.goto(`${BASE}/quests/WC-CYCLOPS-MAIN-002`);
+    await page.getByRole('tab', { name: 'Goals' }).click();
+    await ensureEdit(page);
+    await openCard(page);
+    const root = page.locator('[data-edit-mode]');
+    log(A, `data-edit-mode=${await root.getAttribute('data-edit-mode')} data-dirty=${await root.getAttribute('data-dirty')}`);
+    const box = page.getByLabel('Use Patron (m_usePatron)', { exact: true }).first();
+    log(A, `goal 1 m_usePatron before: ${await box.isChecked()}`);
+    await box.check();
+    log(A, `after check: ${await box.isChecked()} data-dirty=${await root.getAttribute('data-dirty')}`);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.locator('li[data-sonner-toast]').filter({ hasText: 'saved and committed' }).waitFor({ timeout: 60_000 });
+    log(A, `toast: ${JSON.stringify(await toasts(page))}; data-dirty=${await root.getAttribute('data-dirty')}`);
+  },
+
+  async p3_4(page) {
+    const A = 'P3-4';
+    await page.goto(`${BASE}/quests/WC-CYCLOPS-MAIN-002`);
+    await page.getByRole('tab', { name: 'Goals' }).click();
+    await page.waitForTimeout(800);
+    const card = flat(await page.getByRole('tabpanel').innerText());
+    log(A, `goals panel after full reload (read mode): ${card.slice(0, 400)}`);
+    await ensureEdit(page);
+    await openCard(page);
+    const box = page.getByLabel('Use Patron (m_usePatron)', { exact: true }).first();
+    log(A, `goal 1 editor checkbox checked=${await box.isChecked()} data-dirty=${await page.locator('[data-edit-mode]').getAttribute('data-dirty')}`);
+  },
+
+  async p3_5(page) {
+    const A = 'P3-5';
+    await page.goto(`${BASE}/quests/WC-CYCLOPS-MAIN-002`);
+    await page.getByRole('tab', { name: 'Goals' }).click();
+    await ensureEdit(page);
+    const doc = await (await fetch(`${BASE}/api/quests/WC-CYCLOPS-MAIN-002`)).json();
+    const start = doc.m_goals[0].m_goalName;
+    log(A, `served m_startGoals = ${JSON.stringify(doc.m_startGoals)}: first "Set as Start Goal" on ${start}, then delete it`);
+    const card = page.getByRole('tabpanel').getByRole('article').first();
+    await card.getByRole('button', { name: /Set as Start Goal/ }).first().click();
+    await page.waitForTimeout(300);
+    const del = page.getByRole('button', { name: new RegExp(`^Delete .+, ${start}$`) }).first();
+    log(A, `deleting via "${await del.getAttribute('aria-label') ?? flat(await del.innerText())}"`);
+    await del.click();
+    const confirm = page.getByRole('dialog');
+    if (await confirm.isVisible().catch(() => false)) {
+      log(A, `confirm: ${flat(await confirm.innerText())}`);
+      await confirm.getByRole('button', { name: /Delete/ }).last().click();
+    }
+    await page.waitForTimeout(500);
+    const alert = page.getByRole('alert', { name: 'Quest validation' });
+    log(A, `role=alert: ${flat(await alert.innerText())}`);
+    const status = page.getByRole('status', { name: 'Quest validation' });
+    if (await status.count()) log(A, `role=status: ${flat(await status.innerText())}`);
+    const save = page.getByRole('button', { name: 'Save', exact: true });
+    log(A, `Save aria-disabled=${await save.getAttribute('aria-disabled')} data-blocked=${await save.getAttribute('data-blocked')} aria-describedby=${await save.getAttribute('aria-describedby')}`);
+    await shot(page, 'p3-05-validation-negative');
+    await page.getByRole('button', { name: 'Discard', exact: true }).click();
+    const d2 = page.getByRole('dialog');
+    if (await d2.isVisible().catch(() => false)) await d2.getByRole('button', { name: /Discard/ }).last().click();
+    await page.waitForTimeout(500);
+    log(A, `after Discard: data-dirty=${await page.locator('[data-edit-mode]').getAttribute('data-dirty')} alert count=${await alert.count()} Save aria-disabled=${await save.getAttribute('aria-disabled').catch(() => 'n/a')}`);
+  },
+
+  async p3_6(page) {
+    const A = 'P3-6';
+    await page.goto(`${BASE}/quests/MB-YARD1-C01-001`);
+    await page.getByRole('tab', { name: 'Goal Logic' }).click();
+    await page.locator('.react-flow__node').first().waitFor({ timeout: 30_000 });
+    await page.waitForTimeout(1000);
+    log(A, `flowchart MB-YARD1-C01-001: nodes=${await page.locator('.react-flow__node').count()} edges=${await page.locator('.react-flow__edge').count()}`);
+    log(A, `node labels: ${JSON.stringify((await page.locator('.react-flow__node').allInnerTexts()).map(flat))}`);
+    await shot(page, 'p3-06-flowchart-MB-YARD1');
+    await page.getByRole('tab', { name: 'Requirements' }).click();
+    await ensureEdit(page);
+    await page.waitForTimeout(500);
+    const selects = await page.getByRole('tabpanel').locator('select').evaluateAll((s) => s.map((x) => [x.getAttribute('aria-label'), [...x.options].map((o) => o.value)]));
+    log(A, `requirements selects: ${JSON.stringify(selects)}`);
+    log(A, `requirements panel: ${flat(await page.getByRole('tabpanel').innerText()).slice(0, 600)}`);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).or(page.getByRole('button', { name: 'Discard', exact: true })).first().click().catch(() => {});
+    for (const q of ['WC-CYCLOPS-MAIN-002', 'WC-UNICORN-MAIN-007']) {
+      await page.goto(`${BASE}/quests/${q}`);
+      await page.getByRole('tab', { name: 'Dialog' }).click();
+      await page.waitForTimeout(1000);
+      const groups = await page.getByRole('tabpanel').getByText(/^Group fields/).count();
+      const doc = await (await fetch(`${BASE}/api/quests/${q}`)).json();
+      const quest = doc.quest ?? doc;
+      const lists = [quest.m_dialogList, ...(quest.m_goals ?? []).map((g) => g.m_dialogList)].filter(Boolean);
+      const served = lists.flatMap((l) => (l.m_dialogs ?? []).map((d) => `${d.m_dialogTag} ${(d.m_dialogEntries ?? []).length}`));
+      log(A, `dialog ${q}: DOM "Group fields" x ${groups}; served groups ${served.length} [${served.join(', ')}]`);
+    }
+    await shot(page, 'p3-06-dialog-WC-UNICORN-007');
+  },
+
+  async p4_4(page) {
+    const A = 'P4-4';
+    await page.goto(`${BASE}/drop-tables/DS-ACAD-C01-001`);
+    await ensureEdit(page);
+    const save = page.getByRole('button', { name: 'Save', exact: true });
+    const cases = [
+      ['Roll chance value', '1.5'],
+      ['Name', ''],
+      ['Minimum gold', '100', 'Maximum gold', '10'],
+    ];
+    for (const [label, value, label2, value2] of cases) {
+      const input = page.getByRole('main').getByLabel(label, { exact: true }).first();
+      const input2 = label2 ? page.getByRole('main').getByLabel(label2, { exact: true }).first() : null;
+      const before2 = input2 ? await input2.inputValue() : null;
+      if (input2) await input2.fill(value2);
+      const before = await input.inputValue();
+      await input.fill(value);
+      await page.waitForTimeout(400);
+      const banner = page.getByRole('alert').filter({ hasText: /block/ }).first();
+      const fieldErrors = await page.locator('[data-severity="error"]').allInnerTexts();
+      log(A, `${label} "${value}"${label2 ? ` + ${label2} "${value2}"` : ''} -> Save aria-disabled=${await save.getAttribute('aria-disabled')}; banner: ${flat(await banner.innerText().catch(() => '(none)'))}; field errors ${JSON.stringify(fieldErrors.map(flat))}`);
+      await input.fill(before);
+      if (input2) await input2.fill(before2);
+      await page.waitForTimeout(300);
+    }
+    log(A, `restored inputs -> Save aria-disabled=${await save.getAttribute('aria-disabled')}`);
+    await page.getByRole('button', { name: 'Discard', exact: true }).click().catch(() => {});
+  },
+
+  async viewport(page) {
+    const A = 'P4-6/P5-4';
+    const routes = ['/', '/quests/extract', '/quests', '/quests/catalog', '/quests/WC-CYCLOPS-MAIN-002', '/drafts', '/glossary',
+      '/drop-tables', '/drop-tables/DS-ACAD-C01-001', '/npc-inventories', '/npc-inventories/87112', '/npc-spell-inventories',
+      '/npc-spell-inventories/38226', '/creature-spellbooks', '/creature-spellbooks/Mdeck-L-BR-DS-SylviaDrake-A-50',
+      '/npc-drop-tables', '/treasure-card-inventories', '/treasure-card-inventories/38214', '/zone-transfers',
+      '/zone-transfers/WizardCity/WC_Hub', '/global-registry', '/settings', '/npcs/38098'];
+    let cells = 0, bad = [];
+    for (const w of [375, 768, 1440]) {
+      await page.setViewportSize({ width: w, height: 900 });
+      const rails = new Set();
+      for (const r of routes) {
+        await page.goto(`${BASE}${r}`);
+        await page.getByRole('main').waitFor();
+        await page.waitForTimeout(700);
+        const m = await page.evaluate(() => ({
+          over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          rail: Math.round(document.querySelector('aside[aria-label="Sidebar"]')?.getBoundingClientRect().width ?? 0),
+          tables: document.querySelectorAll('main table').length,
+          burger: !!document.querySelector('[aria-label="Open navigation"]'),
+        }));
+        cells++;
+        rails.add(`${m.rail}`);
+        if (m.over > 1) bad.push(`${w} ${r} overflow ${m.over}px`);
+        if (w === 375 && ['/quests', '/drop-tables', '/npc-inventories', '/zone-transfers'].includes(r)) log(A, `375 ${r}: tables=${m.tables} burger=${m.burger}`);
+        if (w === 768 && ['/quests', '/drop-tables'].includes(r)) log(A, `768 ${r}: tables=${m.tables}`);
+      }
+      log(A, `width ${w}: sidebar widths seen ${JSON.stringify([...rails])}`);
+    }
+    log(A, `route x width cells: ${cells}; overflow violations (>1px): ${bad.length ? JSON.stringify(bad) : 'none'}`);
+  },
+
+  async p5_2(page, browser) {
+    const A = 'P5-2';
+    const b = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+    await b.goto(`${BASE}/`);
+    await b.getByRole('heading', { name: 'Recent Activity', exact: true }).waitFor();
+    const read = async () => flat(await b.getByRole('main').innerText()).slice(0, 420);
+    log(A, `B before: ${await read()}`);
+    await page.goto(`${BASE}/quests/WC-CYCLOPS-MAIN-002`);
+    await page.getByRole('button', { name: 'Mark Verified' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel(/Notes/).fill('gate-7 P5-2 two-session');
+    await dialog.getByRole('button', { name: 'Mark Verified' }).click();
+    await page.locator('li[data-sonner-toast]').filter({ hasText: 'marked verified' }).waitFor();
+    log(A, `A toast: ${JSON.stringify(await toasts(page))}`);
+    log(A, `B before refresh (unchanged): ${await read()}`);
+    await b.reload();
+    await b.getByRole('heading', { name: 'Recent Activity', exact: true }).waitFor();
+    await b.waitForTimeout(800);
+    log(A, `B after refresh: ${await read()}`);
+    await shot(b, 'p5-02-second-session-dashboard');
+  },
+
+  async p5_5(page) {
+    const A = 'P5-5';
+    const pages = [
+      ['Dashboard', '/', null],
+      ['Quest list', '/quests', null],
+      ['Quest detail (edit mode)', '/quests/WC-CYCLOPS-MAIN-002', 'edit'],
+      ['DropTable detail', '/drop-tables/DS-ACAD-C01-001', null],
+    ];
+    for (const [name, url, mode] of pages) {
+      await page.goto(`${BASE}${url}`);
+      await page.getByRole('main').waitFor();
+      await page.waitForTimeout(1000);
+      if (mode === 'edit') await ensureEdit(page);
+      const r = await new AxeBuilder({ page }).analyze();
+      const by = {};
+      for (const v of r.violations) by[v.impact] = (by[v.impact] ?? 0) + 1;
+      log(A, `${name.padEnd(26)} violations: ${r.violations.length} byImpact ${JSON.stringify(by)} ${r.violations.map((v) => v.id).join(',')} (axe ${r.testEngine.version})`);
+    }
+    await page.evaluate(() => { const i = document.createElement('img'); i.id = 'g7-neg'; i.src = 'data:,'; document.querySelector('main').appendChild(i); });
+    const neg = await new AxeBuilder({ page }).analyze();
+    log(A, `negative control (img without alt injected): ${JSON.stringify(neg.violations.map((v) => ({ id: v.id, impact: v.impact })))}`);
+    await page.evaluate(() => document.getElementById('g7-neg').remove());
+    log(A, `after removing it: ${(await new AxeBuilder({ page }).analyze()).violations.length} violations`);
+  },
+
+  async p6_5(page) {
+    const A = 'P6-5';
+    for (const r of ['/npc-inventories', '/npc-spell-inventories', '/treasure-card-inventories', '/zone-transfers', '/drop-tables', '/creature-spellbooks']) {
+      await page.goto(`${BASE}${r}`);
+      await page.locator('tbody tr').first().waitFor();
+      const rows = (await page.locator('tbody tr').allInnerTexts()).slice(0, 2).map((t) => flat(t).slice(0, 90));
+      log(A, `${r.padEnd(28)} ${JSON.stringify(rows)}`);
+    }
+    await page.goto(`${BASE}/npc-inventories`);
+    for (const q of ['87112', 'Ugo']) {
+      await page.getByPlaceholder('Search NPC inventories...').fill(q);
+      await page.waitForTimeout(700);
+      const rows = (await page.locator('tbody tr').allInnerTexts()).map((t) => flat(t).slice(0, 70));
+      log(A, `search "${q}" -> ${rows.length} row(s) ${JSON.stringify(rows)}`);
+    }
+  },
+
+  async p6_6(page) {
+    const A = 'P6-6';
+    const Q = process.env.SCAFFOLD ?? 'DM-GRAVE-MAIN-008';
+    await page.goto(`${BASE}/quests/catalog`);
+    await page.getByTestId('catalog-count').waitFor();
+    log(A, `catalog (missing only OFF): ${flat(await page.getByTestId('catalog-count').innerText())}; headline: ${flat(await page.getByTestId('coverage-headline').innerText())}`);
+    await page.getByRole('checkbox', { name: 'missing only' }).check();
+    await page.waitForTimeout(800);
+    log(A, `missing only ON: ${flat(await page.getByTestId('catalog-count').innerText())}`);
+    await page.getByPlaceholder(/Search/).first().fill(Q).catch(() => {});
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: `Scaffold ${Q}` }).click();
+    await page.waitForURL(`**/quests/${Q}**`, { timeout: 30_000 });
+    log(A, `navigated to ${page.url().replace(BASE, '')}`);
+    await page.getByRole('heading').first().waitFor();
+    log(A, `header: ${flat(await page.getByRole('heading').first().innerText())}`);
+    const ev = page.getByRole('complementary').filter({ hasText: /World gates|Evidence/ }).first();
+    if (await ev.count()) log(A, `evidence panel: ${flat(await ev.innerText()).slice(0, 600)}`);
+    await shot(page, 'p6-06-scaffold-evidence');
+  },
+
+  async p6_6b(page) {
+    const A = 'P6-6';
+    const Q = process.env.SCAFFOLD ?? 'DM-GRAVE-MAIN-008';
+    await page.goto(`${BASE}/quests/${Q}`);
+    await page.getByRole('main').locator('[data-edit-mode]').waitFor();
+    log(A, `page head: ${flat(await page.getByRole('main').innerText()).slice(0, 260)}`);
+    await page.getByRole('tab', { name: 'Info' }).click();
+    log(A, `Info tab: ${flat(await page.getByRole('tabpanel').innerText()).slice(0, 300)}`);
+    await page.getByRole('tab', { name: 'Dialog' }).click();
+    await ensureEdit(page);
+    const newTag = page.getByLabel('New dialog tag', { exact: true });
+    log(A, `New dialog tag options: ${JSON.stringify(await newTag.evaluate((s) => [...s.options].map((o) => o.value)))}`);
+    await newTag.selectOption('Prep');
+    await page.getByRole('button', { name: 'Add Dialog Tag', exact: true }).click();
+    await page.waitForTimeout(500);
+    log(A, `data-dirty=${await page.locator('[data-edit-mode]').getAttribute('data-dirty')}; dialog panel: ${flat(await page.getByRole('tabpanel').innerText()).slice(0, 300)}`);
+    await shot(page, 'p6-06-scaffold-dialog');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.locator('li[data-sonner-toast]').filter({ hasText: 'saved and committed' }).waitFor({ timeout: 60_000 });
+    log(A, `toast: ${JSON.stringify(await toasts(page))}; data-dirty=${await page.locator('[data-edit-mode]').getAttribute('data-dirty')}`);
+    await shot(page, 'p6-06-scaffold-dialog-saved');
+  },
+};
+
+const browser = await chromium.launch();
+let failed = 0;
+try {
+  for (const arm of process.argv.slice(2)) {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('console', (m) => m.type() === 'error' && errors.push(flat(m.text()).slice(0, 160)));
+    try {
+      await arms[arm](page, browser);
+      console.log(`[${arm}] ARM DONE`);
+    } catch (e) {
+      failed++;
+      console.log(`[${arm}] ARM FAILED: ${flat(String(e)).slice(0, 600)}`);
+      if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `FAILED-${arm}.png`) }).catch(() => {});
+    }
+    if (errors.length) console.log(`[${arm}] console errors: ${JSON.stringify([...new Set(errors)].slice(0, 5))}`);
+    await ctx.close();
+  }
+} finally {
+  await browser.close();
+}
+fs.writeSync(1, '');
+process.exit(failed ? 1 : 0);

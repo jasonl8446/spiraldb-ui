@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
@@ -43,6 +44,17 @@ import {
  */
 
 const DB_FILE = path.resolve('data/test-ui.db');
+
+/**
+ * CI has no `data/` (D55), so the D17 clone is absent there, and every test here is clone-bound:
+ * the saves commit into it and each test asserts its porcelain. gate-7's CI simulation measured it
+ * — the first test failed in `beforeEach` on `git -C data/test-spiraldb` and, with that hook
+ * relaxed, still failed at its draft editor (`[data-draft="missing"]` never rendered); the serial
+ * rest never ran. The file is therefore skipped, visibly and with this reason, when the clone is
+ * absent; `tests/unit/p7-*.test.ts` carry the draft/accept contract into CI.
+ */
+const CLONE_READY = existsSync(path.join(CLONE, '.git'));
+const NO_CLONE = `the D17 clone ${CLONE} is absent (CI has no data/, D55); these tests write into it`;
 
 /** Every catalog name and id this file seeds — the cleanup's whole scope. */
 const NAMES = [
@@ -191,6 +203,7 @@ async function pointBranchAtClone(request: APIRequestContext): Promise<void> {
 }
 
 test.describe.configure({ mode: 'serial' });
+test.skip(!CLONE_READY, NO_CLONE);
 
 test.beforeEach(async ({ request }) => {
   cleanupRows();

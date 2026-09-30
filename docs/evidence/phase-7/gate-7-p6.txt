@@ -1,0 +1,501 @@
+######## P6-1
+
+$ time node scripts/wad-census.mjs --gamedata /home/jason/Documents/git-projects/Aurorium/data/V_r806919.Wizard_1_610/Data/GameData --classes /home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.ObjectProperty/GeneratorInput/ClientDump.json > <scratch>/g7/p6-01-census.txt; head -12 <scratch>/g7/p6-01-census.txt; grep -E 'TutorialQuestTemplate|^QuestTemplate |WizZoneData' <scratch>/g7/p6-01-census.txt
+
+real	0m32.015s
+user	0m39.714s
+sys	0m5.250s
+wads: 3589
+object entries: shape A (BINd) 176943 in 140 classes; shape B (bare) 6733 in 2 classes
+
+class                                 count  shape
+WizItemTemplate                       76679  A
+WizGameObjectTemplate                 15255  A
+SpellTemplate                         14856  A
+RecipeTemplate                        12402  A
+GameObjectTemplate                     8012  A
+SpawnManager                           6753  A
+HousingNodeList                        5135  A
+CinematicTemplate                      3985  A
+WizZoneData                            3356  B
+WizZoneData                              21  A
+TutorialQuestTemplate                    11  A
+rc=0
+
+######## P6-2
+
+$ time tools/bin/wad-scan extract --gamedata /home/jason/Documents/git-projects/Aurorium/data/V_r806919.Wizard_1_610/Data/GameData --select gamedata.bin,triggers.xml --out <scratch>/g7/extract.ndjson
+wad-scan extract: 6733 row(s) in 4347 ms (gamedata.bin 3356, triggers.xml 3377); deserialized 6733, failed 0; unreadable archives 0; out <scratch>/g7/extract.ndjson
+
+real	0m4.414s
+user	0m4.617s
+sys	0m0.220s
+rc=0
+
+$ wc -l < <scratch>/g7/extract.ndjson; wc -c < <scratch>/g7/extract.ndjson; grep -c '"error"' <scratch>/g7/extract.ndjson; node -e "const m={};for(const l of require('fs').readFileSync('<scratch>/g7/extract.ndjson','utf8').split('\n'))if(l){const c=JSON.parse(l).class;m[c]=(m[c]||0)+1}console.log(m)"
+6733
+97660625
+0
+{ WizZoneData: 3356, WizZoneTriggers: 3377 }
+rc=0
+
+######## P6-3 — sync_history (run 1 = P1-1; run 2 = the UI Sync Now in P1-6, read later) + coverage
+
+$ curl -s localhost:3292/api/quests/coverage | jq -c .
+{"nameable":1717,"id_space":4823,"defined":322,"missing":1395,"references":2855,"corpus":{"spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","quest_files":322}}
+rc=0
+
+######## P6-4
+
+$ curl -s localhost:3292/api/quests/WC-CYCLOPS-MAIN-002/evidence | jq -c 'keys'
+["dialogue","goal_gates","quest","references","text_rows","warnings"]
+rc=0
+
+$ curl -s localhost:3292/api/quests/WC-CYCLOPS-MAIN-002/evidence | jq -c '.quest'
+{"quest_name":"WC-CYCLOPS-MAIN-002","quest_id":1520015,"has_definition":true,"link_kind":"none","title":"Run and Done","title_source":"none","inference_basis":null}
+rc=0
+
+$ curl -s localhost:3292/api/quests/WC-CYCLOPS-MAIN-002/evidence | jq -c '.text_rows | {rows: length, used: map(select(.used_by_this_file)) | length, first: .[0].key}'
+{"rows":30,"used":22,"first":"WizQst17318F_00000000"}
+rc=0
+
+$ curl -s localhost:3292/api/quests/WC-CYCLOPS-MAIN-002/evidence | jq -c '{dialogue: (.dialogue|length), d0_speaker: .dialogue[0].speaker, goal_gates: .goal_gates, warnings: .warnings}'
+{"dialogue":27,"d0_speaker":{"persona":"WC-RAV-NPC02_Persona","override_key":null,"st_key":"NPCFormats_First_Last","template_id":38206,"name":"Cyrus Drake","source":"composed"},"goal_gates":[],"warnings":[]}
+rc=0
+######## P6-3 (cont.) — sync_history after run 1 (CLI, P1-1) and run 2 (the UI Sync Now, P1-6)
+
+$ node -e "const d=require('better-sqlite3')('<scratch>/g7/ui.db',{readonly:true});for(const r of d.prepare('SELECT id,sync_timestamp,items_count,spells_count,npcs_count,quests_count,zones_count,status FROM sync_history').all())console.log(JSON.stringify(r))"
+{"id":1,"sync_timestamp":"2026-09-30T08:29:04Z","items_count":79835,"spells_count":18173,"npcs_count":23033,"quests_count":322,"zones_count":3357,"status":"success"}
+{"id":2,"sync_timestamp":"2026-09-30T08:35:18Z","items_count":79835,"spells_count":18173,"npcs_count":23033,"quests_count":322,"zones_count":3357,"status":"success"}
+rc=0
+
+$ curl -s localhost:3292/api/quests/coverage | jq -c .
+{"nameable":1717,"id_space":4823,"defined":322,"missing":1395,"references":2855,"corpus":{"spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","quest_files":324}}
+rc=0
+
+######## P6-5 — server-side pairs and the palette's matched_on
+
+$ curl -s localhost:3292/api/npc-inventories | jq -c --arg k '87112' '{rows: (.objects|length), with_name: ([.objects[]|select(.friendly_name!=null)]|length), row: (.objects[]|select(.key==$k)|{key, friendly_name})}'
+{"rows":216,"with_name":211,"row":{"key":"87112","friendly_name":"Ugo Kalahad"}}
+rc=0
+
+$ curl -s localhost:3292/api/npc-spell-inventories | jq -c --arg k '38226' '{rows: (.objects|length), with_name: ([.objects[]|select(.friendly_name!=null)]|length), row: (.objects[]|select(.key==$k)|{key, friendly_name})}'
+{"rows":78,"with_name":76,"row":{"key":"38226","friendly_name":"Diego the Duelmaster"}}
+rc=0
+
+$ curl -s localhost:3292/api/treasure-card-inventories | jq -c --arg k '38214' '{rows: (.objects|length), with_name: ([.objects[]|select(.friendly_name!=null)]|length), row: (.objects[]|select(.key==$k)|{key, friendly_name})}'
+{"rows":2,"with_name":1,"row":{"key":"38214","friendly_name":"Harold Argleston"}}
+rc=0
+
+$ curl -s localhost:3292/api/zone-transfers | jq -c --arg k 'WizardCity/WC_Hub' '{rows: (.objects|length), with_name: ([.objects[]|select(.friendly_name!=null)]|length), row: (.objects[]|select(.key==$k)|{key, friendly_name})}'
+{"rows":1206,"with_name":1204,"row":{"key":"WizardCity/WC_Hub","friendly_name":"The Commons"}}
+rc=0
+
+$ curl -s localhost:3292/api/drop-tables | jq -c '{rows: (.objects|length), with_name: ([.objects[]|select(.friendly_name!=null)]|length), first: (.objects[0]|{key, friendly_name})}'
+{"rows":319,"with_name":0,"first":{"key":"FV-NEW-DROPTABLE-001","friendly_name":null}}
+rc=0
+
+$ curl -s localhost:3292/api/creature-spellbooks | jq -c '{rows: (.objects|length), with_name: ([.objects[]|select(.friendly_name!=null)]|length)}'
+{"rows":135,"with_name":0}
+rc=0
+
+$ curl -s 'localhost:3292/api/search?q=87112' | jq -c '[.results[]? // .[]? | {type: (.type // .object_type), key, label, name, matched_on}] | .[:5]'
+jq: error (at <stdin>:0): Cannot index string with string ("type")
+rc=5
+
+$ curl -s 'localhost:3292/api/search?q=Ugo' | jq -c '[.results[]? // .[]? | {type: (.type // .object_type), key, label, name, matched_on}] | .[:5]'
+jq: error (at <stdin>:0): Cannot index string with string ("type")
+rc=5
+
+$ curl -s 'localhost:3292/api/search?q=Cyrus' | jq -c '[.results[]? // .[]? | {type: (.type // .object_type), key, label, name, matched_on}] | .[:5]'
+jq: error (at <stdin>:0): Cannot index string with string ("type")
+rc=5
+
+$ curl -s 'localhost:3292/api/search?q=DS-ACAD-C01-001' | jq -c '[.results[]? // .[]? | {type: (.type // .object_type), key, label, name, matched_on}] | .[:5]'
+jq: error (at <stdin>:0): Cannot index string with string ("type")
+rc=5
+
+$ curl -s 'localhost:3292/api/search?q=Gretta' | jq -c '[.results[]? // .[]? | {type: (.type // .object_type), key, label, name, matched_on}] | .[:5]'
+jq: error (at <stdin>:0): Cannot index string with string ("type")
+rc=5
+
+$ curl -s 'localhost:3292/api/search?q=Gretta' | jq -c 'keys'
+["groups","limit","query","total","truncated","unresolved"]
+rc=0
+[P6-5] /npc-inventories             ["Extracted Free Pet Vendor (100364) 3 days ago Open","Extracted Rebekah WhiteFlash (1206079) 3 days ago Open"]
+[P6-5] /npc-spell-inventories       ["Extracted Dworgyn (1206770) 3 days ago Open","Extracted Dworgyn (1206795) 3 days ago Open"]
+[P6-5] /treasure-card-inventories   ["Extracted Harold Argleston (38214) 1 minute ago Open","Extracted 900000003 1 minute ago Open"]
+[P6-5] /zone-transfers              ["Extracted Garden Of Hesperides (Aquila/AQ_Z00_Hub) 3 days ago Open","Extracted Mount Olympus (Aquila/AQ_Z01_MountOlympus) 3 days ago Open"]
+[P6-5] /drop-tables                 ["Extracted DS-ACAD-C01-001 1 minute ago Open","Extracted DS-ACAD-C01-002 1 minute ago Open"]
+[P6-5] /creature-spellbooks         ["Extracted Boss-B-KT-Ra 3 days ago Open","Extracted Boss-L-KT-FennecFox-Raider-15 3 days ago Open"]
+[P6-5] search "87112" -> 1 row(s) ["Extracted Ugo Kalahad (87112) 1 minute ago Open"]
+[P6-5] search "Ugo" -> 1 row(s) ["Extracted Ugo Kalahad (87112) 2 minutes ago Open"]
+
+######## P6-6 — scaffold + dialogue row (UI arms p6_6 / p6_6b raw), then the clone
+[P6-6] page head: Back to Quests Stakes and Stones (DM-GRAVE-MAIN-008) Extracted Mark Reviewed Mark Verified Edit Save Overview Info Goals Goal Logic Requirements Results Dialog No Prep dialog speaker Steps Order shown as stored: this quest has no goal logic. This quest defines
+[P6-6] Info tab: Quest (m_questName) Unique quest identifier Quest title (m_questTitle) QuestTitle_00002165 String table key for quest title Quest level (m_questLevel) Suggested level Mainline (m_mainline) Mainline story quest Hidden (m_isHidden) Hidden from quest log Repeatability (m_questRepeat) Repeatability flag
+[P6-6] New dialog tag options: ["Prep","Completion"]
+[P6-6] data-dirty=true; dialog panel: Dialog list (m_dialogList) m_dialogList is present in all 322 corpus quests (m_dialogs empty in 7); a tag group is {m_dialogTag, m_dialogEntries, m_madlibs, m_dialogEvents, m_noAggroWhileDialogIsUp, m_noAggroNoDelay}. 1 Prep 1 entry Dialog tag (m_dialogTag) A free string: "Prep" 322, "Completion" 44
+[P6-6] toast: ["Quest DM-GRAVE-MAIN-008 saved and committed","Imported 2,271 existing entries from SpiralDB"]; data-dirty=false
+[p6_6b] ARM DONE
+[p6_6b] console errors: ["Failed to load resource: the server responded with a status of 404 (Not Found)"]
+[P6-6] catalog (missing only OFF): 1717 catalog rows; headline: 322 defined of 1,717 nameable of ~4,823 quests the client holds text for — corpus: /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb (323 quest files)
+[P6-6] missing only ON: 1395 missing
+[P6-6] navigated to /quests/DM-GRAVE-MAIN-008?panel=evidence
+[P6-6] header: Quest Detail
+[p6_6] ARM FAILED: Error: locator.fill: Error: Element is not an <input>, <textarea> or [contenteditable] element Call log:  - waiting for getByLabel('New dialog tag', { exact: true })  - locator resolved to <select id=":re:" class="min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">…</select>  - fill("Prep")  - attempting fill action  - waiting for element to be visible, ena
+[p6_6] console errors: ["Failed to load resource: the server responded with a status of 404 (Not Found)"]
+
+$ git -C data/test-spiraldb log --format='%h %s' -2
+b10dc4d spiraldb: update quest DM-GRAVE-MAIN-008
+777ff17 spiraldb: create quest DM-GRAVE-MAIN-008
+rc=0
+
+$ git -C data/test-spiraldb show --name-status --format='%h %s' HEAD~1
+777ff17 spiraldb: create quest DM-GRAVE-MAIN-008
+
+A	QuestMetadatas/questmetadata_DM-GRAVE-MAIN-008.json
+A	QuestTemplates/questtemplates_DM-GRAVE-MAIN-008.json
+rc=0
+
+$ cat data/test-spiraldb/QuestMetadatas/questmetadata_DM-GRAVE-MAIN-008.json
+{
+  "QuestTemplateId": "questtemplates/DM-GRAVE-MAIN-008",
+  "Name": "DM-GRAVE-MAIN-008",
+  "Description": "Scaffolded from the quest catalog (link_kind: direct; title QuestTitle_00002165).",
+  "CreatedAt": "2026-09-30T08:44:37.938Z",
+  "ModifiedAt": "2026-09-30T08:44:57.208Z",
+  "CreatedBy": "Gate7 Sweep",
+  "ModifiedBy": "Gate7 Sweep"
+}
+rc=0
+
+$ git -C data/test-spiraldb show HEAD~1:QuestTemplates/questtemplates_DM-GRAVE-MAIN-008.json | head -c 700
+{
+  "m_questName": "DM-GRAVE-MAIN-008",
+  "m_questNameID": 0,
+  "m_questTitle": "QuestTitle_00002165",
+  "m_questInfo": null,
+  "m_questPrep": null,
+  "m_questUnderway": null,
+  "m_questComplete": null,
+  "m_startGoals": [],
+  "m_goals": [],
+  "m_startResults": {
+    "m_results": []
+  },
+  "m_endResults": {
+    "m_results": []
+  },
+  "m_requirements": null,
+  "m_prepRequirements": null,
+  "m_pruneRequirements": null,
+  "m_prepAlways": false,
+  "m_clientTags": null,
+  "m_goalLogic": [],
+  "m_questLevel": 0,
+  "m_questRepeat": 0,
+  "m_onStartQuestScript": "",
+  "m_onEndQuestScript": "",
+  "m_dialogList": {
+    "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",rc=0
+
+$ git -C data/test-spiraldb diff HEAD~1 --stat
+ .../questmetadata_DM-GRAVE-MAIN-008.json           |  2 +-
+ .../questtemplates_DM-GRAVE-MAIN-008.json          | 80 +++++++++++++++++++++-
+ 2 files changed, 80 insertions(+), 2 deletions(-)
+rc=0
+
+$ node -e "const q=JSON.parse(require('fs').readFileSync('data/test-spiraldb/QuestTemplates/questtemplates_DM-GRAVE-MAIN-008.json','utf8'));const g=q.m_dialogList.m_dialogs[0];console.log('group keys',Object.keys(g),'tag',g.m_dialogTag,'entries',g.m_dialogEntries.length,'entry keys',Object.keys(g.m_dialogEntries[0]).length)"
+group keys [
+  'm_dialogTag',
+  'm_dialogEntries',
+  'm_madlibs',
+  'm_dialogEvents',
+  'm_noAggroWhileDialogIsUp',
+  'm_noAggroNoDelay'
+] tag Prep entries 1 entry keys 66
+rc=0
+
+$ curl -s localhost:3292/api/status/quests/DM-GRAVE-MAIN-008/history
+{"history":[{"old_status":null,"new_status":"extracted","notes":null,"changed_by":"Gate7 Sweep","changed_at":"2026-09-30T08:44:37.938Z"}]}rc=0
+
+######## P6-5 palette (GET /api/search: groups[].results[])
+
+$ curl -s 'localhost:3292/api/search?q=87112' | jq -c '[.groups[] | {type, total: (.results|length), hits: [.results[] | {object_type, object_key, label, name, matched_on}][:3]}]'
+[{"type":"npc_inventory","total":1,"hits":[{"object_type":"npc_inventory","object_key":"87112","label":"87112","name":"Ugo Kalahad","matched_on":"key"}]}]
+rc=0
+
+$ curl -s 'localhost:3292/api/search?q=Ugo' | jq -c '[.groups[] | {type, total: (.results|length), hits: [.results[] | {object_type, object_key, label, name, matched_on}][:3]}]'
+[{"type":"npc_inventory","total":1,"hits":[{"object_type":"npc_inventory","object_key":"87112","label":"87112","name":"Ugo Kalahad","matched_on":"name"}]},{"type":"item","total":20,"hits":[{"object_type":null,"object_key":null,"label":"Rokugo Armor","name":"Rokugo Armor","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Rokugo Armor","name":"Rokugo Armor","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Rokugo Armor","name":"Rokugo Armor","matched_on":"name"}]},{"type":"npc","total":4,"hits":[{"object_type":null,"object_key":null,"label":"Ugo Kalahad","name":"Ugo Kalahad","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Ugor","name":"Ugor","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Hugo Battlemist","name":"Hugo Battlemist","matched_on":"name"}]}]
+rc=0
+
+$ curl -s 'localhost:3292/api/search?q=Cyrus' | jq -c '[.groups[] | {type, total: (.results|length), hits: [.results[] | {object_type, object_key, label, name, matched_on}][:3]}]'
+[{"type":"npc_spell_inventory","total":2,"hits":[{"object_type":"npc_spell_inventory","object_key":"126291","label":"126291","name":"Cyrus Drake","matched_on":"name"},{"object_type":"npc_spell_inventory","object_key":"38206","label":"38206","name":"Cyrus Drake","matched_on":"name"}]},{"type":"item","total":20,"hits":[{"object_type":null,"object_key":null,"label":"Cyrus Drake Bobblehead","name":"Cyrus Drake Bobblehead","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Cyrus Drake Golden Statue","name":"Cyrus Drake Golden Statue","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Cyrus Drake Golden Statuette","name":"Cyrus Drake Golden Statuette","matched_on":"name"}]},{"type":"spell","total":1,"hits":[{"object_type":null,"object_key":null,"label":"Polymorph Cyrus Drake","name":"Polymorph Cyrus Drake","matched_on":"name"}]},{"type":"npc","total":10,"hits":[{"object_type":null,"object_key":null,"label":"Cyrus Drake","name":"Cyrus Drake","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Cyrus Doodlefish","name":"Cyrus Doodlefish","matched_on":"name"},{"object_type":null,"object_key":null,"label":"- not used - Cyrus Drake","name":"- not used - Cyrus Drake","matched_on":"name"}]}]
+rc=0
+
+$ curl -s 'localhost:3292/api/search?q=DS-ACAD-C01-001' | jq -c '[.groups[] | {type, total: (.results|length), hits: [.results[] | {object_type, object_key, label, name, matched_on}][:3]}]'
+[{"type":"quest","total":1,"hits":[{"object_type":"quest","object_key":"DS-ACAD-C01-001","label":"DS-ACAD-C01-001","name":"Wizard Tours ","matched_on":"key"}]},{"type":"drop_table","total":1,"hits":[{"object_type":"drop_table","object_key":"DS-ACAD-C01-001","label":"DS-ACAD-C01-001","name":null,"matched_on":"key"}]}]
+rc=0
+
+$ curl -s 'localhost:3292/api/search?q=Gretta' | jq -c '[.groups[] | {type, total: (.results|length), hits: [.results[] | {object_type, object_key, label, name, matched_on}][:3]}]'
+[{"type":"item","total":2,"hits":[{"object_type":null,"object_key":null,"label":"Mdeck-D-GR-PL-Human-GrettaDK-A-01","name":"Mdeck-D-GR-PL-Human-GrettaDK-A-01","matched_on":"name"},{"object_type":null,"object_key":null,"label":"Mdeck-D-MR-Human-GrettaDK-A-Boss-01","name":"Mdeck-D-MR-Human-GrettaDK-A-Boss-01","matched_on":"name"}]},{"type":"npc","total":1,"hits":[{"object_type":null,"object_key":null,"label":"Gretta Darkkettle","name":"Gretta Darkkettle","matched_on":"name"}]}]
+rc=0
+
+######## P6-6 first UI attempt (scaffold ok; the 'New dialog tag' control is a <select> now) — the dialog arm reran as p6_6b above
+
+######## clone restore after the P2-P6 write arms (checkout -f content/2026-09-27; reset --hard 18dc924; clean -fd)
+
+$ git -C data/test-spiraldb branch --show-current; git -C data/test-spiraldb rev-parse HEAD main; git -C data/test-spiraldb rev-list --count HEAD; git -C data/test-spiraldb status --porcelain | wc -l; ls data/test-spiraldb/QuestTemplates/*.json | wc -l; git -C data/test-spiraldb branch --format='%(refname:short)' | tr '\n' ' '; ls data/test-spiraldb/GlobalRegistry; ls -d data/test-spiraldb/NpcDropTable
+content/2026-09-27
+18dc92477d54b1e911796960407ce7710e703697
+f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+42
+0
+322
+content/2026-09-26 content/2026-09-27 main GlobalRegistryModels_1-A.json
+ls: cannot access 'data/test-spiraldb/NpcDropTable': No such file or directory
+rc=2
+
+######## P6-7 — tools/bin/wad-scan moved aside (gitignored symlink), sync, restored
+
+$ readlink tools/bin/wad-scan
+../.artifacts/bin/WadScan/release/wad-scan
+rc=0
+
+$ mv tools/bin/wad-scan <scratch>/g7/wad-scan.symlink.bak
+rc=0
+
+$ NODE_ENV=test SPIRALDB_UI_DB=<scratch>/g7/ui.db npm run --silent sync 2>&1 | grep -E 'status|sync_history|binary-missing|catalog|breadth'
+  status              : SUCCESS
+  sync_history        : success row written at 2026-09-30T08:46:02Z
+  catalog status      : SKIPPED
+  binary-missing      : WAD batch tool not found at /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/wad-scan. Build it with: npm run build:wadscan
+  breadth status      : SKIPPED
+  binary-missing      : WAD batch tool not found at /home/jason/Documents/git-projects/spiraldb-ui/tools/bin/wad-scan. Build it with: npm run build:wadscan
+rc=0
+
+$ curl -s localhost:3292/api/quests/coverage | jq -c .
+{"nameable":322,"id_space":0,"defined":322,"missing":0,"references":0,"corpus":{"spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","quest_files":322}}
+rc=0
+
+$ mv <scratch>/g7/wad-scan.symlink.bak tools/bin/wad-scan; readlink tools/bin/wad-scan; git status --porcelain -- tools | wc -l
+../.artifacts/bin/WadScan/release/wad-scan
+0
+rc=0
+
+$ NODE_ENV=test SPIRALDB_UI_DB=<scratch>/g7/ui.db npm run --silent sync 2>&1 | grep -E '^  (status|sync_history|catalog status|catalog rows|breadth status|quests rows)'
+  status              : SUCCESS
+  sync_history        : success row written at 2026-09-30T08:46:32Z
+  catalog status      : OK
+  catalog rows        : 1,449 (merged 54, new 1,395)
+  quests rows         : 1,717 (has_definition = 1: 322)
+  breadth status      : OK
+rc=0
+
+$ curl -s localhost:3292/api/quests/coverage | jq -c .
+{"nameable":1717,"id_space":4823,"defined":322,"missing":1395,"references":2855,"corpus":{"spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","quest_files":322}}
+rc=0
+
+$ node -e "const d=require('better-sqlite3')('<scratch>/g7/ui.db',{readonly:true});for(const r of d.prepare('SELECT id,sync_timestamp,quests_count,zones_count,status FROM sync_history').all())console.log(JSON.stringify(r))"
+{"id":1,"sync_timestamp":"2026-09-30T08:29:04Z","quests_count":322,"zones_count":3357,"status":"success"}
+{"id":2,"sync_timestamp":"2026-09-30T08:35:18Z","quests_count":322,"zones_count":3357,"status":"success"}
+{"id":3,"sync_timestamp":"2026-09-30T08:46:02Z","quests_count":322,"zones_count":1241,"status":"success"}
+{"id":4,"sync_timestamp":"2026-09-30T08:46:32Z","quests_count":322,"zones_count":3357,"status":"success"}
+rc=0
+
+######## P6-6 loadability clause — live Imlight boot, scaffold arm
+$ IMLIGHT_DOTNET_ROOT=… npm run imlight:boot -- prove-count --name AQ-GARD-SIS-001 --db <scratch>/ui.db --evidence-dir <scratch>/boot6 --prefix gate-7-p6 --restore-clone
+=== the five owned ports, before anything starts ===
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+
+=== the D17 clone, before the scaffold (the restore snapshot) ===
+axis                   value
+branch                 content/2026-09-27
+HEAD                   18dc92477d54b1e911796960407ce7710e703697
+main ref               f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+rev-list --count HEAD  42
+status --porcelain     (empty)
+QuestTemplates/*.json  322
+branches               content/2026-09-26 content/2026-09-27 main
+[harness] 12369 is free — starting the workspace Aurorium
+[harness] [patch] endpoint 127.0.0.1:1 verified refused (nothing to fetch from)
+[harness] Aurorium identity: GET /latest returned the expected revision V_r806919.Wizard_1_610
+[harness] Aurorium pid 3757075 recorded as OWNED (log -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run/boot.txt)
+[harness] freshness: code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+[harness] freshness inputs: dll 2026-09-27T14:32:58.321Z, 14 commit(s) in the 14-day window
+[harness] run directory /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run (1.2G	/home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run)
+[harness] config pins: SpiralDBLocalPath=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb SpiralDBDisableRemote=true PlayerDatabaseUrl=(empty) ports 12500/12000/12333/8080
+[harness] boot 1 of 2 — the baseline, before any scaffold
+[harness] boot "baseline": pid 3757104, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "baseline" console -> <scratch>/g7/boot6/gate-7-p6-imlight-boot-baseline.txt (15936 bytes)
+[harness] stopped Director (baseline) pid 3757104
+[harness] baseline: SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+[harness] scaffolding "AQ-GARD-SIS-001" (p6-09's own command)
+[harness] boot 2 of 2 — the same run directory, after the scaffold
+[harness] boot "after": pid 3757264, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "after" console -> <scratch>/g7/boot6/gate-7-p6-imlight-boot-after.txt (15936 bytes)
+[harness] stopped Director (after) pid 3757264
+[harness] after   : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+
+=== BASELINE — Imlight's own log line, before the scaffold ===
+  SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2274
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            322
+zone data entries          1205
+
+=== the scaffold (p6-09's own command, verbatim) ===
+  NODE_ENV=test SPIRALDB_UI_DB=<scratch>/g7/ui.db npm run scaffold:quest -- --name AQ-GARD-SIS-001 --spiraldb /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+
+[spiraldb-ui] scaffold database at <scratch>/g7/ui.db
+[spiraldb-ui] SpiralDB root       at /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+[spiraldb-ui] author              Gate7 Sweep
+[spiraldb-ui] git_branch setting   content/2026-09-27
+[spiraldb-ui] working tree branch  content/2026-09-27
+
+=== scaffolded ===
+  quest_name            : AQ-GARD-SIS-001
+  link_kind             : direct
+  title_key written     : QuestTitle_19BE33
+  m_questTitle          : "QuestTitle_19BE33"
+  has_definition (before): 0 (the next sync flips it to 1)
+  file                  : QuestTemplates/questtemplates_AQ-GARD-SIS-001.json
+  metadata              : QuestMetadatas/questmetadata_AQ-GARD-SIS-001.json
+  commit                : 3e97e733edf538a119d63f275e38435f44abe9fa
+  branch                : content/2026-09-27
+  commit message        : spiraldb: create quest AQ-GARD-SIS-001
+  key count             : 36
+  key order             : m_questName, m_questNameID, m_questTitle, m_questInfo, m_questPrep, m_questUnderway, m_questComplete, m_startGoals, m_goals, m_startResults, m_endResults, m_requirements, m_prepRequirements, m_pruneRequirements, m_prepAlways, m_clientTags, m_goalLogic, m_questLevel, m_questRepeat, m_onStartQuestScript, m_onEndQuestScript, m_dialogList, m_missionDoors, m_dynaMods, m_isHidden, m_outdated, m_noQuestHelper, m_mainline, m_defaultDialogAnimation, m_skipQHAutoSelect, m_questEffectInfoList, m_forceInteraction, m_checkInventoryForCrafting, m_playAsYourPetNPC, m_activityType, m_behaviors
+
+=== the companion metadata Description (the catalog provenance) ===
+  Scaffolded from the quest catalog (link_kind: direct; title QuestTitle_19BE33).
+
+=== the file, verbatim ===
+{
+  "m_questName": "AQ-GARD-SIS-001",
+  "m_questNameID": 0,
+  "m_questTitle": "QuestTitle_19BE33",
+  "m_questInfo": null,
+  "m_questPrep": null,
+  "m_questUnderway": null,
+  "m_questComplete": null,
+  "m_startGoals": [],
+  "m_goals": [],
+  "m_startResults": {
+    "m_results": []
+  },
+  "m_endResults": {
+    "m_results": []
+  },
+  "m_requirements": null,
+  "m_prepRequirements": null,
+  "m_pruneRequirements": null,
+  "m_prepAlways": false,
+  "m_clientTags": null,
+  "m_goalLogic": [],
+  "m_questLevel": 0,
+  "m_questRepeat": 0,
+  "m_onStartQuestScript": "",
+  "m_onEndQuestScript": "",
+  "m_dialogList": {
+    "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",
+    "m_dialogs": []
+  },
+  "m_missionDoors": null,
+  "m_dynaMods": null,
+  "m_isHidden": false,
+  "m_outdated": false,
+  "m_noQuestHelper": false,
+  "m_mainline": false,
+  "m_defaultDialogAnimation": null,
+  "m_skipQHAutoSelect": false,
+  "m_questEffectInfoList": null,
+  "m_forceInteraction": false,
+  "m_checkInventoryForCrafting": false,
+  "m_playAsYourPetNPC": false,
+  "m_activityType": "ACTIVITY_NotActivity",
+  "m_behaviors": null
+}
+
+=== AFTER — Imlight's own log line, after the scaffold ===
+  SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2275
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            323
+zone data entries          1205
+
+=== the count proof (p6-12-ac2) ===
+  baseline line : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+  scaffold      : AQ-GARD-SIS-001 — exit 0, one file into /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  after line    : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+  arithmetic    : 322 + 1 = 323
+  delta         : 1 (expected 1)
+  verdict       : PASS — rises by exactly one
+  detail        : quest templates rose by exactly 1 across the scaffold of "AQ-GARD-SIS-001": 322 + 1 = 323; the other seven families are unchanged (spellbooks, dropTables, npcInventories, npcSpellInventories, npcDropTables, treasureCardInventories, zoneData)
+  baseline readings inside the one process: 3 reading(s), all identical
+  after readings inside the one process   : 3 reading(s), all identical
+  files counter : baseline 2274 -> after 2275 (delta 1)
+  seven non-quest families: spellbooks 134, dropTables 317, npcInventories 215, npcSpellInventories 77, npcDropTables 0, treasureCardInventories 1, zoneData 1205
+
+=== the clone restore plan (D76(b): a reset that leaves a branch behind is not a restore) ===
+  git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb checkout -f content/2026-09-27
+  git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb reset --hard 18dc92477d54b1e911796960407ce7710e703697
+  (no branch appeared during the run, so no branch is deleted)
+[harness] git checkout -f content/2026-09-27
+[harness] git reset --hard 18dc92477d54b1e911796960407ce7710e703697
+
+=== the clone after the restore (five axes + the corpus shape) ===
+axis                       expected                                    actual                                      ok
+branch                     content/2026-09-27                          content/2026-09-27                          ok
+HEAD                       18dc92477d54b1e911796960407ce7710e703697    18dc92477d54b1e911796960407ce7710e703697    ok
+main ref                   f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    ok
+git rev-list --count HEAD  42                                          42                                          ok
+git status --porcelain     (empty)                                     (empty)                                     ok
+QuestTemplates/*.json      322                                         322                                         ok
+local branches (set)       content/2026-09-26 content/2026-09-27 main  content/2026-09-26 content/2026-09-27 main  ok
+
+  branches now: content/2026-09-26 content/2026-09-27 main
+  remotes now : origin origin/main
+  every axis matches — the clone is restored
+[harness] evidence: <scratch>/g7/boot6/gate-7-p6-imlight-boot-baseline.txt, <scratch>/g7/boot6/gate-7-p6-imlight-boot-after.txt, <scratch>/g7/boot6/gate-7-p6-count.txt
+[harness] stopped Aurorium pid 3757075
+exit 0
+$ npm run imlight:boot -- down
+[harness] Aurorium: the ledger holds no entry — nothing to stop
+
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+[harness] nothing of ours was recorded as running; nothing was touched
+rc=0
+$ npm run imlight:boot -- probe
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+

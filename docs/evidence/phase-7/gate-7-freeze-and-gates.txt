@@ -1,0 +1,142 @@
+######## freeze check (start of the sweep, 2026-09-30T04:12)
+$ git status --short   -> (empty: clean except gitignored)
+$ git rev-parse HEAD   -> dc450f186f45e15d43efd0e172fc10dd8a829720 (branch phase-7-coverage-usability)
+$ git -C data/test-spiraldb rev-parse HEAD -> 18dc92477d54b1e911796960407ce7710e703697 ; porcelain 0
+
+######## FIRST fresh gates at HEAD dc450f1, before any change (sequential, 04:12-04:16)
+=== npm run test  2026-09-30T04:12:23-04:00
+exit=0
+=== npm run lint  2026-09-30T04:13:36-04:00
+exit=0
+=== npm run typecheck:tests  2026-09-30T04:13:45-04:00
+exit=0
+=== npm run typecheck:scripts  2026-09-30T04:13:49-04:00
+exit=0
+=== npm run build  2026-09-30T04:13:51-04:00
+exit=0
+
+--- npm run test (tail)
+ ✓ tests/unit/speaker-ladder-counts.test.ts (2 tests) 2ms
+
+ Test Files  107 passed (107)
+      Tests  2178 passed (2178)
+   Start at  04:12:23
+   Duration  72.93s (transform 1.73s, setup 0ms, collect 6.64s, tests 50.92s, environment 11ms, prepare 3.65s)
+
+
+--- npm run lint (tail)
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+--- npm run typecheck:tests (tail)
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+--- npm run typecheck:scripts (tail)
+
+> spiraldb-ui@0.1.0 typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+
+--- npm run build (tail)
+dist/assets/index-B-DOh-5I.js                  889.82 kB │ gzip: 257.01 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.97s
+
+--- npm run test:ui (full, tail)
+Running 455 tests using 12 workers
+  ✓  455 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (681ms)
+
+  455 passed (2.1m)
+
+######## FINAL fresh gates after the gate-7 CI fixes (sequential, 04:51-04:55)
+=== npm run test  2026-09-30T04:51:12-04:00
+exit=0  2026-09-30T04:52:27-04:00
+=== npm run lint  2026-09-30T04:52:27-04:00
+exit=0  2026-09-30T04:52:36-04:00
+=== npm run typecheck:tests  2026-09-30T04:52:36-04:00
+exit=0  2026-09-30T04:52:39-04:00
+=== npm run typecheck:scripts  2026-09-30T04:52:39-04:00
+exit=0  2026-09-30T04:52:41-04:00
+=== npm run build  2026-09-30T04:52:41-04:00
+exit=0  2026-09-30T04:52:49-04:00
+=== npm run test:ui  2026-09-30T04:52:49-04:00
+exit=0  2026-09-30T04:54:57-04:00
+
+--- npm run test (tail)
+ ✓ tests/unit/speaker-ladder-counts.test.ts (2 tests) 2ms
+
+ Test Files  107 passed (107)
+      Tests  2178 passed (2178)
+   Start at  04:51:12
+   Duration  74.47s (transform 1.74s, setup 0ms, collect 6.57s, tests 52.74s, environment 11ms, prepare 3.72s)
+
+
+--- npm run lint (tail)
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+--- npm run typecheck:tests (tail)
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+--- npm run typecheck:scripts (tail)
+
+> spiraldb-ui@0.1.0 typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+
+--- npm run build (tail)
+dist/assets/index-B-DOh-5I.js                  889.82 kB │ gzip: 257.01 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.78s
+
+--- npm run test:ui (full, tail)
+Running 455 tests using 12 workers
+  ✓  455 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (735ms)
+
+  455 passed (2.1m)
+--- the three touched specs in that run:
+  ✓   92 [chromium] › tests/ui/p7-label-scan.spec.ts:272:3 › p7-10 label scan — no bare technical term outside [data-term] › the term lists come from the glossary, with the D135 allowlist computed (3m
+  ✓   82 [chromium] › tests/ui/p7-drafts.spec.ts:254:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (3.6s)
+  ✓  115 [chromium] › tests/ui/p7-overview.spec.ts:54:1 › lands on Overview, the first tab, in edit mode and in view mode, and only reads (1.4s)
+  ✓   93 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Inser
+  ✓  121 [chromium] › tests/ui/p7-overview.spec.ts:101:1 › the badge counts pending suggestions and opens the tab of the first pending field (1.5s)
+  ✓  132 [chromium] › tests/ui/p7-overview.spec.ts:120:1 › the badge also shows in view mode and opens the same tab (1.1s)
+  ✓  130 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-TUT-C05-001: every tab, edit and view mode, and the Evidence "Insert int
+  ✓  105 [chromium] › tests/ui/p7-drafts.spec.ts:367:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (9.2s)
+  ✓  160 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-COMMONS-MAIN-001: every tab, edit and view mode, and the Evidence "Inser
+  ✓  164 [chromium] › tests/ui/p7-drafts.spec.ts:424:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (8.4s)
+  ✓  197 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-COMMONS-MAIN-003: every tab, edit and view mode, and the Evidence "Inser
+  ✓  212 [chromium] › tests/ui/p7-drafts.spec.ts:466:1 › a rejection is immediate and survives a reload (6.1s)
+  ✓  236 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › Tutorial_Intro: every tab, edit and view mode, and the Evidence "Insert int
+  ✓  250 [chromium] › tests/ui/p7-drafts.spec.ts:510:1 › accept-all from each source, then Save, validates and commits (6.7s)
+  ✓  257 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-UNICORN-MAIN-004: every tab, edit and view mode, and the Evidence "Inser
+  ✓  287 [chromium] › tests/ui/p7-label-scan.spec.ts:329:5 › p7-10 label pairs at 375px › WC-CYCLOPS-MAIN-003: no tab overflows horizontally (3.5s)
+  ✓  286 [chromium] › tests/ui/p7-drafts.spec.ts:608:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exac
+  ✓  304 [chromium] › tests/ui/p7-label-scan.spec.ts:329:5 › p7-10 label pairs at 375px › WC-COMMONS-MAIN-001: no tab overflows horizontally (6.7s)
+
+######## the CI-flaky spec, 10x in the main tree
+$ npm run test:ui -- tests/ui/object-create-and-counts.spec.ts --repeat-each=10
+
+  170 passed (24.1s)

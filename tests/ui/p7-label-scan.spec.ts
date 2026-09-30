@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { classes, enums, fields } from '@shared/glossary';
@@ -10,9 +13,10 @@ import { MOCK_EVIDENCE } from './quests-mocks';
  *
  * Every quest tab renders its field keys, class names and enum literals through `<TermLabel />`,
  * whose `[data-term]` wrapper is the one place a technical string may be visible. This spec opens
- * **real quests from the D17 clone** (the harness server reads `data/test-spiraldb`; nothing is
- * saved, so the clone is never mutated) and, on every tab except JSON (exempt by design), in edit
- * mode and in view mode, collects:
+ * **real quests from the D17 clone**, served from committed copies of their documents (CI has no
+ * `data/`, D55 — gate-7 measured every test here failing there when they were read live; the copies
+ * equal the clone-backed server's bodies byte for byte, so nothing the scan sees changed) and, on
+ * every tab except JSON (exempt by design), in edit mode and in view mode, collects:
  *
  * - every visible text node **outside** `[data-term]`;
  * - every `<option>`'s text (a native option cannot hold a span, so its text is the pair string);
@@ -41,6 +45,23 @@ const QUESTS = [
   'Tutorial_Intro',
   'WC-UNICORN-MAIN-004',
 ] as const;
+
+/** The six quests' served documents: five from the 10-quest fixture, WC-CYCLOPS-MAIN-003 alone. */
+const DOCS: Record<string, unknown> = {
+  ...(
+    JSON.parse(
+      readFileSync(path.resolve('tests/unit/fixtures/card-titles-quests.json'), 'utf8'),
+    ) as { quests: Record<string, unknown> }
+  ).quests,
+  'WC-CYCLOPS-MAIN-003': (
+    JSON.parse(
+      readFileSync(
+        path.resolve('tests/unit/fixtures/clone-quest-WC-CYCLOPS-MAIN-003.json'),
+        'utf8',
+      ),
+    ) as { quest: unknown }
+  ).quest,
+};
 
 const TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
 
@@ -198,7 +219,9 @@ async function selectTab(page: Page, name: (typeof TABS)[number]): Promise<void>
 
 async function openQuest(page: Page, quest: string): Promise<void> {
   // The harness DB has no string table (`SPIRALDB_UI_SKIP_IMPORT`), so the evidence body is the
-  // wire-contract fixture; every other request reaches the real server and the real clone file.
+  // wire-contract fixture, and the document is the committed copy of the clone file; every other
+  // request reaches the real server.
+  await page.route(`**/api/quests/${quest}`, (route) => route.fulfill({ json: DOCS[quest] }));
   await page.route(`**/api/quests/${quest}/evidence`, (route) =>
     route.fulfill({ json: { ...MOCK_EVIDENCE, quest_name: quest } }),
   );

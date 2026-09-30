@@ -1,11 +1,15 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { expect, test, type Page } from '@playwright/test';
 
 import { MOCK_EVIDENCE } from './quests-mocks';
 
 /**
- * Story p7-14's tier-1 specs (plan task 7.13; D133, D144, D181), on a real clone quest served by
- * the harness's real server (only the string-table-dependent evidence read and the suggestions read
- * are mocked, as the other p7 specs do).
+ * Story p7-14's tier-1 specs (plan task 7.13; D133, D144, D181), on a real clone quest. Its
+ * document is a committed copy of the clone-backed server's body (CI has no `data/`, D55; gate-7
+ * measured all three tests failing there when it was read live), and the string-table-dependent
+ * evidence read and the suggestions read are mocked, as the other p7 specs do.
  *
  * | criterion | test |
  * |---|---|
@@ -14,6 +18,12 @@ import { MOCK_EVIDENCE } from './quests-mocks';
  */
 
 const QUEST = 'WC-CYCLOPS-MAIN-003';
+
+const DOC = (
+  JSON.parse(
+    readFileSync(path.resolve('tests/unit/fixtures/clone-quest-WC-CYCLOPS-MAIN-003.json'), 'utf8'),
+  ) as { quest: unknown }
+).quest;
 
 function suggestion(id: number, pathName: string, status = 'pending'): object {
   return {
@@ -30,6 +40,7 @@ function suggestion(id: number, pathName: string, status = 'pending'): object {
 }
 
 async function open(page: Page, suggestions: object[]): Promise<void> {
+  await page.route(`**/api/quests/${QUEST}`, (route) => route.fulfill({ json: DOC }));
   await page.route(`**/api/quests/${QUEST}/evidence`, (route) =>
     route.fulfill({ json: { ...MOCK_EVIDENCE, quest_name: QUEST } }),
   );

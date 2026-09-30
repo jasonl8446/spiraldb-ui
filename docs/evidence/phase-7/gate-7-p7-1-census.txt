@@ -1,0 +1,23 @@
+$ for each p7 fixture: tools/bin/capture-census --input server/test/fixtures/captures/p7/<Q>.json > <scratch>/<Q>.census.json; cmp against the committed <Q>.census.json
+DS-ACAD1-C04-001     exit=0 bytes=6657 vs-committed-golden=identical
+DS-ACAD1-C04-003     exit=0 bytes=5588 vs-committed-golden=identical
+DS-ACAD2-C01-005     exit=0 bytes=5344 vs-committed-golden=identical
+DS-ACAD-C01-003      exit=0 bytes=6656 vs-committed-golden=identical
+MS-DTH1-C01-002      exit=0 bytes=6442 vs-committed-golden=identical
+WC-HAUNTED-MAIN-001  exit=0 bytes=5917 vs-committed-golden=identical
+WC-MAIN-C01-013      exit=0 bytes=5954 vs-committed-golden=identical
+WC-TUT-C05-001       exit=0 bytes=4862 vs-committed-golden=identical
+WC-UNICORN-MAIN-002  exit=0 bytes=6660 vs-committed-golden=identical
+
+$ node census-check.mjs server/test/fixtures/captures/p7 <scratch>   # planted (inject spec) fields vs the fresh census rows
+DS-ACAD-C01-003      messages=11 rows=56 planted-fields=12 listed=12 unconsumed-planted=- missing=-
+DS-ACAD1-C04-001     messages=11 rows=56 planted-fields=12 listed=12 unconsumed-planted=- missing=-
+DS-ACAD1-C04-003     messages=14 rows=47 planted-fields=3 listed=3 unconsumed-planted=- missing=-
+DS-ACAD2-C01-005     messages=16 rows=45 planted-fields=2 listed=2 unconsumed-planted=- missing=-
+MS-DTH1-C01-002      messages=19 rows=54 planted-fields=6 listed=6 unconsumed-planted=- missing=-
+WC-HAUNTED-MAIN-001  messages=16 rows=50 planted-fields=3 listed=3 unconsumed-planted=- missing=-
+WC-MAIN-C01-013      messages=6 rows=50 planted-fields=11 listed=11 unconsumed-planted=- missing=-
+WC-TUT-C05-001       messages=17 rows=41 planted-fields=11 listed=11 unconsumed-planted=- missing=-
+WC-UNICORN-MAIN-002  messages=12 rows=56 planted-fields=12 listed=12 unconsumed-planted=- missing=-
+TOTAL planted fields 72, missing from census 0
+exit=0
