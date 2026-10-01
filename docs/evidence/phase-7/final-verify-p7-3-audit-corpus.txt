@@ -1,0 +1,38 @@
+$ npm run audit:corpus   (2026-09-30T22:21:02-04:00)
+
+> spiraldb-ui@0.1.0 audit:corpus
+> node scripts/audit-corpus-roundtrip.mjs
+
+  … 25/322 quests, 0 failing, 11s
+  … 50/322 quests, 0 failing, 23s
+  … 75/322 quests, 0 failing, 34s
+  … 100/322 quests, 0 failing, 45s
+  … 125/322 quests, 0 failing, 57s
+  … 150/322 quests, 0 failing, 68s
+  … 175/322 quests, 0 failing, 80s
+  … 200/322 quests, 0 failing, 91s
+  … 225/322 quests, 0 failing, 103s
+  … 250/322 quests, 0 failing, 114s
+  … 275/322 quests, 0 failing, 125s
+  … 300/322 quests, 0 failing, 136s
+
+corpus:    /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+quests:    322 real corpus quest(s) attempted
+verified:  314/322 round-trip identically through the real reader (3454 field check(s), 0 mismatch(es), 0 known-defect row(s))
+not covered: 8 refused by the generator (a synthetic-harness coverage limit, measured in docs/evidence/phase-2/story-p2-03-diversity.txt — only a recorded live capture can cover these)
+     4  quest-level dialog tag not Prep/Completion
+     4  m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+
+REFUSED QUESTS (first problem per quest)
+  Tutorial_Intro            m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+  WC-TUT-C03-001            m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+  WC-TUT-C05-001            m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+  WC-TUT-C08-001            m_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)
+  MB-MUSEHub-C02-002        quest-level dialog tag not Prep/Completion
+  MS-WAR1-C01-004           quest-level dialog tag not Prep/Completion
+  MS-WAR1-C01-008           quest-level dialog tag not Prep/Completion
+  WC-CYCLOPS-MAIN-005       quest-level dialog tag not Prep/Completion
+
+PASS: 314/322 verified, 8 not covered by the synthetic harness, 0 failure(s) (144.4s).
+rc=0
+$ git -C data/test-spiraldb rev-parse --short HEAD; status --porcelain | wc -l   -> 18dc924 / 0

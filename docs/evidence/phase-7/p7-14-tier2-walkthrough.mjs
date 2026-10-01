@@ -15,7 +15,9 @@ import path from 'node:path';
 import { chromium } from '@playwright/test';
 
 const BASE = process.env.BASE ?? 'http://localhost:5291';
-const QUEST = process.env.QUEST_NAME ?? 'WC-UNICORN-MAIN-001';
+// The default moved from WC-UNICORN-MAIN-001 at final-verify (FV5): since D195(d) every dialog entry of that quest opens
+// Advanced by itself, so its "one collapsed" arm can no longer be shown there.
+const QUEST = process.env.QUEST_NAME ?? 'WC-UNICORN-MAIN-002';
 const OUT = process.env.OUT ?? 'docs/evidence/phase-7';
 
 // The tab strip animates its colours (transition-colors); wait it out so the selected tab is the one shown.

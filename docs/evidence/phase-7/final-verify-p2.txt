@@ -1,0 +1,223 @@
+######## P2-1
+
+$ dotnet --version
+9.0.318
+rc=0
+
+$ npm run --silent build:cli 2>&1 | grep -E 'Build succeeded|Warning\(s\)|Error\(s\)|error'
+Build succeeded.
+    4 Warning(s)
+    0 Error(s)
+rc=0
+
+$ npm run --silent build:fixturegen 2>&1 | grep -E 'Build succeeded|Warning\(s\)|Error\(s\)|error'
+Build succeeded.
+    5 Warning(s)
+    0 Error(s)
+rc=0
+
+$ ls -la tools/bin/
+total 12
+drwxr-xr-x  2 jason users 4096 Sep 30 21:56 .
+drwxr-xr-x 12 jason users 4096 Sep 30 20:49 ..
+lrwxrwxrwx  1 jason users   54 Sep 30 20:59 capture-census -> ../.artifacts/bin/CaptureCensus/release/capture-census
+lrwxrwxrwx  1 jason users   47 Sep 30 21:56 fixturegen -> ../.artifacts/bin/FixtureGen/release/fixturegen
+lrwxrwxrwx  1 jason users   62 Sep 30 21:56 imview-packet-reader -> ../.artifacts/bin/PacketReaderCli/release/imview-packet-reader
+lrwxrwxrwx  1 jason users   42 Sep 30 04:04 wad-scan -> ../.artifacts/bin/WadScan/release/wad-scan
+rc=0
+
+######## P2-2 (DOTNET_ROOT exported, D45(3))
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json --output <scratch>/cap.json; wc -c < <scratch>/cap.json
+fixturegen: data/test-spiraldb/QuestTemplates/questtemplates_DS-ACAD1-C01-001.json
+  quest            DS-ACAD1-C01-001  title=QuestTitle_1ED8D  level=1  mainline=True
+  goals            7 total = 6 in GoalCompilation (m_startGoals) + 1 via MSG_SENDGOAL
+  dialogs          2 block(s) / 7 dialog entry(ies); 1 quest-level, 1 goal-level
+  packets          5 (1 MSG_SENDGOAL, 2 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 1
+  ids              MobileID=1222694116179546111 QuestID=4790368556426464585
+  output           <scratch>/cap.json
+  self-check       GoalCompilation blob (1507 bytes) decodes to 6 goal(s) identical to the corpus goals
+  self-check       ActorDialog 'Prep' blob (2114 bytes) decodes to 5 entry(ies), trailing flags intact
+  self-check       ActorDialog 'Completion' blob (964 bytes) decodes to 2 entry(ies), trailing flags intact
+12697
+rc=0
+
+$ tools/bin/imview-packet-reader --input <scratch>/cap.json > <scratch>/cap.out.json; wc -c < <scratch>/cap.out.json
+32206
+rc=0
+
+$ jq length <scratch>/cap.out.json
+1
+rc=0
+
+$ jq -r '.[0].m_questName' <scratch>/cap.out.json
+DS-ACAD1-C01-001
+rc=0
+
+######## P2-3
+
+$ curl -s -F file=@server/test/fixtures/captures/WC-UNICORN-MAIN-004.json localhost:3292/api/extract/quests | jq -c '{keys: keys, count, names: [.quests[].m_questName]}'
+{"keys":["count","quests","suggestions"],"count":1,"names":["WC-UNICORN-MAIN-004"]}
+rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' -F file=@server/test/fixtures/captures/README.md localhost:3292/api/extract/quests
+{"error":"Unsupported file type \".md\" — only .json packet captures are accepted. Supported format: JSON packet capture files (.json)"}
+http=400rc=0
+
+$ curl -s localhost:3292/api/health
+{"status":"ok"}rc=0
+
+######## P2-4 (UI arm p2_4: upload two-quests capture -> Save All (2) -> confirm)
+[P2-4] results: ["MB-YARD1-C01-001 Level 1 15 goals new","WC-FIRECAT-MAIN-004 Level 1 5 goals new"]
+[P2-4] tabs: ["Info","Goals","Goal Logic","Requirements","Results","Dialog"]
+[P2-4] confirm dialog: Save to SpiralDB Save 2 quests to SpiralDB? This will create files and auto-commit. Checking SpiralDB for existing quests… Cancel Save Close
+[P2-4] toasts: ["Imported 2,271 existing entries from SpiralDB","Quest WC-FIRECAT-MAIN-004 saved and committed","Quest MB-YARD1-C01-001 saved and committed","Imported 2,271 existing entries from SpiralDB"]
+[p2_4] ARM DONE
+
+######## P2-5 attempt 1 (gate-7's command verbatim): DM-BLACK-MAIN-013 is no longer in the 328-file fork, so fixturegen finds no file and nothing is extracted; the first lines also show each Save All commit holds exactly its own two files
+######## P2-5 — the clone after the UI save (update verbs), then a quest the clone does NOT hold for the literal 'extract' verb
+
+$ git -C data/test-spiraldb branch --show-current; git -C data/test-spiraldb log --format='%s (%an)' -3
+content/2026-09-27
+spiraldb: update quest WC-FIRECAT-MAIN-004 (FinalVerify Sweep)
+spiraldb: update quest MB-YARD1-C01-001 (FinalVerify Sweep)
+spiraldb: extract quest WC-CYCLOPS-MAIN-002 (Lead Verify)
+rc=0
+
+$ git -C data/test-spiraldb show --stat --format='%h %s' HEAD~1 | head -5; git -C data/test-spiraldb show --stat --format='%h %s' HEAD | head -5
+939d1e9 spiraldb: update quest MB-YARD1-C01-001
+
+ QuestMetadatas/questmetadata_MB-YARD1-C01-001.json |   6 +-
+ .../questtemplates_MB-YARD1-C01-001.json           | 390 ++++++++++-----------
+ 2 files changed, 191 insertions(+), 205 deletions(-)
+5932474 spiraldb: update quest WC-FIRECAT-MAIN-004
+
+ .../questmetadata_WC-FIRECAT-MAIN-004.json         |   6 +-
+ .../questtemplates_WC-FIRECAT-MAIN-004.json        | 574 ++++++++++-----------
+ 2 files changed, 286 insertions(+), 294 deletions(-)
+rc=0
+
+$ git -C data/test-spiraldb show --name-only --format='%h %s' HEAD~1; git -C data/test-spiraldb show --name-only --format='%h %s' HEAD   # Save All of two quests: each commit holds exactly its own two files (D197(b))
+939d1e9 spiraldb: update quest MB-YARD1-C01-001
+
+QuestMetadatas/questmetadata_MB-YARD1-C01-001.json
+QuestTemplates/questtemplates_MB-YARD1-C01-001.json
+5932474 spiraldb: update quest WC-FIRECAT-MAIN-004
+
+QuestMetadatas/questmetadata_WC-FIRECAT-MAIN-004.json
+QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json
+rc=0
+# DM-BLACK-MAIN-013 exists in the owner fork (read-only) and not in the clone: fixturegen -> reader route -> POST /api/quests with a source
+
+$ ls data/test-spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json
+ls: cannot access 'data/test-spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json': No such file or directory
+rc=2
+
+$ tools/bin/fixturegen --quest /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json --output <scratch>/dm-black.json | head -4
+error: quest file not found: /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json
+rc=0
+
+$ curl -s -F file=@<scratch>/dm-black.json localhost:3292/api/extract/quests > <scratch>/dm-black.extract.json; jq -c '{count, names: [.quests[].m_questName]}' <scratch>/dm-black.extract.json
+  … (rest of attempt 1: the POST answered 400 'Missing quest', nothing written)
+
+######## P2-5 attempt 2: a fork-only quest the 328-file fork still holds — refused by fixturegen (all six fork-only files are WC-COMMONS-MAIN-002-<school>, goal names 'Goal n')
+$ tools/bin/fixturegen --quest /home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_WC-COMMONS-MAIN-002-FIRE.json --output <scratch>/commons-fire.json | head -4
+error: refusing to generate a capture from '/home/jason/Documents/git-projects/spiraldb/QuestTemplates/questtemplates_WC-COMMONS-MAIN-002-FIRE.json' — 4 problem(s):
+  - goal[0] m_goalName 'Goal 1' is not '1_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[1] m_goalName 'Goal 2' is not '2_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[2] m_goalName 'Goal 3' is not '3_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[3] m_goalName 'Goal 4' is not '4_WizardQuestGoals_TalkNPC': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+rc=0
+
+######## P2-5..P2-7, run 3 (the one recorded): gate-7's own DM-BLACK-MAIN-013 file, read from the fork commit gate-7 used (864bd44)
+######## P2-5 — the clone after the UI save (update verbs), then a quest the clone does NOT hold for the literal 'extract' verb
+
+$ git -C data/test-spiraldb branch --show-current; git -C data/test-spiraldb log --format='%s (%an)' -3
+content/2026-09-27
+spiraldb: update quest WC-FIRECAT-MAIN-004 (FinalVerify Sweep)
+spiraldb: update quest MB-YARD1-C01-001 (FinalVerify Sweep)
+spiraldb: extract quest WC-CYCLOPS-MAIN-002 (Lead Verify)
+rc=0
+# DM-BLACK-MAIN-013 is gate-7's fork-only quest. The fork now has 328 files (its scaffolds were removed, D145 note), so the file is read (git show, read-only) from the fork commit gate-7 ran against (864bd44) into scratch; the clone does not hold it. The six fork-only files the 328-file fork still has (WC-COMMONS-MAIN-002-<school>) are all refused by fixturegen (goal names 'Goal n').
+
+$ ls data/test-spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json
+ls: cannot access 'data/test-spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json': No such file or directory
+rc=2
+
+$ git -C /home/jason/Documents/git-projects/spiraldb show 864bd44:QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json > <scratch>/questtemplates_DM-BLACK-MAIN-013.json; wc -c < <scratch>/questtemplates_DM-BLACK-MAIN-013.json
+1141
+rc=0
+
+$ tools/bin/fixturegen --quest <scratch>/questtemplates_DM-BLACK-MAIN-013.json --output <scratch>/dm-black.json | head -4
+fixturegen: <scratch>/questtemplates_DM-BLACK-MAIN-013.json
+  quest            DM-BLACK-MAIN-013  title=QuestTitle_00002144  level=0  mainline=False
+  goals            0 total = 0 in GoalCompilation (m_startGoals) + 0 via MSG_SENDGOAL
+  dialogs          0 block(s) / 0 dialog entry(ies); 0 quest-level, 0 goal-level
+  packets          2 (0 MSG_SENDGOAL, 0 MSG_ACTORDIALOG); tally madlib blobs: 0, client-tag blobs: 0
+  ids              MobileID=2954597957564762821 QuestID=849670087682346875
+  output           <scratch>/dm-black.json
+  self-check       GoalCompilation blob (8 bytes) decodes to 0 goal(s) identical to the corpus goals
+rc=0
+
+$ curl -s -F file=@<scratch>/dm-black.json localhost:3292/api/extract/quests > <scratch>/dm-black.extract.json; jq -c '{count, names: [.quests[].m_questName]}' <scratch>/dm-black.extract.json
+{"count":1,"names":["DM-BLACK-MAIN-013"]}
+rc=0
+
+$ curl -s localhost:3292/api/status/quests/DM-BLACK-MAIN-013/history
+{"error":"Unknown quests entry \"DM-BLACK-MAIN-013\""}rc=0
+
+$ jq -c '{quest: .quests[0], source: "final-verify-dm-black.json", notes: "final-verify P2-5 extract of an untracked quest"}' <scratch>/dm-black.extract.json | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/quests
+{"quest_name":"DM-BLACK-MAIN-013","outcome":"created","action":"extract","commit":"49fb53abfd0e329c008613e3a96cce0e66042582","branch":"content/2026-09-27","commit_message":"spiraldb: extract quest DM-BLACK-MAIN-013\n\nfinal-verify P2-5 extract of an untracked quest","file":"QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json","metadata":"QuestMetadatas/questmetadata_DM-BLACK-MAIN-013.json","metadata_outcome":"created","status":{"object_type":"quest","object_key":"DM-BLACK-MAIN-013","status":"extracted","extracted_at":"2026-10-01T02:09:06.307Z","reviewed_at":null,"verified_at":null,"latest_notes":"Imported from packet capture final-verify-dm-black.json"},"warnings":[],"accepted_suggestions":[]}
+http=200rc=0
+
+$ git -C data/test-spiraldb log --format='%s (%an)' -4
+spiraldb: extract quest DM-BLACK-MAIN-013 (FinalVerify Sweep)
+spiraldb: update quest WC-FIRECAT-MAIN-004 (FinalVerify Sweep)
+spiraldb: update quest MB-YARD1-C01-001 (FinalVerify Sweep)
+spiraldb: extract quest WC-CYCLOPS-MAIN-002 (Lead Verify)
+rc=0
+
+$ git -C data/test-spiraldb show --stat --format='%h %s' HEAD
+49fb53a spiraldb: extract quest DM-BLACK-MAIN-013
+
+ QuestMetadatas/questmetadata_DM-BLACK-MAIN-013.json  |  9 +++++++++
+ QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json | 19 +++++++++++++++++++
+ 2 files changed, 28 insertions(+)
+rc=0
+
+$ ls -la data/test-spiraldb/QuestTemplates/questtemplates_{MB-YARD1-C01-001,WC-FIRECAT-MAIN-004,DM-BLACK-MAIN-013}.json data/test-spiraldb/QuestMetadatas/questmetadata_{MB-YARD1-C01-001,WC-FIRECAT-MAIN-004,DM-BLACK-MAIN-013}.json
+-rw-r--r-- 1 jason users   308 Sep 30 22:09 data/test-spiraldb/QuestMetadatas/questmetadata_DM-BLACK-MAIN-013.json
+-rw-r--r-- 1 jason users   301 Sep 30 22:08 data/test-spiraldb/QuestMetadatas/questmetadata_MB-YARD1-C01-001.json
+-rw-r--r-- 1 jason users   307 Sep 30 22:08 data/test-spiraldb/QuestMetadatas/questmetadata_WC-FIRECAT-MAIN-004.json
+-rw-r--r-- 1 jason users   485 Sep 30 22:09 data/test-spiraldb/QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json
+-rw-r--r-- 1 jason users 63886 Sep 30 22:08 data/test-spiraldb/QuestTemplates/questtemplates_MB-YARD1-C01-001.json
+-rw-r--r-- 1 jason users 52519 Sep 30 22:08 data/test-spiraldb/QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json
+rc=0
+
+######## P2-6
+
+$ for f in QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json QuestTemplates/questtemplates_MB-YARD1-C01-001.json QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json QuestMetadatas/questmetadata_DM-BLACK-MAIN-013.json; do node -e "JSON.parse(require('fs').readFileSync('data/test-spiraldb/'+process.argv[1],'utf8'));console.log('strict JSON OK:',process.argv[1])" $f; done
+strict JSON OK: QuestTemplates/questtemplates_DM-BLACK-MAIN-013.json
+strict JSON OK: QuestTemplates/questtemplates_MB-YARD1-C01-001.json
+strict JSON OK: QuestTemplates/questtemplates_WC-FIRECAT-MAIN-004.json
+strict JSON OK: QuestMetadatas/questmetadata_DM-BLACK-MAIN-013.json
+rc=0
+
+$ git -C data/test-spiraldb show 18dc924:QuestTemplates/questtemplates_MB-YARD1-C01-001.json > <scratch>/pre-MB.json; node -e "try{JSON.parse(require('fs').readFileSync('<scratch>/pre-MB.json','utf8'));console.log('pre-save MB-YARD1: strict JSON OK')}catch(e){console.log('pre-save MB-YARD1: STRICT JSON FAILS ->',e.message)}"
+pre-save MB-YARD1: STRICT JSON FAILS -> Expected double-quoted property name in JSON at position 5649 (line 148 column 15)
+rc=0
+
+######## P2-7 — history of the untracked quest saved above (first appearance: the note is written)
+
+$ curl -s localhost:3292/api/status/quests/DM-BLACK-MAIN-013/history
+{"history":[{"old_status":null,"new_status":"extracted","notes":"Imported from packet capture final-verify-dm-black.json","changed_by":"FinalVerify Sweep","changed_at":"2026-10-01T02:09:06.307Z"}]}rc=0
+
+$ curl -s localhost:3292/api/status/quests/MB-YARD1-C01-001/history
+{"history":[]}rc=0
+
+######## P2-8 (UI arm p2_8)
+[P2-8] rows: ["Extracted Stop that Cat! (MB-YARD1-C01-001) 1 15 ✓ Mainline 1 minute ago"]
+[P2-8] dialog: Mark Reviewed Mark MB-YARD1-C01-001 as reviewed? Notes (optional) Optional — notes are shown in the status history. Cancel Mark Reviewed Close
+[P2-8] toast: ["MB-YARD1-C01-001 marked reviewed","Imported 2,271 existing entries from SpiralDB"]
+[P2-8] badge: ["Status: Reviewed"]
+[p2_8] ARM DONE

@@ -1,0 +1,155 @@
+######## P3-1
+
+$ grep -rho '"\$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates/ | sort | uniq -c | sort -rn
+   4175 "$type": "Imcodec.ObjectProperty.TypeCache.MadlibArgT_ByteString, Imcodec.ObjectProperty"
+   1882 "$type": "Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty"
+    797 "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty"
+    429 "$type": "Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty"
+    323 "$type": "Imcodec.ObjectProperty.TypeCache.ResDropTable, Imcodec.ObjectProperty"
+    313 "$type": "Imcodec.ObjectProperty.TypeCache.RequirementList, Imcodec.ObjectProperty"
+    277 "$type": "Imcodec.ObjectProperty.TypeCache.ReqHasQuest, Imcodec.ObjectProperty"
+    198 "$type": "Imcodec.ObjectProperty.TypeCache.WaypointGoalTemplate, Imcodec.ObjectProperty"
+    107 "$type": "Imcodec.ObjectProperty.TypeCache.BountyGoalTemplate, Imcodec.ObjectProperty"
+     52 "$type": "Imcodec.ObjectProperty.TypeCache.ReqHasEntry, Imcodec.ObjectProperty"
+     36 "$type": "Imcodec.ObjectProperty.TypeCache.ScavengeGoalTemplate, Imcodec.ObjectProperty"
+     34 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddDynaMod, Imcodec.ObjectProperty"
+     26 "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty"
+     21 "$type": "Imcodec.ObjectProperty.TypeCache.ResLearnSpell, Imcodec.ObjectProperty"
+     21 "$type": "Imcodec.ObjectProperty.TypeCache.ReqSchoolOfFocus, Imcodec.ObjectProperty"
+     10 "$type": "Imcodec.ObjectProperty.TypeCache.ResGiveSpell, Imcodec.ObjectProperty"
+      8 "$type": "Imcodec.ObjectProperty.TypeCache.ResTeleport, Imcodec.ObjectProperty"
+      8 "$type": "Imcodec.ObjectProperty.TypeCache.ResDrawHand, Imcodec.ObjectProperty"
+      7 "$type": "Imcodec.ObjectProperty.TypeCache.ReqIsSchool, Imcodec.ObjectProperty"
+      5 "$type": "Imcodec.ObjectProperty.TypeCache.ResActorDialog, Imcodec.ObjectProperty"
+      5 "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialog, Imcodec.ObjectProperty"
+      3 "$type": "Imcodec.ObjectProperty.TypeCache.ResPostEvent, Imcodec.ObjectProperty"
+      2 "$type": "Imcodec.ObjectProperty.TypeCache.ResPlaySound, Imcodec.ObjectProperty"
+      2 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddSpell, Imcodec.ObjectProperty"
+      1 "$type": "Imcodec.ObjectProperty.TypeCache.ResWait, Imcodec.ObjectProperty"
+      1 "$type": "Imcodec.ObjectProperty.TypeCache.ResModifyEntry, Imcodec.ObjectProperty"
+      1 "$type": "Imcodec.ObjectProperty.TypeCache.ResDespawn, Imcodec.ObjectProperty"
+      1 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddMana, Imcodec.ObjectProperty"
+      1 "$type": "Imcodec.ObjectProperty.TypeCache.ResAddHealth, Imcodec.ObjectProperty"
+rc=0
+
+$ grep -rho '"\$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates/ | wc -l; grep -rho '"\$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates/ | sort -u | wc -l; ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates | wc -l
+8746
+29
+329
+rc=0
+
+######## P3-2 / P4-1 — the round-trip lines of the gate's own fresh npm test run (main-test.txt)
+[p3-02 ac1] committed fixtures: 4 files round-tripped (explicit-null fixtures=1, absent-key fixtures=3)
+[p3-02 ac1] corpus path=/home/jason/Documents/git-projects/spiraldb/QuestTemplates
+[p3-02 ac1] files discovered=328 round-tripped=328 failures=0 files with explicit nulls=328 files with absent modelled keys=0
+[p3-02 ac1] corpus path=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates
+[p3-02 ac1] files discovered=322 round-tripped=322 failures=0 files with explicit nulls=320 files with absent modelled keys=2
+[p3-08 corpus] 328 real + 322 clone files, 797 real dialog lists / 1558 total (769 real tag groups / 1508 total), 1876 real entries in five corpus shapes (full 1860 / no-m_dialogEvent 65-key 7 / 60-key 1 / 45-key 6 / no-$type 58-key 2), plus the clone's 65-key
+[p4-09 ac4] committed fixtures swept=4 failures=0
+[p4-09 ac4] droptable dir=/home/jason/Documents/git-projects/spiraldb/DropTables [authoritative]
+[p4-09 ac4]   files discovered=317 ls|wc -l=317 round-tripped=317 failures=0
+[p4-09 ac4] npcinventory dir=/home/jason/Documents/git-projects/spiraldb/NpcInventory [authoritative]
+[p4-09 ac4]   files discovered=215 ls|wc -l=215 round-tripped=215 failures=0
+[p4-09 ac4] npcspellinventory dir=/home/jason/Documents/git-projects/spiraldb/NpcSpellInventory [authoritative]
+[p4-09 ac4]   files discovered=77 ls|wc -l=77 round-tripped=77 failures=0
+[p4-09 ac4] creaturespellbook dir=/home/jason/Documents/git-projects/spiraldb/CreatureSpellbook [authoritative]
+[p4-09 ac4]   files discovered=134 ls|wc -l=134 round-tripped=134 failures=0
+[p4-09 ac4] treasurecardinventory dir=/home/jason/Documents/git-projects/spiraldb/TreasureCardInventory [authoritative]
+[p4-09 ac4]   files discovered=1 ls|wc -l=1 round-tripped=1 failures=0
+[p4-09 ac4] zonetransfer dir=/home/jason/Documents/git-projects/spiraldb/ZoneTransfer [authoritative]
+[p4-09 ac4]   files discovered=1207 ls|wc -l=1207 round-tripped=1207 failures=0
+[p4-09 ac4] droptable dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/DropTables [clone]
+[p4-09 ac4]   files discovered=317 ls|wc -l=317 round-tripped=317 failures=0
+[p4-09 ac4] npcinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcInventory [clone]
+[p4-09 ac4]   files discovered=215 ls|wc -l=215 round-tripped=215 failures=0
+[p4-09 ac4] npcspellinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/NpcSpellInventory [clone]
+[p4-09 ac4]   files discovered=77 ls|wc -l=77 round-tripped=77 failures=0
+[p4-09 ac4] creaturespellbook dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/CreatureSpellbook [clone]
+[p4-09 ac4]   files discovered=134 ls|wc -l=134 round-tripped=134 failures=0
+[p4-09 ac4] treasurecardinventory dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/TreasureCardInventory [clone]
+[p4-09 ac4]   files discovered=1 ls|wc -l=1 round-tripped=1 failures=0
+[p4-09 ac4] zonetransfer dir=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/ZoneTransfer [clone]
+[p4-09 ac4]   files discovered=1207 ls|wc -l=1207 round-tripped=1207 failures=0
+[p3-01 schemas] corpus 328: accepted=328, rejected=0, parse-output-changed=0
+[p3-01 ac1] grep -rho '"$type": *"[^"]*"' /home/jason/Documents/git-projects/spiraldb/QuestTemplates
+[p3-01 ac1] measured: 29 distinct $type strings, 8746 occurrences over 328 quest files (the recorded baseline)
+
+######## P3-3 (UI arm raw, ui.mjs p3_3)
+[P3-3] data-edit-mode=true data-dirty=false
+[P3-3] goal 1 m_usePatron before: false
+[P3-3] after check: true data-dirty=true
+[P3-3] toast: ["Quest WC-CYCLOPS-MAIN-002 saved and committed","Imported 2,271 existing entries from SpiralDB"]; data-dirty=false
+[p3_3] ARM DONE
+
+$ git -C data/test-spiraldb diff HEAD~1 -- QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+diff --git a/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json b/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+index a7ccb18..2963446 100644
+--- a/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
++++ b/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+@@ -6,7 +6,7 @@
+   "m_goals": [
+     {
+       "$type": "Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty",
+-      "m_usePatron": false,
++      "m_usePatron": true,
+       "m_goalName": "1_WizardQuestGoals_TalkNPC",
+       "m_goalNameID": 2559431,
+       "m_goalTitle": "WizardQuestGoals_TalkNPC",
+rc=0
+
+$ git -C data/test-spiraldb diff --no-renames --name-only HEAD~1
+QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json
+QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+rc=0
+
+$ git -C data/test-spiraldb diff HEAD~1 -- QuestMetadatas/questmetadata_WC-CYCLOPS-MAIN-002.json | grep '^[-+] '
+-  "ModifiedAt": "2026-09-26T12:42:36.380Z",
++  "ModifiedAt": "2026-10-01T02:09:17.096Z",
+-  "ModifiedBy": "Lead Verify"
++  "ModifiedBy": "FinalVerify Sweep"
+rc=0
+
+$ node data/__test-scratch__/fv-flatdiff.cjs data/test-spiraldb QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-002.json
+changed value paths: 1 [".m_goals[0].m_usePatron"]
+removed paths: 0
+key-order drift: none
+total value paths before/after: 1980 1980
+rc=0
+
+######## P3-4
+
+$ curl -s localhost:3292/api/quests/WC-CYCLOPS-MAIN-002 | jq -c '{m_questName, goal0_usePatron: .m_goals[0].m_usePatron, goal0_name: .m_goals[0].m_goalName, goals: (.m_goals|length)}'
+{"m_questName":"WC-CYCLOPS-MAIN-002","goal0_usePatron":true,"goal0_name":"1_WizardQuestGoals_TalkNPC","goals":6}
+rc=0
+[P3-4] goals panel after full reload (read mode): ☰ Talk to WC-RAV-NPC02_Persona (Persona goal) 1_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Edit The goal "1_WizardQuestGoals_TalkNPC" cannot be reached from m_startGoals, so nothing in the quest activates it. Persona (m_personaName): (empty) Use Patron (m_usePatron): ✓ Client Tags (m_clientTags): WC_Ravenwood_S02, Ddl_WC_RW_CyrusDrake Display Image 1 (m_displayIma
+[P3-4] goal 1 editor checkbox checked=true data-dirty=false
+[p3_4] ARM DONE
+
+######## P3-5 curl arm
+
+$ curl -s localhost:3292/api/quests/WC-CYCLOPS-MAIN-002 | jq -c '{quest: (.m_startGoals[0] = "9_NoSuchGoal")}' | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/quests
+{"error":"Quest validation failed with 1 validation error (Unknown start goal).","fields":{"m_startGoals[0]":["The start goal \"9_NoSuchGoal\" is not defined in m_goals. Set another start goal or restore the deleted goal."]}}
+http=400rc=0
+
+$ git -C data/test-spiraldb rev-parse --short HEAD; git -C data/test-spiraldb status --porcelain | wc -l
+38d76c9
+0
+rc=0
+
+######## P3-5 UI arm (p3_5)
+[P3-5] served m_startGoals = []: first "Set as Start Goal" on 1_WizardQuestGoals_TalkNPC, then delete it
+[P3-5] deleting via "Delete Talk to WC-RAV-NPC02_Persona (Persona goal), 1_WizardQuestGoals_TalkNPC"
+[P3-5] role=alert: 1 validation error blocks saving: Unknown start goal. 5 warnings: Unreachable goal. Warnings never block saving.
+[P3-5] Save aria-disabled=true data-blocked=true aria-describedby=quest-validation-banner
+[P3-5] after Discard: data-dirty=false alert count=0 Save aria-disabled=false
+[p3_5] ARM DONE
+
+######## P3-6 (UI arm p3_6)
+[P3-6] flowchart MB-YARD1-C01-001: nodes=16 edges=15
+[P3-6] node labels: ["1_WizardQuestGoals_Explore Start Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): Marleybone/MB_ScotlandYard/MB_Prison","2_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Persona (m_personaName): (empty)","3_WizardQuestGoals_Explore Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): (empty)","4_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Persona (m_personaName): (empty)","5_WizardQuestGoals_Explore Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): (empty)","6_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Persona (m_personaName): (empty)","7_WizardQuestGoals_Explore Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): (empty)","8_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Persona (m_personaName): (empty)","9_WizardQuestGoals_Explore Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): (empty)","10_WizardQuestGoals_Kill Kill mobs (Bounty goal) (BountyGoalTemplate) NPC Adjectives (m_npcAdjectives): (empty)","11_WizardQuestGoals_Explore Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): (empty)","12_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Persona (m_personaName): (empty)","13_WizardQuestGoals_Explore Reach a zone (Waypoint goal) (WaypointGoalTemplate) Zone (m_zoneTag): (empty)","14_WizardQuestGoals_Kill Kill mobs (Bounty goal) (BountyGoalTemplate) NPC Adjectives (m_npcAdjectives): (empty)","15_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Persona (m_personaName): (empty)","✓ Complete"]
+[P3-6] requirements selects: [[null,["ReqHasQuest","ReqHasEntry","ReqSchoolOfFocus","ReqIsSchool"]],[null,["ROP_AND","ROP_OR"]]]
+[P3-6] requirements panel: Requirements (m_requirements) Group AND OR × Requires quest: Bad News... Requires quest (ReqHasQuest) × Type ($type) Requires quest (ReqHasQuest) Requires quest registry entry (ReqHasEntry) Requires school of focus (ReqSchoolOfFocus) Requires target school (ReqIsSchool) Quest (m_questName) Bad News... (MB-MUSEHub-C03-002) Quest the player must have (or, with NOT, must not have) completed NOT (m_applyNOT) Operator (m_operator) AND (ROP_AND) OR (ROP_OR) + Add Condition + Add Group Prep requirements (m_prepRequirements) m_prepRequirements is null in all 322 corpus quests — it stays null until you
+[P3-6] dialog WC-CYCLOPS-MAIN-002: DOM "Group fields" x 7; served groups 7 [Prep 5, Completion 4, Completion 4, Completion 3, Completion 3, Completion 7, Completion 1]
+[P3-6] dialog WC-UNICORN-MAIN-007: DOM "Group fields" x 5; served groups 5 [Prep 3, Completion 1, Prep 1, Completion 2, Completion 1]
+[p3_6] ARM DONE
+[p3_6] console errors: ["Failed to load resource: the server responded with a status of 404 (Not Found)"]

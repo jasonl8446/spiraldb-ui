@@ -1,0 +1,183 @@
+######## P7-5 prep — drafts rebuilt into the throwaway DB against the clone (the p7-08 recipe)
+
+$ npm run --silent drafts -- --db <scratch>/ui.db --spiraldb data/test-spiraldb | head -30
+[spiraldb-ui] drafts database at <scratch>/ui.db
+[spiraldb-ui] SpiralDB root   at data/test-spiraldb (read only)
+{
+  "proposed": 5448,
+  "inserted": 5448,
+  "unchanged": 0,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4005,
+    "evidence-dialogue": 66,
+    "evidence-goals": 842,
+    "evidence-location": 84,
+    "evidence-requirements": 451,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1395,
+    "named_defined": 322,
+    "unnamed": 4648,
+    "zero_evidence": 1352
+  },
+  "gate_precision": {
+    "matched": 0,
+    "gates": 44
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 227
+  },
+rc=0
+
+$ curl -s localhost:3292/api/quests/NV-PUERT-MAIN-012/suggestions | jq -c '[.suggestions[] | {id, path, source, confidence, status}]'
+[{"id":991,"path":"m_goals","source":"evidence-goals","confidence":0,"status":"pending"},{"id":990,"path":"m_questTitle","source":"evidence-title","confidence":0.78,"status":"pending"},{"id":992,"path":"m_requirements","source":"evidence-requirements","confidence":0.581,"status":"pending"}]
+rc=0
+
+$ curl -s localhost:3292/api/quests/NV-PUERT-MAIN-012/scaffold | jq -c '{link_kind: .link_kind, title_key: .title_key, q: (.quest // .skeleton // {} | {m_questTitle, goals: (.m_goals|length), m_requirements})}'
+{"link_kind":"inferred","title_key":null,"q":{"m_questTitle":null,"goals":0,"m_requirements":null}}
+rc=0
+
+$ npm run --silent imlight:boot -- probe
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+
+start  : 12369, 12500, 12000, 12333, 8080
+reuse  : (none)
+refused: (none)
+rc=0
+$ npm run --silent imlight:boot -- freshness
+input                    value
+build directory          /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0
+Imlight.Director.dll     /home/jason/Documents/git-projects/Imlight/src/Imlight.Director/bin/Debug/net10.0/Imlight.Director.dll
+its mtime (ISO)          2026-09-27T14:32:58.321Z
+Imlight repo             /home/jason/Documents/git-projects/Imlight
+commit window queried    14 commit(s), --since = mtime - 14 days
+commits after the mtime  6e5966b, f8c54a8
+code commits after it    (none)
+verdict                  code-current
+
+[harness] code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+rc=0
+$ IMLIGHT_DOTNET_ROOT=/nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/share/dotnet npm run imlight:boot -- prove-count --name NV-PUERT-MAIN-012 --save-cmd "PLAYWRIGHT_BROWSERS_PATH=/home/jason/Documents/git-projects/spiraldb-ui/tools/.playwright-browsers BASE=http://localhost:3292 UNNAMED_ID=39199 OUT=<scratch>/shots-p7-08 node docs/evidence/phase-7/p7-08-tier2-walkthrough.mjs" --evidence-dir <scratch>/boot --prefix final-verify --restore-clone
+=== the five owned ports, before anything starts ===
+port   role      status  pid  detail
+12369  aurorium  free    -    port 12369 is free — the harness may bind it
+12500  imlight   free    -    port 12500 is free — the harness may bind it
+12000  imlight   free    -    port 12000 is free — the harness may bind it
+12333  imlight   free    -    port 12333 is free — the harness may bind it
+8080   imlight   free    -    port 8080 is free — the harness may bind it
+
+=== the D17 clone, before the scaffold (the restore snapshot) ===
+axis                   value
+branch                 content/2026-09-27
+HEAD                   18dc92477d54b1e911796960407ce7710e703697
+main ref               f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37
+rev-list --count HEAD  42
+status --porcelain     (empty)
+QuestTemplates/*.json  322
+branches               content/2026-09-26 content/2026-09-27 main
+[harness] 12369 is free — starting the workspace Aurorium
+[harness] [patch] endpoint 127.0.0.1:1 verified refused (nothing to fetch from)
+[harness] Aurorium identity: GET /latest returned the expected revision V_r806919.Wizard_1_610
+[harness] Aurorium pid 124710 recorded as OWNED (log -> /home/jason/Documents/git-projects/spiraldb-ui/tools/.aurorium-run/boot.txt)
+[harness] freshness: code-current: Imlight.Director.dll mtime 2026-09-27T14:32:58.321Z; 2 commit(s) after it (6e5966b, f8c54a8), 0 touched src/**/*.cs or *.csproj — the prebuilt output may be reused
+[harness] freshness inputs: dll 2026-09-27T14:32:58.321Z, 14 commit(s) in the 14-day window
+[harness] run directory /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run (1.2G	/home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run)
+[harness] config pins: SpiralDBLocalPath=/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb SpiralDBDisableRemote=true PlayerDatabaseUrl=(empty) ports 12500/12000/12333/8080
+[harness] boot 1 of 2 — the baseline, before any scaffold
+[harness] boot "baseline": pid 124740, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "baseline" console -> <scratch>/boot/final-verify-imlight-boot-baseline.txt (15936 bytes)
+[harness] stopped Director (baseline) pid 124740
+[harness] baseline: SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+[harness] scaffolding "NV-PUERT-MAIN-012" (--save-cmd)
+[harness] boot 2 of 2 — the same run directory, after the scaffold
+[harness] boot "after": pid 124971, cwd /home/jason/Documents/git-projects/spiraldb-ui/tools/.imlight-run
+[harness] boot "after" console -> <scratch>/boot/final-verify-imlight-boot-after.txt (15936 bytes)
+[harness] stopped Director (after) pid 124971
+[harness] after   : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+
+=== BASELINE — Imlight's own log line, before the scaffold ===
+  SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2274
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            322
+zone data entries          1205
+
+=== the write (--save-cmd, verbatim) ===
+  QUEST_NAME=NV-PUERT-MAIN-012 sh -c "PLAYWRIGHT_BROWSERS_PATH=/home/jason/Documents/git-projects/spiraldb-ui/tools/.playwright-browsers BASE=http://localhost:3292 UNNAMED_ID=39199 OUT=<scratch>/shots-p7-08 node docs/evidence/phase-7/p7-08-tier2-walkthrough.mjs"
+
+[p7-08 tier-2] queue: 1,008 drafts with evidence · 387 with none hidden
+[p7-08 tier-2] row: Cheeky Monkeys (NV-PUERT-MAIN-012) 3 3 none evidence-goals, evidence-requirements, evidence-title
+[p7-08 tier-2] accept-all bar: 3 pending suggestions — nothing is written until Save Accept all from evidence-title (1) Accept all from evidence-goals (1) Accept all from evidence-requirements (1)
+[p7-08 tier-2] accepted m_questTitle on the Info tab
+[p7-08 tier-2] accepted m_goals on the Goals tab
+[p7-08 tier-2] accepted m_requirements on the Requirements tab
+[p7-08 tier-2] save: HTTP 200 {"quest_name":"NV-PUERT-MAIN-012","file":"QuestTemplates/questtemplates_NV-PUERT-MAIN-012.json","commit":"790d5e69851e532045fc89a7377b27a54c0cdaee","branch":"content/2026-09-27","accepted_suggestions":[990,991,992]}
+[p7-08 tier-2] after save: http://localhost:3292/quests/NV-PUERT-MAIN-012 — NV-PUERT-MAIN-012
+[p7-08 tier-2] name dialog pre-fill: QuestTitle_991F
+
+=== AFTER — Imlight's own log line, after the scaffold ===
+  SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+
+field                      value
+files loaded               2275
+spellbooks                 134
+drop tables                317
+NPC inventories            215
+NPC spell inventories      77
+NPC drop tables            0
+treasure card inventories  1
+quest templates            323
+zone data entries          1205
+
+=== the count proof (p6-12-ac2) ===
+  baseline line : SpiralDB loaded 2274 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 322 quest templates, 1205 zone data entries.
+  save          : NV-PUERT-MAIN-012 — exit 0, one file into /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  after line    : SpiralDB loaded 2275 files: 134 spellbooks, 317 drop tables, 215 NPC inventories, 77 NPC spell inventories, 0 NPC drop tables, 1 treasure card inventories, 323 quest templates, 1205 zone data entries.
+  arithmetic    : 322 + 1 = 323
+  delta         : 1 (expected 1)
+  verdict       : PASS — rises by exactly one
+  detail        : quest templates rose by exactly 1 across the scaffold of "NV-PUERT-MAIN-012": 322 + 1 = 323; the other seven families are unchanged (spellbooks, dropTables, npcInventories, npcSpellInventories, npcDropTables, treasureCardInventories, zoneData)
+  baseline readings inside the one process: 3 reading(s), all identical
+  after readings inside the one process   : 3 reading(s), all identical
+  files counter : baseline 2274 -> after 2275 (delta 1)
+  seven non-quest families: spellbooks 134, dropTables 317, npcInventories 215, npcSpellInventories 77, npcDropTables 0, treasureCardInventories 1, zoneData 1205
+
+=== the clone restore plan (D76(b): a reset that leaves a branch behind is not a restore) ===
+  git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb checkout -f content/2026-09-27
+  git -C /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb reset --hard 18dc92477d54b1e911796960407ce7710e703697
+  (no branch appeared during the run, so no branch is deleted)
+[harness] git checkout -f content/2026-09-27
+[harness] git reset --hard 18dc92477d54b1e911796960407ce7710e703697
+
+=== the clone after the restore (five axes + the corpus shape) ===
+axis                       expected                                    actual                                      ok
+branch                     content/2026-09-27                          content/2026-09-27                          ok
+HEAD                       18dc92477d54b1e911796960407ce7710e703697    18dc92477d54b1e911796960407ce7710e703697    ok
+main ref                   f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    f3f8b5c0a48bc0f0b0cd9aca2d9d7d9d0122bd37    ok
+git rev-list --count HEAD  42                                          42                                          ok
+git status --porcelain     (empty)                                     (empty)                                     ok
+QuestTemplates/*.json      322                                         322                                         ok
+local branches (set)       content/2026-09-26 content/2026-09-27 main  content/2026-09-26 content/2026-09-27 main  ok
+
+  branches now: content/2026-09-26 content/2026-09-27 main
+  remotes now : origin origin/main
+  every axis matches — the clone is restored
+[harness] evidence: <scratch>/boot/final-verify-imlight-boot-baseline.txt, <scratch>/boot/final-verify-imlight-boot-after.txt, <scratch>/boot/final-verify-count.txt
+[harness] stopped Aurorium pid 124710
+exit=0

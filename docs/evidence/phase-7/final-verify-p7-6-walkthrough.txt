@@ -1,0 +1,63 @@
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers BASE=http://localhost:3292 OUT=<scratch>/shots-p7-14 node docs/evidence/phase-7/p7-14-tier2-walkthrough.mjs
+[p7-14 tier-2] tabs: Overview Info Goals Goal Logic Requirements Results Dialog
+[p7-14 tier-2] landing tab: Overview
+[p7-14 tier-2] overview: Given by Private Connelly (the Prep dialog speaker) Steps Order follows the goal logic. 1. Defeat 2 Lost_Soul in Unicorn Way (Bounty goal) — from the start · 1_WizardQuestGoals_Kill 2. Talk to Private Connelly (Persona goal) — after step 1 · 2_WizardQuestGoals_TalkNPC 3. Talk to Ceren Nightchant (Persona goal) — after step 2 · 3_WizardQuestGoals_TalkNPC Completes when: step 3 is complete. Completion dialog: spoken by Private Connelly Requires Requires quest registry entry: Complete in Unicorn Way Rewards Reward: drop table WC-UNICORN-MAIN-001
+[p7-14 tier-2] goals panel: ☰ Defeat 2 Lost_Soul in Unicorn Way (Bounty goal) 1_WizardQuestGoals_Kill Kill mobs (Bounty goal) (BountyGoalTemplate) Start Edit NPC Adjectives (m_npcAdjectives): Lost_Soul Bounty Total (m_bountyTotal): 2 Bounty Type (m_bountyType): Kill mobs (BT_MOB_KILL) Client Tags (m_clientTags): Ddl_WC_UW_LostSouls Display Image 1 (m_displayImage1): GUI/NpcPortraits/Portrait_Ghost_LostSoul_MOB_A.dds Unset as Start Goal Raw fields (4 other-tab, 3 unowned) ☰ Talk to Private Connelly (Persona goal) 2_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Edit Persona (m_personaName): WC-ST01-NPC04 Use Patron (m_usePatron): ✗ Client Tags (m_clientTags): Ddl_WC_UW_PrivateConnelly Displ
+[p7-14 tier-2] dialog Advanced accordions (15): [{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[0]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[1]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[2]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[3]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[4]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[5]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[0]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[1]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[2]","expanded":"true"},{"entry":"m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[0]","expanded":"true"},{"entry":"m_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[1]","expanded":"true"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[0]","expanded":"true"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[1]","expanded":"true"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[2]","expanded":"true"},{"entry":"m_goals[2].m_dialogList.m_dialogs[0].m_dialogEntries[0]","expanded":"true"}]
+file:///home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-7/p7-14-tier2-walkthrough.mjs:65
+    throw new Error('the Dialog tab shows no collapsed/auto-opened pair to photograph');
+          ^
+
+Error: the Dialog tab shows no collapsed/auto-opened pair to photograph
+    at file:///home/jason/Documents/git-projects/spiraldb-ui/docs/evidence/phase-7/p7-14-tier2-walkthrough.mjs:65:11
+
+Node.js v24.21.0
+exit=1
+$ git -C data/test-spiraldb status --porcelain | wc -l; git -C data/test-spiraldb rev-parse --short HEAD
+0
+18dc924
+
+######## why: D195(d) (PR #14 review, merged after gate-7 ran) opens Advanced on a value that differs from the field's own new-node default. WC-UNICORN-MAIN-001 (the script's default quest) now opens all 15; measured with the app's own functions over the clone:
+$ npx tsx --tsconfig client/tsconfig.json fv-adv3.ts   # isDefaultFieldValue over the Advanced accordion's fields (dialogFieldsInAccordion), every entry of all 322 clone quests
+WC-UNICORN-MAIN-001 Advanced opened by value: 15 of 15
+clone (all 322 QuestTemplates, JSON5-parsed): entries 1706 Advanced opened by value 428
+quests with both a collapsed and an opened Advanced (first 8): DS-ACAD-C01-002:7/8 DS-ACAD-C01-004:2/3 DS-ACAD-C01-005:8/11 DS-ACAD1-C02-003:1/3 DS-ACAD1-C04-004:2/6 DS-LIB-C01-002:1/5 DS-LIB1-C01-003:7/11 DS-LIB1-C01-008:4/7 ... total 88
+# 428 of 1,706 = D195's own recorded measurement (pr14-review-fixes.md: 'Advanced 1,672 -> 428')
+
+######## the committed script re-run unchanged, with its own QUEST_NAME input set to a clone quest that has both states (WC-UNICORN-MAIN-002: 12 of 20 opened)
+$ PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers BASE=http://localhost:3292 QUEST_NAME=WC-UNICORN-MAIN-002 OUT=<scratch>/shots-p7-14b node docs/evidence/phase-7/p7-14-tier2-walkthrough.mjs
+[p7-14 tier-2] tabs: Overview Info Goals Goal Logic Requirements Results Dialog
+[p7-14 tier-2] landing tab: Overview
+[p7-14 tier-2] overview: Given by Ceren Nightchant (the Prep dialog speaker) Steps Order follows the goal logic. 1. Defeat 2 Skeletal_Pirate in Unicorn Way (Bounty goal) — from the start · 1_WizardQuestGoals_Kill 2. Talk to Ceren Nightchant (Persona goal) — after step 1 · 2_WizardQuestGoals_TalkNPC Completes when: step 2 is complete. Completion dialog: spoken by Ceren Nightchant Requires All of these: Requires quest registry entry: Complete in Ghost Hunters Not: Requires quest registry entry: Completed in Monsters and Mazes Rewards Reward: drop table WC-UNICORN-MAIN-002
+[p7-14 tier-2] goals panel: ☰ Defeat 2 Skeletal_Pirate in Unicorn Way (Bounty goal) 1_WizardQuestGoals_Kill Kill mobs (Bounty goal) (BountyGoalTemplate) Start Edit NPC Adjectives (m_npcAdjectives): Skeletal_Pirate Bounty Total (m_bountyTotal): 2 Bounty Type (m_bountyType): Kill mobs (BT_MOB_KILL) Display Image 1 (m_displayImage1): GUI/NpcPortraits/Art_Portrait_Skeletal_Pirate.dds Unset as Start Goal Raw fields (4 other-tab, 3 unowned) ☰ Talk to Ceren Nightchant (Persona goal) 2_WizardQuestGoals_TalkNPC Talk to an NPC (Persona goal) (PersonaGoalTemplate) Edit Persona (m_personaName): WC-ST01-NPC01 Use Patron (m_usePatron): ✗ Client Tags (m_clientTags): Ddl_WC_UW_CerenNightchant Display Image 1 (m_displayImage1): GUI/Npc
+[p7-14 tier-2] dialog Advanced accordions (20): [{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[0]","expanded":"false"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[1]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[2]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[3]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[4]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[5]","expanded":"false"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[6]","expanded":"false"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[7]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[8]","expanded":"false"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[9]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[10]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[0].m_dialogEntries[11]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[0]","expanded":"false"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[1]","expanded":"true"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[2]","expanded":"false"},{"entry":"m_dialogList.m_dialogs[1].m_dialogEntries[3]","expanded":"true"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[0]","expanded":"false"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[1]","expanded":"true"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[2]","expanded":"false"},{"entry":"m_goals[1].m_dialogList.m_dialogs[0].m_dialogEntries[3]","expanded":"true"}]
+[p7-14 tier-2] popover: Quest level The suggested level for the quest. Technical name: m_questLevel Source: docs/spec-domain-reference.md:259 See in glossary
+[p7-14 tier-2] glossary "m_questLevel": 1 row, data-term=m_questLevel
+[p7-14 tier-2] glossary "Quest level": 1 row, data-term=m_questLevel
+exit=0
+$ git -C data/test-spiraldb status --porcelain | wc -l; git -C data/test-spiraldb rev-parse --short HEAD
+0
+18dc924
+
+######## the measuring script (fv-adv3.ts, run with npx tsx --tsconfig client/tsconfig.json from the repo root; read-only)
+// final-verify: per clone quest, how many dialog entries the D195 rule opens the 'Advanced' accordion for (value only; errors aside).
+import fs from 'node:fs';
+import JSON5 from 'json5';
+import { DIALOG_ACCORDIONS, dialogFieldsInAccordion } from '../../client/src/lib/quest-dialog';
+import { isDefaultFieldValue } from '../../client/src/lib/advanced';
+const adv = DIALOG_ACCORDIONS.find((a) => a.id === 'Advanced')!;
+const keys = dialogFieldsInAccordion(adv).map((f) => f.key);
+const dir = 'data/test-spiraldb/QuestTemplates';
+let total = 0, opened = 0; const mixed: string[] = [];
+for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json')).sort()) {
+  let q: any; try { q = JSON5.parse(fs.readFileSync(`${dir}/${f}`, 'utf8')); } catch { continue; }
+  const entries: any[] = [];
+  const walk = (l: any) => (l?.m_dialogs ?? []).forEach((g: any) => (g.m_dialogEntries ?? []).forEach((e: any) => entries.push(e)));
+  walk(q.m_dialogList); (q.m_goals ?? []).forEach((g: any) => walk(g.m_dialogList));
+  const o = entries.filter((e) => keys.some((k) => !isDefaultFieldValue(k, e[k], e.$type))).length;
+  total += entries.length; opened += o;
+  if (o > 0 && o < entries.length) mixed.push(`${q.m_questName}:${o}/${entries.length}`);
+  if (q.m_questName === 'WC-UNICORN-MAIN-001') console.log('WC-UNICORN-MAIN-001 Advanced opened by value:', o, 'of', entries.length);
+}
+console.log('clone (all 322 QuestTemplates, JSON5-parsed): entries', total, 'Advanced opened by value', opened);
+console.log('quests with both a collapsed and an opened Advanced (first 8):', mixed.slice(0, 8).join(' '), '... total', mixed.length);

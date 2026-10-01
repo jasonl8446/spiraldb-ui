@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# final-verify CI simulation (gate-7 run 4 recipe): run inside `unshare -rm` (outer, mounts) -> `unshare -U --map-user=1000` (inner, plain uid).
+# The outer stage hides everything the GitHub runner does not have: the main tree's data/ (D17 clone, dev DB),
+# the owner fork and the sibling repos, the main tree's tools/bin + .artifacts (.NET builds), and every dotnet SDK
+# in the Nix store (CI has no .NET, D55). The worktree itself has no data/ and no tools/bin.
+set -u
+MAIN=/home/jason/Documents/git-projects/spiraldb-ui
+if [ "${STAGE:-outer}" = outer ]; then
+  # The whole git-projects directory becomes an empty tmpfs, so the owner fork, the sibling repos and the main
+  # tree (its data/, tools/bin, .artifacts) do not EXIST - an empty mount over each would leave the directory
+  # present, which no runner has (a first attempt did exactly that and 4 unit tests read an empty fork).
+  # Only the main tree's .git is bound back, because the worktree's .git file points into it (CI has a real checkout).
+  GP=/home/jason/Documents/git-projects
+  mkdir -p "$OUTDIR/gitbind" && mount --bind $MAIN/.git "$OUTDIR/gitbind"
+  mount -t tmpfs tmpfs $GP && echo "[ci-sim] hidden: $GP (everything under it)"
+  mkdir -p $MAIN/.git && mount --bind "$OUTDIR/gitbind" $MAIN/.git && echo "[ci-sim] bound back: $MAIN/.git only"
+  for d in /nix/store/*dotnet-sdk*/ /nix/store/*dotnet-runtime*/; do
+    [ -d "$d" ] && mount -t tmpfs -o ro tmpfs "$d" && echo "[ci-sim] hidden: $d"
+  done
+  exec env STAGE=inner unshare -U --map-user=1000 --map-group=100 "$0" "$@"
+fi
+cd "$CISIM"
+export CI=true
+echo "[ci-sim] id: $(id)"; echo "[ci-sim] pwd: $PWD  HEAD: $(git rev-parse HEAD)"
+echo "[ci-sim] data/ in worktree: $(ls -d data 2>&1)"; echo "[ci-sim] main tree: $(ls -A $MAIN)"; echo "[ci-sim] git-projects: $(ls -A /home/jason/Documents/git-projects)"
+echo "[ci-sim] owner fork QuestTemplates visible: $(ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates 2>&1 | head -1)"
+echo "[ci-sim] dotnet: $(command -v dotnet) -> $(dotnet --version 2>&1 | head -1)"
+echo "[ci-sim] ports 3181/5181 before: $(ss -ltn | grep -cE ':(3181|5181)\b')"
+if [ -n "${FOCUS:-}" ]; then echo "[ci-sim] $FOCUS"; bash -c "$FOCUS" > "$OUTDIR/ci-focus.txt" 2>&1; rc=$?; echo "[ci-sim] focus exit=$rc"; tail -25 "$OUTDIR/ci-focus.txt"; exit $rc; fi
+for step in "$@"; do
+  echo; echo "=================== [ci-sim] npm run $step   $(date -Is)"
+  npm run "$step" > "$OUTDIR/ci-$step.txt" 2>&1; rc=$?
+  echo "[ci-sim] npm run $step -> exit=$rc   $(date -Is)"; tail -6 "$OUTDIR/ci-$step.txt"
+  [ $rc -ne 0 ] && echo "[ci-sim] STOP: a failed step fails the CI job" && exit $rc
+done
+echo "[ci-sim] all steps green"

@@ -1,0 +1,108 @@
+######## setup: git worktree add --detach <ci-sim worktree> HEAD (a70437c) ; npm ci ; the main tree's patched chromium copied in (gate-7 GD16)
+Preparing worktree (detached HEAD a70437c)
+HEAD is now at a70437c final-review: the reviewer's round-2 re-review of f30fd70 recorded verbatim — APPROVE
+
+real	0m13.825s
+user	0m6.208s
+sys	0m1.470s
+npm ci rc=0
+browsers copied: chromium-1243 chromium_headless_shell-1243 ffmpeg-1011 
+worktree data/: ls: cannot access '<scratch>/ci-sim/data': No such file or directory
+worktree tools/bin: ls: cannot access '<scratch>/ci-sim/tools/bin': No such file or directory
+
+######## the run: OUTDIR=<scratch>/ci-out CISIM=<scratch>/ci-sim unshare -rm <scratch>/ci-sim-run.sh test build lint typecheck:tests test:ui:install test:ui   (CI's step order; CI=true set by the script; gate-7 run 4's recipe, final-verify-ci-sim.sh.txt)
+[ci-sim] hidden: /home/jason/Documents/git-projects (everything under it)
+[ci-sim] bound back: /home/jason/Documents/git-projects/spiraldb-ui/.git only
+[ci-sim] hidden: /nix/store/2m31ryg26m1349xsk6qx5726x74hzc7s-dotnet-sdk-wrapped-9.0.318/
+[ci-sim] hidden: /nix/store/4h1jbrp5c5fgy8ymwcr8jw020m8pb8vv-dotnet-sdk-wrapped-9.0.318/
+[ci-sim] hidden: /nix/store/7yrqjk8g8k94g2shq3a8x4vs0qk6172v-dotnet-sdk-9.0.318/
+[ci-sim] hidden: /nix/store/8x3bz268qddcf73dnazywafdr67pg5p4-dotnet-sdk-wrapped-10.0.401/
+[ci-sim] hidden: /nix/store/fi5f9aa5jsb7f05k9q2pr0fhj6kxdmmf-dotnet-sdk-10.0.401/
+[ci-sim] hidden: /nix/store/gzd9w2pk117i6363dmdkd20y92cin35n-dotnet-sdk-wrapped-10.0.401-man/
+[ci-sim] hidden: /nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/
+[ci-sim] hidden: /nix/store/wa6vzd5qbr5aay3whbfywz7n9p0q8nkm-dotnet-sdk-10.0.401-man/
+[ci-sim] id: uid=1000(jason) gid=100(users) groups=100(users),65534(nogroup)
+[ci-sim] pwd: <scratch>/ci-sim  HEAD: a70437cf5e8c14fcbc15eac8bd252e0afcb19895
+[ci-sim] data/ in worktree: ls: cannot access 'data': No such file or directory
+[ci-sim] main tree: .git
+[ci-sim] git-projects: spiraldb-ui
+[ci-sim] owner fork QuestTemplates visible: ls: cannot access '/home/jason/Documents/git-projects/spiraldb/QuestTemplates': No such file or directory
+[ci-sim] dotnet:  -> <scratch>/ci-sim-run.sh: line 27: dotnet: command not found
+[ci-sim] ports 3181/5181 before: 0
+
+=================== [ci-sim] npm run test   2026-09-30T22:24:50-04:00
+[ci-sim] npm run test -> exit=0   2026-09-30T22:25:46-04:00
+
+ Test Files  105 passed | 3 skipped (108)
+      Tests  2112 passed | 103 skipped (2215)
+   Start at  22:24:51
+   Duration  55.27s (transform 1.85s, setup 0ms, collect 6.97s, tests 32.11s, environment 12ms, prepare 4.14s)
+
+
+=================== [ci-sim] npm run build   2026-09-30T22:25:46-04:00
+[ci-sim] npm run build -> exit=0   2026-09-30T22:25:54-04:00
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.84s
+
+=================== [ci-sim] npm run lint   2026-09-30T22:25:54-04:00
+[ci-sim] npm run lint -> exit=0   2026-09-30T22:26:03-04:00
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+=================== [ci-sim] npm run typecheck:tests   2026-09-30T22:26:03-04:00
+[ci-sim] npm run typecheck:tests -> exit=0   2026-09-30T22:26:07-04:00
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+=================== [ci-sim] npm run test:ui:install   2026-09-30T22:26:07-04:00
+[ci-sim] npm run test:ui:install -> exit=0   2026-09-30T22:26:07-04:00
+> spiraldb-ui@0.1.0 test:ui:install
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright install chromium
+
+BEWARE: your OS is not officially supported by Playwright; downloading fallback build for ubuntu24.04-x64.
+BEWARE: your OS is not officially supported by Playwright; downloading fallback build for ubuntu24.04-x64.
+BEWARE: your OS is not officially supported by Playwright; downloading fallback build for ubuntu24.04-x64.
+
+=================== [ci-sim] npm run test:ui   2026-09-30T22:26:07-04:00
+[ci-sim] npm run test:ui -> exit=0   2026-09-30T22:28:17-04:00
+  ✓  469 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 375px: the palette is centred and inside the viewport (789ms)
+  ✓  470 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 768px: the palette is centred and inside the viewport (652ms)
+  ✓  471 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (662ms)
+
+  6 skipped
+  465 passed (2.2m)
+[ci-sim] all steps green
+rc=0
+
+# npm test (tail):
+
+ Test Files  105 passed | 3 skipped (108)
+      Tests  2112 passed | 103 skipped (2215)
+   Start at  22:24:51
+   Duration  55.27s (transform 1.85s, setup 0ms, collect 6.97s, tests 32.11s, environment 12ms, prepare 4.14s)
+
+# test:ui: head, skipped (-) lines, failed/flaky lines, tail:
+Running 471 tests using 12 workers
+  -   82 [chromium] › tests/ui/p7-drafts.spec.ts:254:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle
+  -   83 [chromium] › tests/ui/p7-drafts.spec.ts:367:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   84 [chromium] › tests/ui/p7-drafts.spec.ts:424:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   85 [chromium] › tests/ui/p7-drafts.spec.ts:466:1 › a rejection is immediate and survives a reload
+  -   86 [chromium] › tests/ui/p7-drafts.spec.ts:510:1 › accept-all from each source, then Save, validates and commits
+  -   87 [chromium] › tests/ui/p7-drafts.spec.ts:608:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+lines matching ✘ or 'flaky': 0
+
+  6 skipped
+  465 passed (2.2m)
+# the p7-drafts file-level skip reason as reported:
+500:[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"<scratch>/ci-sim/data/test-spiraldb","templatesDirExists":false,"questFiles":0,"apiRows":0,"apiSkipped":1,"skipMessage":"ENOENT: no such file or directory, scandir '<scratch>/ci-sim/data/test-spiraldb/QuestTemplates'"}
+649:  6 skipped
