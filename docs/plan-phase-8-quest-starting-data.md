@@ -1,13 +1,13 @@
 # Phase 8 — Quest starting data for every quest
 
 **Status:** approved (2026-09-30) after the owner's grill-me interview (answers G1–G9 below); to run unattended under ralph
-**Depends on:** Phase 7 (PR #14, under owner review; review fixes at `509839c`, D195 — **rebase this branch onto it before 8.2; the 8.1 commit conflicts with the review fixes and needs a manual resolution**; branch `phase-7-coverage-usability`, gate-7 local half done at `25ed810`; its PR is pending
+**Depends on:** Phase 7, merged (PR #14 → `7c2e987`, final gate PR #15 → `6c1edde`). This branch was rebased onto `6c1edde` on 2026-10-01, with the 8.1 conflicts resolved.
 the owner). Phase 8 is stacked on it as `phase-8-quest-starting-data` until Phase 7 merges.
 **New external dependency:** the owner's Imlight fork `jasonl8446/Imlight` as a git submodule (8.7, AGPL-3.0 stays in
 the fork). Nothing else.
 
 > Decisions are D-numbered in [plan-overview.md](./plan-overview.md). D186–D187 are taken by the UI requests (8.1). The items
-> proposed below are D188–D194; task 8.0 writes them. The next free id after them is **D195**.
+> proposed below are D188–D194; task 8.0 writes them. D195–D198 were taken on `main` by Phase 7's review and final gate, so the next free id after D188–D194 is **D199**.
 
 ## Why this phase exists
 

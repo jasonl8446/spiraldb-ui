@@ -168,7 +168,10 @@ test('a failed save drops the accepted ids the server no longer holds as pending
     }),
   ).toBeVisible();
   // The value stays in the document; only the claim on the dead id went.
-  await expect(page.getByRole('main').getByLabel('m_questTitle')).toHaveValue('QuestTitle_ABCDE');
+  // Since 8.1 (D186) the title is a picker that keeps the stored key in its hidden input.
+  await expect(
+    page.getByRole('main').locator('input[type="hidden"][name="m_questTitle"]'),
+  ).toHaveValue('QuestTitle_ABCDE');
 
   await saveButton(page).click();
   await expect(page.getByText(`Quest ${NAME} saved and committed`)).toBeVisible();
