@@ -1218,7 +1218,9 @@ export interface ScaffoldDraftBody {
 
 export function scaffoldDraft(
   body: ScaffoldDraftBody,
-): Promise<ScaffoldQuestResult & { named: boolean; accepted_suggestions: number[] }> {
+): Promise<
+  ScaffoldQuestResult & { named: boolean; accepted_suggestions: number[]; warnings: string[] }
+> {
   return apiFetch('/api/quests/scaffold', { method: 'POST', body: JSON.stringify(body) });
 }
 

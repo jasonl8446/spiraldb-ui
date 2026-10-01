@@ -5,6 +5,7 @@ import type { ObjectFileType } from '../../../shared/naming.js';
 import { readSettings, writeSetting, type Db } from '../db.js';
 import {
   BranchMismatchError,
+  buildCommitMessage,
   createGitService,
   resolveScaffoldBranch,
   sessionBranchName,
@@ -168,6 +169,57 @@ export class UncommittedSaveError extends Error {
   }
 }
 
+/**
+ * Raised when a save asked to **create** (`mustCreate`) finds its key already on disk (final-review
+ * round 1, M1). Checked under the corpus lock, after the previous save's index refresh, so two
+ * creates of one key cannot both pass; nothing has been written. The routes map it to `409`.
+ */
+export class ObjectExistsError extends Error {
+  readonly filePath: string;
+
+  constructor(message: string, filePath: string) {
+    super(message);
+    this.name = 'ObjectExistsError';
+    this.filePath = filePath;
+  }
+}
+
+/**
+ * The per-corpus write lock (final-review round 1, M2).
+ *
+ * Two saves used to interleave freely between their `await`s: both passed the D14 guard, both
+ * wrote, and the first `git commit` took the whole index — the reviewer measured one commit
+ * carrying all four files of two concurrent scaffolds, the second save answering `commit: ""`
+ * (7 of 7 trials). One promise chain per **physical** root serialises every save from the guard to
+ * the status upsert, across every pipeline instance in this process (the quests runtime, the
+ * objects runtime and the scaffold CLI each build their own pipeline on the same root).
+ *
+ * In-process only: a second process (the scaffold CLI against a root a live server also writes) is
+ * not serialised by it. That residual is narrowed by `--only` commits and the empty-sha check, and
+ * git's own `index.lock` makes the colliding command fail loudly rather than merge.
+ */
+const corpusLocks = new Map<string, Promise<unknown>>();
+
+export async function withCorpusLock<T>(root: string, task: () => Promise<T>): Promise<T> {
+  let key = path.resolve(root);
+  try {
+    key = fs.realpathSync(key);
+  } catch {
+    // A root that does not exist yet keys by its resolved form; the save refuses it anyway.
+  }
+  const previous = corpusLocks.get(key) ?? Promise.resolve();
+  const run = previous.then(task);
+  const tail = run.catch(() => undefined);
+  corpusLocks.set(key, tail);
+  try {
+    return await run;
+  } finally {
+    if (corpusLocks.get(key) === tail) {
+      corpusLocks.delete(key);
+    }
+  }
+}
+
 export interface SaveObjectRequest {
   /** Which family is being saved (`questtemplates`, `droptable`, …). */
   fileType: ObjectFileType;
@@ -217,6 +269,12 @@ export interface SaveObjectRequest {
   historyNotesOnCreate?: string;
   /** Overrides the quest metadata `Description` on a create. */
   metadataDescription?: string;
+  /**
+   * Refuse with {@link ObjectExistsError} instead of updating when the key already has a file
+   * (M1): a scaffold writes a skeleton, and D45(1)'s merge would lay its nulls over authored
+   * values.
+   */
+  mustCreate?: boolean;
 }
 
 export interface SaveObjectResult {
@@ -408,7 +466,11 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     return { path: target.path, outcome: 'created' };
   }
 
-  async function saveObject(request: SaveObjectRequest): Promise<SaveObjectResult> {
+  function saveObject(request: SaveObjectRequest): Promise<SaveObjectResult> {
+    return withCorpusLock(root, () => saveObjectLocked(request));
+  }
+
+  async function saveObjectLocked(request: SaveObjectRequest): Promise<SaveObjectResult> {
     const spec = collectionSpec(request.fileType);
     if (!spec.saveable) {
       throw new SpiraldbFileError(
@@ -439,6 +501,14 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     const unkeyedExisting = spec.keyField === null && fs.existsSync(conventionPath);
     const outcome: SaveOutcome =
       indexedPath !== undefined || unkeyedExisting ? 'updated' : 'created';
+
+    if (request.mustCreate === true && outcome === 'updated') {
+      throw new ObjectExistsError(
+        `"${key}" already has a file at ${relativeTo(root, indexedPath ?? conventionPath)}; ` +
+          `this save only creates, so nothing was written.`,
+        indexedPath ?? conventionPath,
+      );
+    }
 
     if (outcome === 'created' && fs.existsSync(conventionPath)) {
       throw new SpiraldbFileError(
@@ -485,6 +555,7 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
     //    session branch `content/{today}` is still cut from main rather than committing to main.
     const storedBranch = (readSettings(db).git_branch ?? '').trim();
     const currentBranch = await git.currentBranch();
+    const detached = await git.isDetached();
     const requested =
       storedBranch !== ''
         ? storedBranch
@@ -498,6 +569,7 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
       // The `main` exemption holds only on the create-from-main path (D195).
       requestedExists: requested === undefined ? undefined : await git.branchExists(requested),
       requestedFrom: 'setting',
+      detached,
     });
     if (decision.kind === 'refuse') {
       throw new BranchMismatchError(decision.message);
@@ -555,16 +627,44 @@ export function createSavePipeline(options: SavePipelineOptions): SavePipeline {
         index.rebuildType('questmetadata');
       }
 
-      // 6. One commit for the object and its metadata (D13).
-      committed = await git.commitObject({
-        action,
-        objectType: spec.commitType,
-        objectKey: key,
-        notes: request.notes,
-        author: user,
-        paths: [filePath, ...(metadata === null ? [] : [metadata.path])],
-        ...(removePaths.length === 0 ? {} : { removePaths }),
-      });
+      // 6. One commit for the object and its metadata (D13) — unless the save changed nothing:
+      //    re-saving an unchanged object rewrites identical bytes, and that no-op answers with an
+      //    empty `commit` (there is none to report) instead of failing on "nothing to commit".
+      const commitPaths = [filePath, ...(metadata === null ? [] : [metadata.path])];
+      const changed = (await git.statusPorcelain([...commitPaths, ...removePaths])).trim() !== '';
+      if (!changed) {
+        committed = {
+          sha: '',
+          branch: session.branch,
+          message: buildCommitMessage({
+            action,
+            objectType: spec.commitType,
+            objectKey: key,
+            notes: request.notes,
+          }),
+          paths: commitPaths.map((candidate) => relativeTo(root, candidate)),
+        };
+      } else {
+        committed = await git.commitObject({
+          action,
+          objectType: spec.commitType,
+          objectKey: key,
+          notes: request.notes,
+          author: user,
+          paths: commitPaths,
+          ...(removePaths.length === 0 ? {} : { removePaths }),
+        });
+      }
+      // Past the no-op check, an empty sha is no commit (M2): simple-git reports git's "nothing to
+      // commit" as a result with `commit: ""` — the reviewer's concurrent repro, where another save
+      // had already committed these files — and a save must never answer success for a commit that
+      // does not exist.
+      if (changed && committed.sha.trim() === '') {
+        throw new Error(
+          `git reported no commit for ${relativeTo(root, filePath)} (an empty sha): nothing of ` +
+            `this save was committed.`,
+        );
+      }
     } catch (failure) {
       // Nothing had been written yet (a rejected write, a refused `rm`) — the plain failure is
       // the honest report, and the tree is untouched.

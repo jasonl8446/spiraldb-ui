@@ -1,0 +1,33 @@
+$ node origin-probe.mjs http://localhost:12500 http://localhost:12369   # throwaway stack: PORT=12369 VITE_PORT=12500, throwaway DB
+http://localhost:12500 same-origin POST /api/suggestions/999999/reject -> 404 {"error":"Unknown suggestion 999999"}
+http://localhost:12369 same-origin POST /api/suggestions/999999/reject -> 404 {"error":"Unknown suggestion 999999"}
+about:blank no-cors POST -> TypeError: Failed to fetch (status unreadable to the page; server log shows the answer)
+
+$ curl -s -X POST -H "Origin: http://localhost:8080" -H "Content-Type: text/plain" http://localhost:12500/api/drafts/rebuild
+{"error":"Refusing POST /api/drafts/rebuild: the request came from another origin (http://localhost:8080), and this tool accepts writes only from its own pages."} [403]
+$ curl -s -X POST http://127.0.0.1:12369/api/suggestions/999999/reject   # no Origin (CLI/curl)
+{"error":"Unknown suggestion 999999"} [404]
+
+--- origin-probe.mjs (scratchpad), verbatim ---
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch();
+const page = await browser.newPage();
+const seen = [];
+for (const base of process.argv.slice(2)) {
+  await page.goto(`${base}/`);
+  const result = await page.evaluate(async () => {
+    const r = await fetch('/api/suggestions/999999/reject', { method: 'POST' });
+    return { status: r.status, body: await r.text() };
+  });
+  seen.push(`${base} same-origin POST /api/suggestions/999999/reject -> ${result.status} ${result.body}`);
+}
+// A foreign page: about:blank has an opaque origin -> Origin: null on a no-cors POST.
+await page.goto('about:blank');
+const target = process.argv[2];
+await page.setContent('<p>foreign</p>');
+const foreign = await page.evaluate(async (url) => {
+  try { await fetch(`${url}/api/suggestions/999999/reject`, { method: 'POST', mode: 'no-cors' }); return 'sent'; } catch (e) { return String(e); }
+}, target);
+seen.push(`about:blank no-cors POST -> ${foreign} (status unreadable to the page; server log shows the answer)`);
+console.log(seen.join('\n'));
+await browser.close();

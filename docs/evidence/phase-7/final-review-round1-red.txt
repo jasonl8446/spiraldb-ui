@@ -1,0 +1,383 @@
+$ npx vitest run tests/unit/save-write-safety.test.ts tests/unit/server-security-posture.test.ts   # production fix stashed (cad7281 code)
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ❯ tests/unit/server-security-posture.test.ts (14 tests | 4 failed) 3662ms
+   ✓ D88 — the API answers no CORS grant to a foreign origin (M1) > gives a foreign-origin simple GET no Access-Control-* header, and the same route still answers 200 18ms
+   ✓ D88 — the API answers no CORS grant to a foreign origin (M1) > does not approve the exploit's preflight (foreign Origin, PUT) with methods or a 204 5ms
+   ✓ D88 — the API answers no CORS grant to a foreign origin (M1) > leaves the exploit's target route unmarked for a foreign origin, while answering a same-origin GET 3ms
+   ✓ server/src/index.ts binds the loopback literal (source assertion) > declares HOST as the IPv4 loopback literal, '127.0.0.1' 0ms
+   ✓ server/src/index.ts binds the loopback literal (source assertion) > passes HOST to app.listen, not a port-only listen that would bind the wildcard 0ms
+   ✓ server/src/index.ts binds the loopback literal (source assertion) > installs no middleware of its own — the arm a test over the createApp() object cannot see 0ms
+   ✓ D88 — no mounted router family installs its own CORS grant (per-route evasion) > gives a foreign-origin GET and preflight at every mount prefix no Access-Control-* header  2068ms
+   ✓ D88 — no server source installs an Access-Control-* header (source scan) > scans the whole server tree (a broken walk must fail, not pass) 0ms
+   ✓ D88 — no server source installs an Access-Control-* header (source scan) > contains no Access-Control literal and no cors import, in code rather than prose 2ms
+   ✓ D88 — no server source installs an Access-Control-* header (source scan) > carries no cors package in dependencies or devDependencies 0ms
+   × D196 — every write route refuses a foreign-origin simple request before any router runs > answers 403 with the JSON envelope on every enumerated write route, and reaches no router 787ms
+     → patch /api/status/:type/:key from https://evil.example: expected 404 to be 403 // Object.is equality
+   × D196 — every write route refuses a foreign-origin simple request before any router runs > refuses Sec-Fetch-Site: cross-site even without an Origin, and Origin: null 766ms
+     → expected 200 to be 403 // Object.is equality
+   × D196 — every write route refuses a foreign-origin simple request before any router runs > leaves a suggestion pending for a foreign reject, and still rejects it for the app's own origins 2ms
+     → expected 200 to be 403 // Object.is equality
+   × D196 — every write route refuses a foreign-origin simple request before any router runs > keeps a same-origin settings write working (the exploit route of D88) 8ms
+     → expected 200 to be 403 // Object.is equality
+ ❯ tests/unit/save-write-safety.test.ts (10 tests | 10 failed) 1849ms
+   × M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses a second scaffold of a quest authored since its first one (409, file unchanged) 492ms
+     → {"quest_name":"FX-REVIEW-001","link_kind":"none","title_key":null,"has_definition_before":0,"outcome":"created","action":"update","file":"QuestTemplates/questtemplates_FX-REVIEW-001.json","metadata":"QuestMetadatas/questmetadata_FX-REVIEW-001.json","commit":"06e8d7f05e0b6a86faf88f7ab16defc032d09c2d","branch":"main","commit_message":"spiraldb: update quest FX-REVIEW-001","quest":{"m_questName":"FX-REVIEW-001","m_questNameID":0,"m_questTitle":null,"m_questInfo":null,"m_questPrep":null,"m_questUnderway":null,"m_questComplete":null,"m_startGoals":[],"m_goals":[],"m_startResults":{"m_results":[]},"m_endResults":{"m_results":[]},"m_requirements":null,"m_prepRequirements":null,"m_pruneRequirements":null,"m_prepAlways":false,"m_clientTags":null,"m_goalLogic":[],"m_questLevel":0,"m_questRepeat":0,"m_onStartQuestScript":"","m_onEndQuestScript":"","m_dialogList":{"$type":"Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty","m_dialogs":[]},"m_missionDoors":null,"m_dynaMods":null,"m_isHidden":false,"m_outdated":false,"m_noQuestHelper":false,"m_mainline":false,"m_defaultDialogAnimation":null,"m_skipQHAutoSelect":false,"m_questEffectInfoList":null,"m_forceInteraction":false,"m_checkInventoryForCrafting":false,"m_playAsYourPetNPC":false,"m_activityType":"ACTIVITY_NotActivity","m_behaviors":null},"catalog_id":null,"named":false,"accepted_suggestions":[]}: expected 200 to be 409 // Object.is equality
+   × M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses a draft save POSTed to /scaffold with a document once the file exists 299ms
+     → expected 200 to be 409 // Object.is equality
+   × M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses the loser of two concurrent scaffolds of one name under the lock (one commit) 166ms
+     → expected [ 200, 200 ] to deeply equal [ 200, 409 ]
+   × M2 — concurrent saves are serialised, and each commit holds only its own paths > two concurrent scaffolds make two commits with exactly their own two files and real shas 168ms
+     → expected 2 to be 3 // Object.is equality
+   × M2 — concurrent saves are serialised, and each commit holds only its own paths > commits only its own paths even when something else is staged 154ms
+     → expected [ …(3) ] to deeply equal [ …(2) ]
+   × M2 — concurrent saves are serialised, and each commit holds only its own paths > treats an empty commit sha as a failed commit, never a success 91ms
+     → promise resolved "{ quest_name: 'FX-C-004', …(14) }" instead of rejecting
+   × m1 — a detached HEAD refuses the save > answers 409 and leaves HEAD, the branches and git_branch alone 155ms
+     → {"quest_name":"FX-D-001","link_kind":"none","title_key":null,"has_definition_before":0,"outcome":"created","action":"create","file":"QuestTemplates/questtemplates_FX-D-001.json","metadata":"QuestMetadatas/questmetadata_FX-D-001.json","commit":"HEAD 301391395f850c31568d228c2d18ddcf7dcae5f0","branch":"212ae5e","commit_message":"spiraldb: create quest FX-D-001","quest":{"m_questName":"FX-D-001","m_questNameID":0,"m_questTitle":null,"m_questInfo":null,"m_questPrep":null,"m_questUnderway":null,"m_questComplete":null,"m_startGoals":[],"m_goals":[],"m_startResults":{"m_results":[]},"m_endResults":{"m_results":[]},"m_requirements":null,"m_prepRequirements":null,"m_pruneRequirements":null,"m_prepAlways":false,"m_clientTags":null,"m_goalLogic":[],"m_questLevel":0,"m_questRepeat":0,"m_onStartQuestScript":"","m_onEndQuestScript":"","m_dialogList":{"$type":"Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty","m_dialogs":[]},"m_missionDoors":null,"m_dynaMods":null,"m_isHidden":false,"m_outdated":false,"m_noQuestHelper":false,"m_mainline":false,"m_defaultDialogAnimation":null,"m_skipQHAutoSelect":false,"m_questEffectInfoList":null,"m_forceInteraction":false,"m_checkInventoryForCrafting":false,"m_playAsYourPetNPC":false,"m_activityType":"ACTIVITY_NotActivity","m_behaviors":null},"catalog_id":null,"named":false,"accepted_suggestions":[]}: expected 200 to be 409 // Object.is equality
+   × m1 — a detached HEAD refuses the save > is refused by the shared helper the scaffold CLI calls, before any other rule 1ms
+     → expected 'use' to be 'refuse' // Object.is equality
+   × m2 — a decision failure after the commit is a warning, not a 400 > POST /api/quests: the commit stands and the warning names the id left undecided 157ms
+     → Suggestion 1 is not a pending suggestion of this quest
+   × m2 — a decision failure after the commit is a warning, not a 400 > a naming save keeps its catalog row and link when the decision fails after the commit 156ms
+     → Suggestion 1 is not a pending suggestion of this quest
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 14 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses a second scaffold of a quest authored since its first one (409, file unchanged)
+AssertionError: {"quest_name":"FX-REVIEW-001","link_kind":"none","title_key":null,"has_definition_before":0,"outcome":"created","action":"update","file":"QuestTemplates/questtemplates_FX-REVIEW-001.json","metadata":"QuestMetadatas/questmetadata_FX-REVIEW-001.json","commit":"06e8d7f05e0b6a86faf88f7ab16defc032d09c2d","branch":"main","commit_message":"spiraldb: update quest FX-REVIEW-001","quest":{"m_questName":"FX-REVIEW-001","m_questNameID":0,"m_questTitle":null,"m_questInfo":null,"m_questPrep":null,"m_questUnderway":null,"m_questComplete":null,"m_startGoals":[],"m_goals":[],"m_startResults":{"m_results":[]},"m_endResults":{"m_results":[]},"m_requirements":null,"m_prepRequirements":null,"m_pruneRequirements":null,"m_prepAlways":false,"m_clientTags":null,"m_goalLogic":[],"m_questLevel":0,"m_questRepeat":0,"m_onStartQuestScript":"","m_onEndQuestScript":"","m_dialogList":{"$type":"Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty","m_dialogs":[]},"m_missionDoors":null,"m_dynaMods":null,"m_isHidden":false,"m_outdated":false,"m_noQuestHelper":false,"m_mainline":false,"m_defaultDialogAnimation":null,"m_skipQHAutoSelect":false,"m_questEffectInfoList":null,"m_forceInteraction":false,"m_checkInventoryForCrafting":false,"m_playAsYourPetNPC":false,"m_activityType":"ACTIVITY_NotActivity","m_behaviors":null},"catalog_id":null,"named":false,"accepted_suggestions":[]}: expected 200 to be 409 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 200[39m
+
+ ❯ tests/unit/save-write-safety.test.ts:104:56
+    102| 
+    103|     const second = await request(app).post('/api/quests/scaffold').sen…
+    104|     expect(second.status, JSON.stringify(second.body)).toBe(409);
+       |                                                        ^
+    105|     expect(second.body.error).toMatch(/already has a definition/);
+    106|     expect(readQuest(repo, name).m_questLevel).toBe(42);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses a draft save POSTed to /scaffold with a document once the file exists
+AssertionError: expected 200 to be 409 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 200[39m
+
+ ❯ tests/unit/save-write-safety.test.ts:120:26
+    118|       .post('/api/quests/scaffold')
+    119|       .send({ quest_name: name, quest: { ...first.body.quest, m_questL…
+    120|     expect(retry.status).toBe(409);
+       |                          ^
+    121|     expect(retry.body.error).toMatch(/already has a definition/);
+    122|     expect(readQuest(repo, name).m_questLevel).not.toBe(9);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses the loser of two concurrent scaffolds of one name under the lock (one commit)
+AssertionError: expected [ 200, 200 ] to deeply equal [ 200, 409 ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    200,[22m
+[32m-   409,[39m
+[31m+   200,[39m
+[2m  ][22m
+
+ ❯ tests/unit/save-write-safety.test.ts:135:59
+    133|       request(app).post('/api/quests/scaffold').send({ quest_name: nam…
+    134|     ]);
+    135|     expect(answers.map((answer) => answer.status).sort()).toEqual([200…
+       |                                                           ^
+    136|     expect(commitCount(repo)).toBe(commits + 1);
+    137|     expect(repo.git(['status', '--porcelain'])).toBe('');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > M2 — concurrent saves are serialised, and each commit holds only its own paths > two concurrent scaffolds make two commits with exactly their own two files and real shas
+AssertionError: expected 2 to be 3 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 3[39m
+[31m+ 2[39m
+
+ ❯ tests/unit/save-write-safety.test.ts:152:31
+    150| 
+    151|     expect([a.status, b.status]).toEqual([200, 200]);
+    152|     expect(commitCount(repo)).toBe(before + 2);
+       |                               ^
+    153|     for (const [answer, name] of [
+    154|       [a, names[0]],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > M2 — concurrent saves are serialised, and each commit holds only its own paths > commits only its own paths even when something else is staged
+AssertionError: expected [ …(3) ] to deeply equal [ …(2) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    "QuestMetadatas/questmetadata_FX-C-003.json",[22m
+[2m    "QuestTemplates/questtemplates_FX-C-003.json",[22m
+[31m+   "stranger.txt",[39m
+[2m  ][22m
+
+ ❯ tests/unit/save-write-safety.test.ts:203:19
+    201|       .filter((line) => line !== '')
+    202|       .sort();
+    203|     expect(files).toEqual([metadataFile(name), questFile(name)].sort()…
+       |                   ^
+    204|     expect(repo.git(['status', '--porcelain']).trim()).toBe('A  strang…
+    205|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > M2 — concurrent saves are serialised, and each commit holds only its own paths > treats an empty commit sha as a failed commit, never a success
+AssertionError: promise resolved "{ quest_name: 'FX-C-004', …(14) }" instead of rejecting
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "accepted_suggestions": [],[39m
+[31m+   "action": "create",[39m
+[31m+   "branch": "main",[39m
+[31m+   "catalog_id": null,[39m
+[31m+   "commit": "",[39m
+[31m+   "commit_message": "spiraldb: create quest FX-C-004",[39m
+[31m+   "file": "QuestTemplates/questtemplates_FX-C-004.json",[39m
+[31m+   "has_definition_before": 0,[39m
+[31m+   "link_kind": "none",[39m
+[31m+   "metadata": "QuestMetadatas/questmetadata_FX-C-004.json",[39m
+[31m+   "named": false,[39m
+[31m+   "outcome": "created",[39m
+[31m+   "quest": {[39m
+[31m+     "m_activityType": "ACTIVITY_NotActivity",[39m
+[31m+     "m_behaviors": null,[39m
+[31m+     "m_checkInventoryForCrafting": false,[39m
+[31m+     "m_clientTags": null,[39m
+[31m+     "m_defaultDialogAnimation": null,[39m
+[31m+     "m_dialogList": {[39m
+[31m+       "$type": "Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty",[39m
+[31m+       "m_dialogs": [],[39m
+[31m+     },[39m
+[31m+     "m_dynaMods": null,[39m
+[31m+     "m_endResults": {[39m
+[31m+       "m_results": [],[39m
+[31m+     },[39m
+[31m+     "m_forceInteraction": false,[39m
+[31m+     "m_goalLogic": [],[39m
+[31m+     "m_goals": [],[39m
+[31m+     "m_isHidden": false,[39m
+[31m+     "m_mainline": false,[39m
+[31m+     "m_missionDoors": null,[39m
+[31m+     "m_noQuestHelper": false,[39m
+[31m+     "m_onEndQuestScript": "",[39m
+[31m+     "m_onStartQuestScript": "",[39m
+[31m+     "m_outdated": false,[39m
+[31m+     "m_playAsYourPetNPC": false,[39m
+[31m+     "m_prepAlways": false,[39m
+[31m+     "m_prepRequirements": null,[39m
+[31m+     "m_pruneRequirements": null,[39m
+[31m+     "m_questComplete": null,[39m
+[31m+     "m_questEffectInfoList": null,[39m
+[31m+     "m_questInfo": null,[39m
+[31m+     "m_questLevel": 0,[39m
+[31m+     "m_questName": "FX-C-004",[39m
+[31m+     "m_questNameID": 0,[39m
+[31m+     "m_questPrep": null,[39m
+[31m+     "m_questRepeat": 0,[39m
+[31m+     "m_questTitle": null,[39m
+[31m+     "m_questUnderway": null,[39m
+[31m+     "m_requirements": null,[39m
+[31m+     "m_skipQHAutoSelect": false,[39m
+[31m+     "m_startGoals": [],[39m
+[31m+     "m_startResults": {[39m
+[31m+       "m_results": [],[39m
+[31m+     },[39m
+[31m+   },[39m
+[31m+   "quest_name": "FX-C-004",[39m
+[31m+   "title_key": null,[39m
+[2m  }[22m
+
+ ❯ tests/unit/save-write-safety.test.ts:229:62
+    227|       git: { ...real, commitObject: (options) => fake.commitObject(opt…
+    228|     });
+    229|     await expect(scaffoldQuest({ db, index, pipeline, name })).rejects…
+       |                                                              ^
+    230|       UncommittedSaveError,
+    231|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > m1 — a detached HEAD refuses the save > answers 409 and leaves HEAD, the branches and git_branch alone
+AssertionError: {"quest_name":"FX-D-001","link_kind":"none","title_key":null,"has_definition_before":0,"outcome":"created","action":"create","file":"QuestTemplates/questtemplates_FX-D-001.json","metadata":"QuestMetadatas/questmetadata_FX-D-001.json","commit":"HEAD 301391395f850c31568d228c2d18ddcf7dcae5f0","branch":"212ae5e","commit_message":"spiraldb: create quest FX-D-001","quest":{"m_questName":"FX-D-001","m_questNameID":0,"m_questTitle":null,"m_questInfo":null,"m_questPrep":null,"m_questUnderway":null,"m_questComplete":null,"m_startGoals":[],"m_goals":[],"m_startResults":{"m_results":[]},"m_endResults":{"m_results":[]},"m_requirements":null,"m_prepRequirements":null,"m_pruneRequirements":null,"m_prepAlways":false,"m_clientTags":null,"m_goalLogic":[],"m_questLevel":0,"m_questRepeat":0,"m_onStartQuestScript":"","m_onEndQuestScript":"","m_dialogList":{"$type":"Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty","m_dialogs":[]},"m_missionDoors":null,"m_dynaMods":null,"m_isHidden":false,"m_outdated":false,"m_noQuestHelper":false,"m_mainline":false,"m_defaultDialogAnimation":null,"m_skipQHAutoSelect":false,"m_questEffectInfoList":null,"m_forceInteraction":false,"m_checkInventoryForCrafting":false,"m_playAsYourPetNPC":false,"m_activityType":"ACTIVITY_NotActivity","m_behaviors":null},"catalog_id":null,"named":false,"accepted_suggestions":[]}: expected 200 to be 409 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 200[39m
+
+ ❯ tests/unit/save-write-safety.test.ts:243:56
+    241| 
+    242|     const answer = await request(app).post('/api/quests/scaffold').sen…
+    243|     expect(answer.status, JSON.stringify(answer.body)).toBe(409);
+       |                                                        ^
+    244|     expect(answer.body.error).toMatch(/detached HEAD/);
+    245|     expect(repo.git(['rev-parse', 'HEAD']).trim()).toBe(head);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > m1 — a detached HEAD refuses the save > is refused by the shared helper the scaffold CLI calls, before any other rule
+AssertionError: expected 'use' to be 'refuse' // Object.is equality
+
+Expected: [32m"[7mref[27muse"[39m
+Received: [31m"use"[39m
+
+ ❯ tests/unit/save-write-safety.test.ts:256:27
+    254|       detached: true,
+    255|     });
+    256|     expect(decision.kind).toBe('refuse');
+       |                           ^
+    257|   });
+    258| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > m2 — a decision failure after the commit is a warning, not a 400 > POST /api/quests: the commit stands and the warning names the id left undecided
+SuggestionDecisionError: Suggestion 1 is not a pending suggestion of this quest
+ ❯ assertAcceptableSuggestions server/src/services/drafts.ts:292:13
+    290|         (draft.catalog_id !== null && row.catalog_id === draft.catalog…
+    291|     if (row === undefined || row.status !== 'pending' || !belongs) {
+    292|       throw new SuggestionDecisionError(
+       |             ^
+    293|         `Suggestion ${id} is not a pending suggestion of this quest`,
+    294|         400,
+ ❯ server/src/services/drafts.ts:311:5
+ ❯ sqliteTransaction node_modules/better-sqlite3/lib/methods/transaction.js:65:24
+ ❯ Module.acceptSuggestions server/src/services/drafts.ts:316:4
+ ❯ Module.saveQuest server/src/services/quests.ts:438:3
+ ❯ tests/unit/save-write-safety.test.ts:308:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/14]⎯
+
+ FAIL  tests/unit/save-write-safety.test.ts > m2 — a decision failure after the commit is a warning, not a 400 > a naming save keeps its catalog row and link when the decision fails after the commit
+SuggestionDecisionError: Suggestion 1 is not a pending suggestion of this quest
+ ❯ assertAcceptableSuggestions server/src/services/drafts.ts:292:13
+    290|         (draft.catalog_id !== null && row.catalog_id === draft.catalog…
+    291|     if (row === undefined || row.status !== 'pending' || !belongs) {
+    292|       throw new SuggestionDecisionError(
+       |             ^
+    293|         `Suggestion ${id} is not a pending suggestion of this quest`,
+    294|         400,
+ ❯ server/src/services/drafts.ts:311:5
+ ❯ sqliteTransaction node_modules/better-sqlite3/lib/methods/transaction.js:65:24
+ ❯ Module.acceptSuggestions server/src/services/drafts.ts:316:4
+ ❯ server/src/services/questScaffold.ts:525:5
+ ❯ sqliteTransaction node_modules/better-sqlite3/lib/methods/transaction.js:65:24
+ ❯ Module.scaffoldQuest server/src/services/questScaffold.ts:530:4
+ ❯ tests/unit/save-write-safety.test.ts:333:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/14]⎯
+
+ FAIL  tests/unit/server-security-posture.test.ts > D196 — every write route refuses a foreign-origin simple request before any router runs > answers 403 with the JSON envelope on every enumerated write route, and reaches no router
+AssertionError: patch /api/status/:type/:key from https://evil.example: expected 404 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 404[39m
+
+ ❯ tests/unit/server-security-posture.test.ts:493:53
+    491|           .send('');
+    492|         answers[route] = res.status;
+    493|         expect(res.status, `${route} from ${EVIL}`).toBe(403);
+       |                                                     ^
+    494|         expect(String((res.body as { error?: unknown }).error)).toCont…
+    495|         expectNoCorsGrant(res.headers);
+ ❯ routersReached tests/unit/server-security-posture.test.ts:462:7
+ ❯ tests/unit/server-security-posture.test.ts:484:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/14]⎯
+
+ FAIL  tests/unit/server-security-posture.test.ts > D196 — every write route refuses a foreign-origin simple request before any router runs > refuses Sec-Fetch-Site: cross-site even without an Origin, and Origin: null
+AssertionError: expected 200 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 200[39m
+
+ ❯ tests/unit/server-security-posture.test.ts:507:30
+    505|       .set('Sec-Fetch-Site', 'cross-site')
+    506|       .send();
+    507|     expect(crossSite.status).toBe(403);
+       |                              ^
+    508|     const nullOrigin = await request(app)
+    509|       .post('/api/drafts/rebuild')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/14]⎯
+
+ FAIL  tests/unit/server-security-posture.test.ts > D196 — every write route refuses a foreign-origin simple request before any router runs > leaves a suggestion pending for a foreign reject, and still rejects it for the app's own origins
+AssertionError: expected 200 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 200[39m
+
+ ❯ tests/unit/server-security-posture.test.ts:546:27
+    544|       .set('Content-Type', 'text/plain')
+    545|       .send('');
+    546|     expect(forged.status).toBe(403);
+       |                           ^
+    547|     expect(status(ids[0] as number)).toBe('pending');
+    548| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/14]⎯
+
+ FAIL  tests/unit/server-security-posture.test.ts > D196 — every write route refuses a foreign-origin simple request before any router runs > keeps a same-origin settings write working (the exploit route of D88)
+AssertionError: expected 200 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 200[39m
+
+ ❯ tests/unit/server-security-posture.test.ts:569:27
+    567|       .set('Origin', EVIL)
+    568|       .send({ user_name: 'Forged' });
+    569|     expect(forged.status).toBe(403);
+       |                           ^
+    570|     const read = await request(app).get('/api/settings');
+    571|     expect((read.body as { user_name?: unknown }).user_name).toBe('D19…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/14]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  14 failed | 10 passed (24)
+   Start at  21:32:35
+   Duration  6.69s (transform 472ms, setup 0ms, collect 880ms, tests 5.51s, environment 0ms, prepare 74ms)
+

@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '@server/app';
 
 import { codeOf } from '../helpers/source-text';
+import { enumerateWriteRoutes } from '../helpers/write-routes';
 
 /**
  * D88 / final-review gate 2 finding M1 — the loopback-only, no-CORS posture, pinned.
@@ -422,5 +424,150 @@ describe('D88 — no server source installs an Access-Control-* header (source s
     };
     const declared = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies });
     expect(declared, 'a re-added cors dependency').not.toContain('cors');
+  });
+});
+
+/* ------------------------------------------- D196: no write from a foreign origin (round 1, M3) */
+
+describe('D196 — every write route refuses a foreign-origin simple request before any router runs', () => {
+  /** A foreign page's form/`no-cors` write: a simple request, so no preflight protects it. */
+  const EVIL = 'https://evil.example';
+  /** What the dev client sends through the Vite proxy, and what the built client sends. */
+  const SAME_ORIGINS = [
+    `http://localhost:${Number(process.env.VITE_PORT ?? 5173)}`,
+    `http://localhost:${Number(process.env.PORT ?? 3001)}`,
+  ];
+
+  const expressCjs = createRequire(import.meta.url)('express') as {
+    Router: { handle: (req: unknown, res: unknown, next: unknown) => void };
+  };
+
+  /** Runs `probe` while recording every `/api` router a request reaches (the side-effect proof). */
+  async function routersReached(probe: () => Promise<void>): Promise<string[]> {
+    const reached: string[] = [];
+    const originalHandle = expressCjs.Router.handle;
+    expressCjs.Router.handle = function recordingHandle(
+      this: unknown,
+      req: unknown,
+      res: unknown,
+      next: unknown,
+    ): void {
+      const baseUrl = (req as { baseUrl?: unknown }).baseUrl;
+      if (typeof baseUrl === 'string' && (baseUrl === '/api' || baseUrl.startsWith('/api/'))) {
+        reached.push(baseUrl);
+      }
+      return originalHandle.call(this, req, res, next);
+    };
+    try {
+      await probe();
+    } finally {
+      expressCjs.Router.handle = originalHandle;
+    }
+    return reached;
+  }
+
+  function send(method: string, url: string) {
+    const agent = request(app);
+    return (agent[method as 'post'] as (url: string) => request.Test)(url);
+  }
+
+  it('answers 403 with the JSON envelope on every enumerated write route, and reaches no router', async () => {
+    const { apiRouter } = await import('@server/routes/index');
+    const routes = await enumerateWriteRoutes(app, apiRouter);
+    expect(
+      routes.length,
+      'write routes enumerated (a broken walk must fail)',
+    ).toBeGreaterThanOrEqual(16);
+    expect(routes).toContain('post /api/suggestions/:id/reject');
+    expect(routes).toContain('post /api/drafts/rebuild');
+
+    const answers: Record<string, number> = {};
+    const reached = await routersReached(async () => {
+      for (const route of routes) {
+        const [method, template] = route.split(' ') as [string, string];
+        const url = template.replace(/:\w+/g, '1');
+        const res = await send(method, url)
+          .set('Origin', EVIL)
+          .set('Content-Type', 'text/plain')
+          .send('');
+        answers[route] = res.status;
+        expect(res.status, `${route} from ${EVIL}`).toBe(403);
+        expect(String((res.body as { error?: unknown }).error)).toContain('another origin');
+        expectNoCorsGrant(res.headers);
+      }
+    });
+    expect(Object.keys(answers)).toHaveLength(routes.length);
+    expect(reached, 'routers a refused request reached').toEqual([]);
+  });
+
+  it('refuses Sec-Fetch-Site: cross-site even without an Origin, and Origin: null', async () => {
+    const crossSite = await request(app)
+      .post('/api/drafts/rebuild')
+      .set('Sec-Fetch-Site', 'cross-site')
+      .send();
+    expect(crossSite.status).toBe(403);
+    const nullOrigin = await request(app).post('/api/drafts/rebuild').set('Origin', 'null').send();
+    expect(nullOrigin.status).toBe(403);
+  });
+
+  it("leaves a suggestion pending for a foreign reject, and still rejects it for the app's own origins", async () => {
+    const { getDb } = await import('@server/db');
+    const { insertSuggestions } = await import('@server/services/drafts');
+    const db = getDb();
+    const status = (id: number): string =>
+      (
+        db.prepare('SELECT status FROM quest_suggestions WHERE id = ?').get(id) as {
+          status: string;
+        }
+      ).status;
+    const ids: number[] = [];
+    for (const value of ['QuestTitle_D196A', 'QuestTitle_D196B', 'QuestTitle_D196C']) {
+      insertSuggestions(db, [
+        {
+          quest_name: 'D196-POSTURE',
+          catalog_id: null,
+          path: 'm_questTitle',
+          value,
+          source: 'evidence-title',
+          confidence: 1,
+          evidence_ref: 'posture',
+        },
+      ]);
+      ids.push(
+        (db.prepare('SELECT max(id) AS id FROM quest_suggestions').get() as { id: number }).id,
+      );
+    }
+
+    const forged = await request(app)
+      .post(`/api/suggestions/${ids[0]}/reject`)
+      .set('Origin', EVIL)
+      .set('Content-Type', 'text/plain')
+      .send('');
+    expect(forged.status).toBe(403);
+    expect(status(ids[0] as number)).toBe('pending');
+
+    // The positive partners: the dev proxy's origin, the built server's origin, and no Origin.
+    for (const [index, origin] of [...SAME_ORIGINS, undefined].entries()) {
+      const id = ids[index] as number;
+      const call = request(app).post(`/api/suggestions/${id}/reject`);
+      const res = await (origin === undefined ? call : call.set('Origin', origin)).send();
+      expect(res.status, `reject from ${origin ?? '(no Origin)'}: ${res.text}`).toBe(200);
+      expect(status(id)).toBe('rejected');
+    }
+  });
+
+  it('keeps a same-origin settings write working (the exploit route of D88)', async () => {
+    const res = await request(app)
+      .put('/api/settings')
+      .set('Origin', SAME_ORIGINS[0] as string)
+      .send({ user_name: 'D196 Same Origin' });
+    expect(res.status, res.text).toBe(200);
+    const forged = await request(app)
+      .put('/api/settings')
+      .set('Origin', EVIL)
+      .send({ user_name: 'Forged' });
+    expect(forged.status).toBe(403);
+    const read = await request(app).get('/api/settings');
+    expect((read.body as { user_name?: unknown }).user_name).toBe('D196 Same Origin');
   });
 });

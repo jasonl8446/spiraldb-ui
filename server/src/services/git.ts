@@ -30,7 +30,12 @@ export interface GitClient {
   checkout(branch: string): Promise<unknown>;
   checkoutBranch(branch: string, startPoint: string): Promise<unknown>;
   add(files: string | string[]): Promise<unknown>;
-  commit(message: string): Promise<{ commit: string; branch: string }>;
+  /** `simple-git`'s `commit(message, files, options)`: here always `--only` this save's paths. */
+  commit(
+    message: string,
+    files?: string[],
+    options?: Record<string, null>,
+  ): Promise<{ commit: string; branch: string }>;
 }
 
 /**
@@ -119,10 +124,26 @@ export function resolveScaffoldBranch(input: {
   requestedExists?: boolean;
   /** Where `requested` came from, so a refusal names the remedy that applies (default `flag`). */
   requestedFrom?: 'flag' | 'setting';
+  /**
+   * `true` when HEAD is detached (`git symbolic-ref -q HEAD` fails) — final-review round 1, m1.
+   * A commit there lands on no branch (reachable only through the reflog until gc), which is the
+   * stranding the D119 guard exists to prevent, so it is refused before any other rule applies.
+   */
+  detached?: boolean;
 }): ScaffoldBranchDecision {
   const requested = input.requested?.trim();
   const current = input.currentBranch.trim();
   const stored = input.settingsBranch.trim();
+
+  if (input.detached === true) {
+    return {
+      kind: 'refuse',
+      message:
+        `Refusing to save: the SpiralDB working tree has a detached HEAD (at "${current}"), so a ` +
+        `commit would land on no branch and be reachable only through the reflog. Check a branch ` +
+        `out first (git -C <root> checkout <branch>).`,
+    };
+  }
 
   if (requested !== undefined && requested !== '') {
     const createdFromMain = current === 'main' && input.requestedExists === false;
@@ -341,11 +362,13 @@ export interface CommitObjectResult {
 
 export interface GitService {
   readonly repoPath: string;
-  /** `git status --porcelain` output, verbatim (empty string means clean). */
-  statusPorcelain(): Promise<string>;
+  /** `git status --porcelain [-- <paths>]` output, verbatim (empty string means clean). */
+  statusPorcelain(paths?: string[]): Promise<string>;
   /** @throws {DirtyRepoError} when the working tree is not clean (D14). */
   assertClean(): Promise<void>;
   currentBranch(): Promise<string>;
+  /** `true` when HEAD is detached — `git symbolic-ref -q HEAD` fails (m1). */
+  isDetached(): Promise<boolean>;
   /** `true` when `branch` exists locally (the D119 guard's `main` exemption, D195). */
   branchExists(branch: string): Promise<boolean>;
   /** Checks out the session branch, creating it from main's HEAD when absent. */
@@ -411,7 +434,7 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
     }
   }
 
-  async function statusPorcelain(): Promise<string> {
+  async function statusPorcelain(paths: string[] = []): Promise<string> {
     client.env(baseEnv());
     if (!(await isWorkingTreeRoot())) {
       throw new Error(
@@ -419,7 +442,13 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
           `check settings.spiraldb_path.`,
       );
     }
-    return client.raw('status', '--porcelain');
+    if (paths.length === 0) {
+      return client.raw('status', '--porcelain');
+    }
+    const relative = paths.map((candidate) =>
+      path.isAbsolute(candidate) ? path.relative(repoPath, candidate) : candidate,
+    );
+    return client.raw('status', '--porcelain', '--', ...relative);
   }
 
   return {
@@ -442,6 +471,17 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
       client.env(baseEnv());
       const branches = await client.branchLocal();
       return branches.current;
+    },
+
+    async isDetached() {
+      client.env(baseEnv());
+      // The ref's name, not the exit code: `-q` makes git fail silently, and simple-git answers a
+      // non-zero exit with no stderr as an empty success (measured: a detached tree passed).
+      try {
+        return !(await client.raw('symbolic-ref', '-q', 'HEAD')).trim().startsWith('refs/heads/');
+      } catch {
+        return true;
+      }
     },
 
     async branchExists(branch) {
@@ -496,13 +536,27 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
       const message = buildCommitMessage(commitOptions);
 
       client.env(commitEnv(commitOptions.author));
+      // The deletions git can commit are the ones HEAD tracks: a path git never knew (an untracked
+      // leftover the tool removed) has nothing to commit and would fail `--only`'s pathspec.
+      const trackedRemovals =
+        removePaths.length === 0
+          ? []
+          : (await client.raw('ls-tree', '--name-only', 'HEAD', '--', ...removePaths))
+              .split('\n')
+              .map((line) => line.trim())
+              .filter((line) => line !== '');
       // The write first, so a removal can never be committed without the file that replaces it
       // (the D22 failure mode): both are staged before the single commit below.
       await client.add(paths);
       if (removePaths.length > 0) {
         await client.raw('rm', '--cached', '--ignore-unmatch', '--', ...removePaths);
       }
-      const result = await client.commit(message);
+      // `--only` these paths (final-review round 1, M2): a bare `git commit` takes the whole index,
+      // so anything else staged — another save's files, measured in the reviewer's concurrent
+      // repro — would ride in this commit under this object's message.
+      const result = await client.commit(message, [...paths, ...trackedRemovals], {
+        '--only': null,
+      });
 
       return {
         sha: result.commit,

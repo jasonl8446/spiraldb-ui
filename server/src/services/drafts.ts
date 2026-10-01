@@ -316,6 +316,38 @@ export function acceptSuggestions(db: Db, ids: readonly number[], draft: Suggest
   })();
 }
 
+/**
+ * {@link acceptSuggestions} for a save whose commit **already exists** (final-review round 1, m2).
+ *
+ * A decision failure here cannot mean "nothing was written": a rebuild that ran while the save
+ * awaited git (its `removeStale` deletes the pending row of a field the new file now fills) or a
+ * reject of the same id (D168) leaves an id no longer pending. The ids stay all-or-none (D141), so
+ * every one of them is left undecided, and the save answers success with a warning that names them
+ * instead of a `400` claiming the request was refused before the write.
+ */
+export function acceptCommittedSuggestions(
+  db: Db,
+  ids: readonly number[],
+  draft: SuggestionDraft,
+): { accepted: number[]; warnings: string[] } {
+  try {
+    acceptSuggestions(db, ids, draft);
+    return { accepted: [...ids], warnings: [] };
+  } catch (error) {
+    if (!(error instanceof SuggestionDecisionError)) {
+      throw error;
+    }
+    return {
+      accepted: [],
+      warnings: [
+        `The save was committed, but suggestion${ids.length === 1 ? '' : 's'} ${ids.join(', ')} ` +
+          `${ids.length === 1 ? 'was' : 'were'} left undecided: ${error.message} (decided or ` +
+          `removed while the save ran).`,
+      ],
+    };
+  }
+}
+
 /* ------------------------------------------------------------------- the reads */
 
 /** `?status=` of the suggestion reads: one status, or `all`. */
