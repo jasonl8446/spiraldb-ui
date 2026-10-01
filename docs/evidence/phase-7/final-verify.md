@@ -209,3 +209,10 @@ The scratch DBs (`data/__test-scratch__/final-verify-drafts*.db`) and the helper
 `data/spiraldb-ui.db` was only read, through an online backup. A `playwright-mcp` chromium (pid 111430, parent 3951610,
 started 21:59) was running during the sweep; it is not this run's (all arms used the repo's pinned chromium), and it was
 left alone.
+
+## F-E disposition (lead, after the run)
+
+**Fixed in `2fecc38`.** The committed `docs/evidence/phase-7/p7-14-tier2-walkthrough.mjs` now defaults to
+`QUEST_NAME=WC-UNICORN-MAIN-002`, the input FV5's passing re-run used. The old default `WC-UNICORN-MAIN-001` opens
+Advanced on all 15 of its entries since D195(d), so the walkthrough's "one collapsed" arm cannot be shown on it. A
+comment in the script records why the default moved. This was not an app defect: the tier-1 rule test is green.
