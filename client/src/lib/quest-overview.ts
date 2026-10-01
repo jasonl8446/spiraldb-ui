@@ -6,6 +6,13 @@ import {
 } from './card-titles';
 import { goalName, startGoalNames } from './quest-goals';
 import {
+  goalLogicEntries,
+  goalLogicEntryCompletes,
+  goalLogicEntryNames,
+  goalLogicEntryRequiredORCount,
+  goalsOf,
+} from './quest-goal-logic';
+import {
   requirementApplyNOT,
   requirementEffectiveOperator,
   requirementGroupChildren,
@@ -87,22 +94,17 @@ function arrayOf(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function namesOf(value: unknown): string[] {
-  return arrayOf(value).filter((name): name is string => typeof name === 'string');
-}
-
 function rulesOf(doc: unknown): Rule[] {
-  return arrayOf(isRecord(doc) ? doc.m_goalLogic : undefined)
+  return goalLogicEntries(doc)
     .filter(isRecord)
     .map((entry) => {
-      const or = namesOf(entry.m_goalsOR);
-      const required = entry.m_requiredORCount;
+      const required = goalLogicEntryRequiredORCount(entry);
       return {
-        and: namesOf(entry.m_goalsAND),
-        or,
-        requiredOr: typeof required === 'number' && required > 0 ? required : 1,
-        add: namesOf(entry.m_goalsToAdd),
-        completes: entry.m_completeQuest === true,
+        and: goalLogicEntryNames(entry, 'm_goalsAND'),
+        or: goalLogicEntryNames(entry, 'm_goalsOR'),
+        requiredOr: required !== null && required > 0 ? required : 1,
+        add: goalLogicEntryNames(entry, 'm_goalsToAdd'),
+        completes: goalLogicEntryCompletes(entry),
       };
     });
 }
@@ -224,7 +226,7 @@ function requirementLines(
 
 /** The quest document plus resolved names, as the Overview's story. */
 export function buildQuestOverview(doc: unknown, names: CardNames): QuestOverview {
-  const goals = arrayOf(isRecord(doc) ? doc.m_goals : undefined);
+  const goals = goalsOf(doc);
   const rules = rulesOf(doc);
   const byName = new Map<string, unknown>();
   for (const goal of goals) {

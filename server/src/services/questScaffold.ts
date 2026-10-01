@@ -11,7 +11,7 @@ import { blockingSummary, fieldErrorMap } from '../../../shared/quest/validation
 import { NamingError } from '../../../shared/naming.js';
 import type { Db } from '../db.js';
 import {
-  acceptSuggestions,
+  acceptCommittedSuggestions,
   assertAcceptableSuggestions,
   parseAcceptedSuggestions,
   type SuggestionDraft,
@@ -20,7 +20,7 @@ import { loadValidationReferences } from './names.js';
 import { QuestRequestError } from './quests.js';
 import { isPlainObject } from './sync/json.js';
 import { collectionSpec, createTargetPath } from './spiraldbFiles.js';
-import type { SavePipeline } from './savePipeline.js';
+import { ObjectExistsError, type SaveOutcome, type SavePipeline } from './savePipeline.js';
 import type { SpiraldbIndex } from './spiraldbIndex.js';
 
 /**
@@ -225,7 +225,7 @@ export function resolveLink(
   return { kind, titleKey: candidates.length === 1 ? candidates[0].key : null };
 }
 
-export { resolveScaffoldBranch, type ScaffoldBranchDecision } from './git.js';
+export { resolveScaffoldBranch } from './git.js';
 
 export interface ScaffoldQuestOptions {
   db: Db;
@@ -325,7 +325,8 @@ export interface ScaffoldQuestResult {
   title_key: string | null;
   /** `has_definition` **as read before the write** — the sync flips it on its next run. */
   has_definition_before: 0 | 1;
-  outcome: 'created';
+  /** The pipeline's own outcome — `created`, since `mustCreate` refuses an existing key (M1). */
+  outcome: SaveOutcome;
   action: string;
   /** Committed paths relative to the SpiralDB root. */
   file: string;
@@ -341,6 +342,8 @@ export interface ScaffoldQuestResult {
   named: boolean;
   /** The suggestion ids flipped to `accepted` after the commit (D141); `[]` when none. */
   accepted_suggestions: number[];
+  /** Post-commit notes (m2): the accepted ids left undecided; `[]` when none. */
+  warnings: string[];
 }
 
 /** An unnamed-tier id a draft save names, as the catalog holds it. */
@@ -453,7 +456,10 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
         404,
       );
     }
-    if (catalogRow.has_definition === 1) {
+    // `has_definition` is the sync's column and stays 0 until the next sync, so the corpus is
+    // asked too (final-review round 1, M1): a quest scaffolded and then authored since the last
+    // sync has a file, and a second scaffold would lay the skeleton's nulls over it.
+    if (catalogRow.has_definition === 1 || index.pathFor('questtemplates', name) !== undefined) {
       throw new QuestScaffoldError(
         `"${name}" already has a definition in ${QUEST_TEMPLATES_DIRECTORY}/. Open it in the editor ` +
           `instead: a scaffold writes the minimal skeleton, and saving it over an authored quest ` +
@@ -498,43 +504,59 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
       : { quest_name: null, catalog_id: naming.quest_id };
   assertAcceptableSuggestions(db, accepted, draft);
 
-  // 5. The real pipeline: file + companion metadata + one commit (D13/D100).
-  const result = await pipeline.saveObject({
-    fileType: 'questtemplates',
-    data: quest,
-    key: name,
-    action: 'create',
-    notes: options.notes,
-    metadataDescription:
-      options.quest === undefined
-        ? scaffoldMetadataDescription({ kind: link.kind, titleKey: link.titleKey })
-        : draftMetadataDescription({
-            kind: link.kind,
-            accepted: accepted.length,
-            namedFromId: naming?.quest_id ?? null,
-          }),
-  });
-
-  // 6. After the commit, in one transaction (D141/D142): the catalog row an unnamed draft gains,
-  //    its id's link, its suggestions' name — then the accepted flips. A save that failed above
-  //    reached none of this, so every id stays pending and no catalog row is invented.
-  db.transaction(() => {
-    if (naming !== undefined) {
-      nameUnnamedDraft(db, naming, name);
+  // 5. The real pipeline: file + companion metadata + one commit (D13/D100). `mustCreate`
+  //    repeats the refusal above under the corpus lock (M1/M2), so a concurrent scaffold or save
+  //    of the same name that committed first is refused here instead of being overwritten.
+  let result: Awaited<ReturnType<SavePipeline['saveObject']>>;
+  try {
+    result = await pipeline.saveObject({
+      fileType: 'questtemplates',
+      data: quest,
+      key: name,
+      action: 'create',
+      mustCreate: true,
+      notes: options.notes,
+      metadataDescription:
+        options.quest === undefined
+          ? scaffoldMetadataDescription({ kind: link.kind, titleKey: link.titleKey })
+          : draftMetadataDescription({
+              kind: link.kind,
+              accepted: accepted.length,
+              namedFromId: naming?.quest_id ?? null,
+            }),
+    });
+  } catch (error) {
+    if (error instanceof ObjectExistsError) {
+      throw new QuestScaffoldError(
+        `"${name}" already has a definition in ${QUEST_TEMPLATES_DIRECTORY}/ (written while this ` +
+          `request waited). Open it in the editor instead: nothing was written.`,
+        409,
+      );
     }
-    acceptSuggestions(
-      db,
-      accepted,
-      naming === undefined ? draft : { quest_name: name, catalog_id: naming.quest_id },
-    );
-  })();
+    throw error;
+  }
+
+  // 6. After the commit (D141/D142): the catalog row an unnamed draft gains, its id's link and its
+  //    suggestions' name, in one transaction — then the accepted flips, separately (m2): the file
+  //    is committed, so a decision failure must neither roll the naming back (a file with no
+  //    catalog row, whose retry is refused as a duplicate name) nor answer a 400. A save that
+  //    failed above reached none of this, so every id stays pending and no catalog row is invented.
+  if (naming !== undefined) {
+    const named = naming;
+    db.transaction(() => nameUnnamedDraft(db, named, name))();
+  }
+  const decision = acceptCommittedSuggestions(
+    db,
+    accepted,
+    naming === undefined ? draft : { quest_name: name, catalog_id: naming.quest_id },
+  );
 
   return {
     quest_name: result.key,
     link_kind: link.kind,
     title_key: link.titleKey,
     has_definition_before: row.has_definition === 1 ? 1 : 0,
-    outcome: 'created',
+    outcome: result.outcome,
     action: result.action,
     file: result.relativePath,
     metadata: result.metadataRelativePath,
@@ -544,7 +566,8 @@ export async function scaffoldQuest(options: ScaffoldQuestOptions): Promise<Scaf
     quest,
     catalog_id: naming?.quest_id ?? options.catalogId ?? null,
     named: naming !== undefined,
-    accepted_suggestions: accepted,
+    accepted_suggestions: decision.accepted,
+    warnings: decision.warnings,
   };
 }
 

@@ -1,0 +1,88 @@
+######## freeze check (start of final-verify, 2026-09-30T21:49:17-04:00)
+$ git status --short   -> (0 lines)
+$ git rev-parse HEAD   -> a70437cf5e8c14fcbc15eac8bd252e0afcb19895 (branch final-gate-7)
+$ git log --oneline -4
+a70437c final-review: the reviewer's round-2 re-review of f30fd70 recorded verbatim — APPROVE
+f30fd70 final-review round 1: serialise saves, refuse cross-origin writes, never overwrite on scaffold
+cad7281 final-deslop (Phase 7): ten clean-ups over the phase's diff, twenty-four kept with reasons
+7c2e987 Merge PR #14: Phase 7 — quest coverage and a friendlier editor (owner-reviewed, ci green)
+$ git merge-base HEAD main -> 7c2e9870c41cb675b270e43c6d13bc650a70f1e4
+$ git -C data/test-spiraldb rev-parse HEAD -> 18dc92477d54b1e911796960407ce7710e703697 ; branch content/2026-09-27 ; porcelain 0 ; QuestTemplates/*.json 322 ; commits 42 ; main f3f8b5c ; branches content/2026-09-26 content/2026-09-27 main 
+$ owner fork (read-only): QuestTemplates/*.json 328 at content/2026-09-28 d57d891
+$ ss -ltnp (3001/5173 = owner's)
+LISTEN 0      511        127.0.0.1:3001       0.0.0.0:*    users:(("MainThread",pid=32844,fd=33))
+LISTEN 0      511            [::1]:5173          [::]:*    users:(("MainThread",pid=3856526,fd=29))
+$ node -v; npm -v; dotnet --version -> v24.21.0 / 11.19.0 / 9.0.318
+
+######## fresh gates at HEAD a70437c (sequential, gates.sh: test, lint, typecheck:tests, typecheck:scripts, build, test:ui)
+=== npm run test  2026-09-30T21:49:24-04:00
+exit=0  2026-09-30T21:50:52-04:00
+=== npm run lint  2026-09-30T21:50:52-04:00
+exit=0  2026-09-30T21:51:05-04:00
+=== npm run typecheck:tests  2026-09-30T21:51:05-04:00
+exit=0  2026-09-30T21:51:10-04:00
+=== npm run typecheck:scripts  2026-09-30T21:51:10-04:00
+exit=0  2026-09-30T21:51:12-04:00
+=== npm run build  2026-09-30T21:51:12-04:00
+exit=0  2026-09-30T21:51:22-04:00
+=== npm run test:ui  2026-09-30T21:51:22-04:00
+exit=0  2026-09-30T21:55:04-04:00
+ALLDONE
+
+--- npm run test (tail)
+ ✓ tests/unit/a11y-icon-labels.test.ts (2 tests) 2ms
+
+ Test Files  108 passed (108)
+      Tests  2215 passed (2215)
+   Start at  21:49:24
+   Duration  88.39s (transform 1.80s, setup 0ms, collect 7.52s, tests 64.21s, environment 13ms, prepare 4.25s)
+
+
+--- npm run lint (tail)
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+--- npm run typecheck:tests (tail)
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+--- npm run typecheck:scripts (tail)
+
+> spiraldb-ui@0.1.0 typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+
+--- npm run build (tail)
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.75s
+
+--- npm run test:ui (full, head + tail)
+Running 471 tests using 12 workers
+  ✓  471 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (887ms)
+
+  471 passed (3.7m)
+--- failed / flaky / skipped / did-not-run lines in that run: 0
+--- the D196/D197 and p7 specs in that run:
+  ✓   96 [chromium] › tests/ui/p7-label-scan.spec.ts:272:3 › p7-10 label scan — no bare technical term outside [data-term] › the term lists come from the glossary, with the D135 allowlist computed (2ms)
+  ✓   81 [chromium] › tests/ui/p7-drafts.spec.ts:254:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (5.1s)
+  ✓  105 [chromium] › tests/ui/p7-drafts.spec.ts:367:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (8.6s)
+  ✓  125 [chromium] › tests/ui/p7-overview.spec.ts:54:1 › lands on Overview, the first tab, in edit mode and in view mode, and only reads (2.2s)
+  ✓   97 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line (10.5s)
+  ✓  134 [chromium] › tests/ui/p7-overview.spec.ts:101:1 › the badge counts pending suggestions and opens the tab of the first pending field (4.1s)
+  ✓  145 [chromium] › tests/ui/p7-overview.spec.ts:120:1 › the badge also shows in view mode and opens the same tab (5.9s)
+  ✓  135 [chromium] › tests/ui/p7-label-scan.spec.ts:280:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-TUT-C05-001: every tab, edit and view mode, and the Evidence "Insert into" line (13.8s)
+
+--- the D196/D197 unit arms in the fresh npm test:
+ ✓ tests/unit/write-route-branch-guard.test.ts (16 tests) 3772ms
+ ✓ tests/unit/server-security-posture.test.ts (14 tests) 3416ms
+ ✓ tests/unit/save-write-safety.test.ts (10 tests) 1889ms

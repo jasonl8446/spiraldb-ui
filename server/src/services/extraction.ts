@@ -8,6 +8,7 @@ import type { ZodTypeAny } from 'zod';
 
 import { GoalTemplateSchema, QuestTemplateSchema } from '../../../shared/quest/index.js';
 import { resolveRepoRoot } from '../db.js';
+import { isPlainObject } from './sync/json.js';
 
 /**
  * Quest extraction service — task 2.2 (story p2-04).
@@ -446,9 +447,6 @@ export interface ObservedFieldReport {
   reason: string;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
 /**
  * Re-checks every observed key the wrapper wrote against the shared zod schema — the one place the
  * corpus schema lives (the wrapper is C#). A rejected value is **reported and removed**, so it is never
@@ -490,7 +488,7 @@ export function screenObservedFields(
   };
 
   for (const quest of quests) {
-    if (!isRecord(quest)) {
+    if (!isPlainObject(quest)) {
       continue;
     }
     const name = typeof quest.m_questName === 'string' ? quest.m_questName : '';
@@ -505,7 +503,7 @@ export function screenObservedFields(
       );
     }
     for (const goal of Array.isArray(quest.m_goals) ? quest.m_goals : []) {
-      if (!isRecord(goal)) {
+      if (!isPlainObject(goal)) {
         continue;
       }
       const member = GoalTemplateSchema.optionsMap.get(goal.$type as string);
@@ -548,7 +546,7 @@ export interface CaptureSuggestion {
 }
 
 const isSuggestion = (entry: unknown): entry is CaptureSuggestion =>
-  isRecord(entry) &&
+  isPlainObject(entry) &&
   typeof entry.questName === 'string' &&
   typeof entry.path === 'string' &&
   'value' in entry &&
@@ -576,7 +574,7 @@ export function parseSuggestions(
     );
     return [];
   }
-  if (!isRecord(parsed) || !Array.isArray(parsed.suggestions)) {
+  if (!isPlainObject(parsed) || !Array.isArray(parsed.suggestions)) {
     report('the suggestions sidecar has no top-level "suggestions" array');
     return [];
   }

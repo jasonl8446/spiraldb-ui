@@ -680,8 +680,8 @@ export function LoadedQuest({
 
           <QuestValidationBanner banner={validation.banner} />
 
-          {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
-            map (D64/D65) — findings the client's engine cannot produce. */}
+          {/* spec-ui-design's "Summary at top of form if multiple errors" for the save pipeline's own
+            400 field map (D64/D65) — findings the client's engine cannot produce. */}
           <ValidationSummary messages={serverValidation.messages} />
 
           {/* PR #14 review 9f: a failed suggestions read is said, never shown as "nothing to

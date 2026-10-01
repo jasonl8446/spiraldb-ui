@@ -7,6 +7,15 @@ import { describe, expect, it } from 'vitest';
 import { resolveRepoRoot } from '@server/db';
 import { buildChildEnv } from '@server/services/extraction';
 
+import {
+  P7_DIR,
+  p7Quests as quests,
+  readJson,
+  specOf,
+  type Envelope,
+  type InjectSpec,
+} from '../helpers/p7-fixtures';
+
 /**
  * Phase 7 task 7.2 (p7-03, D128/D139) — the planted-value fixtures and their census goldens.
  *
@@ -18,7 +27,6 @@ import { buildChildEnv } from '@server/services/extraction';
  */
 
 const ROOT = resolveRepoRoot();
-const P7_DIR = path.join(ROOT, 'server', 'test', 'fixtures', 'captures', 'p7');
 const CENSUS_BIN = path.join(ROOT, 'tools', 'bin', 'capture-census');
 const FIXTUREGEN_BIN = path.join(ROOT, 'tools', 'bin', 'fixturegen');
 const CORPUS_DIR = path.join(ROOT, 'data', 'test-spiraldb', 'QuestTemplates');
@@ -32,18 +40,6 @@ const GOAL_CLASSES: Record<string, number> = {
   AchieveRank: 7,
 };
 
-interface Step {
-  message: string;
-  goal?: number;
-  fields?: Record<string, unknown>;
-}
-interface InjectSpec {
-  allowAchieveRank?: boolean;
-  sendQuestFields: Record<string, unknown>;
-  /** Task 7.5: fields planted on MSG_QUESTOFFER (Rewards). */
-  questOfferFields?: Record<string, unknown>;
-  sequence: Step[];
-}
 interface CensusRow {
   message: string;
   field: string;
@@ -55,18 +51,7 @@ interface Census {
   messages: number;
   rows: CensusRow[];
 }
-interface Envelope {
-  data: { name: string; fields: Record<string, { value: unknown }> };
-}
 
-const quests = fs
-  .readdirSync(P7_DIR)
-  .filter((f) => f.endsWith('.inject.json'))
-  .map((f) => f.slice(0, -'.inject.json'.length))
-  .sort();
-
-const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, 'utf8')) as T;
-const specOf = (quest: string): InjectSpec => readJson(path.join(P7_DIR, `${quest}.inject.json`));
 const goldenOf = (quest: string): Census => readJson(path.join(P7_DIR, `${quest}.census.json`));
 const captureOf = (quest: string): Envelope[] => readJson(path.join(P7_DIR, `${quest}.json`));
 

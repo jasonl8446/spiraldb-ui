@@ -1,0 +1,111 @@
+######## D196 (final-review M3 fix) — cross-origin writes refused, own-origin writes pass, on the throwaway stack (PORT=3292, so appOrigins() = http://{localhost,127.0.0.1,[::1]}:{3292,5173})
+
+$ ss -ltnp | grep ':3292 '
+LISTEN 0      511        127.0.0.1:3292       0.0.0.0:*    users:(("MainThread",pid=106586,fd=22))
+rc=0
+
+$ curl -s localhost:3292/api/settings | jq -c '{user_name, git_branch}'
+{"user_name":"FinalVerify Sweep","git_branch":"content/2026-09-27"}
+rc=0
+$ node -e '<quest_suggestions id 1: status>'
+{"id":1,"quest_name":"AQ-GARD-C02-001","path":"m_goals","status":"pending"} rows 5448 pending 5448
+
+# 1. a foreign page's simple request: Origin https://evil.example, Content-Type text/plain, no body — the reviewer's M3 repro
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Origin: https://evil.example' -H 'Content-Type: text/plain' localhost:3292/api/suggestions/1/reject
+{"error":"Refusing POST /api/suggestions/1/reject: the request came from another origin (https://evil.example), and this tool accepts writes only from its own pages."}
+http=403rc=0
+$ node -e '<quest_suggestions id 1: status>'
+{"id":1,"quest_name":"AQ-GARD-C02-001","path":"m_goals","status":"pending"} rows 5448 pending 5448
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Origin: https://evil.example' -H 'Content-Type: text/plain' localhost:3292/api/drafts/rebuild
+{"error":"Refusing POST /api/drafts/rebuild: the request came from another origin (https://evil.example), and this tool accepts writes only from its own pages."}
+http=403rc=0
+$ node -e '<quest_suggestions id 1: status>'
+{"id":1,"quest_name":"AQ-GARD-C02-001","path":"m_goals","status":"pending"} rows 5448 pending 5448
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Origin: https://evil.example' localhost:3292/api/sync
+{"error":"Refusing POST /api/sync: the request came from another origin (https://evil.example), and this tool accepts writes only from its own pages."}
+http=403rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' -H 'Origin: https://evil.example' -F file=@server/test/fixtures/captures/WC-UNICORN-MAIN-004.json localhost:3292/api/extract/quests | cut -c1-200
+{"error":"Refusing POST /api/extract/quests: the request came from another origin (https://evil.example), and this tool accepts writes only from its own pages."}
+http=403
+rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' -X PUT -H 'Origin: https://evil.example' -H 'content-type: application/json' -d '{"user_name":"Evil"}' localhost:3292/api/settings
+{"error":"Refusing PUT /api/settings: the request came from another origin (https://evil.example), and this tool accepts writes only from its own pages."}
+http=403rc=0
+
+$ curl -s localhost:3292/api/settings | jq -c '{user_name}'
+{"user_name":"FinalVerify Sweep"}
+rc=0
+
+# 2. another loopback port (not this stack's), Origin null, and Sec-Fetch-Site cross-site
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Origin: http://localhost:8080' localhost:3292/api/suggestions/1/reject
+{"error":"Refusing POST /api/suggestions/1/reject: the request came from another origin (http://localhost:8080), and this tool accepts writes only from its own pages."}
+http=403rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Origin: null' localhost:3292/api/suggestions/1/reject
+{"error":"Refusing POST /api/suggestions/1/reject: the request came from another origin (null), and this tool accepts writes only from its own pages."}
+http=403rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Sec-Fetch-Site: cross-site' localhost:3292/api/suggestions/1/reject
+{"error":"Refusing POST /api/suggestions/1/reject: the request came from another site (Sec-Fetch-Site: cross-site), and this tool accepts writes only from its own pages."}
+http=403rc=0
+$ node -e '<quest_suggestions id 1: status>'
+{"id":1,"quest_name":"AQ-GARD-C02-001","path":"m_goals","status":"pending"} rows 5448 pending 5448
+
+$ git -C data/test-spiraldb rev-parse --short HEAD; git -C data/test-spiraldb status --porcelain | wc -l
+18dc924
+0
+rc=0
+
+# 3. the partners: this stack's own origin (what the browser sends for the UI on :3292), and no Origin (curl/CLI) pass
+
+$ curl -s -w '\nhttp=%{http_code}' -X PUT -H 'Origin: http://localhost:3292' -H 'content-type: application/json' -d '{"user_name":"FinalVerify Sweep"}' localhost:3292/api/settings | cut -c1-120
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-27","imcodec_path":"/home/j
+http=200
+rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST -H 'Origin: http://localhost:3292' -H 'Content-Type: text/plain' localhost:3292/api/suggestions/1/reject | cut -c1-200
+{"id":1,"path":"m_goals","value":[{"$type":"Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty","m_goalName":"Goal","m_goalNameID":0,"m_goalTitle":"","m_goalUnderway":null,"m
+http=200
+rc=0
+$ node -e '<quest_suggestions id 1: status>'
+{"id":1,"quest_name":"AQ-GARD-C02-001","path":"m_goals","status":"rejected"} rows 5448 pending 5447
+
+$ curl -s -w '\nhttp=%{http_code}' -X POST localhost:3292/api/suggestions/2/reject | cut -c1-200
+{"id":2,"path":"m_goals","value":[{"$type":"Imcodec.ObjectProperty.TypeCache.PersonaGoalTemplate, Imcodec.ObjectProperty","m_goalName":"Goal 1","m_goalNameID":0,"m_goalTitle":"","m_goalUnderway":null,
+http=200
+rc=0
+$ node -e '<quest_suggestions id 2: status>'
+{"id":2,"quest_name":"AQ-GARD-C06-001","path":"m_goals","status":"rejected"} rows 5448 pending 5446
+
+# 4. the UI on its own origin saves fine: every UI save arm in this run (P2-4 Save All, P3-3, P6-6, P7-5) went through the browser on http://localhost:3292; and the tier-1 suite (browser Origin http://localhost:5181 through the Vite proxy) is green (final-verify-gates.txt)
+
+$ node fv-origin.mjs   # the quest page on http://localhost:3292 presses its own Mark Reviewed; the request's Origin and the answer
+[browser] PATCH /api/status/quests/WC-UNICORN-MAIN-007 Origin=(none) Sec-Fetch-Site=(none)
+[browser]   -> 200
+[browser] toast: WC-UNICORN-MAIN-007 marked reviewed | Imported 2,271 existing entries from SpiralDB
+rc=0
+# (a first run printed Origin=(none): Playwright's request.headers() omits the headers the browser adds itself; the run below reads allHeaders(), i.e. what went on the wire)
+$ node fv-origin.mjs   # now Mark Verified (the quest was reviewed by the run above)
+[browser]   -> 200
+[browser] PATCH /api/status/quests/WC-UNICORN-MAIN-007 Origin=http://localhost:3292 Sec-Fetch-Site=same-origin (allHeaders: the headers as sent on the wire)
+[browser] toast: WC-UNICORN-MAIN-007 marked verified | Imported 2,271 existing entries from SpiralDB
+rc=0
+
+######## the probe script (fv-origin.mjs, run from data/__test-scratch__ so node resolves the repo's @playwright/test)
+// final-verify D196: what Origin the real browser sends on a UI write from the stack's own page, and the answer it gets.
+import { chromium } from '@playwright/test';
+const b = await chromium.launch(); const p = await b.newPage();
+p.on('requestfinished', async (r) => { if (r.url().includes('/api/') && r.method() !== 'GET') { const h = await r.allHeaders(); console.log(`[browser] ${r.method()} ${new URL(r.url()).pathname} Origin=${h.origin ?? '(none)'} Sec-Fetch-Site=${h['sec-fetch-site'] ?? '(none)'} (allHeaders: the headers as sent on the wire)`); } });
+p.on('response', (r) => { if (r.url().includes('/api/') && r.request().method() !== 'GET') console.log(`[browser]   -> ${r.status()}`); });
+await p.goto('http://localhost:3292/quests/WC-UNICORN-MAIN-007');
+await p.getByRole('button', { name: 'Mark Verified' }).click();   // a UI write: PATCH /api/status/quests/WC-UNICORN-MAIN-007
+await p.getByRole('dialog').getByRole('button', { name: 'Mark Verified' }).click();
+await p.locator('li[data-sonner-toast]').filter({ hasText: 'marked verified' }).waitFor();
+console.log('[browser] toast:', (await p.locator('li[data-sonner-toast]').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ')).join(' | '));
+await b.close();

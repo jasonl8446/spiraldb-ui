@@ -42,8 +42,8 @@ internal static class Program {
     /// (CLI), the task 7.3 observed-field post-pass tools/PacketReaderCli/ObservedFields.cs (OF) and the
     /// task 7.4 reader repairs tools/PacketReaderCli/ReaderRepairs.cs (RR) and the task 7.5 suggestions
     /// tools/PacketReaderCli/Suggestions.cs (SG, read under --suggestions):
-    ///   MSG_QUESTOFFER   MobileID QB:88 + RR:143; QuestName QB:79 + CLI:278 + RR:143; QuestTitle QB:80 +
-    ///                    OF:85; Level CLI:279 (QB:81 reads it but always gets 0, D46); Mainline QB:82;
+    ///   MSG_QUESTOFFER   MobileID QB:88 + RR:143; QuestName QB:79 + CLI:307 + RR:143; QuestTitle QB:80 +
+    ///                    OF:85; Level CLI:308 (QB:81 reads it but always gets 0, D46); Mainline QB:82;
     ///                    GoalData QB:183; QuestInfo OF:91; Rewards SG:211 (task 7.5).
     ///   MSG_SENDQUEST    QuestID QB:109 + OF:83,303; QuestTitle QB:108 + OF:303; QuestInfo OF:91;
     ///                    QuestNameID OF:93; NoQuestHelper OF:95; SkipQHAutoSelect OF:97; ActivityType
@@ -51,16 +51,16 @@ internal static class Program {
     ///                    quest schema has no home for it); Rewards SG:215 (task 7.5).
     ///   MSG_SENDGOAL     QuestID QB:124 + OF:120; GoalID QB:176 + OF:127 + RR:70; GoalNameID QB:126,134 +
     ///                    OF:127; GoalTitle QB:130,135 + RR:89; GoalLocation QB:136; GoalDestinationZone
-    ///                    QB:137; GoalImage1 QB:138; GoalImage2 QB:139; GoalType QB:132,140 + RR:88 + CLI:167;
+    ///                    QB:137; GoalImage1 QB:138; GoalImage2 QB:139; GoalType QB:132,140 + RR:88 + CLI:196;
     ///                    GoalTotal QB:143,148; UseTally QB:147,154; GoalMadlibs QB:147-148; ClientTags
     ///                    QB:159-165; PersonaName OF:162; NoQuestHelper OF:165; PetOnlyQuest OF:167.
     ///   MSG_ACTORDIALOG  MobileID QB:242 + RR:161; QuestID QB:312 + RR:163; GoalID QB:371 + RR:179;
-    ///                    CompletionType QB:243,311,396 + RR:333; ActorDialog QB:246,315,374 + RR:358;
-    ///                    Persona QB:271,340,408; IsYesNo RR:321 and DefaultDialogAnimation RR:325 (read and
+    ///                    CompletionType QB:243,311,396 + RR:345; ActorDialog QB:246,315,374 + RR:370;
+    ///                    Persona QB:271,340,408; IsYesNo RR:333 and DefaultDialogAnimation RR:337 (read and
     ///                    reported on stderr: the dialog block has no field for either). PersonaName,
     ///                    PersonaIcon, RangeCheck, IsEncounter and PolymorphViewMobTemplateID are declared,
     ///                    never read.
-    ///   MSG_ENCOUNTERDIALOG QuestID RR:233; GoalID RR:232; CompletionType RR:234; ActorDialog RR:358 (task
+    ///   MSG_ENCOUNTERDIALOG QuestID RR:245; GoalID RR:244; CompletionType RR:246; ActorDialog RR:370 (task
     ///                    7.4: a dialog block, never replacing one). MobileID, Persona, PersonaName and
     ///                    PersonaIcon are not read.
     ///   MSG_COMPLETEGOAL GoalID OF:70,158; CompleteText OF:169; QuestID SG:103 (task 7.5 packet order).

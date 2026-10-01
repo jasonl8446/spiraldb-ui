@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module';
-
 import type { Express } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -15,6 +13,7 @@ import {
   writeRepoFile,
   type TempRepo,
 } from '../helpers/temp-git-repo';
+import { enumerateWriteRoutes } from '../helpers/write-routes';
 
 /**
  * Task 7.14 — the D119 `git_branch` guard on **every** write path (D182), one test per route.
@@ -43,15 +42,6 @@ import {
 const CHECKED_OUT = 'content/checked-out';
 const MISMATCHED = 'content/somewhere-else';
 const USER = 'Guard Tester';
-
-const expressCjs = createRequire(import.meta.url)('express') as {
-  Router: { handle: (req: unknown, res: unknown, next: unknown) => void };
-};
-
-interface LayerLike {
-  route?: { path: string; methods: Record<string, boolean | undefined> };
-  regexp?: RegExp;
-}
 
 /** Routes that write **no** SpiralDB file and make no commit — with the reason, checked by review. */
 const EXEMPT: Record<string, string> = {
@@ -93,7 +83,6 @@ describe('D119 branch guard on every write route (task 7.14)', () => {
   let setBranchSetting: (branch: string) => void;
   const writeRoutes: string[] = [];
   const environment: Record<string, string | undefined> = {};
-  const originalHandle = expressCjs.Router.handle;
   const refused = new Map<string, { status: number; error: string; commits: number }>();
   let commitsBefore = 0;
 
@@ -112,18 +101,6 @@ describe('D119 branch guard on every write route (task 7.14)', () => {
       process.env[key] = value;
     }
 
-    const captured = new Map<string, unknown>();
-    expressCjs.Router.handle = function recordingHandle(
-      this: unknown,
-      req: unknown,
-      res: unknown,
-      next: unknown,
-    ): void {
-      const baseUrl = (req as { baseUrl?: unknown }).baseUrl;
-      captured.set(typeof baseUrl === 'string' ? baseUrl : '', this);
-      return originalHandle.call(this, req, res, next);
-    };
-
     const { app: createdApp } = await import('@server/app');
     const { apiRouter } = await import('@server/routes/index');
     const { getDb } = await import('@server/db');
@@ -136,36 +113,7 @@ describe('D119 branch guard on every write route (task 7.14)', () => {
     ).run();
 
     // Build every lazily-mounted router, then walk them all.
-    const prefixes = (apiRouter as unknown as { stack: LayerLike[] }).stack
-      .filter((layer) => layer.route === undefined)
-      .map((layer) => layer.regexp?.source ?? '')
-      .map((source) =>
-        source
-          .slice(1)
-          .replace(/\\\/\?\(\?=\\\/\|\$\)$/, '')
-          .replace(/\\\//g, '/'),
-      );
-    for (const prefix of [...prefixes, '']) {
-      await request(app).get(`/api${prefix}/___guard_probe___`);
-    }
-    const seen = new Set<string>();
-    for (const [baseUrl, router] of captured) {
-      if (baseUrl !== '/api' && !baseUrl.startsWith('/api/')) {
-        continue;
-      }
-      for (const layer of (router as { stack: LayerLike[] }).stack) {
-        if (layer.route === undefined) {
-          continue;
-        }
-        const fullPath = `${baseUrl}${layer.route.path === '/' ? '' : layer.route.path}`;
-        for (const [method, enabled] of Object.entries(layer.route.methods)) {
-          if (enabled === true && method !== 'get') {
-            seen.add(`${method} ${fullPath}`);
-          }
-        }
-      }
-    }
-    writeRoutes.push(...[...seen].sort());
+    writeRoutes.push(...(await enumerateWriteRoutes(app, apiRouter)));
 
     // Every guarded route, while the setting names a branch the tree is not on.
     commitsBefore = commitCount(repo);
@@ -183,7 +131,6 @@ describe('D119 branch guard on every write route (task 7.14)', () => {
   });
 
   afterAll(() => {
-    expressCjs.Router.handle = originalHandle;
     for (const [key, value] of Object.entries(environment)) {
       if (value === undefined) {
         delete process.env[key];

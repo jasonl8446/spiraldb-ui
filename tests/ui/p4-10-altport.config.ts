@@ -53,9 +53,10 @@ export default defineConfig({
     // `PORT` + `VITE_API_PORT` (both 3181) were added by the unattended review when the official
     // config gained the same pair (DR-12): the rig must not fall back to `3001`/`3001` any more than
     // the official run may, or this file would keep the very hole the official run closed.
+    // `VITE_PORT=5181` tells the server its client's origin, or D196 refuses the page's writes.
     cwd: '../..',
     command:
-      'rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 PORT=3181 VITE_API_PORT=3181 npx concurrently -n server,client -c blue,magenta "npx tsx server/src/index.ts" "npx vite --config client/vite.config.ts --port 5181"',
+      'rm -f data/test-ui.db && NODE_ENV=test SPIRALDB_UI_DB=$PWD/data/test-ui.db SPIRALDB_UI_SKIP_IMPORT=1 PORT=3181 VITE_API_PORT=3181 VITE_PORT=5181 npx concurrently -n server,client -c blue,magenta "npx tsx server/src/index.ts" "npx vite --config client/vite.config.ts --port 5181"',
     url: 'http://localhost:5181/api/status/_import',
     reuseExistingServer: false,
     timeout: 120_000,

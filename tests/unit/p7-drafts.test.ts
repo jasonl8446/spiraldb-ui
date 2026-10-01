@@ -644,12 +644,19 @@ describe('the drafts and suggestions API (D141, D143)', () => {
     const held = new Promise<DraftBuildResult>((resolve) => {
       release = resolve;
     });
-    const server = app(db, () => held);
+    let entered: () => void = () => undefined;
+    const running = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const server = app(db, () => {
+      entered();
+      return held;
+    });
 
     const first = request(server)
       .post('/api/drafts/rebuild')
       .then((res) => res);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await running;
     const second = await request(server).post('/api/drafts/rebuild');
     expect(second.status).toBe(409);
     release({ inserted: 0 } as DraftBuildResult);

@@ -1,0 +1,155 @@
+$ node -e "better-sqlite3('data/spiraldb-ui.db').backup('data/__test-scratch__/final-verify-drafts.db')"   # online backup of the dev DB (the owner's dev server holds it open)
+backup done
+
+/home/jason/Documents/git-projects/spiraldb-ui/node_modules/better-sqlite3/lib/methods/wrappers.js:5
+	return this[cppdb].prepare(sql, this, false);
+	                   ^
+SqliteError: no such column: finished_at
+    at Database.prepare (/home/jason/Documents/git-projects/spiraldb-ui/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at [eval]:1:473 {
+  code: 'SQLITE_ERROR'
+}
+
+Node.js v24.21.0
+$ ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates/*.json | wc -l; git -C …/spiraldb rev-parse --abbrev-ref HEAD; --short HEAD
+328
+content/2026-09-28
+d57d891
+$ node -e '<settings.spiraldb_path; quest_suggestions count; coverage; last sync_history row>' data/__test-scratch__/final-verify-drafts.db
+{"value":"/home/jason/Documents/git-projects/spiraldb"} [{"status":"pending","n":5458}] [{"nameable":1717,"id_space":4823,"defined":330,"missing":1387,"references":2855}]
+{"id":1,"sync_timestamp":"2026-09-30T00:46:33Z","revision":"V_r806919.Wizard_1_610","items_count":79835,"spells_count":18173,"npcs_count":23033,"quests_count":330,"zones_count":3357,"status":"success","error_message":null}
+
+$ time npm run --silent drafts -- --db data/__test-scratch__/final-verify-drafts.db   # run 1
+[spiraldb-ui] drafts database at data/__test-scratch__/final-verify-drafts.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 0,
+  "unchanged": 5458,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 50
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 227
+  },
+  "duration_ms": 7591
+}
+
+real	0m8.020s
+user	0m6.577s
+sys	0m1.770s
+exit=0
+
+$ time npm run --silent drafts -- --db data/__test-scratch__/final-verify-drafts.db   # run 2
+[spiraldb-ui] drafts database at data/__test-scratch__/final-verify-drafts.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 0,
+  "unchanged": 5458,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 50
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 227
+  },
+  "duration_ms": 8440
+}
+
+real	0m8.970s
+user	0m7.412s
+sys	0m1.917s
+exit=0
+
+$ node reconcile.cjs data/__test-scratch__/final-verify-drafts.db
+
+-- coverage view
+SELECT * FROM coverage
+[{"nameable":1717,"id_space":4823,"defined":330,"missing":1387,"references":2855}]
+
+-- quest_drafts by tier (named_missing / named_defined / unnamed) and with evidence
+SELECT CASE WHEN quest_name IS NULL THEN 'unnamed' WHEN has_definition=1 THEN 'named_defined' ELSE 'named_missing' END AS tier, count(*) AS drafts, sum(evidence_richness>0) AS with_evidence, sum(evidence_richness=0) AS zero_evidence, sum(pending) AS pending_rows FROM quest_drafts GROUP BY tier ORDER BY tier
+[{"tier":"named_defined","drafts":330,"with_evidence":3,"zero_evidence":327,"pending_rows":4},{"tier":"named_missing","drafts":1387,"with_evidence":1002,"zero_evidence":385,"pending_rows":1392},{"tier":"unnamed","drafts":4648,"with_evidence":4000,"zero_evidence":648,"pending_rows":4062}]
+
+-- unlinked quest_ids (the unnamed tier denominator)
+SELECT count(*) AS unlinked FROM quest_ids WHERE matched_quest_name IS NULL
+[{"unlinked":4648}]
+
+-- reconciliation checks (1 = holds)
+SELECT (SELECT count(*) FROM quest_drafts WHERE quest_name IS NOT NULL AND has_definition=0) = (SELECT missing FROM coverage) AS named_missing_eq_missing,
+ (SELECT count(*) FROM quest_drafts WHERE quest_name IS NOT NULL AND has_definition=1) = (SELECT defined FROM coverage) AS named_defined_eq_defined,
+ (SELECT count(*) FROM quest_drafts WHERE quest_name IS NULL) = (SELECT count(*) FROM quest_ids WHERE matched_quest_name IS NULL) AS unnamed_eq_unlinked,
+ (SELECT count(*) FROM quest_drafts) = (SELECT nameable FROM coverage) + (SELECT count(*) FROM quest_ids WHERE matched_quest_name IS NULL) AS drafts_eq_nameable_plus_unlinked
+[{"named_missing_eq_missing":1,"named_defined_eq_defined":1,"unnamed_eq_unlinked":1,"drafts_eq_nameable_plus_unlinked":1}]
+
+-- every catalog id has a draft (catalog ids without a draft; must be 0)
+SELECT count(*) AS catalog_ids_without_draft FROM quest_ids i WHERE NOT EXISTS (SELECT 1 FROM quest_drafts d WHERE (i.matched_quest_name IS NULL AND d.quest_name IS NULL AND d.catalog_id = i.quest_id) OR (i.matched_quest_name IS NOT NULL AND d.quest_name = i.matched_quest_name))
+[{"catalog_ids_without_draft":0}]
+
+-- rows per status
+SELECT status, count(*) AS n FROM quest_suggestions GROUP BY status
+[{"status":"pending","n":5458}]
+
+-- duplicate identities (must be empty)
+SELECT coalesce(quest_name,''), coalesce(catalog_id,-1), path, source, value_json, count(*) c FROM quest_suggestions GROUP BY 1,2,3,4,5 HAVING c>1
+[]
+
+######## second arm: the same backup with quest_suggestions emptied, so run 1 really inserts (the dev DB already held 5458 pending rows from an earlier drafts run, so the arm above starts at 'unchanged')
+$ cp final-verify-drafts.db data/__test-scratch__/final-verify-drafts-empty.db && node -e "db.exec('DELETE FROM quest_suggestions')"
+{ n: 0 }
+
+$ npm run --silent drafts -- --db data/__test-scratch__/final-verify-drafts-empty.db | jq -c '{proposed,inserted,unchanged,removed,drafts,by_source}'   # run 1
+{"proposed":5458,"inserted":5458,"unchanged":0,"removed":0,"drafts":{"named_missing":1387,"named_defined":330,"unnamed":4648,"zero_evidence":1360},"by_source":{"evidence-title":4026,"evidence-dialogue":62,"evidence-goals":836,"evidence-location":85,"evidence-requirements":449,"capture-order":0,"capture-rewards":0}}
+exit=0
+
+$ npm run --silent drafts -- --db data/__test-scratch__/final-verify-drafts-empty.db | jq -c '{proposed,inserted,unchanged,removed,drafts,by_source}'   # run 2
+{"proposed":5458,"inserted":0,"unchanged":5458,"removed":0,"drafts":{"named_missing":1387,"named_defined":330,"unnamed":4648,"zero_evidence":1360},"by_source":{"evidence-title":4026,"evidence-dialogue":62,"evidence-goals":836,"evidence-location":85,"evidence-requirements":449,"capture-order":0,"capture-rewards":0}}
+exit=0
+
+$ node reconcile.cjs data/__test-scratch__/final-verify-drafts-empty.db | grep -A1 'reconciliation\|without a draft\|duplicate'
+[{"catalog_ids_without_draft":0}]
+[]
+$ node reconcile.cjs data/__test-scratch__/final-verify-drafts-empty.db | grep '^\[' (every result row: coverage, tiers, unlinked, the 4 reconcile checks, ids without a draft, status counts, duplicates)
+[{"nameable":1717,"id_space":4823,"defined":330,"missing":1387,"references":2855}]
+[{"tier":"named_defined","drafts":330,"with_evidence":3,"zero_evidence":327,"pending_rows":4},{"tier":"named_missing","drafts":1387,"with_evidence":1002,"zero_evidence":385,"pending_rows":1392},{"tier":"unnamed","drafts":4648,"with_evidence":4000,"zero_evidence":648,"pending_rows":4062}]
+[{"unlinked":4648}]
+[{"named_missing_eq_missing":1,"named_defined_eq_defined":1,"unnamed_eq_unlinked":1,"drafts_eq_nameable_plus_unlinked":1}]
+[{"catalog_ids_without_draft":0}]
+[{"status":"pending","n":5458}]
+[]

@@ -1,6 +1,7 @@
 import { useCardNames } from '../../hooks/useCardNames';
 import { goalTitleStringKeys } from '../../lib/card-titles';
 import type { PreviewTab } from '../../lib/extract';
+import { goalsOf } from '../../lib/quest-goal-logic';
 import {
   buildQuestOverview,
   NO_REQUIREMENTS,
@@ -126,12 +127,9 @@ export default function QuestOverviewPanel({
   doc: unknown;
   suggestions: readonly Suggestion[];
 }): JSX.Element {
-  const goals = Array.isArray((doc as { m_goals?: unknown } | null)?.m_goals)
-    ? (doc as { m_goals: unknown[] }).m_goals
-    : [];
   const names = useCardNames(
     ['npcs', 'spells', 'zones', 'quests'],
-    goals.flatMap(goalTitleStringKeys),
+    goalsOf(doc).flatMap(goalTitleStringKeys),
   );
   const selectTab = usePreviewTabSelect();
   const pending = suggestions.filter((suggestion) => suggestion.status === 'pending');

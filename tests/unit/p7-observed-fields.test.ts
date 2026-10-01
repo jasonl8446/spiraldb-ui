@@ -12,6 +12,15 @@ import {
   screenObservedFields,
 } from '@server/services/extraction';
 import { TYPE_STRINGS } from '@shared/quest/index';
+import {
+  exactIds,
+  P7_DIR,
+  p7Quests as quests,
+  readJson,
+  type Envelope,
+  type InjectSpec,
+  type Step,
+} from '../helpers/p7-fixtures';
 
 /**
  * Phase 7 task 7.3 (p7-04, D126/D127) — the wrapper's observed-field post-pass.
@@ -35,7 +44,6 @@ import { TYPE_STRINGS } from '@shared/quest/index';
  */
 
 const ROOT = resolveRepoRoot();
-const P7_DIR = path.join(ROOT, 'server', 'test', 'fixtures', 'captures', 'p7');
 const CLI = path.join(ROOT, 'tools', 'bin', 'imview-packet-reader');
 
 // Imcodec's generated ActivityType enum (ActivityType.g.cs), the wrapper's decode table.
@@ -54,18 +62,6 @@ const ACHIEVERANK = 7;
 const DIALOG_MESSAGES = new Set(['MSG_ACTORDIALOG', 'MSG_ENCOUNTERDIALOG']);
 const REWARD_MESSAGES = new Set(['MSG_QUESTREWARDS', 'MSG_LOOT']);
 
-interface Step {
-  message: string;
-  goal?: number;
-  fields?: Record<string, unknown>;
-}
-interface InjectSpec {
-  sendQuestFields: Record<string, unknown>;
-  sequence: Step[];
-}
-interface Envelope {
-  data: { name: string; fields: Record<string, { value: unknown }> };
-}
 type Json = Record<string, unknown>;
 interface Report {
   report: string;
@@ -80,21 +76,6 @@ interface PlantedDialog {
   entries: string[];
 }
 
-const quests = fs
-  .readdirSync(P7_DIR)
-  .filter((f) => f.endsWith('.inject.json'))
-  .map((f) => f.slice(0, -'.inject.json'.length))
-  .sort();
-
-const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, 'utf8')) as T;
-
-// QuestID/GoalID are u64 and exceed 2^53: parse the capture losslessly (ids become bigints) so two
-// GoalIDs can never collide in the test's own goal join.
-type Reviver = (key: string, value: unknown, context: { source?: string }) => unknown;
-const exactIds: Reviver = (_key, value, context) =>
-  typeof value === 'number' && !Number.isSafeInteger(value) && context.source !== undefined
-    ? BigInt(context.source)
-    : value;
 const readCapture = (file: string): Envelope[] =>
   JSON.parse(
     fs.readFileSync(file, 'utf8'),

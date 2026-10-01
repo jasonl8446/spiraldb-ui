@@ -172,11 +172,22 @@ if (args.branch !== undefined && args.branch.trim() !== '' && currentBranch !== 
     requestedExists = false;
   }
 }
+// A detached HEAD (`rev-parse --abbrev-ref` answers the literal `HEAD`) is refused by the helper
+// before the setting could be moved to a branch named `HEAD` (final-review round 1, m1).
+let detached = false;
+if (currentBranch !== '') {
+  try {
+    execFileSync('git', ['-C', root, 'symbolic-ref', '-q', 'HEAD'], { stdio: 'ignore' });
+  } catch {
+    detached = true;
+  }
+}
 const decision = resolveScaffoldBranch({
   settingsBranch: storedBranch,
   currentBranch,
   requested: args.branch,
   requestedExists,
+  detached,
 });
 if (decision.kind === 'refuse') {
   console.error(`[spiraldb-ui] ${decision.message}`);

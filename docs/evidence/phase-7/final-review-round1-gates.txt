@@ -1,0 +1,80 @@
+$ npm test
+ ✓ tests/unit/validation-summary.test.ts (6 tests) 4ms
+ ✓ tests/unit/speaker-ladder-counts.test.ts (2 tests) 3ms
+
+ Test Files  108 passed (108)
+      Tests  2215 passed (2215)
+   Start at  21:36:03
+   Duration  90.05s (transform 1.88s, setup 0ms, collect 7.86s, tests 64.92s, environment 14ms, prepare 4.64s)
+
+
+$ npm run lint
+
+> spiraldb-ui@0.1.0 lint
+> eslint . && prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+$ npm run typecheck:tests
+
+> spiraldb-ui@0.1.0 typecheck:tests
+> tsc -p tests/tsconfig.json --noEmit
+
+
+$ npm run typecheck:scripts
+
+> spiraldb-ui@0.1.0 typecheck:scripts
+> tsc -p scripts/tsconfig.json --noEmit
+
+
+$ npm run build
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 6 server asset(s) to server/dist/server/migrations: 0001_init.sql, 0002_quest_catalog.sql, 0003_persona_index.sql, 0004_breadth_catalog.sql, 0005_quest_suggestions.sql, 0006_quest_title_key.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2369 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-X8bZiLvC.css                  37.25 kB │ gzip:   7.70 kB
+dist/assets/QuestGoalLogicEditor-DCO5Shuc.js   198.48 kB │ gzip:  64.37 kB
+dist/assets/index-_DNt1LD3.js                  992.11 kB │ gzip: 292.69 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.98s
+
+$ npm run test:ui   (FULL tier-1)
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test
+
+[WebServer] 
+…
+  ✓  462 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 640px: the four stat cards occupy 1 column(s) (450ms)
+  ✓  463 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 767px: the four stat cards occupy 1 column(s) (402ms)
+  ✓  464 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 768px: the four stat cards occupy 2 column(s) (389ms)
+  ✓  465 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1024px: the four stat cards occupy 2 column(s) (410ms)
+  ✓  466 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1279px: the four stat cards occupy 2 column(s) (402ms)
+  ✓  467 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1280px: the four stat cards occupy 4 column(s) (405ms)
+  ✓  468 [chromium] › tests/ui/responsive.spec.ts:908:5 › §6 AC#12: the stats cards stack at mobile and only fill their columns from desktop › 1440px: the four stat cards occupy 4 column(s) (425ms)
+  ✓  469 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 375px: the palette is centred and inside the viewport (711ms)
+  ✓  470 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 768px: the palette is centred and inside the viewport (710ms)
+  ✓  471 [chromium] › tests/ui/responsive.spec.ts:932:5 › §7 P5 additions: the ⌘K palette fits every breakpoint › 1440px: the palette is centred and inside the viewport (712ms)
+
+  471 passed (4.1m)

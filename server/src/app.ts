@@ -34,6 +34,9 @@ export interface CreateAppOptions {
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
+  // D196: every write is refused for a foreign origin before a body is parsed or a router runs.
+  app.use('/api', refuseCrossOriginWrites(appOrigins()));
+
   app.use(express.json());
 
   // Feature routes (names, status, settings, sync, dashboard, ...) mount here.
@@ -60,6 +63,66 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use(errorHandler);
 
   return app;
+}
+
+/** The names a loopback page reaches this tool by (`server/src/index.ts` binds `127.0.0.1`). */
+const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+
+/**
+ * The origins a page of **this app** sends (D196): the API's own port (`PORT`, the built client is
+ * served by this process) and the Vite dev server's (`VITE_PORT`, default 5173 — its `/api` proxy
+ * forwards the browser's `Origin` untouched; `changeOrigin` rewrites only `Host`), on every
+ * loopback name. The tier-1 harness sets both (3181/5181), so its browser's
+ * `Origin: http://localhost:5181` is one of them.
+ */
+export function appOrigins(env: NodeJS.ProcessEnv = process.env): Set<string> {
+  const ports = new Set([String(Number(env.PORT ?? 3001)), String(Number(env.VITE_PORT ?? 5173))]);
+  const origins = new Set<string>();
+  for (const host of LOOPBACK_HOSTS) {
+    for (const port of ports) {
+      origins.add(`http://${host}:${port}`);
+    }
+  }
+  return origins;
+}
+
+/**
+ * D196 (closes D94(c)'s write half; amends D88): a non-GET `/api` request is refused `403` when it
+ * carries an `Origin` that is not one of {@link appOrigins}, or `Sec-Fetch-Site: cross-site`.
+ *
+ * D88's no-CORS rule stops a foreign page only where the browser needs a preflight, i.e. for the
+ * non-simple `application/json` write. A bodiless `POST` (reject a suggestion, rebuild the drafts,
+ * run a sync) or a multipart upload is a **simple** request: the browser sends it without asking,
+ * and the side effect happens even though the page can never read the answer (final-review round
+ * 1, M3, reproduced with `Origin: https://evil.example`, `Content-Type: text/plain`). Browsers set
+ * `Origin` on every cross-origin `POST`/`PUT`/`PATCH`/`DELETE`, so checking it covers every write;
+ * a request **without** one (curl, the CLI scripts, supertest) is not a browser page and passes.
+ * `Origin: null` (a sandboxed frame, a `file:` page) is present and foreign, so it is refused.
+ *
+ * Reads (`GET`/`HEAD`/`OPTIONS`) are not checked: they have no side effect, and D88's missing
+ * CORS grant already keeps their answers from a foreign page. The DNS-rebinding read residual
+ * (a `Host` check) stays D94(c)'s recorded owner decision.
+ */
+export function refuseCrossOriginWrites(allowed: ReadonlySet<string>) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+    const origin = req.get('origin');
+    const foreignOrigin = origin !== undefined && !allowed.has(origin);
+    const crossSite = req.get('sec-fetch-site') === 'cross-site';
+    if (foreignOrigin || crossSite) {
+      res.status(403).json({
+        error:
+          `Refusing ${req.method} ${req.originalUrl}: the request came from ` +
+          `${foreignOrigin ? `another origin (${origin})` : 'another site (Sec-Fetch-Site: cross-site)'}` +
+          `, and this tool accepts writes only from its own pages.`,
+      } satisfies ApiError);
+      return;
+    }
+    next();
+  };
 }
 
 /**

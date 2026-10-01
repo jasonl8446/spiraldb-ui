@@ -9,7 +9,7 @@ import { validateQuest } from '../../../shared/quest/validation.js';
 import { blockingSummary, fieldErrorMap } from '../../../shared/quest/validation-messages.js';
 import type { Db } from '../db.js';
 import {
-  acceptSuggestions,
+  acceptCommittedSuggestions,
   assertAcceptableSuggestions,
   parseAcceptedSuggestions,
 } from './drafts.js';
@@ -435,7 +435,12 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     historyNotesOnCreate: source === undefined ? undefined : captureSourceNote(source),
   });
 
-  acceptSuggestions(options.db, accepted, { quest_name: name, catalog_id: null });
+  // m2: the commit exists, so a decision failure from here on is a warning, never a 400.
+  const decision = acceptCommittedSuggestions(options.db, accepted, {
+    quest_name: name,
+    catalog_id: null,
+  });
+  warnings.push(...decision.warnings);
 
   if (duplicateTarget !== undefined) {
     // `metadataRelativePath` is the file the pipeline actually wrote; the resolver's path is the
@@ -466,6 +471,6 @@ export async function saveQuest(options: SaveQuestOptions): Promise<SaveQuestRes
     metadata_outcome: result.metadataOutcome,
     status: result.status,
     warnings,
-    accepted_suggestions: accepted,
+    accepted_suggestions: decision.accepted,
   };
 }

@@ -1,0 +1,165 @@
+######## P5-1: npm test — see final-verify-gates.txt
+
+######## P5-2 (UI arm p5_2)
+[P5-2] B before: Total 2280 all objects Extracted 2278 99.9% Reviewed 2 0.1% Verified 0 0.0% Verification Progress by Type Rebuild drafts Quests 0/323 (0.0%) Drop Tables 0/319 (0.0%) NPC Inventories 0/216 (0.0%) NPC Spell Inventories 0/78 (0.0%) Creature Spellbooks 0/135 (0.0%) NPC Drop Tables 0/1 (0.0%) Treasure Card Inventories 0/2 (0.0%) Zone Transfers 0/1206 (0.0%) Recent Activity 900000004 extracted 1 minute ago by FinalVerify S
+[P5-2] A toast: ["WC-CYCLOPS-MAIN-002 marked verified","Imported 2,271 existing entries from SpiralDB"]
+[P5-2] B before refresh (unchanged): Total 2280 all objects Extracted 2278 99.9% Reviewed 2 0.1% Verified 0 0.0% Verification Progress by Type Rebuild drafts Quests 0/323 (0.0%) Drop Tables 0/319 (0.0%) NPC Inventories 0/216 (0.0%) NPC Spell Inventories 0/78 (0.0%) Creature Spellbooks 0/135 (0.0%) NPC Drop Tables 0/1 (0.0%) Treasure Card Inventories 0/2 (0.0%) Zone Transfers 0/1206 (0.0%) Recent Activity 900000004 extracted 1 minute ago by FinalVerify S
+[P5-2] B after refresh: Total 2280 all objects Extracted 2277 99.9% Reviewed 2 0.1% Verified 1 0.0% Verification Progress by Type Rebuild drafts Quests 1/323 (0.3%) Drop Tables 0/319 (0.0%) NPC Inventories 0/216 (0.0%) NPC Spell Inventories 0/78 (0.0%) Creature Spellbooks 0/135 (0.0%) NPC Drop Tables 0/1 (0.0%) Treasure Card Inventories 0/2 (0.0%) Zone Transfers 0/1206 (0.0%) Recent Activity WC-CYCLOPS-MAIN-002 marked verified just now by F
+[p5_2] ARM DONE
+
+######## P5-3 — the sweep's stack IS the built prod server (npm run build → node server/dist/server/src/index.js, i.e. npm start's command) on :3292
+
+$ head -6 <scratch>/stack.log
+[spiraldb-ui] database ready at <scratch>/ui.db
+Imported 2271 existing entries from SpiralDB
+[spiraldb-ui] import detail: 3 skipped, 0 unparsable
+[spiraldb-ui] import duplicate keys (first file wins): WizardCity/Tutorial_Exterior, WizardCity/Tutorial_Interior
+[spiraldb-ui] API listening on http://127.0.0.1:3292 (loopback only)
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+rc=0
+
+$ curl -s -o <scratch>/p5-03-quests.html -w 'http=%{http_code} bytes=%{size_download} type=%{content_type}' localhost:3292/quests; echo; head -c 300 <scratch>/p5-03-quests.html
+http=200 bytes=508 type=text/html; charset=UTF-8
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>SpiralDB UI</title>
+    <script type="module" crossorigin src="rc=0
+
+$ curl -s -o /dev/null -w 'http=%{http_code} type=%{content_type}' localhost:3292/
+http=200 type=text/html; charset=UTF-8rc=0
+
+$ curl -s -o /dev/null -w 'http=%{http_code} type=%{content_type}' localhost:3292/drop-tables
+http=200 type=text/html; charset=UTF-8rc=0
+
+$ curl -s -o /dev/null -w 'http=%{http_code} type=%{content_type}' localhost:3292/npc-inventories/87112
+http=200 type=text/html; charset=UTF-8rc=0
+
+$ curl -s -o /dev/null -w 'http=%{http_code} type=%{content_type}' localhost:3292/settings
+http=200 type=text/html; charset=UTF-8rc=0
+
+$ curl -s -o /dev/null -w 'http=%{http_code} type=%{content_type}' localhost:3292/drafts
+http=200 type=text/html; charset=UTF-8rc=0
+
+$ curl -s -o /dev/null -w 'http=%{http_code} type=%{content_type}' localhost:3292/glossary
+http=200 type=text/html; charset=UTF-8rc=0
+
+$ curl -s localhost:3292/api/health
+{"status":"ok"}rc=0
+
+######## P5-4 (UI arm viewport) — the same run as P4-6, final-verify-p4.txt
+
+######## P5-5 (UI arm p5_5, @axe-core/playwright)
+[P5-5] Dashboard                  violations: 0 byImpact {}  (axe 4.13.0)
+[P5-5] Quest list                 violations: 0 byImpact {}  (axe 4.13.0)
+[P5-5] Quest detail (edit mode)   violations: 0 byImpact {}  (axe 4.13.0)
+[P5-5] DropTable detail           violations: 0 byImpact {}  (axe 4.13.0)
+[P5-5] negative control (img without alt injected): [{"id":"image-alt","impact":"critical"}]
+[P5-5] after removing it: 0 violations
+[p5_5] ARM DONE
+######## stack down
+3292 free
+
+######## P5-6 fresh-clone dry run (gate-7's p5-06-fresh.sh; branch final-gate-7; port 3293; the listener is killed by its own pid)
+===== P5-6 fresh-clone dry run (start 2026-09-30T22:23:33-04:00) =====
+--- the /tmp contamination check (D90c: a 'clean' /tmp checkout may not be clean) ---
+lrwxrwxrwx 1 jason users 59 Sep 27 13:23 /tmp/node_modules -> /home/jason/Documents/git-projects/spiraldb-ui/node_modules
+--- 1. git clone (timed) ---
+clone rc=0 elapsed=1s
+clone HEAD: a70437c branch: final-gate-7
+clone node_modules present? no
+--- 2. npm ci (timed) ---
+
+
+113 packages are looking for funding
+  run `npm fund` for details
+
+6 vulnerabilities (5 moderate, 1 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm ci rc=0 elapsed=14s
+node_modules entries: 379
+--- 3. configure + isolated sync into the fresh checkout ---
+[spiraldb-ui] sync database at <scratch>/fresh/data/fresh.db
+=== SpiralDB UI — friendly-name sync ===
+  status              : SUCCESS
+  revision            : V_r806919.Wizard_1_610
+  tree                : unpacked /tmp/spiraldb-wad-xfrgSX
+  items               : 79,835
+  spells              : 18,173
+  npcs                : 23,033
+  quests              : 0
+  zones               : 0
+  drop_tables         : 0
+  string_table        : 216,991
+  persona_index       : 23,003 persona object names
+  recipes             : 0
+  decks               : 0
+  manifest entries    : 137,423 ids
+  manifest ids used   : 121,041 rows keyed by the manifest (fallback 0)
+  id mismatches       : 0 rows (embedded m_templateID vs manifest)
+  missing manifest    : 0 rows
+  dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)
+  unpack / scan / write: 15.1 s / 2.7 s / 450 ms
+  total               : 18.6 s
+  sync_history        : success row written at 2026-10-01T02:24:07Z
+  catalog status      : SKIPPED
+  binary-missing      : WAD batch tool not found at <scratch>/fresh/tools/bin/wad-scan. Build it with: npm run build:wadscan
+  breadth status      : SKIPPED
+  binary-missing      : WAD batch tool not found at <scratch>/fresh/tools/bin/wad-scan. Build it with: npm run build:wadscan
+  speaker ladder      : 0 dialogue rows in 0 quest files (0 unreadable) — <scratch>/fresh/data/test-spiraldb
+    override missing  : 0 of 0 rows (0.0%) — m_nameOverride names no string-table key
+    composition unfilled: 0 of 0 rows (0.0%) — m_nameSTKey has no format or the persona lacks a component
+    persona not indexed: 0 of 0 rows (0.0%) — raw persona string used as the speaker name
+sync rc=0 elapsed=20s
+--- 4. build ---
+
+> spiraldb-ui@0.1.0 build
+> npm run build:server && npm run build:client
+
+
+> spiraldb-ui@0.1.0 build:server
+> tsc -p server/tsconfig.json && node scripts/copy-server-assets.mjs
+
+[build] copied 6 server asset(s) to server/dist/server/migrations: 0001_init.sql, 0002_quest_catalog.sql, 0003_persona_index.sql, 0004_breadth_catalog.sql, 0005_quest_suggestions.sql, 0006_quest_title_key.sql
+
+> spiraldb-ui@0.1.0 build:client
+> tsc -p client/tsconfig.json --noEmit && vite build --config client/vite.config.ts
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2369 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.51 kB │ gzip:   0.33 kB
+dist/assets/QuestGoalLogicEditor-BnuhLJ6X.css   15.87 kB │ gzip:   2.67 kB
+dist/assets/index-X8bZiLvC.css                  37.25 kB │ gzip:   7.70 kB
+dist/assets/QuestGoalLogicEditor-DCO5Shuc.js   198.48 kB │ gzip:  64.37 kB
+dist/assets/index-_DNt1LD3.js                  992.11 kB │ gzip: 292.69 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.79s
+build rc=0 elapsed=8s
+--- 5. prod start on a port this sweep owns (3293) + the SPA route ---
+[spiraldb-ui] database ready at <scratch>/fresh/data/fresh.db
+Imported 0 existing entries from SpiralDB
+[spiraldb-ui] API listening on http://127.0.0.1:3293 (loopback only)
+[spiraldb-ui] serving built client from <scratch>/fresh/client/dist
+GET :3293/quests      -> http=200 bytes=508 type=text/html; charset=UTF-8
+GET :3293/api/health  -> {"status":"ok"}
+GET :3293/api/quests/coverage -> {"nameable":0,"id_space":0,"defined":0,"missing":0,"references":0,"corpus":{"spiraldb_path":"<scratch>/fresh/data/test-spiraldb","quest_files":0}}
+GET :3293/            -> http=200 type=text/html; charset=UTF-8
+--- 6. teardown by explicit PID ---
+kill rc=0
+listener pid 137383 killed explicitly (the PID file holds the subshell, gate-7 GD10)
+3293 free? yes
+===== end 2026-09-30T22:24:24-04:00 =====

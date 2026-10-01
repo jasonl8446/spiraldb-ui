@@ -1,0 +1,19 @@
+$ npx vitest run tests/unit/save-write-safety.test.ts tests/unit/server-security-posture.test.ts tests/unit/write-route-branch-guard.test.ts   # with the fix
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ✓ tests/unit/server-security-posture.test.ts (14 tests) 2842ms
+   ✓ D88 — no mounted router family installs its own CORS grant (per-route evasion) > gives a foreign-origin GET and preflight at every mount prefix no Access-Control-* header  2013ms
+   ✓ D196 — every write route refuses a foreign-origin simple request before any router runs > answers 403 with the JSON envelope on every enumerated write route, and reaches no router  788ms
+ ✓ tests/unit/save-write-safety.test.ts (10 tests) 1750ms
+   ✓ M1 — a scaffold never overwrites a quest file the catalog does not know about yet > refuses a second scaffold of a quest authored since its first one (409, file unchanged)  368ms
+   ✓ M2 — concurrent saves are serialised, and each commit holds only its own paths > two concurrent scaffolds make two commits with exactly their own two files and real shas  313ms
+ ✓ tests/unit/write-route-branch-guard.test.ts (16 tests) 3303ms
+   ✓ D119 branch guard on every write route (task 7.14) > accepts every guarded route once the setting names the checked-out branch (positive partner)  1370ms
+   ✓ D119 branch guard on every write route (task 7.14) > the tree on main (PR #14 review 2, D195) > refuses every guarded route when git_branch names a branch that already exists: main's tree is not replaced  744ms
+
+ Test Files  3 passed (3)
+      Tests  40 passed (40)
+   Start at  21:32:51
+   Duration  9.27s (transform 483ms, setup 0ms, collect 945ms, tests 7.90s, environment 0ms, prepare 99ms)
+

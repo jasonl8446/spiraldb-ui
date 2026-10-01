@@ -29,6 +29,15 @@ import {
   removeTempGitRepo,
   type TempRepo,
 } from '../helpers/temp-git-repo';
+import {
+  exactIds,
+  P7_DIR,
+  p7Quests as quests,
+  readJson,
+  specOf,
+  type Envelope,
+  type InjectSpec,
+} from '../helpers/p7-fixtures';
 
 /**
  * Phase 7 task 7.5 (p7-06, D127/D138) — the wrapper's `--suggestions` sidecar.
@@ -46,7 +55,6 @@ import {
  */
 
 const ROOT = resolveRepoRoot();
-const P7_DIR = path.join(ROOT, 'server', 'test', 'fixtures', 'captures', 'p7');
 const CLI = path.join(ROOT, 'tools', 'bin', 'imview-packet-reader');
 const REWARDS_PATH = 'm_endResults.m_results';
 
@@ -57,42 +65,14 @@ interface LootSpec {
   items?: { id: number; count: number }[];
   spells?: number[];
 }
-interface Step {
-  message: string;
-  goal?: number;
-  fields?: Record<string, unknown>;
-}
-interface InjectSpec {
-  sendQuestFields: Record<string, unknown>;
-  questOfferFields?: Record<string, unknown>;
-  sequence: Step[];
-}
-interface Envelope {
-  data: { name: string; fields: Record<string, { value: unknown }> };
-}
 type Json = Record<string, unknown>;
 
-const quests = fs
-  .readdirSync(P7_DIR)
-  .filter((f) => f.endsWith('.inject.json'))
-  .map((f) => f.slice(0, -'.inject.json'.length))
-  .sort();
-
-const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, 'utf8')) as T;
-
-// QuestID/GoalID are u64 and exceed 2^53: parse the capture losslessly so two GoalIDs never collide.
-type Reviver = (key: string, value: unknown, context: { source?: string }) => unknown;
-const exactIds: Reviver = (_key, value, context) =>
-  typeof value === 'number' && !Number.isSafeInteger(value) && context.source !== undefined
-    ? BigInt(context.source)
-    : value;
 const readCapture = (quest: string): Envelope[] =>
   JSON.parse(
     fs.readFileSync(path.join(P7_DIR, `${quest}.json`), 'utf8'),
     exactIds as Parameters<typeof JSON.parse>[1],
   ) as Envelope[];
 
-const specOf = (quest: string): InjectSpec => readJson(path.join(P7_DIR, `${quest}.inject.json`));
 const extractOf = (quest: string): Json =>
   readJson<Json[]>(path.join(P7_DIR, `${quest}.extract.json`))[0]!;
 const sidecarOf = (quest: string): { suggestions: CaptureSuggestion[] } =>
