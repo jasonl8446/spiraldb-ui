@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { STATUS_META } from '../StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { formatPercent, TYPE_SECTION_TITLE, type TypeProgressRow } from '../../lib/dashboard';
@@ -23,17 +25,23 @@ import { cn } from '../../lib/utils';
  */
 export interface TypeProgressSectionProps {
   rows: readonly TypeProgressRow[];
+  /** Right-aligned in the title row — the dashboard's Rebuild drafts button (D144). */
+  action?: ReactNode;
 }
 
-export default function TypeProgressSection({ rows }: TypeProgressSectionProps): JSX.Element {
+export default function TypeProgressSection({
+  rows,
+  action,
+}: TypeProgressSectionProps): JSX.Element {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         {/* Same heading idiom as `StatusHistoryPanel`: CardTitle is a styled div, so the
             section attaches the heading semantics where it is used. */}
         <CardTitle role="heading" aria-level={2}>
           {TYPE_SECTION_TITLE}
         </CardTitle>
+        {action}
       </CardHeader>
       <CardContent className="pt-4">
         <ul className="flex flex-col gap-4" aria-label={TYPE_SECTION_TITLE}>

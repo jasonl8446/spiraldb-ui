@@ -77,7 +77,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: '/', title: 'Dashboard' },
   { label: 'Extract Quests', path: '/quests/extract', title: 'Extract Quests' },
   { label: 'Browse Quests', path: '/quests', title: 'Browse Quests' },
-  // Story p6-11 added the Catalog item to the QUESTS group (spec-ui-design.md L148-152), so the
+  // Story p6-11 added the Catalog item to the QUESTS group (spec-ui-design.md §"Sidebar"), so the
   // list the loop below walks is extended with it rather than silently stopping at 12 pages.
   { label: 'Catalog', path: '/quests/catalog', title: 'Quest Catalog' },
   { label: 'Drop Tables', path: '/drop-tables', title: 'Drop Tables' },
@@ -242,6 +242,16 @@ async function mockShellApi(page: Page): Promise<void> {
   // `**/api/quests/*` branch above, whose glob would otherwise answer them with a bare quest
   // document (D81: mock every endpoint the page reads, not only the ones the assertions name).
   await page.route('**/api/quests/coverage', (route) => route.fulfill({ json: MOCK_COVERAGE }));
+  // The detail page's two follow-up reads, the entry's status history and (p7-08) its pending
+  // suggestions, start only once the quest document has rendered. An unloaded run closed the page
+  // before they were answered; a loaded one let the real server's 404s reach the console guard
+  // (D183, measured in p7-16: 4 and 10 of 80 loaded repeats). Mocked like every other read the page makes.
+  await page.route('**/api/quests/*/suggestions', (route) =>
+    route.fulfill({ json: { quest_name: 'DS-ACAD-C01-001', catalog_id: null, suggestions: [] } }),
+  );
+  await page.route('**/api/status/quests/*/history', (route) =>
+    route.fulfill({ json: { history: [] } }),
+  );
   await page.route('**/api/quests/catalog*', (route) =>
     route.fulfill({
       json: {
@@ -460,7 +470,7 @@ async function mockShellApi(page: Page): Promise<void> {
   );
 
   // Story p4-07 replaced `/global-registry`' stub with the real **editor** (plan task 4.9) —
-  // docs/spec-api.md L474 gives this family one route and it is the editor, because the directory
+  // docs/spec-api.md §"URL Routes (Frontend)" gives this family one route and it is the editor, because the directory
   // is one merged dictionary rather than a collection. So there is no list page to assert here:
   // the branch below asserts the editor's own chrome. Both endpoints are mocked (the family's
   // list — one row per FILE, keyed by the file stem — and the merged detail), so the assertion is
@@ -498,7 +508,7 @@ async function mockShellApi(page: Page): Promise<void> {
   // family. The dashboard is the one page that aggregates the **tool's own database**, so
   // an unmocked assertion would read 2,271 imported rows locally and nothing on CI.
   //
-  // The fixture is the spec's own worked example (docs/spec-api.md L148-163): its
+  // The fixture is the spec's own worked example (docs/spec-api.md §"GET /api/dashboard"): its
   // percentages are the ones the spec prints (`157/322 (48.8%)`, `70/180 (38.9%)`,
   // `45/95 (47.4%)`, overall `272/597 → 45.6`), which is what makes the branch's literals
   // independent of this file's own arithmetic. Seven type buckets are present because the
@@ -589,7 +599,7 @@ test.describe('sidebar navigation', () => {
         // means the phase that *owns* the page. This is the last stub to fall: after it, no
         // route renders "Arrives in Phase N". Both of the dashboard's reads are mocked (see
         // `mockShellApi`), and the literals come from the spec's worked example
-        // (docs/spec-api.md L148-163, spec-ui-design L135-179): the Total card's number, the
+        // (docs/spec-api.md §"GET /api/dashboard", spec-ui-design §"Stats Cards Row"): the Total card's number, the
         // quest bar's fraction + one-decimal percentage, the feed's action text and its
         // unresolved notice. The page's own contract is `tests/ui/dashboard.spec.ts`.
         const main = page.getByRole('main');
@@ -731,7 +741,7 @@ test.describe('sidebar navigation', () => {
         // Story p4-07 replaced this route's stub with the real **editor** (plan task 4.9) — the
         // same phase transition p4-01…p4-06 recorded, so `phase` in the row above still means the
         // phase that *owns* the page. It is the one family whose route is the editor rather than
-        // a list (docs/spec-api.md L474), so this branch asserts the editor's own literals: the
+        // a list (docs/spec-api.md §"URL Routes (Frontend)"), so this branch asserts the editor's own literals: the
         // merged table and the pre-save disclosure naming the file the save replaces. Like the
         // p4-05/p4-06 branches it mocks its own endpoints (D73(g)).
         // `tests/ui/global-registry-editor.spec.ts` owns the editor's contract.
@@ -933,7 +943,7 @@ test.describe('settings', () => {
 
     // D42: `git_branch` is returned by `GET /api/settings` (D32) but the Phase 1 UI
     // rendered nothing for it. Story p2-09 surfaces it — **read-only**, because the
-    // save pipeline generates it (`content/YYYY-MM-DD`, spec-data-model L206-214) and
+    // save pipeline generates it (`content/YYYY-MM-DD`, spec-data-model §"Git Branch Strategy") and
     // a hand-edited value would redirect every following commit off that strategy.
     const branch = page.getByLabel('Git Branch');
     await expect(branch).toHaveValue(MOCK_SETTINGS.git_branch);

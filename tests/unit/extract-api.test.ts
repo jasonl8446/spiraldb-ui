@@ -16,7 +16,9 @@ import {
   UPLOAD_FORMAT_HINT,
   UPLOAD_MAX_BYTES,
 } from '@server/routes/extract';
+import type { CensusService } from '@server/services/census';
 import {
+  type CaptureSuggestion,
   ChildRegistry,
   ExtractionError,
   type ExecChildHandle,
@@ -25,7 +27,7 @@ import {
 } from '@server/services/extraction';
 
 /**
- * Task 2.3/p2-04 — `POST /api/extract/quests` (docs/spec-api.md L208-231).
+ * Task 2.3/p2-04 — `POST /api/extract/quests` (docs/spec-api.md §"Extraction").
  *
  * Hermetic: the extraction service is injected, so no CLI process is ever spawned
  * and .NET is never needed. The app under test is the real composition — the
@@ -59,15 +61,22 @@ function createTestApp(extractRouter: Router): Express {
   return app;
 }
 
-/** A service that answers with `quests` and records the capture path it saw. */
-function serviceReturning(quests: unknown[]): ExtractionService & { startedPaths: string[] } {
+/** A service that answers with `quests` (and the task 7.5 sidecar) and records the capture path it saw. */
+function serviceReturning(
+  quests: unknown[],
+  suggestions: CaptureSuggestion[] = [],
+): ExtractionService & { startedPaths: string[] } {
   const startedPaths: string[] = [];
   return {
     cliPath: CLI,
     startedPaths,
     start(capturePath: string): ExtractionRun {
       startedPaths.push(capturePath);
-      return { children: new ChildRegistry(), result: Promise.resolve(quests) };
+      return {
+        children: new ChildRegistry(),
+        result: Promise.resolve(quests),
+        suggestions: Promise.resolve(suggestions),
+      };
     },
   };
 }
@@ -76,7 +85,11 @@ function serviceReturning(quests: unknown[]): ExtractionService & { startedPaths
 function serviceFailing(error: Error): ExtractionService {
   return {
     cliPath: CLI,
-    start: (): ExtractionRun => ({ children: new ChildRegistry(), result: Promise.reject(error) }),
+    start: (): ExtractionRun => ({
+      children: new ChildRegistry(),
+      result: Promise.reject(error),
+      suggestions: Promise.resolve([]),
+    }),
   };
 }
 
@@ -85,7 +98,7 @@ function uploadApp(service: ExtractionService, maxUploadBytes = UPLOAD_MAX_BYTES
 }
 
 describe('POST /api/extract/quests — success', () => {
-  it('answers exactly { quests, count } for a .json capture', async () => {
+  it('answers exactly { quests, count, suggestions } for a .json capture', async () => {
     const quests = [{ m_questName: 'MB-YARD1-C01-001' }, { m_questName: 'B' }];
     const service = serviceReturning(quests);
     const res = await request(uploadApp(service))
@@ -93,8 +106,9 @@ describe('POST /api/extract/quests — success', () => {
       .attach('file', Buffer.from('[]'), 'MB-YARD1-C01-001.json');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ quests, count: 2 });
-    expect(Object.keys(res.body).sort()).toEqual(['count', 'quests']);
+    expect(res.body).toEqual({ quests, count: 2, suggestions: [] });
+    // Task 7.5 (spec-api "Phase 7 additions"): `suggestions` is always present, `[]` when nothing was inferred.
+    expect(Object.keys(res.body).sort()).toEqual(['count', 'quests', 'suggestions']);
     expect(service.startedPaths).toHaveLength(1);
   });
 
@@ -104,7 +118,27 @@ describe('POST /api/extract/quests — success', () => {
       .attach('file', Buffer.from('[]'), 'empty.json');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ quests: [], count: 0 });
+    expect(res.body).toEqual({ quests: [], count: 0, suggestions: [] });
+  });
+
+  it('passes the sidecar suggestions through verbatim, never merged into the quests (D127)', async () => {
+    const quests = [{ m_questName: 'A', m_goals: [] }];
+    const suggestions: CaptureSuggestion[] = [
+      {
+        questName: 'A',
+        path: 'm_endResults.m_results',
+        value: { kind: 'gold', amount: 120, result: null },
+        source: 'capture-rewards',
+        confidence: 0.3,
+        note: 'rolled observation (gold 120) from MSG_LOOT.LootList; not a drop-table name',
+      },
+    ];
+    const res = await request(uploadApp(serviceReturning(quests, suggestions)))
+      .post('/api/extract/quests')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ quests, count: 1, suggestions });
   });
 
   it('deletes the uploaded capture once the request settles', async () => {
@@ -122,6 +156,73 @@ describe('POST /api/extract/quests — success', () => {
   it('keeps the spec cap at 512 MB (D2)', () => {
     expect(UPLOAD_MAX_BYTES).toBe(512 * 1024 * 1024);
     expect(ALLOWED_UPLOAD_EXTENSION).toBe('.json');
+  });
+});
+
+describe('POST /api/extract/quests?census=1 (D139)', () => {
+  const CENSUS = {
+    messages: 3,
+    rows: [{ message: 'MSG_SENDGOAL', field: 'PersonaName', count: 2, consumed: false }],
+  };
+
+  function censusReturning(outcome: Awaited<ReturnType<CensusService['run']>>) {
+    const paths: string[] = [];
+    const census: CensusService = {
+      run: (capturePath) => {
+        paths.push(capturePath);
+        return Promise.resolve(outcome);
+      },
+    };
+    return { census, paths };
+  }
+
+  function appWith(service: ExtractionService, census: CensusService): Express {
+    return createTestApp(createExtractRouter({ service, census, uploadDir }));
+  }
+
+  it('adds the census of the same uploaded file next to the quests', async () => {
+    const service = serviceReturning([{ m_questName: 'A' }]);
+    const { census, paths } = censusReturning(CENSUS);
+
+    const res = await request(appWith(service, census))
+      .post('/api/extract/quests?census=1')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      quests: [{ m_questName: 'A' }],
+      count: 1,
+      suggestions: [],
+      census: CENSUS,
+    });
+    expect(paths).toEqual(service.startedPaths);
+  });
+
+  it('returns { skipped } in place of the census when the tool is missing, and still succeeds', async () => {
+    const { census } = censusReturning({ skipped: 'capture-census not found' });
+
+    const res = await request(appWith(serviceReturning([]), census))
+      .post('/api/extract/quests?census=1')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      quests: [],
+      count: 0,
+      suggestions: [],
+      census: { skipped: 'capture-census not found' },
+    });
+  });
+
+  it('does not run the census without the query flag (Phase 2 shape plus the task 7.5 suggestions)', async () => {
+    const { census, paths } = censusReturning(CENSUS);
+
+    const res = await request(appWith(serviceReturning([]), census))
+      .post('/api/extract/quests')
+      .attach('file', Buffer.from('[]'), 'capture.json');
+
+    expect(res.body).toEqual({ quests: [], count: 0, suggestions: [] });
+    expect(paths).toEqual([]);
   });
 });
 
@@ -233,6 +334,7 @@ describe('POST /api/extract/quests — cancellation (D9)', () => {
           result: new Promise<unknown[]>((resolve) => {
             settle = resolve;
           }),
+          suggestions: Promise.resolve([]),
         };
       },
     };
@@ -296,7 +398,11 @@ describe('POST /api/extract/quests — cancellation (D9)', () => {
     };
     const service: ExtractionService = {
       cliPath: CLI,
-      start: (): ExtractionRun => ({ children: registry, result: Promise.resolve([{ a: 1 }]) }),
+      start: (): ExtractionRun => ({
+        children: registry,
+        result: Promise.resolve([{ a: 1 }]),
+        suggestions: Promise.resolve([]),
+      }),
     };
 
     const res = await request(uploadApp(service))

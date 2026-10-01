@@ -75,6 +75,11 @@ export interface EvidenceSpeaker {
   override_key: string | null;
   /** The `m_nameSTKey` value, when the entry set one. */
   st_key: string | null;
+  /**
+   * The manifest id the persona resolves to (`persona_index.template_id`) — the id the NPC page
+   * (`/npcs/:npcId`, task 7.14) opens. `null` when the persona is unknown to the index.
+   */
+  template_id: number | null;
 }
 
 export interface EvidenceTextRow {
@@ -218,8 +223,12 @@ interface PersonaRow {
   title_key: string | null;
 }
 
-/** Every lookup the builder needs, read once per request. */
-interface EvidenceTables {
+/**
+ * Every lookup the builder needs, read once per request — or once per **run** when a caller
+ * evaluates many quests (the draft builder, task 7.6, passes it through {@link EvidenceOptions.tables}
+ * instead of re-reading the 217k-row string table per quest).
+ */
+export interface EvidenceTables {
   /** `string_table.key → value` — the one lookup every ladder rung shares. */
   strings: ReadonlyMap<string, string>;
   /** persona object name → its `persona_index` row. */
@@ -230,7 +239,7 @@ interface EvidenceTables {
   textTables: ReadonlyMap<number, string>;
 }
 
-function readTables(db: Db): EvidenceTables {
+export function readEvidenceTables(db: Db): EvidenceTables {
   const strings = new Map<string, string>();
   for (const row of db
     .prepare<[], { key: string; value: string }>('SELECT key, value FROM string_table')
@@ -394,71 +403,74 @@ function personaComponents(
   };
 }
 
-/** One resolved speaker plus the warning the ladder wants recorded, if any. */
+/**
+ * The three ways a dialogue row's speaker falls through a rung of the ladder (D124). Each is
+ * counted per row: a row whose override key is missing and whose composition then answers counts
+ * once in `override-key-missing` and resolves as `composed`.
+ */
+export const SPEAKER_FALL_THROUGH_CLASSES = [
+  /** `m_nameOverride` names a key the string table does not hold. */
+  'override-key-missing',
+  /** `m_nameSTKey` names no format, or a format the persona's components cannot fill. */
+  'composition-unfilled',
+  /** A non-empty persona the manifest index cannot place, so the raw persona string is used. */
+  'persona-not-indexed',
+] as const;
+
+export type SpeakerFallThroughClass = (typeof SPEAKER_FALL_THROUGH_CLASSES)[number];
+
+/** One resolved speaker plus every rung it fell through on the way. */
 interface SpeakerResolution {
   speaker: EvidenceSpeaker;
-  /** `null` when a rung answered; the fall-through's sentence otherwise. */
-  warning: string | null;
-  /**
-   * `true` when the entry carries a **non-empty** persona the index cannot place —
-   * the count ac2 asks for. An empty `m_personaName` is a different fact (the entry
-   * names no persona at all) and is counted separately rather than folded in here.
-   */
-  missingPersona: boolean;
+  /** The fall-through classes this row hit, in rung order; empty when it fell through nowhere. */
+  fallThroughs: SpeakerFallThroughClass[];
 }
 
 /**
  * Resolves one dialogue row's speaker.
  *
- * **Visibility is uneven, and this comment used to claim otherwise (D124).** Of the three
- * fall-through classes, only the third is surfaced: a persona name that is not in the manifest
- * index sets `missingPersona`, which the caller turns into an aggregate `warnings` entry. A
- * missing override key, or a composition the persona's components cannot fill, leaves
- * `source: 'template'` with no counter and no warning line — the raw value is used silently.
- * A per-class counter is a response change and is recorded as a follow-up rather than smuggled
- * into a cleanup pass; `warning` below is the seed of that fix and is currently unread.
+ * **All three fall-through classes are recorded (D124, closed by task 7.14).** Each class the row
+ * hits lands in `fallThroughs`. The evidence response surfaces the third as an aggregate
+ * `warnings` entry (a response contract this task does not widen); the sync counts all three over
+ * the whole corpus ({@link countSpeakerFallThroughs}) and prints them.
  */
 function resolveSpeaker(options: {
   entry: Record<string, unknown>;
-  line: number;
   tables: EvidenceTables;
 }): SpeakerResolution {
-  const { entry, line, tables } = options;
+  const { entry, tables } = options;
   const personaName = text(entry.m_personaName) ?? '';
   const overrideKey = text(entry.m_nameOverride);
   const stKey = text(entry.m_nameSTKey);
   const row = personaFor(tables.personae, personaName);
-  const base: Pick<EvidenceSpeaker, 'persona' | 'override_key' | 'st_key'> = {
+  const base: Pick<EvidenceSpeaker, 'persona' | 'override_key' | 'st_key' | 'template_id'> = {
     persona: personaName,
     override_key: overrideKey,
     st_key: stKey,
+    template_id: row?.template_id ?? null,
   };
+  const fallThroughs: SpeakerFallThroughClass[] = [];
 
   // Rung 1 — `m_nameOverride` is a string-table key in any category.
   if (overrideKey !== null) {
     const resolved = tables.strings.get(overrideKey);
     if (resolved !== undefined) {
-      return {
-        speaker: { ...base, name: resolved, source: 'override' },
-        warning: null,
-        missingPersona: false,
-      };
+      return { speaker: { ...base, name: resolved, source: 'override' }, fallThroughs };
     }
+    fallThroughs.push('override-key-missing');
   }
 
   // Rung 2 — the `NPCFormats_*` composition against the persona's components.
   if (stKey !== null) {
     const format = tables.strings.get(stKey);
-    if (format !== undefined) {
-      const composed = composeSpeakerName(format, personaComponents(row, tables.strings));
-      if (composed !== null) {
-        return {
-          speaker: { ...base, name: composed, source: 'composed' },
-          warning: null,
-          missingPersona: false,
-        };
-      }
+    const composed =
+      format === undefined
+        ? null
+        : composeSpeakerName(format, personaComponents(row, tables.strings));
+    if (composed !== null) {
+      return { speaker: { ...base, name: composed, source: 'composed' }, fallThroughs };
     }
+    fallThroughs.push('composition-unfilled');
   }
 
   // Rung 3 — the persona's template name via the manifest (the `persona_index` id).
@@ -466,23 +478,50 @@ function resolveSpeaker(options: {
   if (templateId !== null) {
     const named = tables.npcNames.get(templateId);
     if (named !== undefined) {
-      return {
-        speaker: { ...base, name: named, source: 'template' },
-        warning: null,
-        missingPersona: false,
-      };
+      return { speaker: { ...base, name: named, source: 'template' }, fallThroughs };
     }
   }
 
   // The raw persona string: never dropped, never replaced by a guess, counted below.
-  return {
-    speaker: { ...base, name: personaName, source: 'raw' },
-    warning:
-      personaName === ''
-        ? null
-        : `dialogue line ${line}: persona "${personaName}" is not in the manifest index, so the raw persona string is used as the speaker name`,
-    missingPersona: personaName !== '',
+  if (personaName !== '') {
+    fallThroughs.push('persona-not-indexed');
+  }
+  return { speaker: { ...base, name: personaName, source: 'raw' }, fallThroughs };
+}
+
+/** Per-class fall-through counts over a set of quest documents (what the sync prints). */
+export interface SpeakerLadderCounts {
+  /** `NPCDialogEntry` rows examined. */
+  lines: number;
+  /** Rows that hit each class (a row may hit more than one). */
+  classes: Record<SpeakerFallThroughClass, number>;
+}
+
+/**
+ * Runs the ladder over every dialogue entry of `documents` and counts each fall-through class.
+ * Pure over the tables, so the sync (after it has written them) and a test call it identically.
+ */
+export function countSpeakerFallThroughs(
+  documents: Iterable<unknown>,
+  tables: EvidenceTables,
+): SpeakerLadderCounts {
+  const counts: SpeakerLadderCounts = {
+    lines: 0,
+    classes: {
+      'override-key-missing': 0,
+      'composition-unfilled': 0,
+      'persona-not-indexed': 0,
+    },
   };
+  for (const document of documents) {
+    for (const { entry } of dialogEntries(document)) {
+      counts.lines += 1;
+      for (const fallThrough of resolveSpeaker({ entry, tables }).fallThroughs) {
+        counts.classes[fallThrough] += 1;
+      }
+    }
+  }
+  return counts;
 }
 
 /* ------------------------------------------------------------------- dialogue */
@@ -663,6 +702,8 @@ export interface EvidenceOptions {
   db: Db;
   /** The D19 content-keyed index over the SpiralDB root (the quest file's reader). */
   index: SpiraldbIndex;
+  /** Lookups read once by the caller; read per call when absent. */
+  tables?: EvidenceTables;
 }
 
 /** The quest file's document, or `undefined` when the name has no file (a catalog-only row). */
@@ -761,8 +802,8 @@ function assemble(options: {
   if (document !== undefined) {
     for (const { path, entry } of dialogEntries(document)) {
       const line = dialogue.length;
-      const resolution = resolveSpeaker({ entry, line, tables });
-      if (resolution.missingPersona) {
+      const resolution = resolveSpeaker({ entry, tables });
+      if (resolution.fallThroughs.includes('persona-not-indexed')) {
         const seen = fallbacks.get(resolution.speaker.persona);
         if (seen === undefined) {
           fallbacks.set(resolution.speaker.persona, { count: 1, line });
@@ -853,7 +894,7 @@ export function questEvidenceByName(options: EvidenceOptions, name: string): Evi
     return { kind: 'unknown' };
   }
 
-  const tables = readTables(db);
+  const tables = options.tables ?? readEvidenceTables(db);
   const document = readDocument(options, name);
   const linked = db
     .prepare<[string], QuestIdRow>(
@@ -908,7 +949,7 @@ export function questEvidenceById(options: EvidenceOptions, questId: number): Ev
     return { kind: 'unknown' };
   }
 
-  const tables = readTables(db);
+  const tables = options.tables ?? readEvidenceTables(db);
   const catalogName = idRow.matched_quest_name;
   const catalog =
     catalogName === null

@@ -1,0 +1,70 @@
+# p7-15 item 3 sidecar: RAW `npm run sync` on a scratch DB
+# command: cp data/spiraldb-ui.db (via sqlite backup) <scratch>/after.db; SPIRALDB_UI_DB=<scratch>/after.db npm run sync
+# corpus: the owner fork /home/jason/Documents/git-projects/spiraldb (330 quest files, read-only); tree: Aurorium V_r806919.Wizard_1_610 (read-only)
+
+
+> spiraldb-ui@0.1.0 sync
+> tsx scripts/sync-names.ts
+
+[spiraldb-ui] sync database at <scratch>/after.db
+=== SpiralDB UI — friendly-name sync ===
+  status              : SUCCESS
+  revision            : V_r806919.Wizard_1_610
+  tree                : unpacked /tmp/spiraldb-wad-z86e58
+  items               : 79,835
+  spells              : 18,173
+  npcs                : 23,033
+  quests              : 330
+  zones               : 3,357
+  drop_tables         : 317
+  string_table        : 216,991
+  persona_index       : 23,003 persona object names
+  recipes             : 12,402
+  decks               : 599
+  manifest entries    : 137,423 ids
+  manifest ids used   : 121,041 rows keyed by the manifest (fallback 0)
+  id mismatches       : 0 rows (embedded m_templateID vs manifest)
+  missing manifest    : 0 rows
+  dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)
+  unpack / scan / write: 14.9 s / 8.7 s / 593 ms
+  total               : 30.1 s
+  sync_history        : success row written at 2026-09-30T06:38:58Z
+  catalog status      : OK
+  catalog rows        : 1,449 (merged 62, new 1,387)
+  quests rows         : 1,717 (has_definition = 1: 330)
+  catalog refs        : 2,855 rows kept (3,003 raw rows; 148 not inserted by the UNIQUE)
+  reference keys      : 2,796 distinct (quest, wad, entry, class, goal) with a NULL goal_name read as '' — SQLite's UNIQUE keeps a NULL goal_name distinct, so the table holds 59 more rows
+  quest ids           : 4,823 (linked 175; 115 links outside the text tier; 2 losing names on 2 ids)
+  links extracted     : 286 direct, 6 inferred, 1,157 none (the extractor's own count, catalog rows only)
+  links lost          : 1 direct + 1 inferred name(s) claimed an id another name owns; a loser keeps link_kind = none
+  id collisions       : NV-PostWL-MAIN-002 (direct) lost id 1608203 to LM-PostWL-MAIN-001; LM-HEAP-MAIN-009 (inferred) lost id 1524782 to LM-HEAP-MAIN-007
+  hold-out            : 78.0% (neighbour-midpoint; 168 cases, 131 hits) on /home/jason/Documents/git-projects/spiraldb
+  catalog timing      : 5.1 s extract + 335 ms read + 85 ms write
+  breadth status      : OK
+  zones               : old 1,241 (corpus ZoneTransfer) -> new 3,357 (WizZoneData 3,356, +1 corpus-only kept, 1,240 relabelled)
+  zones corpus-only   : Karamelle/KM_Z06_Mines
+  recipes             : 12,402 rows kept of 12,402 read (dropped 0: no manifest entry 0, duplicate id 0)
+  decks               : 599 rows kept of 599 read (dropped 0: no manifest entry 0, duplicate id 0, duplicate deck_name 0)
+  manifest join (D35) : recipes 12,366 exact + 36 repaired + 0 missing; decks 599 exact + 0 repaired + 0 missing (repair collisions 0)
+  breadth run         : gamedata.bin on /home/jason/Documents/git-projects/Aurorium/data/V_r806919.Wizard_1_610/Data/GameData — wad-scan extract: 3356 row(s) in 3511 ms (gamedata.bin 3356); deserialized 3356, failed 0; unreadable archives 0; out /tmp/spiraldb-ui-breadth-P8PENL/zones.ndjson
+  breadth run         : Decks/** on /tmp/spiraldb-ui-wadscope-sgMnTL — wad-scan extract: 599 row(s) in 322 ms (Decks/** 599); deserialized 599, failed 0; unreadable archives 0; out /tmp/spiraldb-ui-breadth-P8PENL/decks.ndjson
+  breadth run         : ObjectData/** on /tmp/spiraldb-ui-wadscope-7ulSzG — wad-scan extract: 12402 row(s) in 1373 ms (ObjectData/** 12402); deserialized 12402, failed 0; unreadable archives 0; out /tmp/spiraldb-ui-breadth-P8PENL/recipes.ndjson
+  speaker ladder      : 1,882 dialogue rows in 330 quest files (0 unreadable) — /home/jason/Documents/git-projects/spiraldb
+    override missing  : 0 of 1,882 rows (0.0%) — m_nameOverride names no string-table key
+    composition unfilled: 1,746 of 1,882 rows (92.8%) — m_nameSTKey has no format or the persona lacks a component
+    persona not indexed: 48 of 1,882 rows (2.6%) — raw persona string used as the speaker name
+
+real	0m31.354s
+user	0m32.175s
+sys	0m7.463s
+
+# probe behind the 92.8% (why composition falls through): persona_index rows by whether the composition has its components, over the 1,882 dialogue rows
+# (probe.ts: for every NPCDialogEntry with an m_nameSTKey, is the format in string_table, does the persona have a persona_index row, and does that row carry first_key / last_key)
+NPCFormats_First_Only #1:$NPC_FIRSTNAME$ DS-ACAD-NPC01_Persona {"object_name":"DS-ACAD-NPC01","template_id":126321,"first_key":null,"last_key":null,"title_key":null}
+NPCFormats_First_Only #1:$NPC_FIRSTNAME$ DS-ACAD-NPC01_Persona {"object_name":"DS-ACAD-NPC01","template_id":126321,"first_key":null,"last_key":null,"title_key":null}
+[
+  [ 'format/row/nofirst/nolast', 1708 ],
+  [ 'nostkey', 108 ],
+  [ 'format/norow/nofirst/nolast', 48 ],
+  [ 'format/row/first/last', 18 ]
+]

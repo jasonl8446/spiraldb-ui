@@ -12,7 +12,7 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  *
  * What this file proves, clause by clause of `p3-03-ac1`:
  *
- * - the spec's two columns (docs/spec-ui-design.md L296-298): `m_questName`
+ * - the spec's two columns (docs/spec-ui-design.md §"Tabbed Sections"): `m_questName`
  *   read-only, `m_questTitle` as a string-table key with the resolved string beside
  *   it, `m_questLevel` and `m_questRepeat` as number inputs, `m_mainline` /
  *   `m_isHidden` as checkboxes, `m_activityType` as a select, the two script inputs,
@@ -87,6 +87,14 @@ async function copyPanelDocument(page: Page): Promise<Record<string, unknown>> {
   return JSON.parse(text) as Record<string, unknown>;
 }
 
+/**
+ * p7-14 (D133): the quest page now lands on Overview, so every test that reads the Info editor
+ * opens the Info tab first. This click is the one added step, after each `goto`.
+ */
+async function openInfoTab(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Info', exact: true }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
 });
@@ -95,57 +103,62 @@ test.describe('the two-column form', () => {
   test('renders every field of spec L296-298 with its kind', async ({ page }) => {
     await mockQuestsApi(page, { names: { QuestTitle_1ED8D: 'Quest for Perfection' } });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const form = editor(page);
     await expect(form).toBeVisible();
 
     // Left column, in the spec's order.
-    const name = form.getByLabel('m_questName', { exact: true });
+    const name = form.getByLabel('Quest (m_questName)', { exact: true });
     await expect(name).toHaveValue('DS-ACAD1-C01-001');
     await expect(name).toHaveAttribute('readonly', '');
 
-    const title = form.getByLabel('m_questTitle', { exact: true });
+    const title = form.getByLabel('Quest title (m_questTitle)', { exact: true });
     await expect(title).toHaveValue('QuestTitle_1ED8D');
     // The resolved string sits beside the key (the lookup is asserted on its own below).
     await expect(form.getByText('Quest for Perfection')).toBeVisible();
 
-    await expect(form.getByLabel('m_questLevel', { exact: true })).toHaveAttribute(
+    await expect(form.getByLabel('Quest level (m_questLevel)', { exact: true })).toHaveAttribute(
       'type',
       'number',
     );
-    await expect(form.getByLabel('m_questLevel', { exact: true })).toHaveValue('7');
+    await expect(form.getByLabel('Quest level (m_questLevel)', { exact: true })).toHaveValue('7');
 
-    await expect(form.getByLabel('m_mainline', { exact: true })).toHaveAttribute(
+    await expect(form.getByLabel('Mainline (m_mainline)', { exact: true })).toHaveAttribute(
       'type',
       'checkbox',
     );
-    await expect(form.getByLabel('m_mainline', { exact: true })).toBeChecked();
-    await expect(form.getByLabel('m_isHidden', { exact: true })).toHaveAttribute(
+    await expect(form.getByLabel('Mainline (m_mainline)', { exact: true })).toBeChecked();
+    await expect(form.getByLabel('Hidden (m_isHidden)', { exact: true })).toHaveAttribute(
       'type',
       'checkbox',
     );
-    await expect(form.getByLabel('m_isHidden', { exact: true })).not.toBeChecked();
+    await expect(form.getByLabel('Hidden (m_isHidden)', { exact: true })).not.toBeChecked();
 
-    await expect(form.getByLabel('m_questRepeat', { exact: true })).toHaveAttribute(
+    await expect(form.getByLabel('Repeatability (m_questRepeat)', { exact: true })).toHaveAttribute(
       'type',
       'number',
     );
-    await expect(form.getByLabel('m_questRepeat', { exact: true })).toHaveValue('0');
+    await expect(form.getByLabel('Repeatability (m_questRepeat)', { exact: true })).toHaveValue(
+      '0',
+    );
 
-    const activity = form.getByLabel('m_activityType', { exact: true });
+    const activity = form.getByLabel('Activity type (m_activityType)', { exact: true });
     await expect(activity).toHaveJSProperty('tagName', 'SELECT');
     // The fixture carries no `m_activityType`: the select falls back to the unset
     // option rather than inventing `ACTIVITY_NotActivity`.
     await expect(activity).toHaveValue('');
 
     // Right column.
-    await expect(form.getByLabel('m_onStartQuestScript', { exact: true })).toBeVisible();
-    await expect(form.getByLabel('m_onEndQuestScript', { exact: true })).toBeVisible();
-    await expect(form.getByLabel('m_clientTags', { exact: true })).toBeVisible();
+    await expect(
+      form.getByLabel('Start script (m_onStartQuestScript)', { exact: true }),
+    ).toBeVisible();
+    await expect(form.getByLabel('End script (m_onEndQuestScript)', { exact: true })).toBeVisible();
+    await expect(form.getByLabel('Client Tags (m_clientTags)', { exact: true })).toBeVisible();
     // The fixture carries `m_clientTags: null` (as all 328 corpus files do — re-measured at
     // the owner's current baseline: 328 files, 328 `null`, 0 absent, 0 any other value), so
     // the tag input is empty rather than pre-filled.
-    await expect(form.getByLabel('m_clientTags', { exact: true })).toHaveValue('');
+    await expect(form.getByLabel('Client Tags (m_clientTags)', { exact: true })).toHaveValue('');
 
     // The spec's read-only timestamps (L298) — the browse row's own `modified_at`.
     await expect(form.getByText('Modified')).toBeVisible();
@@ -154,10 +167,13 @@ test.describe('the two-column form', () => {
   test('the two columns are laid out side by side above md', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
-    const nameBox = await editor(page).getByLabel('m_questName', { exact: true }).boundingBox();
+    const nameBox = await editor(page)
+      .getByLabel('Quest (m_questName)', { exact: true })
+      .boundingBox();
     const scriptBox = await editor(page)
-      .getByLabel('m_onStartQuestScript', { exact: true })
+      .getByLabel('Start script (m_onStartQuestScript)', { exact: true })
       .boundingBox();
     expect(nameBox).not.toBeNull();
     expect(scriptBox).not.toBeNull();
@@ -173,6 +189,7 @@ test.describe('the Advanced section', () => {
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const details = advanced(page);
     await expect(details).toHaveCount(1);
@@ -203,13 +220,16 @@ test.describe('the Advanced section', () => {
 
     // Each is editable, and one is exercised here: the fixture has no
     // `m_noQuestHelper`, so checking it writes the key (and nothing else).
-    await details.getByLabel('m_noQuestHelper', { exact: true }).check();
-    await expect(details.getByLabel('m_noQuestHelper', { exact: true })).toBeChecked();
+    await details.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }).check();
+    await expect(
+      details.getByLabel('No Quest Helper (m_noQuestHelper)', { exact: true }),
+    ).toBeChecked();
   });
 
   test('does not inject a key merely by opening the section', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     const before = await (async () => {
       await openJson(page);
       return copyPanelDocument(page);
@@ -229,13 +249,14 @@ test.describe('the string-table title lookup', () => {
       names: { QuestTitle_1ED8D: 'Quest for Perfection' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await expect(editor(page).getByText('Quest for Perfection')).toBeVisible();
     // The key itself stays visible and editable — this is a lookup display, not a
     // replacement of the stored value.
-    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).toHaveValue(
-      'QuestTitle_1ED8D',
-    );
+    await expect(
+      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
+    ).toHaveValue('QuestTitle_1ED8D');
     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
   });
 
@@ -243,6 +264,7 @@ test.describe('the string-table title lookup', () => {
     // `{}` = every key 404s, which is the corpus's own fallback path.
     const recorded = await mockQuestsApi(page, { names: {} });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await expect(editor(page).getByText('QuestTitle_1ED8D', { exact: true })).toBeVisible();
     expect(recorded.nameLookups).toEqual(['QuestTitle_1ED8D']);
@@ -252,10 +274,9 @@ test.describe('the string-table title lookup', () => {
     // goal-logic entry does not set `m_completeQuest`, which the validation engine reports as
     // a blocking finding outside the editor. The narrow, still-strong fact is that the title
     // control is clean — no `aria-invalid`, no inline message list of its own.
-    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).not.toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
+    await expect(
+      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
+    ).not.toHaveAttribute('aria-invalid', 'true');
     await expect(editor(page).getByRole('list', { name: 'Validation messages' })).toHaveCount(0);
     await expect(editor(page).getByRole('alert')).toHaveCount(0);
   });
@@ -265,8 +286,11 @@ test.describe('the string-table title lookup', () => {
       detail: { ...MOCK_QUEST, m_questTitle: '' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
-    await expect(editor(page).getByLabel('m_questTitle', { exact: true })).toHaveValue('');
+    await expect(
+      editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }),
+    ).toHaveValue('');
     // The load-bearing guard: `/api/names/strings/` is the LIST route and answers
     // 24,077,358 bytes (measured against the live database), so the client must not
     // ask at all.
@@ -280,13 +304,14 @@ test.describe('edits and the JSON panel', () => {
   }) => {
     await mockQuestsApi(page, { names: { QuestTitle_1ED8D: 'Quest for Perfection' } });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     await openJson(page);
     const before = await copyPanelDocument(page);
     expect(before.m_questLevel).toBe(7);
 
     // No reload, no refetch: the same page instance.
-    await editor(page).getByLabel('m_questLevel', { exact: true }).fill('4242');
+    await editor(page).getByLabel('Quest level (m_questLevel)', { exact: true }).fill('4242');
 
     const after = await copyPanelDocument(page);
     expect(after.m_questLevel).toBe(4242);
@@ -298,10 +323,11 @@ test.describe('edits and the JSON panel', () => {
   test('a checkbox edit writes a boolean and leaves the other keys alone', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     await openJson(page);
     const before = await copyPanelDocument(page);
 
-    await editor(page).getByLabel('m_isHidden', { exact: true }).check();
+    await editor(page).getByLabel('Hidden (m_isHidden)', { exact: true }).check();
     const after = await copyPanelDocument(page);
 
     expect(after.m_isHidden).toBe(true);
@@ -311,14 +337,17 @@ test.describe('edits and the JSON panel', () => {
   test('a tag edit writes an array, and clearing it deletes the key', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     await openJson(page);
 
-    await editor(page).getByLabel('m_clientTags', { exact: true }).fill('event,  seasonal');
+    await editor(page)
+      .getByLabel('Client Tags (m_clientTags)', { exact: true })
+      .fill('event,  seasonal');
     let doc = await copyPanelDocument(page);
     expect(doc.m_clientTags).toStrictEqual(['event', 'seasonal']);
 
     // Emptying a field that exists DELETES the key (D57: never write `''`/undefined).
-    await editor(page).getByLabel('m_clientTags', { exact: true }).fill('');
+    await editor(page).getByLabel('Client Tags (m_clientTags)', { exact: true }).fill('');
     doc = await copyPanelDocument(page);
     expect('m_clientTags' in doc).toBe(false);
   });
@@ -328,15 +357,16 @@ test.describe('edits and the JSON panel', () => {
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
     await openJson(page);
 
     // `m_questTitle` exists in the fixture.
-    await editor(page).getByLabel('m_questTitle', { exact: true }).fill('');
+    await editor(page).getByLabel('Quest title (m_questTitle)', { exact: true }).fill('');
     let doc = await copyPanelDocument(page);
     expect('m_questTitle' in doc).toBe(false);
 
     // `m_onStartQuestScript` does not: clearing it must not create it.
-    await editor(page).getByLabel('m_onStartQuestScript', { exact: true }).fill('');
+    await editor(page).getByLabel('Start script (m_onStartQuestScript)', { exact: true }).fill('');
     doc = await copyPanelDocument(page);
     expect('m_onStartQuestScript' in doc).toBe(false);
 
@@ -351,15 +381,16 @@ test.describe('edits and the JSON panel', () => {
       detail: { ...MOCK_QUEST, m_activityType: 'ACTIVITY_Crafting' },
     });
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
-    const select = editor(page).getByLabel('m_activityType', { exact: true });
+    const select = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
     await expect(select).toHaveValue('ACTIVITY_Crafting');
     // The authoritative six (Imcodec's generated `ActivityType` enum).
     const options = await select.locator('option').allTextContents();
     expect(options).toHaveLength(6);
-    expect(options).toContain('Not Activity');
-    expect(options).toContain('Crafting');
-    expect(options).toContain('Pet');
+    expect(options).toContain('Not an activity (ACTIVITY_NotActivity)');
+    expect(options).toContain('Crafting activity (ACTIVITY_Crafting)');
+    expect(options).toContain('Pet activity (ACTIVITY_Pet)');
 
     // A value the enum has never heard of stays selectable and selected — real
     // content is never silently rewritten to a listed option.
@@ -367,7 +398,8 @@ test.describe('edits and the JSON panel', () => {
       detail: { ...MOCK_QUEST, m_activityType: 'ACTIVITY_FutureThing' },
     });
     await page.reload();
-    const selectAgain = editor(page).getByLabel('m_activityType', { exact: true });
+    await openInfoTab(page);
+    const selectAgain = editor(page).getByLabel('Activity type (m_activityType)', { exact: true });
     await expect(selectAgain).toHaveValue('ACTIVITY_FutureThing');
     await expect(selectAgain.locator('option')).toHaveCount(7);
     await expect(selectAgain.locator('option:checked')).toHaveText(
@@ -382,6 +414,7 @@ test.describe('the detail page’s tabs are all live editors', () => {
   }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     // The Info tab is the editor…
     await expect(editor(page).locator('input').first()).toBeVisible();
@@ -426,6 +459,7 @@ test.describe('the detail page’s tabs are all live editors', () => {
   test('the header Edit button is the real view/edit toggle (story p3-10)', async ({ page }) => {
     await mockQuestsApi(page);
     await page.goto('/quests/DS-ACAD1-C01-001');
+    await openInfoTab(page);
 
     const edit = main_(page).getByRole('button', { name: 'Edit' });
     // Until p3-10 this asserted the opposite (`toBeDisabled()` plus the "Editing arrives in

@@ -157,10 +157,26 @@ console.log(
 // The branch decision is the service's (`resolveScaffoldBranch`), not this file's: it follows the
 // checked-out branch when none is named, refuses a named branch that is not checked out (which
 // would be created from main and strand the current one), and moves the setting when it disagrees.
+// Whether `--branch` already exists: on `main` only a branch that does not exist yet may be named
+// (it is then created from main); an existing one would be checked out over main's tree (D195).
+let requestedExists: boolean | undefined;
+if (args.branch !== undefined && args.branch.trim() !== '' && currentBranch !== '') {
+  try {
+    execFileSync(
+      'git',
+      ['-C', root, 'rev-parse', '--verify', '--quiet', `refs/heads/${args.branch.trim()}`],
+      { stdio: 'ignore' },
+    );
+    requestedExists = true;
+  } catch {
+    requestedExists = false;
+  }
+}
 const decision = resolveScaffoldBranch({
   settingsBranch: storedBranch,
   currentBranch,
   requested: args.branch,
+  requestedExists,
 });
 if (decision.kind === 'refuse') {
   console.error(`[spiraldb-ui] ${decision.message}`);

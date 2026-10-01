@@ -1,3 +1,5 @@
+import { fieldLabel } from '@shared/glossary';
+
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { goalName, NO_GOALS_TEXT } from '../../lib/quest-goals';
 import {
@@ -9,6 +11,8 @@ import {
   TALLY_RESULTS_PATH,
 } from '../../lib/quest-results';
 import ResultListEditor from '../shared/ResultListEditor';
+import TermHelp from '../TermHelp';
+import TermLabel from '../TermLabel';
 
 /**
  * `QuestResultsEditor` — the Results tab's body (plan task 3.7, story p3-07;
@@ -54,9 +58,9 @@ export interface QuestResultsEditorProps {
 /** The panel's accessible name (the tier-1 spec scopes to it). */
 export const RESULTS_EDITOR_LABEL = 'Quest results editor';
 
-/** The two quest-level wrappers' accessible names. */
-export const START_RESULTS_LABEL = 'Start results';
-export const END_RESULTS_LABEL = 'End results';
+/** The two quest-level wrappers' accessible names — the glossary's labels (PR #14 review 7). */
+export const START_RESULTS_LABEL = fieldLabel('m_startResults');
+export const END_RESULTS_LABEL = fieldLabel('m_endResults');
 
 /** The per-goal section's accessible name (each goal's lists are named after the goal). */
 export const GOAL_RESULTS_SECTION_LABEL = 'Goal results';
@@ -97,8 +101,12 @@ export default function QuestResultsEditor({ state }: QuestResultsEditorProps): 
 
       <section aria-label={GOAL_RESULTS_SECTION_LABEL} className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-xs text-zinc-400">
-            {`m_goals[].${COMPLETE_RESULTS_PATH} / m_goals[].${ACTIVATE_RESULTS_PATH}`}
+          <h2
+            className="text-xs text-zinc-400"
+            data-path={`m_goals[].${COMPLETE_RESULTS_PATH} / m_goals[].${ACTIVATE_RESULTS_PATH}`}
+          >
+            <TermLabel term={{ field: COMPLETE_RESULTS_PATH }} /> /{' '}
+            <TermLabel term={{ field: ACTIVATE_RESULTS_PATH }} />
           </h2>
           <p className="text-xs text-zinc-400">{GOAL_RESULTS_NOTE}</p>
         </div>
@@ -162,7 +170,12 @@ function Slot({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
-        <h2 className="font-mono text-xs text-zinc-400">{fieldKey}</h2>
+        <div className="flex items-center gap-1">
+          <h2 className="text-xs text-zinc-400">
+            <TermLabel term={{ field: fieldKey }} />
+          </h2>
+          <TermHelp term={{ field: fieldKey }} />
+        </div>
         <p className="text-xs text-zinc-400">{note}</p>
       </div>
       <ResultListEditor state={state} path={path} label={label} />

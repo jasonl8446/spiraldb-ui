@@ -1,0 +1,127 @@
+$ npm run test:ui -- tests/ui/a11y-keyboard.spec.ts -g "the dropzone button opens the file chooser with Enter" --repeat-each=10
+    ✓   2 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.7s)
+    ✓   1 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓   3 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓   4 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓   6 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓   5 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓   7 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓  10 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.8s)
+    ✓   9 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.9s)
+    ✓   8 [chromium] › tests/ui/a11y-keyboard.spec.ts:221:3 › AC#8 — the four flows, keyboard only › extract → save: the dropzone button opens the file chooser with Enter (2.9s)
+    10 passed (4.5s)
+rc=0
+
+$ npm run test:ui -- tests/ui/extraction.spec.ts -g "Save All lists the names it would overwrite" --repeat-each=10
+    ✓   2 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.3s)
+    ✓   1 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.4s)
+    ✓   3 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.4s)
+    ✓   6 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.4s)
+    ✓   8 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.4s)
+    ✓   5 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.5s)
+    ✓   4 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.5s)
+    ✓   7 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.5s)
+    ✓   9 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.5s)
+    ✓  10 [chromium] › tests/ui/extraction.spec.ts:987:3 › overwrite confirmation (gap A) › Save All lists the names it would overwrite, and POSTs only after the confirmation (3.5s)
+    10 passed (5.2s)
+rc=0
+
+$ npm run test:ui -- tests/ui/extraction.spec.ts -g "Save All shows no overwrite wording when every extracted quest is new" --repeat-each=10
+    ✓   1 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.5s)
+    ✓   2 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.5s)
+    ✓   4 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.5s)
+    ✓   3 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.6s)
+    ✓   7 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.5s)
+    ✓   5 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.6s)
+    ✓  10 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.6s)
+    ✓   6 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.6s)
+    ✓   8 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.6s)
+    ✓   9 [chromium] › tests/ui/extraction.spec.ts:1031:3 › overwrite confirmation (gap A) › Save All shows no overwrite wording when every extracted quest is new (2.6s)
+    10 passed (4.3s)
+rc=0
+
+$ npm run test:ui -- tests/ui/extraction.spec.ts -g "Save Selected on a new quest keeps its one-click behaviour" --repeat-each=10
+    ✓   1 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.5s)
+    ✓   2 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓   5 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓   4 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓   3 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.8s)
+    ✓   6 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓   7 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓   9 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓   8 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    ✓  10 [chromium] › tests/ui/extraction.spec.ts:1083:3 › overwrite confirmation (gap A) › Save Selected on a new quest keeps its one-click behaviour (2.7s)
+    10 passed (4.4s)
+rc=0
+
+$ npm run test:ui -- tests/ui/extraction.spec.ts -g "a failed list read disables the Save All confirm" --repeat-each=10
+  > PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/extraction.spec.ts -g a failed list read disables the Save All confirm --repeat-each=10 --reporter=list
+    ✓   2 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (2.8s)
+    ✓   1 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (2.9s)
+    ✓   3 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.0s)
+    ✓   4 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.0s)
+    ✓   5 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.1s)
+    ✓  10 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.0s)
+    ✓   7 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.1s)
+    ✓   6 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.1s)
+    ✓   9 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.1s)
+    ✓   8 [chromium] › tests/ui/extraction.spec.ts:1118:3 › overwrite confirmation (gap A) › a failed list read disables the Save All confirm (3.2s)
+    10 passed (4.8s)
+rc=0
+
+$ npm run test:ui -- tests/ui/extraction.spec.ts -g "Save Selected saves only the selected quest" --repeat-each=10
+    ✓   1 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   2 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   3 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   5 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   4 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   6 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   7 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   8 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.8s)
+    ✓   9 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.9s)
+    ✓  10 [chromium] › tests/ui/extraction.spec.ts:820:3 › results phase › Save Selected saves only the selected quest (2.9s)
+    10 passed (4.6s)
+rc=0
+
+$ npm run test:ui -- tests/ui/shell.spec.ts -g "a nested route highlights exactly one item" --repeat-each=10
+    ✓   1 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (2.9s)
+    ✓   2 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.0s)
+    ✓   4 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.2s)
+    ✓   3 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.4s)
+    ✓   5 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.3s)
+    ✓   7 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.4s)
+    ✓   8 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.3s)
+    ✓  10 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.3s)
+    ✓   6 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.4s)
+    ✓   9 [chromium] › tests/ui/shell.spec.ts:809:3 › sidebar navigation › a nested route highlights exactly one item — itself, or the list item that owns it (3.4s)
+    10 passed (5.1s)
+rc=0
+
+$ npm run test:ui -- tests/ui/a11y.spec.ts -g "the server reads exactly the corpus on disk at the path it reports" --repeat-each=10
+    ✓   1 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (614ms)
+    ✓  10 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (884ms)
+    ✓   4 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.5s)
+    ✓   8 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.8s)
+    ✓   6 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (2.3s)
+    ✓   3 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (2.8s)
+    ✓   5 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (3.1s)
+    ✓   7 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (3.6s)
+    ✓   9 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (4.0s)
+    ✓   2 [chromium] › tests/ui/a11y.spec.ts:713:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (4.7s)
+    10 passed (6.1s)
+rc=0
+
+$ npm run test:ui -- tests/ui/quests-goals-editor.spec.ts -g "a pointer drag with the mouse moves a goal too" --repeat-each=10
+    ✓   1 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.4s)
+    ✓   2 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.5s)
+    ✓   5 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.4s)
+    ✓   3 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.5s)
+    ✓   4 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.5s)
+    ✓   7 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.5s)
+    ✓   8 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.5s)
+    ✓   9 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.6s)
+    ✓   6 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.6s)
+    ✓  10 [chromium] › tests/ui/quests-goals-editor.spec.ts:565:3 › reordering › a pointer drag with the mouse moves a goal too (3.7s)
+    10 passed (5.3s)
+rc=0
+

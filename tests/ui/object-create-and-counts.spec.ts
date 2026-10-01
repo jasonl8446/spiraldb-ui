@@ -435,4 +435,30 @@ test.describe('p4-09 ac3 — create an entry from the family list page', () => {
     await expect(dialog.getByText('Will create npcinventory_87112.json')).toBeVisible();
     expect(recorded.posts).toEqual([]);
   });
+
+  test('the dialog names the typed key when the names table knows it, and says nothing when not', async ({
+    page,
+  }) => {
+    // D105/P6-16: a single-id lookup (`GET /api/names/npcs/:id`), so a create is one key, never the
+    // 23k-row list. `87112` is answered, `999999` is the expected 404 of an engine key.
+    const npcInventory = FAMILIES[1] as FamilyFixture;
+    await mockFamily(page, npcInventory);
+    await page.route('**/api/names/npcs/*', (route) => {
+      const id = route.request().url().split('/').pop() ?? '';
+      return id === '87112'
+        ? route.fulfill({ json: { template_id: 87112, name: 'Ugo Kalahad' } })
+        : route.fulfill({ status: 404, json: { error: `no name for ${id}` } });
+    });
+    await page.goto(npcInventory.routePath);
+    await page.getByRole('button', { name: npcInventory.newButton, exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    const key = dialog.getByLabel(npcInventory.keyLabel);
+
+    await key.fill('87112');
+    await expect(dialog.getByText('Known as Ugo Kalahad (87112)')).toBeVisible();
+
+    await key.fill('999999');
+    await expect(dialog.getByText('Will create npcinventory_999999.json')).toBeVisible();
+    await expect(dialog.getByText(/Known as/)).toHaveCount(0);
+  });
 });

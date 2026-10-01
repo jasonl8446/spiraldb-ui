@@ -28,7 +28,7 @@ import {
  * Story p2-05 acceptance for the git layer: the D14 dirty guard (fail closed, the
  * actionable message, never a stash), the session branch (`content/YYYY-MM-DD`
  * created from main's HEAD when absent, `settings.git_branch` persisted), the
- * exact commit message/author of D13/docs/spec-data-model.md L216-232, and N
+ * exact commit message/author of D13/docs/spec-data-model.md §"Git Branch Strategy", and N
  * sequential commits for N saves.
  *
  * Every repository is a throwaway under `data/__test-scratch__/` with a per-command
@@ -121,7 +121,7 @@ describe('the dirty-repo guard (D14)', () => {
   });
 });
 
-describe('the session branch (docs/spec-data-model.md L206-214)', () => {
+describe('the session branch (docs/spec-data-model.md §"Git Branch Strategy")', () => {
   const DATE = new Date(2026, 8, 26, 10, 30, 0);
 
   it('derives content/YYYY-MM-DD from the local date', () => {
@@ -231,7 +231,7 @@ describe('the session branch (docs/spec-data-model.md L206-214)', () => {
   });
 });
 
-describe('committing one saved object (D13, docs/spec-data-model.md L216-232)', () => {
+describe('committing one saved object (D13, docs/spec-data-model.md §"Git Branch Strategy")', () => {
   const author = 'P2-05 Tester';
 
   it('builds the exact header, with notes as the body when given', () => {

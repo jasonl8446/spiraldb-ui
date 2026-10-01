@@ -22,8 +22,10 @@ import {
   SEARCH_NOT_LINKED_SUFFIX,
   SEARCH_TRIGGER_LABEL,
   truncatedSearchMessage,
+  unresolvedSearchCount,
   unresolvedSearchMessage,
 } from '../../client/src/lib/search';
+import { npcPagePath } from '../../client/src/lib/npcs';
 
 /**
  * Story p5-02 deliverable D2's pure half — `client/src/lib/search.ts`
@@ -125,6 +127,47 @@ describe('searchResultHref — the existing D4 mapping, not a second one', () =>
     expect(
       searchResultHref(row({ object_type: 'global_registry', object_key: 'GlobalRegistryValues' })),
     ).toBeNull();
+  });
+});
+
+describe('searchResultHref — the NPC group opens /npcs/:npcId (task 7.14, D144)', () => {
+  const npc = row({
+    object_type: null,
+    object_key: null,
+    label: 'Gretta Darkkettle',
+    name: 'Gretta Darkkettle',
+    source_id: 'WC-NPCs_00000003',
+    status: null,
+    matched_on: 'name',
+    aliases: ['Gretta', 'Gretta Darkkettle'],
+  });
+
+  it('links an npc row by its source id, in either form the endpoint accepts', () => {
+    expect(searchResultHref(npc, 'npc')).toBe('/npcs/WC-NPCs_00000003');
+    expect(searchResultHref({ ...npc, source_id: '44169' }, 'npc')).toBe('/npcs/44169');
+    expect(npcPagePath('Persona,First')).toBe('/npcs/Persona%2CFirst');
+  });
+
+  it('still answers null for an npc row with no id, and for every other routeless group', () => {
+    expect(searchResultHref({ ...npc, source_id: null }, 'npc')).toBeNull();
+    expect(searchResultHref({ ...npc, source_id: '' }, 'npc')).toBeNull();
+    expect(searchResultHref(npc, 'item')).toBeNull();
+    expect(searchResultHref(npc)).toBeNull();
+  });
+
+  it('takes a linked npc row back out of the endpoint’s unresolved count', () => {
+    const item = row({ object_type: null, object_key: null, source_id: '4', status: null });
+    const both = response({
+      total: 2,
+      unresolved: 2,
+      groups: [
+        { type: 'item', label: 'Items', results: [item] },
+        { type: 'npc', label: 'NPCs', results: [npc] },
+      ],
+    });
+    // The item row is still "not linked"; the npc row is not.
+    expect(unresolvedSearchCount(both)).toBe(1);
+    expect(unresolvedSearchCount(response())).toBe(0);
   });
 });
 

@@ -22,8 +22,14 @@ export function notifySuccess(message: string): void {
   toast.success(message, { duration: TOAST_DURATIONS.success });
 }
 
-export function notifyInfo(message: string): void {
-  toast.info(message, { duration: TOAST_DURATIONS.info });
+/** Returns the toast's id, so a notice about a state that has ended can be taken down early. */
+export function notifyInfo(message: string): string | number {
+  return toast.info(message, { duration: TOAST_DURATIONS.info });
+}
+
+/** Takes a toast down before its duration ends (see `hooks/useExtraction.ts`, D183). */
+export function dismissNotification(id: string | number): void {
+  toast.dismiss(id);
 }
 
 export function notifyError(message: string): void {
@@ -54,6 +60,26 @@ export function notifyErrorWithRetry(message: string, onRetry: () => void): void
   });
 }
 
+/**
+ * An error toast carrying one recovery action — a draft's first save refused because its file now
+ * exists offers to open that file (PR #14 review 3). Same duration as {@link notifyError}.
+ */
+export function notifyErrorWithAction(message: string, label: string, onClick: () => void): void {
+  toast.error(message, {
+    duration: TOAST_DURATIONS.error,
+    closeButton: true,
+    action: { label, onClick },
+  });
+}
+
 export function notifyWarning(message: string): void {
   toast.warning(message, { duration: TOAST_WARNING_DURATION_MS });
+}
+
+/**
+ * A success toast carrying one navigation action — the Rebuild drafts toast's link to `/drafts`
+ * (task 7.6, spec-ui-design "Rebuild Drafts"). Same duration as {@link notifySuccess}.
+ */
+export function notifySuccessWithAction(message: string, label: string, onClick: () => void): void {
+  toast.success(message, { duration: TOAST_DURATIONS.success, action: { label, onClick } });
 }

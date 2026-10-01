@@ -391,7 +391,7 @@ describe('reading a result wrapper', () => {
     const start = readResultCards([START_RESULTS_PATH], doc.m_startResults);
     expect(start).toHaveLength(1);
     expect(start[0]?.address).toBe('m_startResults.m_results[0]');
-    expect(start[0]?.title).toBe('ResDropTable');
+    expect(start[0]?.title).toBe('Reward: drop table (ResDropTable)');
     expect(start[0]?.fields.map((field) => field.spec.key)).toEqual(['m_tableName', 'm_maxRolls']);
     expect(start[0]?.fields.every((field) => field.present)).toBe(true);
 

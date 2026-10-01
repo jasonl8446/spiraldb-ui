@@ -71,7 +71,8 @@ const GOAL_A = '1_WizardQuestGoals_GotoZone';
 const GOAL_B = '2_WizardQuestGoals_KillMobs';
 
 /** The ARIA roles the 14 offered classes' fields render as. */
-type ControlRole = 'combobox' | 'spinbutton' | 'textbox' | 'checkbox' | 'region' | 'group';
+type ControlRole =
+  'combobox' | 'spinbutton' | 'textbox' | 'checkbox' | 'region' | 'group' | 'status';
 
 interface TypeCase {
   /** The class's short name — the selector's value and the card's title. */
@@ -201,7 +202,8 @@ const TYPES: TypeCase[] = [
       ['m_destinationZone', 'combobox'],
       ['m_exitTeleporter', 'spinbutton'],
       ['m_teleporterTag', 'spinbutton'],
-      ['m_teleportType', 'combobox'],
+      // A single-legal-value enum renders as read-only text (task 7.11), an `<output>`.
+      ['m_teleportType', 'status'],
       ['m_transitionID', 'spinbutton'],
     ],
   },
@@ -309,9 +311,74 @@ function list(page: Page, label: string): Locator {
   return editor(page).getByRole('region', { name: label, exact: true });
 }
 
-/** A card by its **full** accessible name (`ResDropTable m_startResults.m_results[0]`). */
+/** A class's glossary pair (task 7.9): a card's title, and a type selector option's text. */
+const TITLES: Record<string, string> = {
+  ResDropTable: 'Reward: drop table (ResDropTable)',
+  ResModifyEntry: 'Modify quest registry entry (ResModifyEntry)',
+  ResAddDynaMod: 'Add or remove dynamic modifier (ResAddDynaMod)',
+  ResLearnSpell: 'Teach spell (ResLearnSpell)',
+  ResPostEvent: 'Post game event (ResPostEvent)',
+  ResAddHealth: 'Restore health (ResAddHealth)',
+  ResAddMana: 'Restore mana (ResAddMana)',
+  ResAddSpell: 'Add spell to spellbook (ResAddSpell)',
+  ResDespawn: 'Despawn NPC or object (ResDespawn)',
+  ResDrawHand: 'Draw hand (ResDrawHand)',
+  ResGiveSpell: 'Give spell to NPC (ResGiveSpell)',
+  ResPlaySound: 'Play sound (ResPlaySound)',
+  ResTeleport: 'Teleport player (ResTeleport)',
+  ResWait: 'Wait (ResWait)',
+  ReqSchoolOfFocus: 'Requires school of focus (ReqSchoolOfFocus)',
+};
+
+/**
+ * A card by its **exact** document address (its `data-path`; task 7.9 keeps a path out of every
+ * label) and its class. Task 7.10 titles a card by meaning: the class's glossary label, then its
+ * operand (`Teach spell: Fireball`, `Reward: drop table Pesky Pirates`), so the accessible name
+ * starts with the label, followed by `:` or a space.
+ */
 function card(scope: Locator, title: string, address: string): Locator {
-  return scope.getByRole('article', { name: `${title} ${address}`, exact: true });
+  const label = (TITLES[title] ?? title).replace(/ \(\w+\)$/, '');
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return scope
+    .getByRole('article', { name: new RegExp(`^${escaped}(?::| )`) })
+    .and(scope.locator(`[data-path="${address}"]`));
+}
+
+/** The glossary pair of each field key a card's control is named by (task 7.9). */
+const PAIRS: Record<string, string> = {
+  m_blocking: 'Blocking (m_blocking)',
+  m_despawnEffect: 'Despawn effect (m_despawnEffect)',
+  m_destinationLoc: 'Destination location (m_destinationLoc)',
+  m_destinationZone: 'Destination Zone (m_destinationZone)',
+  m_dynaModClientTag: 'Modifier client tag (m_dynaModClientTag)',
+  m_dynaModRemove: 'Remove modifier (m_dynaModRemove)',
+  m_dynaModState: 'Modifier state (m_dynaModState)',
+  m_entryName: 'Entry (m_entryName)',
+  m_eventName: 'Event name (m_eventName)',
+  m_exitTeleporter: 'Exit teleporter (m_exitTeleporter)',
+  m_isQuestRegistry: 'Quest Registry (m_isQuestRegistry)',
+  m_maxRolls: 'Max rolls (m_maxRolls)',
+  m_questName: 'Quest (m_questName)',
+  m_reinteractTime: 'Re-interact time (m_reinteractTime)',
+  m_requirements: 'Requirements (m_requirements)',
+  m_router: 'Sound router (m_router)',
+  m_secondsToWait: 'Seconds to wait (m_secondsToWait)',
+  m_soundName: 'Sound (m_soundName)',
+  m_spawnID: 'Spawn ID (m_spawnID)',
+  m_spellID: 'Spell (m_spellID)',
+  m_tableName: 'Drop table (m_tableName)',
+  m_teleportType: 'Teleport type (m_teleportType)',
+  m_teleporterTag: 'Teleporter tag (m_teleporterTag)',
+  m_templateID: 'Template ID (m_templateID)',
+  m_transitionID: 'Transition ID (m_transitionID)',
+  m_useQuestAsOriginator: 'Quest is the originator (m_useQuestAsOriginator)',
+  m_value: 'Value (m_value)',
+  m_zoneName: 'Zone name (m_zoneName)',
+};
+
+/** A start result's address in words — how an accessible name reads `m_startResults.m_results[i]`. */
+function startWords(index: number): string {
+  return `Start results › Results ${index + 1}`;
 }
 
 /** The Add Result selector of one list. */
@@ -325,6 +392,22 @@ function addButton(scope: Locator): Locator {
 }
 
 /** Adds a result of {@link type} to {@link scope}. */
+/**
+ * Opens a card's Advanced disclosure unless it opened itself (task 7.11: one holding a value that
+ * differs from the default is already open, and a bare click would close it). A card with no
+ * advanced field has none.
+ */
+async function openAdvanced(cardLoc: Locator): Promise<void> {
+  const disclosure = cardLoc.getByTestId('advanced-disclosure');
+  if ((await disclosure.count()) === 0) {
+    return;
+  }
+  if (!(await disclosure.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await disclosure.locator('summary').click();
+  }
+  await expect(disclosure).toHaveAttribute('open', '');
+}
+
 async function addResult(scope: Locator, type: string): Promise<void> {
   await addSelector(scope).selectOption(type);
   await addButton(scope).click();
@@ -457,7 +540,7 @@ test.describe('the result type selector', () => {
     const options = await addSelector(list(page, 'Start results'))
       .locator('option')
       .allTextContents();
-    expect(options).toEqual(TYPES.map((type) => type.name));
+    expect(options).toEqual(TYPES.map((type) => TITLES[type.name]));
     expect(options).toHaveLength(14);
     // The corpus's 15th class is *known* — `ResActorDialog`, 5 nodes at the 328-quest
     // baseline, every one `{$type, m_dialog}` — and it *renders* (the unit suite's
@@ -466,7 +549,7 @@ test.describe('the result type selector', () => {
     // `{$type}` with no dialog block, a shape the corpus has never had (D79/D80). The deep
     // equality above already excludes it; naming it here is what keeps the decision legible
     // to a reader who only skims the option list.
-    expect(options).not.toContain('ResActorDialog');
+    expect(options).not.toContain('Actor dialog result (ResActorDialog)');
   });
 });
 
@@ -487,8 +570,10 @@ test.describe('AC1 — every one of the 14 offered types', () => {
     for (const [index, type] of TYPES.entries()) {
       const address = `m_startResults.m_results[${index}]`;
       await expect(card(start, type.name, address)).toBeVisible();
+      await openAdvanced(card(start, type.name, address));
       for (const [key, role] of type.controls) {
-        const name = role === 'region' ? `Requirements for ${address}` : key;
+        const name =
+          role === 'region' ? `Requirements for ${startWords(index)}` : (PAIRS[key] ?? key);
         await expect(
           card(start, type.name, address).getByRole(role, { name, exact: true }),
         ).toBeVisible();
@@ -567,8 +652,8 @@ test.describe('an existing corpus node', () => {
     const wait = card(end, 'ResModifyEntry', 'm_endResults.m_results[0]');
 
     // One corpus value is visibly re-written; the empty `m_questName` shows the placeholder.
-    await wait.getByRole('spinbutton', { name: 'm_value', exact: true }).fill('2');
-    await wait.getByRole('textbox', { name: 'm_entryName', exact: true }).fill('Renamed');
+    await wait.getByRole('spinbutton', { name: 'Value (m_value)', exact: true }).fill('2');
+    await wait.getByRole('textbox', { name: 'Entry (m_entryName)', exact: true }).fill('Renamed');
 
     const node = itemsOf(await copyPanelDocument(page), 'm_endResults')[0] as Record<
       string,
@@ -596,11 +681,14 @@ test.describe('an existing corpus node', () => {
     const start = list(page, 'Start results');
     await addResult(start, 'ResPlaySound');
     await addResult(start, 'ResTeleport');
+    // D195: a new ResTeleport's `m_teleportType: 'TELEPORT_STATIC'` is its own default, so its
+    // Advanced no longer opens by itself (the generic empty rule read the literal as authored).
+    await openAdvanced(card(start, 'ResTeleport', 'm_startResults.m_results[1]'));
     await card(start, 'ResTeleport', 'm_startResults.m_results[1]')
-      .getByRole('textbox', { name: 'm_destinationLoc', exact: true })
+      .getByRole('textbox', { name: 'Destination location (m_destinationLoc)', exact: true })
       .fill('Target location Landing');
     await card(start, 'ResPlaySound', 'm_startResults.m_results[0]')
-      .getByRole('textbox', { name: 'm_soundName', exact: true })
+      .getByRole('textbox', { name: 'Sound (m_soundName)', exact: true })
       .fill('ObjectData/StormStart.xml');
 
     const saved = await copyPanelText(page);
@@ -627,19 +715,27 @@ test.describe('the m_router sub-object', () => {
     const start = list(page, 'Start results');
     await addResult(start, 'ResPlaySound');
     const sound = card(start, 'ResPlaySound', 'm_startResults.m_results[0]');
-    const router = sound.getByRole('group', { name: 'm_router', exact: true });
+    await openAdvanced(sound);
+    const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
     await expect(router).toBeVisible();
 
     // A new node carries the corpus's measured router, so the six controls show it.
-    await expect(router.getByLabel('m_locX', { exact: true })).toHaveValue('0');
-    await expect(router.getByLabel('m_routingType', { exact: true })).toHaveValue('ROUTING_ACTOR');
-    await expect(router.getByLabel('m_useTriggerLocation', { exact: true })).not.toBeChecked();
+    await expect(router.getByLabel('Location X (m_locX)', { exact: true })).toHaveValue('0');
+    // One legal value, so it is read-only text rather than a one-option select (task 7.11).
+    await expect(router.getByLabel('Routing type (m_routingType)', { exact: true })).toContainText(
+      'ROUTING_ACTOR',
+    );
+    await expect(
+      router.getByLabel('Use trigger location (m_useTriggerLocation)', { exact: true }),
+    ).not.toBeChecked();
     await expect(sound.getByText(/the first edit writes it/)).toHaveCount(0);
 
-    await router.getByLabel('m_locX', { exact: true }).fill('12');
-    await router.getByLabel('m_useLocation', { exact: true }).check();
+    await router.getByLabel('Location X (m_locX)', { exact: true }).fill('12');
+    await router.getByLabel('Use router location (m_useLocation)', { exact: true }).check();
     // `m_reinteractTime` is a result-level field, not a router sub-field.
-    await sound.getByRole('spinbutton', { name: 'm_reinteractTime', exact: true }).fill('3');
+    await sound
+      .getByRole('spinbutton', { name: 'Re-interact time (m_reinteractTime)', exact: true })
+      .fill('3');
 
     const node = itemsOf(await copyPanelDocument(page), 'm_startResults')[0] as Record<
       string,
@@ -670,11 +766,12 @@ test.describe('the m_router sub-object', () => {
     };
     await openResults(page, seeded);
     const sound = card(list(page, 'Start results'), 'ResPlaySound', 'm_startResults.m_results[0]');
-    const router = sound.getByRole('group', { name: 'm_router', exact: true });
+    await openAdvanced(sound);
+    const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
     await expect(sound.getByText(/the first edit writes it/)).toBeVisible();
-    await expect(router.getByLabel('m_locX', { exact: true })).toHaveValue('0');
+    await expect(router.getByLabel('Location X (m_locX)', { exact: true })).toHaveValue('0');
 
-    await router.getByLabel('m_locX', { exact: true }).fill('12');
+    await router.getByLabel('Location X (m_locX)', { exact: true }).fill('12');
 
     const node = itemsOf(await copyPanelDocument(page), 'm_startResults')[0] as Record<
       string,
@@ -717,10 +814,17 @@ test.describe('the m_router sub-object', () => {
     };
     await openResults(page, seeded);
     const sound = card(list(page, 'End results'), 'ResPlaySound', 'm_endResults.m_results[0]');
-    const router = sound.getByRole('group', { name: 'm_router', exact: true });
-    await expect(router.getByLabel('m_reinteractTime', { exact: true })).toHaveCount(0);
-    await sound.getByRole('spinbutton', { name: 'm_reinteractTime', exact: true }).fill('3');
-    await router.getByLabel('m_routingType', { exact: true }).selectOption('ROUTING_ACTOR');
+    await openAdvanced(sound);
+    const router = sound.getByRole('group', { name: 'Sound router (m_router)', exact: true });
+    await expect(
+      router.getByLabel('Re-interact time (m_reinteractTime)', { exact: true }),
+    ).toHaveCount(0);
+    await sound
+      .getByRole('spinbutton', { name: 'Re-interact time (m_reinteractTime)', exact: true })
+      .fill('3');
+    await expect(router.getByLabel('Routing type (m_routingType)', { exact: true })).toContainText(
+      'ROUTING_ACTOR',
+    );
 
     const node = itemsOf(await copyPanelDocument(page), 'm_endResults')[0] as Record<
       string,
@@ -752,7 +856,7 @@ test.describe('ResLearnSpell’s requirement slot', () => {
     await addResult(start, 'ResLearnSpell');
     const address = 'm_startResults.m_results[0]';
     const tree = card(start, 'ResLearnSpell', address).getByRole('region', {
-      name: `Requirements for ${address}`,
+      name: `Requirements for ${startWords(0)}`,
       exact: true,
     });
     await expect(tree).toBeVisible();
@@ -771,14 +875,14 @@ test.describe('ResLearnSpell’s requirement slot', () => {
 
     // Add a condition, retype it and set its school — the shared tree's own vocabulary.
     await tree
-      .getByRole('button', { name: `Add Condition to ${wrapperPath}`, exact: true })
+      .locator(`button[data-path="${wrapperPath}"][aria-label^="Add Condition to "]`)
       .click();
     await tree
-      .locator(`article[aria-label$=" ${wrapperPath}[1]"]`)
-      .getByLabel('Type', { exact: true })
+      .locator(`article[data-path="${wrapperPath}[1]"]`)
+      .getByLabel('Type ($type)', { exact: true })
       .selectOption('ReqSchoolOfFocus');
     await card(start, 'ReqSchoolOfFocus', `${wrapperPath}[1]`)
-      .getByLabel('School', { exact: true })
+      .getByLabel('School (m_magicSchool)', { exact: true })
       .selectOption('Storm');
 
     const node = itemsOf(await copyPanelDocument(page), 'm_startResults')[0] as Record<
@@ -815,7 +919,10 @@ test.describe('friendly-name dropdowns', () => {
     const start = list(page, 'Start results');
     await addResult(start, 'ResAddSpell');
     const spell = card(start, 'ResAddSpell', 'm_startResults.m_results[0]');
-    const combobox = spell.getByRole('combobox', { name: 'm_templateID', exact: true });
+    const combobox = spell.getByRole('combobox', {
+      name: 'Template ID (m_templateID)',
+      exact: true,
+    });
 
     // The trigger reads as the spell's name; the document gets the raw template id.
     await pickName(
@@ -854,7 +961,7 @@ test.describe('friendly-name dropdowns', () => {
     // An id in the zones list displays its display name…
     await expect(
       card(start, 'ResAddDynaMod', 'm_startResults.m_results[0]').getByRole('combobox', {
-        name: 'm_zoneName',
+        name: 'Zone name (m_zoneName)',
         exact: true,
       }),
     ).toContainText('Hub Square');
@@ -863,7 +970,7 @@ test.describe('friendly-name dropdowns', () => {
     const teleport = card(start, 'ResTeleport', 'm_startResults.m_results[1]').getByRole(
       'combobox',
       {
-        name: 'm_destinationZone',
+        name: 'Destination Zone (m_destinationZone)',
         exact: true,
       },
     );
@@ -888,13 +995,13 @@ test.describe('friendly-name dropdowns', () => {
     // The three empty/null references render as the unset placeholder…
     await expect(
       card(end, 'ResAddDynaMod', 'm_endResults.m_results[0]').getByRole('combobox', {
-        name: 'm_zoneName',
+        name: 'Zone name (m_zoneName)',
         exact: true,
       }),
     ).toContainText('Select zones');
     await expect(
       card(end, 'ResModifyEntry', 'm_endResults.m_results[2]').getByRole('combobox', {
-        name: 'm_questName',
+        name: 'Quest (m_questName)',
         exact: true,
       }),
     ).toContainText('Select quests');
@@ -942,37 +1049,43 @@ test.describe('ResDrawHand’s split template id', () => {
 
     // 6 of the 8 corpus values are spells: the default source is Spells.
     await expect(
-      spellCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
+      spellCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
     ).toContainText('Troll');
     await expect(
       spellCard.getByRole('button', {
-        name: `Spells for m_templateID ${addresses[0]}`,
+        name: `Spells for Template ID (m_templateID) ${startWords(0)}`,
         exact: true,
       }),
     ).toHaveAttribute('aria-pressed', 'true');
 
     // 2 of the 8 are NPCs — and the NPC label is the documented `Name (TemplateID)`.
     await expect(
-      npcCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
+      npcCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
     ).toContainText('Draconian (35528)');
     await expect(
-      npcCard.getByRole('button', { name: `NPCs for m_templateID ${addresses[1]}`, exact: true }),
+      npcCard.getByRole('button', {
+        name: `NPCs for Template ID (m_templateID) ${startWords(1)}`,
+        exact: true,
+      }),
     ).toHaveAttribute('aria-pressed', 'true');
 
     // A value neither table knows stays displayed and selected — and switching the source
     // does not rewrite it.
     await expect(
-      unknownCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
+      unknownCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
     ).toContainText('999999999');
     await unknownCard
-      .getByRole('button', { name: `Spells for m_templateID ${addresses[2]}`, exact: true })
+      .getByRole('button', {
+        name: `Spells for Template ID (m_templateID) ${startWords(2)}`,
+        exact: true,
+      })
       .click();
     await expect(
-      unknownCard.getByRole('combobox', { name: 'm_templateID', exact: true }),
+      unknownCard.getByRole('combobox', { name: 'Template ID (m_templateID)', exact: true }),
     ).toContainText('999999999');
     await expect(
       unknownCard.getByRole('button', {
-        name: `Spells for m_templateID ${addresses[2]}`,
+        name: `Spells for Template ID (m_templateID) ${startWords(2)}`,
         exact: true,
       }),
     ).toHaveAttribute('aria-pressed', 'true');
@@ -995,7 +1108,7 @@ test.describe('delete and the five mounted homes', () => {
     await addResult(start, 'ResDropTable');
 
     await start
-      .getByRole('button', { name: 'Delete m_startResults.m_results[0]', exact: true })
+      .getByRole('button', { name: 'Delete Start results › Results 1', exact: true })
       .click();
 
     await expect(card(start, 'ResWait', 'm_startResults.m_results[0]')).toHaveCount(0);
@@ -1028,7 +1141,7 @@ test.describe('delete and the five mounted homes', () => {
       'ResWait',
       'm_goals[0].m_completeResults.m_results[0]',
     )
-      .getByRole('spinbutton', { name: 'm_secondsToWait', exact: true })
+      .getByRole('spinbutton', { name: 'Seconds to wait (m_secondsToWait)', exact: true })
       .fill('7');
     const doc = await copyPanelDocument(page);
     const goals = doc.m_goals as Array<Record<string, unknown>>;

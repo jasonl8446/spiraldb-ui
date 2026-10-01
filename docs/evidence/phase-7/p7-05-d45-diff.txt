@@ -1,0 +1,88 @@
+# D45 contract: stdout of the p7-04 binary (before) vs the p7-05 binary (after) on every committed fixture.
+# Phase 2 fixtures and the p7-03/p7-04 fixtures other than WC-TUT-C05-001 must be byte-identical;
+# WC-TUT-C05-001 differs only by the four recovered ACHIEVERANK goals (intended, task 7.4).
+server/test/fixtures/captures/MB-YARD1-C01-001.json  before exit=0 after exit=0  stdout IDENTICAL (26360c034f2d134f)
+server/test/fixtures/captures/WC-CYCLOPS-MAIN-002.json  before exit=0 after exit=0  stdout IDENTICAL (93c0030db75f9566)
+server/test/fixtures/captures/WC-FIRECAT-MAIN-004.json  before exit=0 after exit=0  stdout IDENTICAL (ca97f8651bd94db8)
+server/test/fixtures/captures/WC-UNICORN-MAIN-004.json  before exit=0 after exit=0  stdout IDENTICAL (94c68e0d5714c1d8)
+server/test/fixtures/captures/WC-UNICORN-MAIN-007.json  before exit=0 after exit=0  stdout IDENTICAL (c99d865adc291b6e)
+server/test/fixtures/captures/p7/DS-ACAD1-C04-001.json  before exit=0 after exit=0  stdout IDENTICAL (a3da01d64bcec501)
+server/test/fixtures/captures/p7/DS-ACAD-C01-003.json  before exit=0 after exit=0  stdout IDENTICAL (89a2ccb29ca66539)
+server/test/fixtures/captures/p7/WC-MAIN-C01-013.json  before exit=0 after exit=0  stdout IDENTICAL (d5fd38a843dda43a)
+server/test/fixtures/captures/p7/WC-UNICORN-MAIN-002.json  before exit=0 after exit=0  stdout IDENTICAL (f77e3caf7c34a5b9)
+server/test/fixtures/captures/p7/WC-TUT-C05-001.json  before exit=0 after exit=0  stdout DIFFERS (ac0eb4b658b4b17a)
+
+$ diff <before WC-TUT-C05-001 stdout> <after WC-TUT-C05-001 stdout>
+25a26,97
+>       },
+>       {
+>         "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty",
+>         "m_rank": 0,
+>         "m_goalName": "2_",
+>         "m_goalNameID": 0,
+>         "m_goalTitle": "",
+>         "m_completeText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1",
+>         "m_locationName": "",
+>         "m_displayImage1": "",
+>         "m_displayImage2": "",
+>         "m_autoQualify": false,
+>         "m_autoComplete": false,
+>         "m_destinationZone": "",
+>         "m_goalType": "GOAL_TYPE_ACHIEVERANK",
+>         "m_noQuestHelper": false,
+>         "m_petOnlyQuest": false,
+>         "m_hideGoalFloatyText": false
+>       },
+>       {
+>         "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty",
+>         "m_rank": 0,
+>         "m_goalName": "3_",
+>         "m_goalNameID": 0,
+>         "m_goalTitle": "",
+>         "m_completeText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2",
+>         "m_locationName": "",
+>         "m_displayImage1": "",
+>         "m_displayImage2": "",
+>         "m_autoQualify": false,
+>         "m_autoComplete": false,
+>         "m_destinationZone": "",
+>         "m_goalType": "GOAL_TYPE_ACHIEVERANK",
+>         "m_noQuestHelper": false,
+>         "m_petOnlyQuest": false,
+>         "m_hideGoalFloatyText": false
+>       },
+>       {
+>         "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty",
+>         "m_rank": 0,
+>         "m_goalName": "4_",
+>         "m_goalNameID": 0,
+>         "m_goalTitle": "",
+>         "m_completeText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3",
+>         "m_locationName": "",
+>         "m_displayImage1": "",
+>         "m_displayImage2": "",
+>         "m_autoQualify": false,
+>         "m_autoComplete": false,
+>         "m_destinationZone": "",
+>         "m_goalType": "GOAL_TYPE_ACHIEVERANK",
+>         "m_noQuestHelper": false,
+>         "m_petOnlyQuest": false,
+>         "m_hideGoalFloatyText": false
+>       },
+>       {
+>         "$type": "Imcodec.ObjectProperty.TypeCache.AchieveRankGoalTemplate, Imcodec.ObjectProperty",
+>         "m_rank": 0,
+>         "m_goalName": "5_",
+>         "m_goalNameID": 0,
+>         "m_goalTitle": "",
+>         "m_completeText": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4",
+>         "m_locationName": "",
+>         "m_displayImage1": "",
+>         "m_displayImage2": "",
+>         "m_autoQualify": false,
+>         "m_autoComplete": false,
+>         "m_destinationZone": "",
+>         "m_goalType": "GOAL_TYPE_ACHIEVERANK",
+>         "m_noQuestHelper": false,
+>         "m_petOnlyQuest": false,
+>         "m_hideGoalFloatyText": false

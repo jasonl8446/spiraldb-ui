@@ -1,0 +1,82 @@
+
+> spiraldb-ui@0.1.0 verify:captures
+> node scripts/verify-captures.mjs
+
+
+=== MB-YARD1-C01-001.json  (sha256 ac8332ec6112021d6a529224264f7762ea761078de7eb58b50af03e359b99a36)
+  field                                 corpus                             read back
+  quest name                            MB-YARD1-C01-001                   MB-YARD1-C01-001  ok
+  title                                 QuestTitle_9B62                    QuestTitle_9B62  ok
+  level                                 1                                  1  ok
+  mainline                              true                               true  ok
+  goal count                            15                                 15  ok
+  goal names (in order)                 [1_WizardQuestGoals_Explore, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_Explore, 6_WizardQuestGoals_TalkNPC, 7_WizardQuestGoals_Explore, 8_WizardQuestGoals_TalkNPC, 9_WizardQuestGoals_Explore, 10_WizardQuestGoals_Kill, 11_WizardQuestGoals_Explore, 12_WizardQuestGoals_TalkNPC, 13_WizardQuestGoals_Explore, 14_WizardQuestGoals_Kill, 15_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_Explore, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_Explore, 6_WizardQuestGoals_TalkNPC, 7_WizardQuestGoals_Explore, 8_WizardQuestGoals_TalkNPC, 9_WizardQuestGoals_Explore, 10_WizardQuestGoals_Kill, 11_WizardQuestGoals_Explore, 12_WizardQuestGoals_TalkNPC, 13_WizardQuestGoals_Explore, 14_WizardQuestGoals_Kill, 15_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA] [GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA]  ok
+  goal persona names (in order)         [, , , , , , , , , , , , , , ]     [, , , , , , , , , , , , , , ]  ok
+  dialog blocks (ActorDialog count)     7                                  7  ok
+  dialog entries (NPCDialogEntry count) 9                                  9  ok
+  dialog entries per container          {12_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 15_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 8_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), quest/Prep(blocks=1, entries=1)} {12_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 15_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), 8_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), quest/Prep(blocks=1, entries=1)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-CYCLOPS-MAIN-002.json  (sha256 7e65514ccdc961b0791827336727a3c22194f4bbf0dad9f74cf6afb65c0f72b6)
+  field                                 corpus                             read back
+  quest name                            WC-CYCLOPS-MAIN-002                WC-CYCLOPS-MAIN-002  ok
+  title                                 QuestTitle_17318F                  QuestTitle_17318F  ok
+  level                                 1                                  1  ok
+  mainline                              true                               true  ok
+  goal count                            6                                  6  ok
+  goal names (in order)                 [1_WizardQuestGoals_TalkNPC, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_TalkNPC, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_TalkNPC, 6_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_TalkNPC, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_TalkNPC, 4_WizardQuestGoals_TalkNPC, 5_WizardQuestGoals_TalkNPC, 6_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_PERSONA x6]             [GOAL_TYPE_PERSONA x6]  ok
+  goal persona names (in order)         [, , , , , ]                       [, , , , , ]  ok
+  dialog blocks (ActorDialog count)     7                                  7  ok
+  dialog entries (NPCDialogEntry count) 27                                 27  ok
+  dialog entries per container          {1_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 3_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=7), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=5)} {1_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), 3_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=7), 6_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=5)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-FIRECAT-MAIN-004.json  (sha256 3b85784c36d4fac05bea53f0177b712d3cbc65d3a48fdebf5c3b4fbfc6967e75)
+  field                                 corpus                             read back
+  quest name                            WC-FIRECAT-MAIN-004                WC-FIRECAT-MAIN-004  ok
+  title                                 QuestTitle_173599                  QuestTitle_173599  ok
+  level                                 1                                  1  ok
+  mainline                              true                               true  ok
+  goal count                            5                                  5  ok
+  goal names (in order)                 [1_WizardQuestGoals_KillCollect, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_Kill, 5_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_KillCollect, 2_WizardQuestGoals_TalkNPC, 3_WizardQuestGoals_Explore, 4_WizardQuestGoals_Kill, 5_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_SCAVENGE, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA] [GOAL_TYPE_SCAVENGE, GOAL_TYPE_PERSONA, GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_PERSONA]  ok
+  goal persona names (in order)         [, , , , ]                         [, , , , ]  ok
+  dialog blocks (ActorDialog count)     3                                  3  ok
+  dialog entries (NPCDialogEntry count) 13                                 13  ok
+  dialog entries per container          {2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), quest/Prep(blocks=1, entries=6)} {2_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=3), 5_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=4), quest/Prep(blocks=1, entries=6)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-UNICORN-MAIN-004.json  (sha256 7014d89ced02b1b46e874e1c094011752441baf646adb9a65f741a7419c35704)
+  field                                 corpus                             read back
+  quest name                            WC-UNICORN-MAIN-004                WC-UNICORN-MAIN-004  ok
+  title                                 QuestTitle_1625CA                  QuestTitle_1625CA  ok
+  level                                 0                                  0  ok
+  mainline                              true                               true  ok
+  goal count                            7                                  7  ok
+  goal names (in order)                 [1_WizardQuestGoals_00000015, 2_WizardQuestGoals_00000015, 3_WizardQuestGoals_00000015, 4_WizardQuestGoals_00000015, 5_WizardQuestGoals_KillCollect, 6_WizardQuestGoals_Explore, 7_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_00000015, 2_WizardQuestGoals_00000015, 3_WizardQuestGoals_00000015, 4_WizardQuestGoals_00000015, 5_WizardQuestGoals_KillCollect, 6_WizardQuestGoals_Explore, 7_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_USAGE x4, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA] [GOAL_TYPE_USAGE x4, GOAL_TYPE_BOUNTYCOLLECT, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA]  ok
+  goal persona names (in order)         [, , , , , , ]                     [, , , , , , ]  ok
+  dialog blocks (ActorDialog count)     3                                  3  ok
+  dialog entries (NPCDialogEntry count) 8                                  8  ok
+  dialog entries per container          {7_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=2), quest/Completion(blocks=1, entries=2), quest/Prep(blocks=1, entries=4)} {7_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=2), quest/Completion(blocks=1, entries=2), quest/Prep(blocks=1, entries=4)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+=== WC-UNICORN-MAIN-007.json  (sha256 1a74bfa4757a11b856a01da5190f2c4cfdd77aeaf99a49e918d0019b907b430d)
+  field                                 corpus                             read back
+  quest name                            WC-UNICORN-MAIN-007                WC-UNICORN-MAIN-007  ok
+  title                                 QuestTitle_1625CF                  QuestTitle_1625CF  ok
+  level                                 0                                  0  ok
+  mainline                              true                               true  ok
+  goal count                            4                                  4  ok
+  goal names (in order)                 [1_WizardQuestGoals_00000253, 2_WizardQuestGoals_Kill, 3_WizardQuestGoals_00000146, 4_WizardQuestGoals_TalkNPC] [1_WizardQuestGoals_00000253, 2_WizardQuestGoals_Kill, 3_WizardQuestGoals_00000146, 4_WizardQuestGoals_TalkNPC]  ok
+  goal types                            [GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTY, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA] [GOAL_TYPE_WAYPOINT, GOAL_TYPE_BOUNTY, GOAL_TYPE_WAYPOINT, GOAL_TYPE_PERSONA]  ok
+  goal persona names (in order)         [, , , WC-ST01-NPC01]              [, , , WC-ST01-NPC01]  ok
+  dialog blocks (ActorDialog count)     5                                  5  ok
+  dialog entries (NPCDialogEntry count) 8                                  8  ok
+  dialog entries per container          {2_WizardQuestGoals_Kill/Completion(blocks=1, entries=2), 2_WizardQuestGoals_Kill/Prep(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=3)} {2_WizardQuestGoals_Kill/Completion(blocks=1, entries=2), 2_WizardQuestGoals_Kill/Prep(blocks=1, entries=1), 4_WizardQuestGoals_TalkNPC/Completion(blocks=1, entries=1), quest/Completion(blocks=1, entries=1), quest/Prep(blocks=1, entries=3)}  ok
+  reproducibility: fixturegen reproduces the committed bytes  ok
+
+PASS: 5 fixture(s), 55 field check(s), 0 mismatch(es), 0 known-reader-defect row(s).
+rc=0

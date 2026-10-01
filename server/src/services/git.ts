@@ -56,6 +56,105 @@ export class DirtyRepoError extends Error {
   }
 }
 
+/**
+ * A save refused because `settings.git_branch` names a branch other than the checked-out one
+ * (D119, extended to every write path by task 7.14). Nothing was written or checked out. Exported
+ * so both write routers map it to a 409 with the actionable message.
+ */
+export class BranchMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BranchMismatchError';
+  }
+}
+
+/**
+ * Which branch a scaffold commits to, decided from the three facts the caller has (added after
+ * the trap this story's own first CLI run hit).
+ *
+ * **The trap, measured.** `settings.git_branch` is what the save pipeline commits to
+ * (`ensureSessionBranch`), and when that branch does not exist locally it is **created from
+ * `main` and checked out** — which replaces the working tree with main's contents. A scratch
+ * database seeded today carries `content/{today}`; a clone sitting on `content/2026-09-27` then
+ * loses whatever exists only on that branch (measured: the clone's two branch-only files) *and*
+ * keeps the new branch afterwards. That is D76(b)'s shape one level deeper: not a `reset --hard`
+ * that strands a branch, but **a database branch name that disagrees with the tree**.
+ *
+ * The rule this function encodes, and the decision it represents:
+ *
+ * 1. **No explicit branch (`--branch` absent) — follow the working tree.** The caller pointed the
+ *    command at a *repository*; the only branch that cannot strand work is the one already checked
+ *    out, so the setting is moved to it (`updateSetting: true`) and the caller says so. The
+ *    alternative — refusing — would make the safe case need a manual `UPDATE`; the other
+ *    alternative — checking a branch out from inside the tool — mutates git state the operator
+ *    owns, which a scaffold command has no business doing.
+ * 2. **An explicit branch that is not the checked-out one — refuse.** Creating it from `main` is
+ *    precisely the stranding behaviour, and the fix belongs in git (`git -C <root> checkout`), not
+ *    in a database setting. Refusing keeps the decision visible where it can be reviewed.
+ *    **Exception (task 7.14, D182, narrowed by D195): the working tree is on `main` and the
+ *    requested branch does not exist yet.** Creating the branch from `main` then replaces the
+ *    tree with the contents it already has, so nothing can strand and the spec's branch strategy
+ *    (docs/spec-data-model.md L206-214: the session branch is created from main) keeps working.
+ *    A branch that **already exists** is checked out instead — the tree becomes *its* content,
+ *    main's own files vanish from it — so that arm is refused like any other (PR #14 review 2).
+ *    `requestedExists` left `undefined` is no exemption: the caller must say (fail closed).
+ * 3. **No repository context (`currentBranch` empty) or no setting — no opinion.** Nothing to
+ *    follow; the pipeline's own default (`content/{today}`) applies unchanged.
+ *
+ * **One helper for every write path (task 7.14, D182).** The scaffold CLI calls it with
+ * `--branch`; the save pipeline calls it with `settings.git_branch` as the requested branch
+ * (`requestedFrom: 'setting'`), so a save through any route is refused on the same rule.
+ */
+export type ScaffoldBranchDecision =
+  { kind: 'use'; branch: string; updateSetting: boolean } | { kind: 'refuse'; message: string };
+
+export function resolveScaffoldBranch(input: {
+  /** `settings.git_branch`, trimmed (empty when unset). */
+  settingsBranch: string;
+  /** The working tree's current branch (`''` when the root is not a git working tree). */
+  currentBranch: string;
+  /** `--branch`, when the caller named one — or the setting itself on a save. */
+  requested?: string;
+  /** Whether `requested` already exists as a local branch (the `main` exemption needs `false`). */
+  requestedExists?: boolean;
+  /** Where `requested` came from, so a refusal names the remedy that applies (default `flag`). */
+  requestedFrom?: 'flag' | 'setting';
+}): ScaffoldBranchDecision {
+  const requested = input.requested?.trim();
+  const current = input.currentBranch.trim();
+  const stored = input.settingsBranch.trim();
+
+  if (requested !== undefined && requested !== '') {
+    const createdFromMain = current === 'main' && input.requestedExists === false;
+    if (current === '' || createdFromMain || requested === current) {
+      return { kind: 'use', branch: requested, updateSetting: stored !== requested };
+    }
+    const fromSetting = input.requestedFrom === 'setting';
+    return {
+      kind: 'refuse',
+      message:
+        (fromSetting
+          ? `Refusing to save on branch "${requested}" (settings.git_branch): `
+          : `Refusing to scaffold on branch "${requested}": `) +
+        `the working tree is on "${current}". ` +
+        (current === 'main' && input.requestedExists === true
+          ? `"${requested}" already exists, so committing to it checks it out and replaces the ` +
+            `tree with its contents, dropping every file only main has from the tree. `
+          : `Committing to a branch that is not checked out creates it from main and replaces the ` +
+            `tree with main's contents, stranding anything that exists only on "${current}". `) +
+        `Check it out first (git -C <root> checkout ${requested}) or ` +
+        (fromSetting
+          ? `set git_branch to "${current}" in Settings to commit there.`
+          : `drop --branch to commit on "${current}".`),
+    };
+  }
+
+  if (current === '') {
+    return { kind: 'use', branch: stored, updateSetting: false };
+  }
+  return { kind: 'use', branch: current, updateSetting: stored !== current };
+}
+
 /** The longest caller-supplied commit note kept, in **code points** (final-review gate 2, S4). */
 export const MAX_COMMIT_NOTES_LENGTH = 255;
 
@@ -247,6 +346,8 @@ export interface GitService {
   /** @throws {DirtyRepoError} when the working tree is not clean (D14). */
   assertClean(): Promise<void>;
   currentBranch(): Promise<string>;
+  /** `true` when `branch` exists locally (the D119 guard's `main` exemption, D195). */
+  branchExists(branch: string): Promise<boolean>;
   /** Checks out the session branch, creating it from main's HEAD when absent. */
   ensureSessionBranch(options?: EnsureSessionBranchOptions): Promise<SessionBranchResult>;
   /** Stages `paths` and commits them as one commit (D13). */
@@ -341,6 +442,11 @@ export function createGitService(options: CreateGitServiceOptions): GitService {
       client.env(baseEnv());
       const branches = await client.branchLocal();
       return branches.current;
+    },
+
+    async branchExists(branch) {
+      client.env(baseEnv());
+      return (await client.branchLocal()).all.includes(branch);
     },
 
     async ensureSessionBranch(branchOptions = {}) {

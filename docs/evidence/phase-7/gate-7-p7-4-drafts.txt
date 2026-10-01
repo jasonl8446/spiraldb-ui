@@ -1,0 +1,118 @@
+$ node -e "better-sqlite3('data/spiraldb-ui.db').backup('data/__test-scratch__/gate-7-drafts.db')"   # online backup of the dev DB (the owner's dev server holds it open)
+backup done
+{ value: '/home/jason/Documents/git-projects/spiraldb' } { n: 0 } []
+$ ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates/*.json | wc -l; git -C …/spiraldb rev-parse --abbrev-ref HEAD; --short HEAD
+330
+content/2026-09-28
+864bd44
+
+$ time npm run --silent drafts -- --db data/__test-scratch__/gate-7-drafts.db   # run 1
+[spiraldb-ui] drafts database at data/__test-scratch__/gate-7-drafts.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 5458,
+  "unchanged": 0,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 64
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 228
+  },
+  "duration_ms": 5627
+}
+
+real	0m6.055s
+user	0m4.802s
+sys	0m1.588s
+exit=0
+
+$ time npm run --silent drafts -- --db data/__test-scratch__/gate-7-drafts.db   # run 2
+[spiraldb-ui] drafts database at data/__test-scratch__/gate-7-drafts.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 0,
+  "unchanged": 5458,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 64
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 228
+  },
+  "duration_ms": 5558
+}
+
+real	0m5.913s
+user	0m4.874s
+sys	0m1.434s
+exit=0
+
+$ node reconcile.cjs data/__test-scratch__/gate-7-drafts.db
+
+-- coverage view
+SELECT * FROM coverage
+[{"nameable":1717,"id_space":4823,"defined":330,"missing":1387,"references":2855}]
+
+-- quest_drafts by tier (named_missing / named_defined / unnamed) and with evidence
+SELECT CASE WHEN quest_name IS NULL THEN 'unnamed' WHEN has_definition=1 THEN 'named_defined' ELSE 'named_missing' END AS tier, count(*) AS drafts, sum(evidence_richness>0) AS with_evidence, sum(evidence_richness=0) AS zero_evidence, sum(pending) AS pending_rows FROM quest_drafts GROUP BY tier ORDER BY tier
+[{"tier":"named_defined","drafts":330,"with_evidence":3,"zero_evidence":327,"pending_rows":4},{"tier":"named_missing","drafts":1387,"with_evidence":1002,"zero_evidence":385,"pending_rows":1392},{"tier":"unnamed","drafts":4648,"with_evidence":4000,"zero_evidence":648,"pending_rows":4062}]
+
+-- unlinked quest_ids (the unnamed tier denominator)
+SELECT count(*) AS unlinked FROM quest_ids WHERE matched_quest_name IS NULL
+[{"unlinked":4648}]
+
+-- reconciliation checks (1 = holds)
+SELECT (SELECT count(*) FROM quest_drafts WHERE quest_name IS NOT NULL AND has_definition=0) = (SELECT missing FROM coverage) AS named_missing_eq_missing,
+ (SELECT count(*) FROM quest_drafts WHERE quest_name IS NOT NULL AND has_definition=1) = (SELECT defined FROM coverage) AS named_defined_eq_defined,
+ (SELECT count(*) FROM quest_drafts WHERE quest_name IS NULL) = (SELECT count(*) FROM quest_ids WHERE matched_quest_name IS NULL) AS unnamed_eq_unlinked,
+ (SELECT count(*) FROM quest_drafts) = (SELECT nameable FROM coverage) + (SELECT count(*) FROM quest_ids WHERE matched_quest_name IS NULL) AS drafts_eq_nameable_plus_unlinked
+[{"named_missing_eq_missing":1,"named_defined_eq_defined":1,"unnamed_eq_unlinked":1,"drafts_eq_nameable_plus_unlinked":1}]
+
+-- every catalog id has a draft (catalog ids without a draft; must be 0)
+SELECT count(*) AS catalog_ids_without_draft FROM quest_ids i WHERE NOT EXISTS (SELECT 1 FROM quest_drafts d WHERE (i.matched_quest_name IS NULL AND d.quest_name IS NULL AND d.catalog_id = i.quest_id) OR (i.matched_quest_name IS NOT NULL AND d.quest_name = i.matched_quest_name))
+[{"catalog_ids_without_draft":0}]
+
+-- rows per status
+SELECT status, count(*) AS n FROM quest_suggestions GROUP BY status
+[{"status":"pending","n":5458}]
+
+-- duplicate identities (must be empty)
+SELECT coalesce(quest_name,''), coalesce(catalog_id,-1), path, source, value_json, count(*) c FROM quest_suggestions GROUP BY 1,2,3,4,5 HAVING c>1
+[]

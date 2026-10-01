@@ -1,0 +1,19 @@
+# same throwaway server (restarted after the value-key-order fix), same DB data/__test-scratch__/p7-07-server.db, owner fork read only
+$ curl -s 'http://127.0.0.1:3291/api/quest-ids/39199/suggestions'
+{"quest_name":null,"catalog_id":39199,"suggestions":[{"id":1480,"path":"m_dialogList","value":{"$type":"Imcodec.ObjectProperty.TypeCache.ActorDialogList, Imcodec.ObjectProperty","m_dialogs":[{"m_dialogTag":"Prep","m_dialogEntries":[{"$type":"Imcodec.ObjectProperty.TypeCache.NPCDialogEntry, Imcodec.ObjectProperty","m_personaName":"KT-PYMHub-NPC02_Persona","m_nameOverride":"","m_nameSTKey":"NPCFormats_First_Last","m_guiDisplay":"","m_maxTimeSeconds":-1,"m_invisible":false,"m_requirements":null,"m_dialog":"WizQst991F_00000037","m_picture":"GUI/NpcPortraits/Art_Portrait_Excavator.dds","m_soundFile":"|Krokotopia|WorldData|Sound/Dialogue/ProfWinthrop_QST_14.mp3","m_action":"","m_dialogEvent":"","m_actorTemplateID":39228,"m_cameraName":"CinematicCamera-ProfessorWinthrop","m_interpolationDuration":1,"m_cameraOffsetX":-766.5483,"m_cameraOffsetY":3637.666,"m_cameraOffsetZ":224.0154,"m_pitch":0.270
+
+$ curl -s -w '\nHTTP %{http_code}\n' -X POST http://127.0.0.1:3291/api/suggestions/1479/reject
+{"id":1479,"path":"m_questTitle","value":"QuestTitle_991F","source":"evidence-title","confidence":1,"evidence_ref":"quest_ids:39199","status":"rejected","created_at":"2026-09-30 03:06:34","decided_at":"2026-09-30 03:07:20"}
+HTTP 200
+
+$ curl -s -w '\nHTTP %{http_code}\n' -X POST http://127.0.0.1:3291/api/suggestions/1479/reject   # again: a decided row is never overwritten
+{"error":"Suggestion 1479 is already rejected"}
+HTTP 409
+
+$ curl -s -w '\nHTTP %{http_code}\n' -X POST http://127.0.0.1:3291/api/drafts/rebuild
+{"proposed":5458,"inserted":0,"unchanged":5458,"removed":0,"by_source":{"evidence-title":4026,"evidence-dialogue":62,"evidence-goals":836,"evidence-location":85,"evidence-requirements":449,"capture-order":0,"capture-rewards":0},"drafts":{"named_missing":1387,"named_defined":330,"unnamed":4648,"zero_evidence":1360},"gate_precision":{"matched":7,"gates":64},"predecessor_precision":{"matched":132,"files":228},"duration_ms":5837}
+HTTP 200
+
+$ curl -s 'http://127.0.0.1:3291/api/quest-ids/39199/suggestions?status=all'   # the title row is still rejected, and no pending twin
+{"id":1480,"path":"m_dialogList","source":"evidence-dialogue","value":"…","status":"pending","decided_at":null}
+{"id":1479,"path":"m_questTitle","source":"evidence-title","value":"QuestTitle_991F","status":"rejected","decided_at":"2026-09-30 03:07:20"}

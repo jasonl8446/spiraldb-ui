@@ -17,7 +17,7 @@ import { isPlainObject } from '../helpers/roundtrip-fidelity';
 import { CLONE, cloneGit as git, resetClone } from '../helpers/clone-fixture';
 
 /**
- * Story p3-10, AC1 — **real-quest edit isolation** (plan task 3.10; plan-phase-3 §3.10's
+ * Story p3-10, AC1 — **real-quest edit isolation** (plan task 3.10; the Phase 3 plan §3.10's
  * "Real-quest edit isolation" criterion; decisions D17 and D49).
  *
  * The claim, stated as the AC states it: pick a corpus quest with ≥3 goals and a dialog list,

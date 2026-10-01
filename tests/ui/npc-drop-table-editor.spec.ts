@@ -50,7 +50,7 @@ const NPC_ROWS = [{ template_id: 87112, name: 'Bob the Vendor' }];
  * one row is one name; `description` is NULL in 316 of the 317 live rows and is not the label.
  *
  * `WC-UNICORN-BONUS-001` — the **second name of the spec's own NpcDropTable example**
- * (docs/spec-domain-reference.md L174) — is deliberately **absent**, because it has no
+ * (docs/spec-domain-reference.md §"NpcDropTable") — is deliberately **absent**, because it has no
  * `DropTables/*.json` file and no `drop_tables` row in the fork (measured: 0 of the 317 names
  * contain `BONUS`). A chip for it must show the name itself and invent nothing, and the raw-name
  * box is the way it comes back after a removal.

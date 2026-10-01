@@ -280,20 +280,25 @@ export const ZONE_TRANSFER_CORPUS = {
   destinationZonesResolvingInZonesTable: 1072,
   /** References with no `ZoneTransfer` file of their own — still valid zones. */
   destinationZonesWithoutOwnFile: 36,
-  /** `zones` rows — the dropdown's source. */
-  zoneRows: 1241,
+  /**
+   * `zones` rows — the dropdown's source. **3,357** since the Phase 6 breadth sync (D120: 3,356
+   * `WizardZoneData` rows plus the one corpus-only `Karamelle/KM_Z06_Mines`); it was 1,241 (the
+   * distinct `ZoneName` + destination set of the 1,207 ZoneTransfer files) while the table was
+   * derived from the corpus alone. Re-measured at p7-02 (D145) on a `npm run sync` rebuild.
+   */
+  zoneRows: 3357,
   /** `zones.zone_path` duplicates: 0 (it is the primary key). */
   duplicateZonePaths: 0,
-  /** `zones.display_name` values that are NULL or blank: 0. */
-  blankZoneDisplayNames: 0,
-  /** `zones` rows whose synced `display_name` equals `humanizeZone(zone_path)`. */
-  zoneDisplayNamesAgreeingWithHumanizer: 1172,
-  /** `zones` rows where the two differ (all digit/letter boundaries). */
-  zoneDisplayNamesDifferingFromHumanizer: 69,
-  /** Of the 1,072 referenced zones, rows where the synced label agrees (was 1,010 of 1,069). */
-  referencedZoneDisplayNamesAgreeing: 1013,
-  /** Of the 1072 referenced zones, rows where the two differ. */
-  referencedZoneDisplayNamesDiffering: 59,
+  /** `zones.display_name` values that are NULL or blank: 1 (was 0 with the 1,241-row table). */
+  blankZoneDisplayNames: 1,
+  /** `zones` rows whose synced `display_name` equals `humanizeZone(zone_path)`: the 18 D120 fallbacks. */
+  zoneDisplayNamesAgreeingWithHumanizer: 18,
+  /** `zones` rows where the two differ: 3,339 — the real `WizardZone_*` labels (was 69, digit/letter boundaries). */
+  zoneDisplayNamesDifferingFromHumanizer: 3339,
+  /** Of the 1,072 referenced zones, rows where the synced label agrees (was 1,013). */
+  referencedZoneDisplayNamesAgreeing: 1,
+  /** Of the 1072 referenced zones, rows where the two differ (was 59). */
+  referencedZoneDisplayNamesDiffering: 1071,
 } as const;
 
 /** The document key holding the family's key field (`ZoneName`). */

@@ -34,6 +34,8 @@ import { MOCK_QUEST, mockQuestsApi } from './quests-mocks';
  */
 
 const SIX_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
+/** p7-14 (D133): the detail page's strip is the Overview plus the six. */
+const SEVEN_TABS = ['Overview', ...SIX_TABS] as const;
 
 /**
  * The Edit toggle's tooltip in edit mode — the load state (`EDIT_MODE_ON_LOAD`). It replaced
@@ -93,13 +95,13 @@ test.describe('header', () => {
     await page.goto('/quests/DS-ACAD1-C01-001');
 
     const main = page_(page);
-    // The spec's exact button labels (docs/spec-data-model.md L16-17). The fixture
+    // The spec's exact button labels (docs/spec-data-model.md §"Verification Status Lifecycle"). The fixture
     // row is `extracted`, so neither action is the entry's own status and both are
     // available; the disabled-own-status case is asserted in `quests-status.spec.ts`.
     await expect(main.getByRole('button', { name: 'Mark Reviewed' })).toBeEnabled();
     await expect(main.getByRole('button', { name: 'Mark Verified' })).toBeEnabled();
     // The history timeline is a section of the page, not a seventh tab.
-    await expect(main.getByRole('tab')).toHaveCount(SIX_TABS.length);
+    await expect(main.getByRole('tab')).toHaveCount(SEVEN_TABS.length);
     await expect(main.getByRole('heading', { level: 2, name: 'Status History' })).toBeVisible();
   });
 });
@@ -110,14 +112,21 @@ test.describe('tabs', () => {
     await page.goto('/quests/DS-ACAD1-C01-001');
 
     const main = page_(page);
-    for (const tab of SIX_TABS) {
+    for (const tab of SEVEN_TABS) {
       await expect(main.getByRole('tab', { name: tab }), `${tab} tab`).toBeVisible();
     }
 
-    // Info is the landing tab and, since p3-03, the live editor; the other five became live
+    // Overview is the landing tab (p7-14, D133); Info has been the live editor since p3-03. The
+    // other five became live
     // editors in p3-04 (Goals), p3-05 (Goal Logic), p3-06 (Requirements), p3-07 (Results) and
     // p3-08 (Dialog) — so no tab on the detail page is read-only any more. The extraction
     // page's preview keeps the read-only bodies and `extraction.spec.ts` still asserts that.
+    await expect(main.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(main.getByRole('region', { name: 'Quest overview' })).toBeVisible();
+    await main.getByRole('tab', { name: 'Info' }).click();
     await expect(main.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true');
     await expect(main.getByRole('region', { name: 'Quest info editor' })).toBeVisible();
 
@@ -171,13 +180,20 @@ test.describe('tabs', () => {
     await main.getByRole('tab', { name: 'Results' }).click();
     await expect(main.getByRole('region', { name: 'Quest results editor' })).toBeVisible();
     await expect(main.getByRole('region', { name: 'End results', exact: true })).toBeVisible();
+    // The card by its address (`data-path`) and its class pair (task 7.9: the accessible name
+    // reads the address in words and starts with the card's title, task 7.10: the class's label,
+    // then the drop table it names when the node is one the editor models).
     await expect(
-      main.getByRole('article', { name: 'ResDropTable m_endResults.m_results[0]' }),
+      main.locator(
+        'article[data-path="m_endResults.m_results[0]"][aria-label^="Reward: drop table "]',
+      ),
     ).toBeVisible();
     await expect(main.getByText('WC-UNICORN-MAIN-007')).toBeVisible();
 
     await main.getByRole('tab', { name: 'Dialog' }).click();
-    await expect(main.getByText('m_dialogList', { exact: true })).toBeVisible();
+    await expect(
+      main.getByRole('heading', { name: 'Dialog list (m_dialogList)', exact: true }),
+    ).toBeVisible();
 
     // The Dialog tab became the sixth live editor in p3-08, which is why the "Dialog is
     // read-only" loop that stood here has been replaced rather than weakened: its own spec

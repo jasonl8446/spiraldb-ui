@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { StaticRouter } from 'react-router-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import EvidencePanel from '../../client/src/components/quest/EvidencePanel';
@@ -173,6 +174,7 @@ function evidence(overrides: Partial<QuestEvidence> = {}): QuestEvidence {
           persona: 'WC-RAV-NPC02_Persona',
           override_key: null,
           st_key: 'NPCFormats_First_Last',
+          template_id: 9002,
         },
         portrait: 'GUI/NpcPortraits/Cyrus.dds',
         sound: null,
@@ -191,6 +193,7 @@ function evidence(overrides: Partial<QuestEvidence> = {}): QuestEvidence {
           persona: 'FIXTURE-ABSENT_Persona',
           override_key: null,
           st_key: 'NPCFormats_First_Last',
+          template_id: 9002,
         },
         portrait: null,
         sound: null,
@@ -232,16 +235,21 @@ function render(
   const onInsert = vi.fn();
   // `createElement`, not JSX: the render must stay in a `.ts` file so the node-environment vitest
   // run and `npm run typecheck:tests` (which includes only `**/*.ts`) both cover it.
+  // A resolved speaker name is a router `Link` (task 7.14, D144), so the panel renders in a router.
   const html = renderToStaticMarkup(
-    createElement(EvidencePanel, {
-      evidence: options.evidence ?? evidence(),
-      isLoading: options.isLoading ?? false,
-      isError: options.isError ?? false,
-      target: options.target === undefined ? GOAL_TARGET : options.target,
-      editable: options.editable ?? true,
-      doc: { m_goals: [{}, {}, {}] },
-      onInsert,
-    }),
+    createElement(
+      StaticRouter,
+      { location: '/quests/Q' },
+      createElement(EvidencePanel, {
+        evidence: options.evidence ?? evidence(),
+        isLoading: options.isLoading ?? false,
+        isError: options.isError ?? false,
+        target: options.target === undefined ? GOAL_TARGET : options.target,
+        editable: options.editable ?? true,
+        doc: { m_goals: [{}, {}, {}] },
+        onInsert,
+      }),
+    ),
   );
   return { html, onInsert };
 }
@@ -290,12 +298,18 @@ describe('EvidencePanel — the visible surfaces', () => {
     const { html } = render();
     // The available row writes the focused field…
     expect(html).toContain('aria-label="Insert WizQst17318F_00000006"');
-    expect(html).toContain('→ m_goals[2].m_goalText');
+    // The target is named by its glossary pair and its place in words (task 7.9); the path itself
+    // survives only in `data-path`.
+    expect(html).toMatch(
+      /→ <span data-path="m_goals\[2\]\.m_goalText"><span data-term="m_goalText">Goal text \(<span[^>]*>m_goalText<\/span>\)<\/span> in Goals 3<\/span>/,
+    );
     expect(html).toContain('Insert into');
     // …while the used row writes the field it already fills (its own provenance), even though a
     // different field is focused: the row's label is its own path, not the focus.
     expect(html).toContain('aria-label="Insert WizQst17318E_00000006"');
-    expect(html).toContain('→ m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog');
+    expect(html).toMatch(
+      /→ <span data-path="m_dialogList\.m_dialogs\[0\]\.m_dialogEntries\[0\]\.m_dialog"><span data-term="m_dialog">Dialog text \(<span[^>]*>m_dialog<\/span>\)<\/span> in Dialog list › Dialog blocks 1 › Dialog entries 1<\/span>/,
+    );
   });
 
   it('renders no button and states the reason when nothing is focused', () => {

@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useId, useState, type ReactNode } from 'react';
 
+import type { TermRef } from '@shared/glossary';
+
 import type { QuestObject } from '../../lib/api';
 import {
   goalCount,
@@ -8,8 +10,11 @@ import {
   shortTypeName,
   type PreviewTab,
 } from '../../lib/extract';
+import { goalCardTitle, NO_CARD_NAMES } from '../../lib/card-titles';
 import { nextTabIndex } from '../../lib/tablist';
+import { termText, valueTermOf } from '../../lib/term';
 import { cn } from '../../lib/utils';
+import TermLabel from '../TermLabel';
 import { Badge } from '../ui/badge';
 
 /**
@@ -44,8 +49,15 @@ export interface QuestPreviewProps {
    * own entry: a missing key falls back to that tab's read-only body, so a caller never
    * has to know the tab list.
    */
-  panels?: Partial<Record<PreviewTab, ReactNode>>;
+  panels?: Partial<Record<QuestTab, ReactNode>>;
 }
+
+/**
+ * A tab of the quest detail page: the extraction preview's six plus the Overview (task 7.13, D133),
+ * which exists only where a caller supplies its panel — the detail page, in view and edit mode —
+ * and is then the first tab and the landing tab.
+ */
+export type QuestTab = 'Overview' | PreviewTab;
 
 /**
  * How a panel asks this component to switch tabs.
@@ -58,10 +70,10 @@ export interface QuestPreviewProps {
  * rendered on its own (a unit-style render, a future reuse) degrades to doing nothing rather
  * than throwing.
  */
-export const PreviewTabSelectContext = createContext<((tab: PreviewTab) => void) | null>(null);
+export const PreviewTabSelectContext = createContext<((tab: QuestTab) => void) | null>(null);
 
 /** The tab switch, or `null` when no preview is above this panel. */
-export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
+export function usePreviewTabSelect(): ((tab: QuestTab) => void) | null {
   return useContext(PreviewTabSelectContext);
 }
 
@@ -78,18 +90,20 @@ export function usePreviewTabSelect(): ((tab: PreviewTab) => void) | null {
  * *incomplete* (`tests/ui/a11y.spec.ts`, the `quest-detail:Goal Logic` arm). Both the `id` and
  * every lookup go through this one function, so the two can never drift.
  */
-function tabDomId(panelId: string, name: PreviewTab): string {
+function tabDomId(panelId: string, name: QuestTab): string {
   return `${panelId}-tab-${name.replace(/\s+/g, '-')}`;
 }
 
 export default function QuestPreview({ quest, className, panels }: QuestPreviewProps): JSX.Element {
-  const [tab, setTab] = useState<PreviewTab>('Info');
+  const tabs: readonly QuestTab[] =
+    panels?.Overview === undefined ? PREVIEW_TABS : ['Overview', ...PREVIEW_TABS];
+  const [tab, setTab] = useState<QuestTab>(tabs[0]);
   const panelId = useId();
 
-  // A new quest starts on Info, so the pane never shows a stale section of the
-  // previous quest while appearing to describe this one.
+  // A new quest starts on its first tab (Overview where there is one, else Info), so the pane
+  // never shows a stale section of the previous quest while appearing to describe this one.
   useEffect(() => {
-    setTab('Info');
+    setTab(tabs[0]);
   }, [quest]);
 
   return (
@@ -99,7 +113,7 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
         aria-label="Quest preview sections"
         className="flex flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2"
       >
-        {PREVIEW_TABS.map((name, index) => {
+        {tabs.map((name, index) => {
           const selected = name === tab;
           return (
             <button
@@ -113,12 +127,12 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
               // APG tablist keys, the same automatic activation the click performs; the
               // rule is shared with the list pages' filter tabs (`lib/tablist.ts`).
               onKeyDown={(event) => {
-                const next = nextTabIndex(event.key, index, PREVIEW_TABS.length);
+                const next = nextTabIndex(event.key, index, tabs.length);
                 if (next === null) {
                   return;
                 }
                 event.preventDefault();
-                const target = PREVIEW_TABS[next];
+                const target = tabs[next];
                 setTab(target);
                 document.getElementById(tabDomId(panelId, target))?.focus();
               }}
@@ -155,15 +169,18 @@ export default function QuestPreview({ quest, className, panels }: QuestPreviewP
  * A tab absent from {@link QuestPreviewProps.panels} gets its own p2-07 body.
  */
 function renderPanel(
-  tab: PreviewTab,
+  tab: QuestTab,
   quest: QuestObject,
-  panels?: Partial<Record<PreviewTab, ReactNode>>,
+  panels?: Partial<Record<QuestTab, ReactNode>>,
 ): JSX.Element {
   const editor = panels?.[tab];
   if (editor !== undefined) {
     return <>{editor}</>;
   }
   switch (tab) {
+    case 'Overview':
+      // Only reachable when a caller supplies the panel; nothing here reads the network.
+      return <Empty text="No overview." />;
     case 'Info':
       return <InfoPanel quest={quest} />;
     case 'Goals':
@@ -180,8 +197,8 @@ function renderPanel(
 }
 
 function InfoPanel({ quest }: { quest: QuestObject }): JSX.Element {
-  const fields: Array<[string, string]> = [
-    ['m_goals (count)', String(goalCount(quest))],
+  const fields: FieldRow[] = [
+    ['m_goals', String(goalCount(quest)), '(count)'],
     ...primitiveFields(quest),
   ];
   return (
@@ -201,7 +218,11 @@ function GoalsPanel({ quest }: { quest: QuestObject }): JSX.Element {
       {goals.map((goal, index) => (
         <article key={index} className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3">
           <header className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm text-zinc-100">
+            {/* Fetch-free by contract: no resolved names, so a title falls back as far as it must. */}
+            <span className="text-sm font-medium text-zinc-100">
+              {goalCardTitle(goal, NO_CARD_NAMES)}
+            </span>
+            <span className="font-mono text-xs text-zinc-400">
               {fieldText(goal, 'm_goalName') ?? `Goal ${index + 1}`}
             </span>
             <GoalTypeBadge goal={goal} />
@@ -214,8 +235,19 @@ function GoalsPanel({ quest }: { quest: QuestObject }): JSX.Element {
 }
 
 function GoalTypeBadge({ goal }: { goal: unknown }): JSX.Element | null {
-  const type = shortTypeName(fieldText(goal, '$type')) ?? fieldText(goal, 'm_goalType');
-  return type === null ? null : <Badge variant="outline">{type}</Badge>;
+  const typeString = fieldText(goal, '$type');
+  const goalType = fieldText(goal, 'm_goalType');
+  const term: TermRef | null =
+    typeString !== null && shortTypeName(typeString) !== null
+      ? { type: typeString }
+      : goalType === null
+        ? null
+        : { enum: 'GoalType', value: goalType };
+  return term === null ? null : (
+    <Badge variant="outline">
+      <TermLabel term={term} />
+    </Badge>
+  );
 }
 
 function GoalLogicPanel({ quest }: { quest: QuestObject }): JSX.Element {
@@ -247,9 +279,9 @@ function RequirementsPanel({ quest }: { quest: QuestObject }): JSX.Element {
         Read-only JSON — this preview is the extraction page's; the structured requirement tree is
         edited in the Requirements tab of the quest detail page.
       </p>
-      <JsonBlock label="m_requirements" value={quest.m_requirements} />
-      <JsonBlock label="m_prepRequirements" value={quest.m_prepRequirements} />
-      <JsonBlock label="m_pruneRequirements" value={quest.m_pruneRequirements} />
+      <JsonBlock fieldKey="m_requirements" value={quest.m_requirements} />
+      <JsonBlock fieldKey="m_prepRequirements" value={quest.m_prepRequirements} />
+      <JsonBlock fieldKey="m_pruneRequirements" value={quest.m_pruneRequirements} />
     </section>
   );
 }
@@ -267,14 +299,19 @@ function ResultsPanel({ quest }: { quest: QuestObject }): JSX.Element {
           {endResults.map((result, index) => (
             <li key={index}>
               <Badge variant="secondary">
-                {shortTypeName(nested(result, '$type')) ?? `Result ${index + 1}`}
+                {typeof nested(result, '$type') === 'string' &&
+                shortTypeName(nested(result, '$type')) !== null ? (
+                  <TermLabel term={{ type: nested(result, '$type') as string }} />
+                ) : (
+                  `Result ${index + 1}`
+                )}
               </Badge>
             </li>
           ))}
         </ul>
       ) : null}
-      <JsonBlock label="m_startResults" value={quest.m_startResults} />
-      <JsonBlock label="m_endResults" value={quest.m_endResults} />
+      <JsonBlock fieldKey="m_startResults" value={quest.m_startResults} />
+      <JsonBlock fieldKey="m_endResults" value={quest.m_endResults} />
     </section>
   );
 }
@@ -286,7 +323,7 @@ function DialogPanel({ quest }: { quest: QuestObject }): JSX.Element {
         Read-only JSON — this preview is the extraction page’s; the structured dialog editor is in
         the Dialog tab of the quest detail page.
       </p>
-      <JsonBlock label="m_dialogList" value={quest.m_dialogList} />
+      <JsonBlock fieldKey="m_dialogList" value={quest.m_dialogList} />
     </section>
   );
 }
@@ -295,30 +332,47 @@ function Empty({ text }: { text: string }): JSX.Element {
   return <p className="text-sm text-zinc-400">{text}</p>;
 }
 
-/** A definition list of primitive fields; never renders `[object Object]`. */
-function FieldList({ fields }: { fields: Array<[string, string]> }): JSX.Element {
+/** One row of a {@link FieldList}: the document key, its display value and an optional note. */
+type FieldRow = [key: string, value: string, note?: string];
+
+/**
+ * A definition list of primitive fields; never renders `[object Object]`. Each key renders as its
+ * glossary pair (task 7.9), and so does a value that is a class or an enum literal.
+ */
+function FieldList({ fields }: { fields: FieldRow[] }): JSX.Element {
   if (fields.length === 0) {
     return <p className="text-sm text-zinc-400">No scalar fields.</p>;
   }
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-      {fields.map(([key, value]) => (
-        <div key={key} className="min-w-0">
-          <dt className="font-mono text-xs text-zinc-400">{key}</dt>
-          <dd className="truncate text-sm text-zinc-200" title={value}>
-            {value}
-          </dd>
-        </div>
-      ))}
+      {fields.map(([key, value, note]) => {
+        const term = valueTermOf(key, value);
+        return (
+          <div key={key} className="min-w-0">
+            <dt className="text-xs text-zinc-400">
+              <TermLabel term={{ field: key }} />
+              {note === undefined ? null : ` ${note}`}
+            </dt>
+            <dd
+              className="truncate text-sm text-zinc-200"
+              title={term === null ? value : termText(term)}
+            >
+              {term === null ? value : <TermLabel term={term} />}
+            </dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }
 
 /** A labelled read-only JSON block — the honest fallback for the Phase 3 editors. */
-function JsonBlock({ label, value }: { label: string; value: unknown }): JSX.Element {
+function JsonBlock({ fieldKey, value }: { fieldKey: string; value: unknown }): JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="mb-1 font-mono text-xs text-zinc-400">{label}</p>
+      <p className="mb-1 text-xs text-zinc-400">
+        <TermLabel term={{ field: fieldKey }} />
+      </p>
       <pre className="max-h-72 overflow-auto rounded-md border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-300">
         {value === undefined ? 'undefined' : JSON.stringify(value, null, 2)}
       </pre>

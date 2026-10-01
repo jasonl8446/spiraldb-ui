@@ -187,7 +187,7 @@ describe('the 4 allowed requirement classes', () => {
       'ReqSchoolOfFocus',
       'ReqIsSchool',
     ]);
-    // `ReqHasGoal` and `ReqEntryValue` (spec-domain-reference.md L436) are absent, not
+    // `ReqHasGoal` and `ReqEntryValue` (spec-domain-reference.md §"Requirement Types — Complete Enumeration") are absent, not
     // merely unused: nothing in the table names them.
     const names = REQUIREMENT_TYPE_SPECS.flatMap((spec) => [
       spec.shortName,
@@ -312,7 +312,7 @@ describe('reading a corpus value', () => {
     expect(tree?.children[0]?.path).toEqual(['Items', 3, 'Requirements', 'm_requirements', 0]);
     // The address is the slot path plus one index per level — never the repeated child key.
     expect(tree?.children[0]?.address).toBe('Items[3].Requirements[0]');
-    expect(tree?.children[0]?.title).toBe('ReqSchoolOfFocus');
+    expect(tree?.children[0]?.title).toBe('Requires school of focus (ReqSchoolOfFocus)');
   });
 
   it('names an unknown $type by its own spelling instead of dropping it', () => {
@@ -644,10 +644,10 @@ describe('validate, never normalise (D57)', () => {
 describe('the selector vocabularies', () => {
   it('offers exactly the 4 classes, with an unset option only when nothing matches', () => {
     expect(requirementTypeSelectOptions({ $type: RSOF }).map((option) => option.label)).toEqual([
-      'ReqHasQuest',
-      'ReqHasEntry',
-      'ReqSchoolOfFocus',
-      'ReqIsSchool',
+      'Requires quest (ReqHasQuest)',
+      'Requires quest registry entry (ReqHasEntry)',
+      'Requires school of focus (ReqSchoolOfFocus)',
+      'Requires target school (ReqIsSchool)',
     ]);
     expect(requirementTypeSelectValue({ $type: RSOF })).toBe('ReqSchoolOfFocus');
     expect(requirementTypeSelectValue({ $type: 'unknown' })).toBe('');

@@ -1,0 +1,57 @@
+{
+  "suggestions": [
+    {
+      "questName": "DS-ACAD-C01-003",
+      "path": "m_goalLogic",
+      "value": [
+        {
+          "m_goalsAND": [
+            "1_WizardQuestGoals_UseItem"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "2_WizardQuestGoals_TalkNPC"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "2_WizardQuestGoals_TalkNPC"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [],
+          "m_completeQuest": true,
+          "m_requiredORCount": 1
+        }
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_WizardQuestGoals_UseItem, then MSG_REMOVEGOAL 1_WizardQuestGoals_UseItem, then MSG_SENDGOAL 2_WizardQuestGoals_TalkNPC; MSG_COMPLETEGOAL 2_WizardQuestGoals_TalkNPC, then MSG_COMPLETEQUEST (the terminal goal), on QuestID 5365366370312423501"
+    },
+    {
+      "questName": "DS-ACAD-C01-003",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "gold",
+        "amount": 1002,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (gold 1002) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries gold (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "DS-ACAD-C01-003",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "xp",
+        "amount": 502,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (XP 502) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries XP (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    }
+  ]
+}

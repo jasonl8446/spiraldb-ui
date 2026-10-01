@@ -3,8 +3,9 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 /**
  * Story p4-06's tier-1 UI spec (decisions D40/D44): plan task 4.8's `WizardZoneData`
  * (`ZoneTransfer/`) editor — the two acceptance criteria,
- * docs/spec-domain-reference.md L281-309 (the schema), L700-702 (the zone display derivation),
- * L542-546 (the general validation section) and docs/spec-data-model.md L184 (the filename).
+ * docs/spec-domain-reference.md §"WizardZoneData (ZoneTransfer)" (the schema), §"Zone
+ * Display Names" (the zone display derivation), §"General Validation" and
+ * docs/spec-data-model.md §"File Naming Conventions" (the filename).
  *
  * Hermetic by construction: every request the page makes is fulfilled from the fixtures below, so
  * the run reaches neither the dev stack's SQLite file nor the D17 clone. The wire contracts are

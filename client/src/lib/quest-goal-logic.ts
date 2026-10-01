@@ -56,6 +56,7 @@
 import * as dagre from 'dagre';
 
 import type { DocEdit, DocPath } from '@shared/document';
+import type { TermRef } from '@shared/glossary';
 import { goalLogicReachability } from '@shared/quest/validation';
 
 import {
@@ -63,6 +64,7 @@ import {
   goalName,
   goalShortTypeName,
   goalSummaryLines,
+  goalTypeTerm,
   startGoalNames,
   toggleStartGoalEdits,
   type GoalSummaryLine,
@@ -243,6 +245,8 @@ export interface GoalLogicNode {
   name: string;
   /** The `$type`'s TypeName for a goal (D60h), or `null` when the class is unknown. */
   typeName: string | null;
+  /** The glossary term the card's class line renders (task 7.9), or `null` for the Complete node. */
+  typeTerm: TermRef | null;
   /** The spec's type colour class, or the neutral fallback. */
   badgeClass: string;
   /** `true` when the goal's name is in `m_startGoals`. */
@@ -304,6 +308,7 @@ export function buildGoalLogicGraph(document: unknown): GoalLogicGraph {
       goalIndex: index,
       name: name ?? `Goal ${index + 1}`,
       typeName: goalShortTypeName(goal),
+      typeTerm: goalTypeTerm(goal),
       badgeClass: goalBadgeClass(goal),
       isStart: name !== null && startNames.includes(name),
       summary: goalSummaryLines(goal),
@@ -316,6 +321,7 @@ export function buildGoalLogicGraph(document: unknown): GoalLogicGraph {
     goalIndex: null,
     name: COMPLETE_NODE_LABEL,
     typeName: null,
+    typeTerm: null,
     badgeClass: '',
     isStart: false,
     summary: [],

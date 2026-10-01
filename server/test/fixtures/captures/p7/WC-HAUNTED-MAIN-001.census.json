@@ -1,0 +1,306 @@
+{
+  "input": "WC-HAUNTED-MAIN-001.json",
+  "messages": 16,
+  "rows": [
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "ActorDialog",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "CompletionType",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "DefaultDialogAnimation",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "GoalID",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "IsEncounter",
+      "count": 2,
+      "consumed": false
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "MobileID",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "Persona",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "PersonaIcon",
+      "count": 2,
+      "consumed": false
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "PersonaName",
+      "count": 2,
+      "consumed": false
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "QuestID",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_ACTORDIALOG",
+      "field": "RangeCheck",
+      "count": 2,
+      "consumed": false
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "field": "GoalID",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "field": "QuestID",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "field": "QuestID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_LOOT",
+      "field": "GlobalID",
+      "count": 1,
+      "consumed": false
+    },
+    {
+      "message": "MSG_LOOT",
+      "field": "LootList",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "field": "GoalID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "field": "MobileID",
+      "count": 1,
+      "consumed": false
+    },
+    {
+      "message": "MSG_PERSONAINFO",
+      "field": "QuestID",
+      "count": 1,
+      "consumed": false
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "GoalData",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "Level",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "Mainline",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "MobileID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "QuestInfo",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "QuestName",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "QuestTitle",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "Rewards",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTREWARDS",
+      "field": "LootList",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTREWARDS",
+      "field": "QuestID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "field": "GoalID",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "field": "QuestID",
+      "count": 2,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "ClientTags",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalDestinationZone",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalID",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalImage1",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalImage2",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalLocation",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalMadlibs",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalNameID",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalTitle",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalTotal",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalType",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "NoQuestHelper",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "PersonaName",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "PetOnlyQuest",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "QuestID",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "UseTally",
+      "count": 3,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "QuestID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "QuestTitle",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "Rewards",
+      "count": 1,
+      "consumed": true
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+# p7-05 before/after RAW: the p7-04 binary (built from HEAD 2df452d, kept at <scratch>/before/cli) vs the
+# p7-05 binary (tools/bin/imview-packet-reader), on the four task 7.4 fixtures. Full before stdout/stderr
+# are committed in p7-05-before/; the after stdout is the committed <QUEST>.extract.json golden.
+# Summaries are printed from the raw stdout by: the summary script reproduced in p7-05.md
+
+================ DS-ACAD2-C01-005 — before
+$ $SCRATCH/before/cli/imview-packet-reader --input server/test/fixtures/captures/p7/DS-ACAD2-C01-005.json > DS-ACAD2-C01-005.stdout.json 2> DS-ACAD2-C01-005.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+--- stdout summary
+  quest DS-ACAD2-C01-005: goals=3 startGoals=["1_WizardQuestGoals_Explore"]
+    quest dialogs: Prep[WizQst1EDA4_00000001|WizQst1EDA4_00000002] Completion[P7-PLANT-Dialog-DS-ACAD2-C01-005-g0-Completion]
+    1_WizardQuestGoals_Explore (nameID 2559431, GOAL_TYPE_WAYPOINT) dialogs: - completeText: -
+    2_WizardQuestGoals_UseItem (nameID 606539207, GOAL_TYPE_WAYPOINT) dialogs: - completeText: -
+    3_WizardQuestGoals_TalkNPC (nameID 640093639, GOAL_TYPE_PERSONA) dialogs: Completion[WizQst1EDA4_00000003] completeText: -
+
+================ DS-ACAD2-C01-005 — after
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/DS-ACAD2-C01-005.json > DS-ACAD2-C01-005.stdout.json 2> DS-ACAD2-C01-005.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+{"report":"reader-repair","quest":"DS-ACAD2-C01-005","path":"m_dialogList[Completion]","source":"MSG_ACTORDIALOG.GoalID","value":5646972278875833427,"reason":"replaced: QuestBuilder took the quest\u0027s Completion dialog from GoalID 5646972278875833427\u0027s packet (it ignores GoalID); the first Completion packet with GoalID 0 is the quest\u0027s (D46(4))"}
+--- stdout summary
+  quest DS-ACAD2-C01-005: goals=3 startGoals=["1_WizardQuestGoals_Explore"]
+    quest dialogs: Prep[WizQst1EDA4_00000001|WizQst1EDA4_00000002] Completion[P7-PLANT-Dialog-DS-ACAD2-C01-005-quest-Completion-1|P7-PLANT-Dialog-DS-ACAD2-C01-005-quest-Completion-2]
+    1_WizardQuestGoals_Explore (nameID 2559431, GOAL_TYPE_WAYPOINT) dialogs: Completion[P7-PLANT-Dialog-DS-ACAD2-C01-005-g0-Completion] completeText: -
+    2_WizardQuestGoals_UseItem (nameID 606539207, GOAL_TYPE_WAYPOINT) dialogs: - completeText: -
+    3_WizardQuestGoals_TalkNPC (nameID 640093639, GOAL_TYPE_PERSONA) dialogs: Completion[WizQst1EDA4_00000003] completeText: -
+--- after stdout == committed golden:
+identical
+
+================ MS-DTH1-C01-002 — before
+$ $SCRATCH/before/cli/imview-packet-reader --input server/test/fixtures/captures/p7/MS-DTH1-C01-002.json > MS-DTH1-C01-002.stdout.json 2> MS-DTH1-C01-002.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+--- stdout summary
+  quest MS-DTH1-C01-002: goals=3 startGoals=["1_WizardQuestGoals_ExploreZone"]
+    quest dialogs: Prep[WizQst12E2D_00000006|WizQst12E2D_00000007|WizQst12E2D_00000008] Completion[WizQst12E2E_00000007]
+    1_WizardQuestGoals_ExploreZone (nameID 2559431, GOAL_TYPE_WAYPOINT) dialogs: - completeText: -
+    2_WizardQuestGoals_00000036 (nameID 606539207, GOAL_TYPE_WAYPOINT) dialogs: Underway[P7-PLANT-Dialog-MS-DTH1-C01-002-g1-Underway-1|P7-PLANT-Dialog-MS-DTH1-C01-002-g1-Underway-2] completeText: -
+    3_WizardQuestGoals_TalkNPC (nameID 640093639, GOAL_TYPE_PERSONA) dialogs: Completion[WizQst12E2E_00000007] completeText: -
+
+================ MS-DTH1-C01-002 — after
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/MS-DTH1-C01-002.json > MS-DTH1-C01-002.stdout.json 2> MS-DTH1-C01-002.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+{"report":"reader-repair","quest":"MS-DTH1-C01-002","path":"m_dialogList[Completion]","source":"MSG_ACTORDIALOG.GoalID","value":3436071542093462329,"reason":"removed: QuestBuilder took the quest\u0027s Completion dialog from GoalID 3436071542093462329\u0027s packet (it ignores GoalID), and no Completion packet has GoalID 0 (D46(4))"}
+{"report":"observed-field","quest":"MS-DTH1-C01-002","path":"m_dialogList[Underway].IsYesNo","source":"MSG_ACTORDIALOG.IsYesNo","value":1,"reason":"the dialog block (m_dialogTag, m_dialogEntries, m_madlibs, m_dialogEvents, m_noAggro*) and its entries have no yes/no field"}
+{"report":"observed-field","quest":"MS-DTH1-C01-002","path":"m_dialogList[Underway].DefaultDialogAnimation","source":"MSG_ACTORDIALOG.DefaultDialogAnimation","value":"P7-PLANT-DefaultDialogAnimation-MS-DTH1-C01-002-quest","reason":"the dialog block has no default-animation field; QuestTemplate.m_defaultDialogAnimation is quest-scoped and nothing shows a per-dialog packet value is the quest\u0027s"}
+{"report":"observed-field","quest":"MS-DTH1-C01-002","path":"m_goals[2_WizardQuestGoals_00000036].m_dialogList[Underway].IsYesNo","source":"MSG_ACTORDIALOG.IsYesNo","value":1,"reason":"the dialog block (m_dialogTag, m_dialogEntries, m_madlibs, m_dialogEvents, m_noAggro*) and its entries have no yes/no field"}
+--- stdout summary
+  quest MS-DTH1-C01-002: goals=3 startGoals=["1_WizardQuestGoals_ExploreZone"]
+    quest dialogs: Prep[WizQst12E2D_00000006|WizQst12E2D_00000007|WizQst12E2D_00000008] Underway[P7-PLANT-Dialog-MS-DTH1-C01-002-quest-Underway] Completion[P7-PLANT-Dialog-MS-DTH1-C01-002-quest-encounter-Completion]
+    1_WizardQuestGoals_ExploreZone (nameID 2559431, GOAL_TYPE_WAYPOINT) dialogs: Prep[P7-PLANT-Dialog-MS-DTH1-C01-002-g0-encounter-Prep] completeText: -
+    2_WizardQuestGoals_00000036 (nameID 606539207, GOAL_TYPE_WAYPOINT) dialogs: Underway[P7-PLANT-Dialog-MS-DTH1-C01-002-g1-Underway-1|P7-PLANT-Dialog-MS-DTH1-C01-002-g1-Underway-2] Completion[P7-PLANT-Dialog-MS-DTH1-C01-002-g1-encounter-Completion] completeText: -
+    3_WizardQuestGoals_TalkNPC (nameID 640093639, GOAL_TYPE_PERSONA) dialogs: Completion[WizQst12E2E_00000007] completeText: -
+--- after stdout == committed golden:
+identical
+
+================ DS-ACAD1-C04-003 — before
+$ $SCRATCH/before/cli/imview-packet-reader --input server/test/fixtures/captures/p7/DS-ACAD1-C04-003.json > DS-ACAD1-C04-003.stdout.json 2> DS-ACAD1-C04-003.stderr.txt; echo exit=$?
+exit=1
+--- stderr (raw)
+error: Unsupported goal type: GOAL_TYPE_COMPLETEQUEST
+--- stdout summary
+  (empty stdout)
+
+================ DS-ACAD1-C04-003 — after
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/DS-ACAD1-C04-003.json > DS-ACAD1-C04-003.stdout.json 2> DS-ACAD1-C04-003.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+{"report":"goal-excluded","quest":"DS-ACAD1-C04-003","path":"m_goals[GoalID 8393399155336036053]","source":"MSG_SENDGOAL.GoalType","value":9,"reason":"GOAL_TYPE_COMPLETEQUEST is not listed by QuestBuilder.GetGoalFromType, which throws NotSupportedException for it; re-read without this goal (3 message(s) carrying its GoalID)"}
+--- stdout summary
+  quest DS-ACAD1-C04-003: goals=2 startGoals=["1_WizardQuestGoals_Kill"]
+    quest dialogs: Prep[WizQst1ED99_00000002|WizQst1ED99_00000003]
+    1_WizardQuestGoals_Kill (nameID 2559431, GOAL_TYPE_BOUNTYCOLLECT) dialogs: - completeText: -
+    2_WizardQuestGoals_TalkNPC (nameID 640093639, GOAL_TYPE_PERSONA) dialogs: Completion[WizQst1ED99_00000004] completeText: P7-PLANT-CompleteGoal-DS-ACAD1-C04-003-g2
+--- after stdout == committed golden:
+identical
+
+================ WC-TUT-C05-001 — before
+$ $SCRATCH/before/cli/imview-packet-reader --input server/test/fixtures/captures/p7/WC-TUT-C05-001.json > WC-TUT-C05-001.stdout.json 2> WC-TUT-C05-001.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_petOnlyQuest","source":"MSG_SENDQUEST.PetOnlyQuest","value":1,"reason":"the quest schema has no m_petOnlyQuest (only goals carry it)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_questComplete","source":"MSG_COMPLETEQUEST.CompleteText","value":"P7-PLANT-CompleteQuest-WC-TUT-C05-001","reason":"m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[1_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g0","reason":"AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091030643723153931].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g1","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091030643723153931].m_completeText","source":"MSG_COMPLETEGOAL.CompleteText","value":"P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091031743234782143].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g2","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091031743234782143].m_completeText","source":"MSG_COMPLETEGOAL.CompleteText","value":"P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091032842746410353].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g3","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091032842746410353].m_completeText","source":"MSG_COMPLETEGOAL.CompleteText","value":"P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091033942258038565].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g4","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[GoalID 5091033942258038565].m_completeText","source":"MSG_COMPLETEGOAL.CompleteText","value":"P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4","reason":"the reader dropped this goal: GoalNameID 0 is already owned by GoalID 5091029544211525721 (QuestBuilder skips a duplicate GoalNameID)"}
+--- stdout summary
+  quest WC-TUT-C05-001: goals=1 startGoals=[]
+    quest dialogs: -
+    1_ (nameID 0, GOAL_TYPE_ACHIEVERANK) dialogs: - completeText: P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0
+
+================ WC-TUT-C05-001 — after
+$ tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/WC-TUT-C05-001.json > WC-TUT-C05-001.stdout.json 2> WC-TUT-C05-001.stderr.txt; echo exit=$?
+exit=0
+--- stderr (raw)
+{"report":"reader-repair","quest":"WC-TUT-C05-001","path":"m_goals[2_]","source":"MSG_SENDGOAL","value":5091030643723153931,"reason":"added: this GOAL_TYPE_ACHIEVERANK goal has an empty GoalTitle and GoalNameID 0, which GoalID 5091029544211525721 already owns, so QuestBuilder skipped it as a duplicate; it is named {n}_{GoalTitle} by its capture position (the corpus goal name is not on the wire)"}
+{"report":"reader-repair","quest":"WC-TUT-C05-001","path":"m_goals[3_]","source":"MSG_SENDGOAL","value":5091031743234782143,"reason":"added: this GOAL_TYPE_ACHIEVERANK goal has an empty GoalTitle and GoalNameID 0, which GoalID 5091029544211525721 already owns, so QuestBuilder skipped it as a duplicate; it is named {n}_{GoalTitle} by its capture position (the corpus goal name is not on the wire)"}
+{"report":"reader-repair","quest":"WC-TUT-C05-001","path":"m_goals[4_]","source":"MSG_SENDGOAL","value":5091032842746410353,"reason":"added: this GOAL_TYPE_ACHIEVERANK goal has an empty GoalTitle and GoalNameID 0, which GoalID 5091029544211525721 already owns, so QuestBuilder skipped it as a duplicate; it is named {n}_{GoalTitle} by its capture position (the corpus goal name is not on the wire)"}
+{"report":"reader-repair","quest":"WC-TUT-C05-001","path":"m_goals[5_]","source":"MSG_SENDGOAL","value":5091033942258038565,"reason":"added: this GOAL_TYPE_ACHIEVERANK goal has an empty GoalTitle and GoalNameID 0, which GoalID 5091029544211525721 already owns, so QuestBuilder skipped it as a duplicate; it is named {n}_{GoalTitle} by its capture position (the corpus goal name is not on the wire)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_petOnlyQuest","source":"MSG_SENDQUEST.PetOnlyQuest","value":1,"reason":"the quest schema has no m_petOnlyQuest (only goals carry it)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_questComplete","source":"MSG_COMPLETEQUEST.CompleteText","value":"P7-PLANT-CompleteQuest-WC-TUT-C05-001","reason":"m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[1_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g0","reason":"AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[2_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g1","reason":"AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[3_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g2","reason":"AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[4_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g3","reason":"AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[5_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g4","reason":"AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does)"}
+--- stdout summary
+  quest WC-TUT-C05-001: goals=5 startGoals=[]
+    quest dialogs: -
+    1_ (nameID 0, GOAL_TYPE_ACHIEVERANK) dialogs: - completeText: P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0
+    2_ (nameID 0, GOAL_TYPE_ACHIEVERANK) dialogs: - completeText: P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1
+    3_ (nameID 0, GOAL_TYPE_ACHIEVERANK) dialogs: - completeText: P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2
+    4_ (nameID 0, GOAL_TYPE_ACHIEVERANK) dialogs: - completeText: P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3
+    5_ (nameID 0, GOAL_TYPE_ACHIEVERANK) dialogs: - completeText: P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4
+--- after stdout == committed golden:
+identical

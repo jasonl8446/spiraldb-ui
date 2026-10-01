@@ -61,7 +61,7 @@ function entry(overrides: Partial<StatusHistoryEntry> = {}): StatusHistoryEntry 
 }
 
 describe('the transition actions', () => {
-  it('uses the lifecycle table`s exact button labels (spec-data-model L16-17)', () => {
+  it('uses the lifecycle table`s exact button labels (spec-data-model §"Verification Status Lifecycle")', () => {
     expect(MARK_REVIEWED_LABEL).toBe('Mark Reviewed');
     expect(MARK_VERIFIED_LABEL).toBe('Mark Verified');
     expect(STATUS_TRANSITIONS).toEqual([

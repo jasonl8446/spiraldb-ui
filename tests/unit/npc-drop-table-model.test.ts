@@ -43,7 +43,7 @@ import {
 
 /**
  * Story p4-06's model + save-path test — plan task 4.6, `NpcDropTable`
- * (docs/spec-domain-reference.md L166-181) and the two facts the story turns on:
+ * (docs/spec-domain-reference.md §"NpcDropTable") and the two facts the story turns on:
  *
  * 1. **`NpcDropTable/` does not exist** in the fork, so this family has no corpus files and its
  *    editor is schema-driven. The live arm below re-measures the absence (and, when the synced

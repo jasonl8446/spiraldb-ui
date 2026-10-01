@@ -1,0 +1,44 @@
+{
+  "suggestions": [
+    {
+      "questName": "DS-ACAD2-C01-005",
+      "path": "m_goalLogic",
+      "value": [
+        {
+          "m_goalsAND": [
+            "1_WizardQuestGoals_Explore"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "2_WizardQuestGoals_UseItem"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "2_WizardQuestGoals_UseItem"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "3_WizardQuestGoals_TalkNPC"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "3_WizardQuestGoals_TalkNPC"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [],
+          "m_completeQuest": true,
+          "m_requiredORCount": 1
+        }
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_WizardQuestGoals_Explore, then MSG_REMOVEGOAL 1_WizardQuestGoals_Explore, then MSG_SENDGOAL 2_WizardQuestGoals_UseItem; MSG_COMPLETEGOAL 2_WizardQuestGoals_UseItem, then MSG_REMOVEGOAL 2_WizardQuestGoals_UseItem, then MSG_SENDGOAL 3_WizardQuestGoals_TalkNPC; MSG_COMPLETEGOAL 3_WizardQuestGoals_TalkNPC, then MSG_COMPLETEQUEST (the terminal goal), on QuestID 4339642683224958205"
+    }
+  ]
+}

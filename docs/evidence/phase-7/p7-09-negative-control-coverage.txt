@@ -1,0 +1,41 @@
+# p7-09 negative controls for criterion 2 (RAW). Each run deletes ONE entry from shared/glossary.ts, shows the coverage test red, then restores.
+
+$ (glossary.ts with the entry 'fields.m_questLevel' deleted) npx vitest run tests/unit/glossary.test.ts
+   × glossary coverage — every rendered term has an entry > has an entry for every key of the six quest spec tables 8ms
+     → expected [ 'quest-info: m_questLevel' ] to deeply equal []
+   × glossary coverage — every rendered term has an entry > has an entry for every quoted m_ key in the six tables’ source 2ms
+     → expected [ …(2) ] to deeply equal []
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  2 failed | 11 passed (13)
+
+$ (glossary.ts with the entry 'classes.ReqHasQuest (a KNOWN_TYPE_STRINGS entry)' deleted) npx vitest run tests/unit/glossary.test.ts
+   × glossary coverage — every rendered term has an entry > has a class entry for every KNOWN_TYPE_STRINGS entry, by string and by short name 9ms
+     → expected [ Array(1) ] to deeply equal []
+   × glossary entries — shape, help and sources > holds the counts the plan measured, plus the terms the six tables added 2ms
+     → expected [ 'WaypointGoalTemplate', …(27) ] to have a length of 29 but got 28
+   × glossary lookups > reads a class by short name and by assembly-qualified $type 1ms
+     → expected undefined to be 'Requires quest' // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  3 failed | 10 passed (13)
+
+$ (glossary.ts with the entry 'enums.GoalType.GOAL_TYPE_USAGE (a rendered enum literal)' deleted) npx vitest run tests/unit/glossary.test.ts
+   × glossary coverage — every rendered term has an entry > has an enum entry for every literal the editor renders 9ms
+     → expected [ …(2) ] to deeply equal []
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 12 passed (13)
+
+$ (glossary.ts with the entry 'groups.Camera (a dialog section name)' deleted) npx vitest run tests/unit/glossary.test.ts
+   × glossary coverage — every rendered term has an entry > has a group entry for every dialog section name 8ms
+     → expected [ 'Camera' ] to deeply equal []
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 12 passed (13)
+
+# restored:
+glossary.ts identical to pre-control copy
+?? shared/glossary.ts
+ Test Files  1 passed (1)
+      Tests  13 passed (13)

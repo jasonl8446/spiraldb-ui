@@ -1,0 +1,133 @@
+{
+  "suggestions": [
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_goalLogic",
+      "value": [
+        {
+          "m_goalsAND": [
+            "1_WizardQuestGoals_Explore"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "2_WizardQuestGoals_Kill"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "2_WizardQuestGoals_Kill"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "3_WizardQuestGoals_TalkNPC"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "3_WizardQuestGoals_TalkNPC"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [],
+          "m_completeQuest": true,
+          "m_requiredORCount": 1
+        }
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_WizardQuestGoals_Explore, then MSG_REMOVEGOAL 1_WizardQuestGoals_Explore, then MSG_SENDGOAL 2_WizardQuestGoals_Kill; MSG_COMPLETEGOAL 2_WizardQuestGoals_Kill, then MSG_REMOVEGOAL 2_WizardQuestGoals_Kill, then MSG_SENDGOAL 3_WizardQuestGoals_TalkNPC; MSG_COMPLETEGOAL 3_WizardQuestGoals_TalkNPC, then MSG_COMPLETEQUEST (the terminal goal), on QuestID 3551355981576047565"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "gold",
+        "amount": 1006,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (gold 1006) from MSG_QUESTOFFER.Rewards, MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries gold (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "xp",
+        "amount": 506,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (XP 506) from MSG_QUESTOFFER.Rewards, MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries XP (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "item",
+        "itemId": 7700611,
+        "count": 1,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (item 7700611 x1) from MSG_QUESTOFFER.Rewards, MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries items (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "spell",
+        "spellId": 7700621,
+        "result": {
+          "$type": "Imcodec.ObjectProperty.TypeCache.ResLearnSpell, Imcodec.ObjectProperty",
+          "m_templateID": 7700621
+        }
+      },
+      "source": "capture-rewards",
+      "confidence": 0.6,
+      "note": "rolled observation (spell 7700621) from MSG_SENDQUEST.Rewards, MSG_QUESTREWARDS.LootList; not a drop-table name; Imlight sends a quest's ResLearnSpell as this AddSpellLootInfo, and the spell's school requirement is not on the wire"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "gold",
+        "amount": 1016,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (gold 1016) from MSG_LOOT.LootList; not a drop-table name; no corpus result type carries gold (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "xp",
+        "amount": 516,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (XP 516) from MSG_LOOT.LootList; not a drop-table name; no corpus result type carries XP (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-HAUNTED-MAIN-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "item",
+        "itemId": 7700612,
+        "count": 3,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (item 7700612 x3) from MSG_LOOT.LootList; not a drop-table name; no corpus result type carries items (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    }
+  ]
+}

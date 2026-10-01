@@ -1,0 +1,100 @@
+{
+  "suggestions": [
+    {
+      "questName": "WC-TUT-C05-001",
+      "path": "m_startGoals",
+      "value": [
+        "1_"
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_SENDGOAL 1_ before any MSG_COMPLETEGOAL on QuestID 5231722105877907883"
+    },
+    {
+      "questName": "WC-TUT-C05-001",
+      "path": "m_goalLogic",
+      "value": [
+        {
+          "m_goalsAND": [
+            "1_"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "2_"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "2_"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "3_"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "3_"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "4_"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "4_"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [
+            "5_"
+          ],
+          "m_completeQuest": false,
+          "m_requiredORCount": 1
+        },
+        {
+          "m_goalsAND": [
+            "5_"
+          ],
+          "m_goalsOR": [],
+          "m_goalsToAdd": [],
+          "m_completeQuest": true,
+          "m_requiredORCount": 1
+        }
+      ],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_, then MSG_REMOVEGOAL 1_, then MSG_SENDGOAL 2_; MSG_COMPLETEGOAL 2_, then MSG_REMOVEGOAL 2_, then MSG_SENDGOAL 3_; MSG_COMPLETEGOAL 3_, then MSG_REMOVEGOAL 3_, then MSG_SENDGOAL 4_; MSG_COMPLETEGOAL 4_, then MSG_REMOVEGOAL 4_, then MSG_SENDGOAL 5_; MSG_COMPLETEGOAL 5_, then MSG_COMPLETEQUEST (the terminal goal), on QuestID 5231722105877907883"
+    },
+    {
+      "questName": "WC-TUT-C05-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "gold",
+        "amount": 1005,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (gold 1005) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries gold (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    },
+    {
+      "questName": "WC-TUT-C05-001",
+      "path": "m_endResults.m_results",
+      "value": {
+        "kind": "xp",
+        "amount": 505,
+        "result": null
+      },
+      "source": "capture-rewards",
+      "confidence": 0.3,
+      "note": "rolled observation (XP 505) from MSG_SENDQUEST.Rewards; not a drop-table name; no corpus result type carries XP (the quest's drop table, which is not on the wire, rolled it), so accepting it writes nothing"
+    }
+  ]
+}

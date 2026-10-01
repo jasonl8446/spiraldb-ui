@@ -29,12 +29,12 @@ import {
   GOALS_EDITOR_LABEL,
   GOALS_PATH,
   GOAL_EDITABLE_BASE_FIELDS,
+  GOAL_SUMMARY_EMPTY_TEXT,
   GOAL_TYPE_SPECS,
   NO_GOALS_TEXT,
   RAW_FIELDS_LABEL,
   REORDER_HANDLE_LABEL,
   SET_START_GOAL_LABEL,
-  SHARED_BASE_FIELDS_LABEL,
   START_GOALS_PATH,
   START_GOAL_BADGE_LABEL,
   UNSET_START_GOAL_LABEL,
@@ -48,11 +48,11 @@ import {
   goalScalarText,
   goalSelectOptions,
   goalSelectValue,
-  goalShortTypeName,
   goalSummaryLines,
   goalTagsFieldEdit,
   goalTextFieldEdit,
   goalTypeFields,
+  goalTypeTerm,
   isStartGoal,
   moveGoalEdits,
   npcNameSuggestions,
@@ -60,18 +60,29 @@ import {
   toggleStartGoalEdits,
   unmodelledGoalKeys,
   type GoalFieldSpec,
+  type GoalSelectOption,
   type GoalShortTypeName,
+  type GoalSummaryLine,
 } from '../../lib/quest-goals';
 import {
   FieldMessages,
   fieldAriaInvalid,
+  useAnyFieldMessages,
   useFieldMessages,
   useFieldMessagesUnder,
   type FieldValidationMessage,
 } from '../shared/FieldValidation';
 import { withValidationBorder } from '../../lib/quest-validation';
 import { prefersReducedMotion } from '../../lib/reduced-motion';
+import { fieldValueText, termText, valueTermOf } from '../../lib/term';
+import { goalCardTitle, goalTitleStringKeys, type CardNames } from '../../lib/card-titles';
+import { useCardNames } from '../../hooks/useCardNames';
 import { cn } from '../../lib/utils';
+import TermHelp from '../TermHelp';
+import TermLabel from '../TermLabel';
+import AdvancedDisclosure from '../shared/AdvancedDisclosure';
+import ReadOnlyEnumValue from '../shared/ReadOnlyEnumValue';
+import { hasAdvancedValue, singleLegalValue, splitByTier } from '../../lib/advanced';
 import { useEvidenceCardFocus, useEvidenceFieldFocus } from './EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
 import { Badge } from '../ui/badge';
@@ -125,6 +136,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
   const goals = arrayOf(state.value([GOALS_PATH]));
   const startGoals = state.value([START_GOALS_PATH]);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const names = useCardNames(['npcs', 'zones'], goals.flatMap(goalTitleStringKeys));
   const [newType, setNewType] = useState<GoalShortTypeName>('Waypoint');
 
   // Positional ids: `m_goalName` is editable, so a name-keyed id would remount a card
@@ -166,6 +178,7 @@ export default function QuestGoalsEditor({ state }: QuestGoalsEditorProps): JSX.
                   index={index}
                   goal={goal}
                   startGoals={startGoals}
+                  names={names}
                   state={state}
                   expanded={expanded === index}
                   onToggleEdit={() => setExpanded(expanded === index ? null : index)}
@@ -211,11 +224,13 @@ function StartGoalsValidation(): JSX.Element | null {
   return (
     <div
       role="group"
-      aria-label={START_GOALS_PATH}
+      aria-label={termText({ field: START_GOALS_PATH })}
       data-testid="start-goals-validation"
       className="flex flex-col gap-1 rounded-md border border-red-500/60 bg-red-950/20 p-2"
     >
-      <p className="font-mono text-xs text-red-300">{START_GOALS_PATH}</p>
+      <p className="text-xs text-red-300">
+        <TermLabel term={{ field: START_GOALS_PATH }} />
+      </p>
       <FieldMessages messages={messages} />
     </div>
   );
@@ -227,6 +242,7 @@ function GoalCard({
   index,
   goal,
   startGoals,
+  names,
   state,
   expanded,
   onToggleEdit,
@@ -235,6 +251,7 @@ function GoalCard({
   index: number;
   goal: unknown;
   startGoals: unknown;
+  names: CardNames;
   state: QuestDocumentState;
   expanded: boolean;
   onToggleEdit: () => void;
@@ -249,6 +266,10 @@ function GoalCard({
     isDragging,
   } = useSortable({ id });
   const name = goalName(goal);
+  // The card is titled by meaning (task 7.10); the generated goal id stays as secondary text (D144)
+  // and ends the accessible names, which keeps two goals with the same title distinguishable.
+  const title = goalCardTitle(goal, names);
+  const goalId = name ?? String(index + 1);
   const start = isStartGoal(goal, startGoals);
   // The finding about the goal itself (its own path), not its fields: `goal-unreachable` is the
   // only rule whose subject is the node, and this card is the node's surface.
@@ -289,16 +310,17 @@ function GoalCard({
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            aria-label={`${REORDER_HANDLE_LABEL} ${name ?? index + 1}`}
+            aria-label={`${REORDER_HANDLE_LABEL} ${title}, ${goalId}`}
             className="cursor-grab rounded-md border border-zinc-700 px-2 py-1 text-sm text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:cursor-grabbing"
           >
             ☰
           </button>
 
-          <span className="font-mono text-sm text-zinc-100">{name ?? `Goal ${index + 1}`}</span>
+          <span className="text-sm font-medium text-zinc-100">{title}</span>
+          <span className="font-mono text-xs text-zinc-400">{name ?? `Goal ${index + 1}`}</span>
 
           <Badge variant="outline" className={goalBadgeClass(goal)}>
-            {goalShortTypeName(goal)}
+            <TermLabel term={goalTypeTerm(goal)} />
           </Badge>
           {start ? <Badge variant="success">{START_GOAL_BADGE_LABEL}</Badge> : null}
 
@@ -310,7 +332,7 @@ function GoalCard({
               type="button"
               size="sm"
               variant="ghost"
-              aria-label={`${DELETE_GOAL_LABEL} ${name ?? index + 1}`}
+              aria-label={`${DELETE_GOAL_LABEL} ${title}, ${goalId}`}
               onClick={() => state.edit(deleteGoalEdit(index))}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -357,11 +379,11 @@ function GoalSummary({ goal }: { goal: unknown }): JSX.Element | null {
   return (
     <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
       {lines.map((line) => (
-        <div key={line.label} className="flex min-w-0 gap-2">
-          <dt className="shrink-0 text-zinc-400">{line.label}:</dt>
-          <dd className="truncate text-zinc-300" title={line.value}>
-            {line.value}
-          </dd>
+        <div key={line.key} className="flex min-w-0 gap-2">
+          <dt className="shrink-0 text-zinc-400">
+            <TermLabel term={{ field: line.key }} />:
+          </dt>
+          <SummaryValue line={line} />
         </div>
       ))}
     </dl>
@@ -369,9 +391,22 @@ function GoalSummary({ goal }: { goal: unknown }): JSX.Element | null {
 }
 
 /**
+ * A summary line's value: an enum literal (`BT_MOB_KILL`) as its glossary pair (task 7.9), any
+ * other value as itself.
+ */
+function SummaryValue({ line }: { line: GoalSummaryLine }): JSX.Element {
+  const term = line.value === GOAL_SUMMARY_EMPTY_TEXT ? null : valueTermOf(line.key, line.value);
+  return (
+    <dd className="truncate text-zinc-300" title={term === null ? line.value : termText(term)}>
+      {term === null ? line.value : <TermLabel term={term} />}
+    </dd>
+  );
+}
+
+/**
  * The inline editor (no modal — the plan allows either, and an inline panel keeps the
- * card, its summary and its JSON in one view): the type's own fields, then the shared
- * base fields in a collapsible `<details>`, then the raw disclosure (on the card).
+ * card, its summary and its JSON in one view): the basic fields (the type's own and the shared
+ * base ones), then the Advanced disclosure, then the raw disclosure (on the card).
  */
 function GoalEditPanel({
   index,
@@ -382,29 +417,35 @@ function GoalEditPanel({
   goal: unknown;
   state: QuestDocumentState;
 }): JSX.Element {
+  // The type's own fields and the shared base fields, split by the glossary tier (task 7.11):
+  // basic first, advanced under the disclosure.
+  const { basic, advanced } = splitByTier([...goalTypeFields(goal), ...GOAL_EDITABLE_BASE_FIELDS]);
+  const advancedPaths = advanced.map((field) => [GOALS_PATH, index, field.key]);
+  const advancedHasError = useAnyFieldMessages(advancedPaths);
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-zinc-800 pt-3">
       <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
-        {goalTypeFields(goal).map((field) => (
+        {basic.map((field) => (
           <GoalFieldControl key={field.key} index={index} field={field} state={state} />
         ))}
       </div>
 
-      <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
-        <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
-          {SHARED_BASE_FIELDS_LABEL}
-        </summary>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 border-t border-zinc-800 p-3 md:grid-cols-2">
-          {GOAL_EDITABLE_BASE_FIELDS.map((field) => (
+      <AdvancedDisclosure
+        count={advanced.length}
+        mustOpen={hasAdvancedValue(state, advancedPaths)}
+        hasError={advancedHasError}
+      >
+        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
+          {advanced.map((field) => (
             <GoalFieldControl key={field.key} index={index} field={field} state={state} />
           ))}
         </div>
-      </details>
+      </AdvancedDisclosure>
     </div>
   );
 }
 
-/** One field: its raw-key label, its control and its one-line help. */
+/** One field: its glossary-pair label (task 7.9), its control and its one-line help. */
 function GoalFieldControl({
   index,
   field,
@@ -440,26 +481,34 @@ function GoalFieldControl({
   // `<button>` cannot be named by `htmlFor`).
   if (field.kind === 'select') {
     const id = `${GOALS_PATH}-${index}-${field.key}`;
+    const only = singleLegalValue(field.options ?? [], value);
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-          {field.key}
-        </label>
-        <select
-          id={id}
-          aria-invalid={ariaInvalid}
-          value={goalSelectValue(value)}
-          className={inputClass}
-          onChange={(event) =>
-            state.edit(goalTextFieldEdit(index, field.key, present, event.target.value))
-          }
-        >
-          {goalSelectOptions(value, field.options ?? []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.unlisted ? `${option.label} (unlisted)` : option.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1">
+          <label htmlFor={id} className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </label>
+          <TermHelp term={{ field: field.key }} />
+        </div>
+        {only !== null ? (
+          <ReadOnlyEnumValue id={id} fieldKey={field.key} value={only} />
+        ) : (
+          <select
+            id={id}
+            aria-invalid={ariaInvalid}
+            value={goalSelectValue(value)}
+            className={inputClass}
+            onChange={(event) =>
+              state.edit(goalTextFieldEdit(index, field.key, present, event.target.value))
+            }
+          >
+            {goalSelectOptions(value, field.options ?? []).map((option) => (
+              <option key={option.value} value={option.value}>
+                {goalOptionText(field.key, option)}
+              </option>
+            ))}
+          </select>
+        )}
         <GoalFieldMessages messages={messages} id={messagesId} help={field.help} />
       </div>
     );
@@ -468,7 +517,12 @@ function GoalFieldControl({
   if (field.kind === 'zone') {
     return (
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         {/*
           FriendlyNameDropdown reads/writes the `zones` table's `zone_path`. Measured:
           only 112 of the 149 distinct zone paths the corpus references exist in that
@@ -480,7 +534,7 @@ function GoalFieldControl({
         <FriendlyNameDropdown
           type="zones"
           name={`${GOALS_PATH}-${index}-${field.key}`}
-          aria-label={field.key}
+          aria-label={termText({ field: field.key })}
           value={typeof value === 'string' ? value : null}
           allowEmpty
           invalid={ariaInvalid}
@@ -508,9 +562,12 @@ function GoalFieldControl({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {field.key}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       {field.kind === 'boolean' ? (
         <input
           id={id}
@@ -628,9 +685,12 @@ function NpcNameField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {field.key}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <input
         id={id}
         type="text"
@@ -755,7 +815,7 @@ function AddGoalControl({
         >
           {GOAL_TYPE_SPECS.map((spec) => (
             <option key={spec.shortName} value={spec.shortName}>
-              {spec.shortName}
+              {termText({ type: spec.$type })}
             </option>
           ))}
         </select>
@@ -769,6 +829,12 @@ function AddGoalControl({
 }
 
 /* -------------------------------------------------------------- helpers */
+
+/** A select option's text: an enum value as its glossary pair, an unlisted one marked so. */
+function goalOptionText(fieldKey: string, option: GoalSelectOption): string {
+  const text = option.value === '' ? option.label : fieldValueText(fieldKey, option.value);
+  return option.unlisted ? `${text} (unlisted)` : text;
+}
 
 /** `value` as an array, or `[]` (an absent `m_goals` is not an array). */
 function arrayOf(value: unknown): unknown[] {

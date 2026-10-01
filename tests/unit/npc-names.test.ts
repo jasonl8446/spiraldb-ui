@@ -187,7 +187,7 @@ describe('npcEntityById — the two key forms the view accepts', () => {
     expect(byAliasKey).toBeDefined();
     expect(byTemplateId).toEqual(byAliasKey);
     expect(byTemplateId?.aliases).toEqual(['Gretta', 'Gretta Darkkettle']);
-    // The spec's own example shape (spec-api L515-529).
+    // The spec's own example shape (spec-api §"GET /api/npcs/:id").
     expect(byTemplateId?.npc_key).toBe('WC-NPCs_00000003');
     expect(byTemplateId?.template_id).toBe(38098);
     expect(byTemplateId?.display_name).toBe('Gretta Darkkettle');

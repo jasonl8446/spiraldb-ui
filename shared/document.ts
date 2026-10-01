@@ -58,6 +58,35 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Members that describe a container's shape rather than hold content. */
+const STRUCTURAL_KEYS = new Set(['$type', 'm_operator']);
+
+/**
+ * `true` when a document value holds nothing a human authored — the draft builder's "empty in the file" and the
+ * editor's "differs from the default" (D132): one rule, shared by the server and the client.
+ *
+ * `null`, absent, `''`, `0`, `false` and `[]` are empty: every one is the skeleton's own value for
+ * its key (D118), so "non-empty" means "differs from what a new quest starts with" (the D132
+ * reading). An object is empty when every member except its structural ones (`$type`,
+ * `m_operator`) is empty, which makes the skeleton's containers — `{$type, m_dialogs: []}`,
+ * `{m_results: []}`, a `RequirementList` with no requirements — empty, while a requirement leaf
+ * naming a quest is not.
+ */
+export function isEmptyValue(value: unknown): boolean {
+  if (value === null || value === undefined || value === '' || value === 0 || value === false) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+  if (isPlainObject(value)) {
+    return Object.entries(value).every(
+      ([key, member]) => STRUCTURAL_KEYS.has(key) || isEmptyValue(member),
+    );
+  }
+  return false;
+}
+
 /** A short description of a value, for error messages. */
 function describeValue(value: unknown): string {
   if (value === null) {

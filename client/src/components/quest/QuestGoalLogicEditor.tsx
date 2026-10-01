@@ -65,6 +65,8 @@ import {
 import { motionDuration, prefersReducedMotion } from '../../lib/reduced-motion';
 import { cn } from '../../lib/utils';
 import { FieldMessages, fieldAriaInvalid, useFieldMessages } from '../shared/FieldValidation';
+import TermHelp from '../TermHelp';
+import TermLabel from '../TermLabel';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -596,9 +598,12 @@ function GoalLogicEntryField({
   const messagesId = `${controlId}-messages`;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={controlId} className="font-mono text-xs text-zinc-400">
-        {field.key}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={controlId} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       {field.kind === 'bool' ? (
         <input
           id={controlId}
@@ -756,10 +761,12 @@ function GoalLogicNodeCard({ data, selected }: NodeProps<GoalLogicFlowNode>): JS
         <span className="min-w-0 flex-1 truncate font-mono text-xs text-zinc-100">{node.name}</span>
         {node.isStart ? <Badge variant="secondary">{START_BADGE_LABEL}</Badge> : null}
       </div>
-      <span className="truncate pl-1 text-xs text-zinc-400">{node.typeName}</span>
+      {node.typeTerm === null ? null : (
+        <TermLabel term={node.typeTerm} className="truncate pl-1 text-xs text-zinc-400" />
+      )}
       {first === undefined ? null : (
         <span className="truncate pl-1 text-[11px] text-zinc-400">
-          {first.label}: {first.value}
+          <TermLabel term={{ field: first.key }} />: {first.value}
         </span>
       )}
       <Handle

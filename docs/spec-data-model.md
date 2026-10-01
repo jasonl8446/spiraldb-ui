@@ -141,7 +141,7 @@ objects censused, zero `QuestTemplate`), so the quest *catalog* is a derived tab
 the world names, which ids the client holds text for, and what references each one. It is derived
 from the WADs by the sync and is **never hand-maintained**.
 
-`quests` gains four columns; its `quest_name` primary key is unchanged, and the table now holds
+`quests` gains four columns (a fifth, `title_key`, in migration 0006); its `quest_name` primary key is unchanged, and the table now holds
 **two row kinds** — corpus rows (a `QuestTemplates/` file exists → `has_definition = 1`) and
 catalog-only rows (the world names it, no file yet → `has_definition = 0`). **This amends D21**
 (P6-4): the `quests` table is no longer a corpus mirror; it is the catalog, and the corpus is the
@@ -153,6 +153,10 @@ ALTER TABLE quests ADD COLUMN has_definition INTEGER NOT NULL DEFAULT 0;  -- 1 =
 ALTER TABLE quests ADD COLUMN link_kind TEXT;      -- 'direct' | 'inferred' | 'none' (how the title/id link was established)
 ALTER TABLE quests ADD COLUMN title_source TEXT;   -- 'direct' | 'inferred' | 'none' (P6-11 provenance of that link)
 ALTER TABLE quests ADD COLUMN reference_count INTEGER NOT NULL DEFAULT 0;  -- referencing {wad, entry} pairs
+-- migration 0006 (task 7.14, D182): the QuestTitle_* key the sync resolved for the row. A corpus row holds its
+-- file's own m_questTitle; a row whose file names no title (or a catalog-only row) holds its direct or inferred
+-- link's key, so an inferred title survives a re-sync and a direct link whose text two keys share stays exact.
+ALTER TABLE quests ADD COLUMN title_key TEXT;
 
 -- World evidence per quest: what referenced it, where, and the goal gate it carries.
 CREATE TABLE IF NOT EXISTS quest_catalog_refs (
@@ -300,6 +304,143 @@ Drake" for `WC-CYCLOPS-MAIN-002`.
 sits next to `_83` = "Cyrus" and `_84` = "Drake", but of 1,149 multi-word `WC-NPCs` rows whose neighbours both
 exist only **167 (15%)** follow that convention — a coincidence, not a rule. (b) `Persona,First` / `Persona,Last`
 (78 / 57 rows) are an **unrelated roster** and do not hold these components; do not compose from them.
+
+### Quest Suggestions (Phase 7, migration `0005_quest_suggestions.sql` — D129, D130)
+
+Automatic quest data is **staged locally as suggestions**. Only a field a human accepts reaches SpiralDB, through the
+unchanged save pipeline (D129, which amends D100/D101 for where inferred content may live; the rule that nothing
+inferred is ever written into a *file* stands). The file is appended to `MIGRATION_FILES` (`server/src/db.ts`), and
+`db.test.ts`'s table/view/index counts move with it.
+
+```sql
+CREATE TABLE IF NOT EXISTS quest_suggestions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quest_name TEXT,               -- the catalog name; NULL for an unnamed-tier id until the user names it (D137)
+  catalog_id INTEGER,            -- quest_ids.quest_id when the quest has one; NULL for a named quest with no id link
+  path TEXT NOT NULL,            -- document path the value fills ('m_questTitle', 'm_goals[0].m_personaName', 'm_goalLogic')
+  value_json TEXT NOT NULL,      -- the proposed value, JSON-encoded
+  source TEXT NOT NULL,          -- see "Sources" below
+  confidence REAL,               -- [0, 1]; NULL when the source states none
+  evidence_ref TEXT,             -- where the value came from (a capture file name, a {wad, entry}, a string-table key)
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  decided_at DATETIME,           -- set when status leaves 'pending'
+  CHECK (quest_name IS NOT NULL OR catalog_id IS NOT NULL)
+);
+-- The rebuild's identity: one row per (draft, path, source, value) whatever its status.
+-- Expression index (Phase 7, chosen at p7-01): SQLite treats NULLs in a plain UNIQUE as distinct,
+-- which would let a rebuild duplicate every unnamed-tier row.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_quest_suggestions_identity
+  ON quest_suggestions(coalesce(quest_name, ''), coalesce(catalog_id, -1), path, source, value_json);
+CREATE INDEX IF NOT EXISTS idx_quest_suggestions_quest ON quest_suggestions(quest_name, status);
+CREATE INDEX IF NOT EXISTS idx_quest_suggestions_catalog ON quest_suggestions(catalog_id, status);
+```
+
+**The draft set is every catalog id, named and unnamed (D130).** A draft is either a `quests` row (named, with or
+without a file) or a `quest_ids` row with no `matched_quest_name` (the unnamed tier). The `quest_drafts` view gives
+one row per draft with its evidence richness, and the draft queue ranks on it. The column list is the contract; the
+SQL below is its reference form (Phase 7, chosen at p7-01).
+
+```sql
+CREATE VIEW IF NOT EXISTS quest_drafts AS
+WITH drafts AS (
+  SELECT q.quest_name,
+         (SELECT min(i.quest_id) FROM quest_ids i WHERE i.matched_quest_name = q.quest_name) AS catalog_id,
+         q.title,
+         q.has_definition,
+         q.reference_count
+  FROM quests q
+  UNION ALL
+  SELECT NULL, i.quest_id, i.title, 0, 0
+  FROM quest_ids i
+  WHERE i.matched_quest_name IS NULL
+)
+SELECT d.quest_name,
+       d.catalog_id,
+       d.title,
+       d.has_definition,
+       d.reference_count,
+       coalesce(sum(s.status = 'pending'), 0)                          AS pending,
+       coalesce(sum(s.status = 'accepted'), 0)                         AS accepted,
+       coalesce(sum(s.status = 'rejected'), 0)                         AS rejected,
+       count(DISTINCT CASE WHEN s.status = 'pending' THEN s.path END)  AS evidence_richness,
+       group_concat(DISTINCT s.source)                                 AS sources
+FROM drafts d
+LEFT JOIN quest_suggestions s
+  ON (d.quest_name IS NOT NULL AND s.quest_name = d.quest_name)
+  OR (d.quest_name IS NULL AND s.quest_name IS NULL AND s.catalog_id = d.catalog_id)
+GROUP BY d.quest_name, d.catalog_id;
+```
+
+**As built (p7-07).** Migration `0005` writes the view as **two branches joined by `UNION ALL`** — named drafts
+joined on `quest_name`, unnamed drafts joined on `quest_name IS NULL AND catalog_id` — instead of the single `LEFT
+JOIN … ON (…) OR (…)` above, because SQLite cannot use an index for an OR-join and the single form scanned every
+suggestion once per draft. The column list is unchanged. **`sources` lists the sources of the draft's `pending`
+rows only**, the rows the queue ranks and filters on (the reference form above lists every status).
+
+- **`evidence_richness`** is the number of distinct document paths with a pending suggestion (Phase 7, chosen at
+  p7-01). A draft with richness 0 is a **zero-evidence draft**: hidden from the queue by default, behind a visible
+  toggle and count (D130).
+- **The view reconciles with `coverage`.** Named drafts with `has_definition = 0` equal `coverage.missing`; named
+  drafts with `has_definition = 1` equal `coverage.defined`; unnamed drafts equal the `quest_ids` rows with no
+  `matched_quest_name`.
+
+**Sources (Phase 7, chosen at p7-01).** `capture-order` and `capture-rewards` arrive from the wrapper's `suggestions`
+sidecar ([domain reference](./spec-domain-reference.md#phase-7-the-suggestions-sidecar-d127--task-75)). The builder
+(`npm run drafts`, `POST /api/drafts/rebuild`) writes the Phase 6 evidence sources: `evidence-title` (the title key),
+`evidence-dialogue` (dialogue rows with their resolved speakers), `evidence-goals` (goals from `goal_gates`),
+`evidence-location` (location keys) and `evidence-requirements` (reference-derived requirements such as
+`ReqHasQuest`).
+
+**As built (p7-07; the per-source rules are D162).** Each source proposes into one path, and only when that path is
+empty in the draft's base document (its file, or the D118 skeleton for a quest with no file):
+
+| source | path | value | confidence |
+|---|---|---|---|
+| `evidence-title` | `m_questTitle` | a linked id's `quest_ids.title_key`; for a direct link with no id row, each `QuestTitle_*` key carrying `quests.title` | `1` direct, `0.78` inferred (D106), `1/n` for `n` keys sharing the text |
+| `evidence-dialogue` | `m_dialogList` | an `ActorDialogList` of the dialog blocks **other** corpus files record from this quest's own `WizQst` table, narrowed to those entries; the speakers the evidence ladder resolves are named in `evidence_ref` | `NULL` |
+| `evidence-goals` | `m_goals` | one `PersonaGoalTemplate` per `goal_gates` name, in the gate's zone when the WAD's zone path is a `zones` row | gates matching a file's goal name / all gates on defined quests, re-measured each run |
+| `evidence-location` | `m_goals[i].m_locationName` | the `ZoneLocName_*` key corpus goals use most in that goal's `m_destinationZone` (also for the goals `evidence-goals` proposes) | that key's share of the zone's goals |
+| `evidence-requirements` | `m_requirements` | a `RequirementList` holding one `ReqHasQuest` on the quest's **name-series predecessor** (`…-002` → `…-001`) when that name is a catalog row | files whose `ReqHasQuest` names their predecessor / files with one, re-measured each run |
+
+**Empty** (D162) means `null`, absent, `''`, `0`, `false`, `[]`, or an object whose every member except `$type` and
+`m_operator` is empty, so the skeleton's `{$type, m_dialogs: []}`, `{m_results: []}` and an empty `RequirementList`
+are empty while a requirement naming a quest is not. Capture rows are stored with `catalog_id = NULL` (the wrapper
+names the quest, never its id).
+
+**Lifecycle rules.**
+
+- **Idempotent.** Every write is an `INSERT … ON CONFLICT DO NOTHING` against the identity index, so a rebuild never
+  duplicates a row, never resurrects a `rejected` row and never re-proposes an `accepted` value. **As built (p7-07,
+  D163)** the insert is also skipped when a decided row covers the proposal under a different identity: the same
+  draft (its `quest_name`, else its `catalog_id`), path and value **accepted from any source**, or **rejected from
+  the same source** — so a rejection survives a sync that links a named quest to a different id. A rebuild then
+  **deletes the `pending` `evidence-*` rows it did not propose** (their field was filled since, so they would break
+  the empty-field rule); it never touches an `accepted`/`rejected` row or a `capture-*` row.
+- **Existing files get suggestions only for fields that are empty in the file.**
+- **`pending → accepted` happens only after the save commits** (task 7.7). The save request names the suggestion ids
+  it applied, and the server flips them in the same request once the pipeline's commit exists. A failed save leaves
+  them pending. **`pending → rejected`** is immediate and survives a reload and every rebuild.
+- **Naming an unnamed draft (D137)** sets `quest_name` on every row of that `catalog_id` in the same transaction that
+  creates the catalog row.
+- Nothing in this table is ever read by the save pipeline as file content. The saved document is what the editor
+  sends.
+
+### `quests.title_key` (Phase 7, migration `0006` — D136, task 7.14)
+
+```sql
+ALTER TABLE quests ADD COLUMN title_key TEXT;  -- the QuestTitle_* key the catalog title was resolved from
+```
+
+- Applied by a `PRAGMA table_info`-guarded step like `applyQuestCatalogColumnAdds` (`server/src/db.ts`), for the
+  same reason as the 0002 column adds: SQLite has no `ADD COLUMN IF NOT EXISTS`, and the runner re-executes every
+  migration file on each open. `0006_quest_title_key.sql` is appended to `MIGRATION_FILES` and holds only what is
+  idempotent DDL (Phase 7, chosen at p7-01: the file name).
+- **Why.** The sync records the key it resolved a title from, so an inferred title survives the next sync instead of
+  falling back to the quest name. Phase 6 measured 10 of 285 direct links that wrote no title
+  (`docs/evidence/phase-6/p6-09.md`); task 7.14 re-measures them.
+- The scaffold's title-key lookup (`quest_ids.title_key`, else a unique reverse lookup of `quests.title`) may read
+  this column first once it exists. Its "never guess identity" rule is unchanged.
 
 ### Sync Metadata
 

@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Braces, ListTree, Pencil } from 'lucide-react';
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+
+import { applyEdits, type DocEdit } from '@shared/document';
 
 import EvidencePanel from '../components/quest/EvidencePanel';
 import { EvidenceFocusProvider, useEvidenceFocus } from '../components/quest/EvidenceFocus';
@@ -9,6 +11,7 @@ import QuestDialogEditor from '../components/quest/QuestDialogEditor';
 import QuestGoalsEditor from '../components/quest/QuestGoalsEditor';
 import QuestInfoEditor from '../components/quest/QuestInfoEditor';
 import QuestPreview from '../components/quest/QuestPreview';
+import QuestOverviewPanel from '../components/quest/QuestOverview';
 import QuestRequirementsEditor from '../components/quest/QuestRequirementsEditor';
 import QuestResultsEditor from '../components/quest/QuestResultsEditor';
 import QuestSaveButton from '../components/quest/QuestSaveButton';
@@ -19,6 +22,12 @@ import QuestValidationBanner, {
 import { FieldValidationProvider } from '../components/shared/FieldValidation';
 import { QuestJsonOverlay, QuestJsonPanel } from '../components/quest/QuestJsonPanel';
 import StatusHistoryPanel from '../components/quest/StatusHistoryPanel';
+import DraftNameDialog from '../components/quest/DraftNameDialog';
+import {
+  SuggestionsAcceptAll,
+  SuggestionsProvider,
+  TabSuggestions,
+} from '../components/quest/QuestSuggestions';
 import StatusNotesDialog from '../components/quest/StatusNotesDialog';
 import StatusBadge from '../components/StatusBadge';
 import { namePairDistinct } from '../lib/display';
@@ -45,19 +54,32 @@ const QuestGoalLogicEditor = lazy(() => import('../components/quest/QuestGoalLog
 import {
   getQuest,
   getQuestEvidence,
+  getQuestIdEvidence,
+  getSuggestions,
   evidenceQueryKey,
   listQuests,
   questDetailQueryKey,
   QUESTS_QUERY_KEY,
+  rejectSuggestion,
   saveQuest,
+  scaffoldDraft,
+  SUGGESTIONS_QUERY_KEY,
+  suggestionsQueryKey,
   type QuestEvidence,
   type QuestListRow,
   type QuestObject,
-  type SaveQuestResult,
   type StatusValue,
 } from '../lib/api';
+import {
+  isDraftAlreadySaved,
+  namingPrefill,
+  planSuggestionAccept,
+  reconcileApplied,
+  REWARDS_PATH,
+  type Suggestion,
+} from '../lib/suggestions';
 import { savedMessage, serverMessage } from '../lib/extract';
-import { notifyError, notifySuccess, notifyWarning } from '../lib/notify';
+import { notifyError, notifyErrorWithAction, notifySuccess, notifyWarning } from '../lib/notify';
 import { UserNameCancelledError } from '../lib/user-name';
 import {
   BACK_TO_QUESTS_LABEL,
@@ -83,7 +105,9 @@ import {
   EDIT_OFF_TOOLTIP,
   EDIT_ON_TOOLTIP,
   EDIT_TOGGLE_LABEL,
+  OPEN_SAVED_QUEST_LABEL,
   SAVE_FAILED_FALLBACK,
+  SUGGESTIONS_READ_FAILED,
 } from '../lib/quest-edit';
 import {
   isCurrentStatus,
@@ -91,6 +115,7 @@ import {
   type TransitionTarget,
 } from '../lib/status-transition';
 import type { EvidenceInsertAccepted } from '../lib/evidence-insert';
+import type { PreviewTab } from '../lib/extract';
 import { cn } from '../lib/utils';
 
 /**
@@ -230,18 +255,30 @@ export default function QuestDetailPage(): JSX.Element {
  * data exists — {@link useQuestDocument} is called with a real document, never with
  * `undefined`.
  */
-function LoadedQuest({
+/**
+ * A draft the editor opened without a file (task 7.7, spec-ui-design §12): a named catalog quest
+ * whose file is missing, or an unnamed-tier id (D137). Both start from the D118 skeleton in memory
+ * and are first written by the scaffold route (D142); `undefined` is an ordinary quest file.
+ */
+export type EditorDraft =
+  | { kind: 'missing'; questName: string }
+  | { kind: 'unnamed'; catalogId: number; title: string | null };
+
+export function LoadedQuest({
   quest,
   questName,
   status,
   row,
+  draft,
 }: {
   quest: QuestObject;
   questName: string;
   status: StatusValue;
   row: QuestListRow | undefined;
+  draft?: EditorDraft;
 }): JSX.Element {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   /**
    * The right rail's state (story p6-08): **one** rail with two tabs, so `null` means closed and a
    * tab means open on that tab. The spec's own reason (L417-419) is that the JSON side panel already
@@ -291,11 +328,85 @@ function LoadedQuest({
    * it does not need (D40). A 404 is not retried: an unknown quest's evidence is not transient.
    */
   const evidence = useQuery({
-    queryKey: evidenceQueryKey(questName),
-    queryFn: () => getQuestEvidence(questName),
+    queryKey:
+      draft?.kind === 'unnamed'
+        ? evidenceQueryKey(`#${draft.catalogId}`)
+        : evidenceQueryKey(questName),
+    queryFn: () =>
+      draft?.kind === 'unnamed' ? getQuestIdEvidence(draft.catalogId) : getQuestEvidence(questName),
     retry: false,
     enabled: railTab === RAIL_TAB_EVIDENCE,
   });
+
+  /**
+   * The draft's pending suggestions (task 7.7, D129): by name, or by id for the unnamed tier. A
+   * failed read renders no suggestions and never blocks the editor — the file is what was opened.
+   */
+  const suggestionsKey = draft?.kind === 'unnamed' ? { catalogId: draft.catalogId } : { questName };
+  const suggestions = useQuery({
+    queryKey: suggestionsQueryKey(suggestionsKey),
+    queryFn: () => getSuggestions(suggestionsKey),
+    retry: false,
+  });
+  /** Suggestion id → the path it filled, applied since the last save or discard (D141). */
+  const [applied, setApplied] = useState<ReadonlyMap<number, string>>(() => new Map());
+
+  /**
+   * Accept (spec §4): each suggestion becomes one edit of the in-memory document through the
+   * document state's own `editAll` — nothing is written until Save. Planned in order against the
+   * evolving document, so "accept all" applies a list before a field inside it. One value per path:
+   * a later value for a path that already took one (two title keys sharing a text) is skipped by
+   * accept-all and replaces the earlier id on a single accept, so the save never claims two values
+   * for one field. Rewards append, so every accepted reward is kept.
+   */
+  const acceptSuggestions = (list: readonly Suggestion[]): void => {
+    let working: unknown = document.doc;
+    const edits: DocEdit[] = [];
+    const next = new Map(applied);
+    const taken = new Set<string>();
+    for (const suggestion of list) {
+      if (suggestion.path !== REWARDS_PATH && taken.has(suggestion.path)) {
+        continue;
+      }
+      const plan = planSuggestionAccept(working, suggestion);
+      if (plan.kind !== 'accept') {
+        continue;
+      }
+      working = applyEdits(working, [plan.edit]);
+      edits.push(plan.edit);
+      if (suggestion.path !== REWARDS_PATH) {
+        for (const [id, path] of next) {
+          if (path === suggestion.path) {
+            next.delete(id);
+          }
+        }
+        taken.add(suggestion.path);
+      }
+      next.set(suggestion.id, suggestion.path);
+    }
+    document.editAll(edits);
+    setApplied(next);
+  };
+
+  const reject = useMutation({
+    mutationFn: (suggestion: Suggestion) => rejectSuggestion(suggestion.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: SUGGESTIONS_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: ['drafts'] });
+    },
+    onError: (error) => notifyError(serverMessage(error, 'Could not reject the suggestion.')),
+  });
+
+  /** The D137 name dialog of an unnamed draft's first save, and its inline refusal. */
+  const [naming, setNaming] = useState(false);
+  const [namingError, setNamingError] = useState<string | null>(null);
+  /** Where a first draft save lands: the new file's own editor, once the guard is disarmed. */
+  const [savedTo, setSavedTo] = useState<string | null>(null);
+  useEffect(() => {
+    if (savedTo !== null && !document.dirty) {
+      navigate(savedTo, { replace: true });
+    }
+  }, [savedTo, document.dirty, navigate]);
 
   /**
    * The insert action the evidence panel calls (AC: "the panel never writes to the file").
@@ -324,28 +435,121 @@ function LoadedQuest({
    * entry stays exactly where it was (plan §3.10's last clause). Invalidating the list only
    * refetches the badge, which cannot move without a status change.
    */
+  /**
+   * One save at a time (PR #14 review 3). The button also shows the pending state, but TanStack
+   * publishes `isPending` on a later tick, so a double-click can land its second click before the
+   * re-render: this ref is the synchronous guard, set by the click and cleared when the save
+   * settles.
+   */
+  const saving = useRef(false);
+
+  /**
+   * After a failed save: re-read the draft's pending suggestions and drop every applied id the
+   * server no longer holds as pending (flipped by a save whose answer was lost, or rejected
+   * meanwhile — D168's race), so the next Save does not fail on the same `400` forever. The
+   * accepted values stay in the document; only the dead claims go, and the user is told.
+   */
+  const reconcileAfterFailure = async (): Promise<void> => {
+    if (applied.size === 0) {
+      return;
+    }
+    let pendingIds: number[];
+    try {
+      const fresh = await queryClient.fetchQuery({
+        queryKey: suggestionsQueryKey(suggestionsKey),
+        queryFn: () => getSuggestions(suggestionsKey),
+        staleTime: 0,
+      });
+      pendingIds = fresh.suggestions.map((row) => row.id);
+    } catch {
+      // The read failed too: keep the claims; the next save's own answer decides.
+      return;
+    }
+    const { dropped } = reconcileApplied(applied, pendingIds);
+    if (dropped.length === 0) {
+      return;
+    }
+    setApplied((current) => reconcileApplied(current, pendingIds).kept);
+    notifyWarning(
+      `${dropped.length === 1 ? '1 accepted suggestion is' : `${dropped.length} accepted suggestions are`} ` +
+        'no longer pending (already recorded by a save, or rejected). The values stay in the ' +
+        'editor; Save again to write them without that claim.',
+    );
+  };
+
   const save = useMutation({
-    mutationFn: async (questToSave: QuestObject): Promise<SaveQuestResult> => {
+    mutationFn: async ({ quest: questToSave, name }: { quest: QuestObject; name?: string }) => {
       await requireUserName();
-      return saveQuest({ quest: questToSave });
+      const accepted = [...applied.keys()];
+      if (draft === undefined) {
+        return saveQuest({ quest: questToSave, accepted_suggestions: accepted });
+      }
+      // Task 7.7 (D142): a draft's first save is the scaffold route carrying the document.
+      if (draft.kind === 'missing') {
+        return scaffoldDraft({
+          quest_name: draft.questName,
+          quest: questToSave,
+          accepted_suggestions: accepted,
+        });
+      }
+      const chosen = name ?? '';
+      return scaffoldDraft({
+        quest_name: chosen,
+        catalog_id: draft.catalogId,
+        quest: { ...questToSave, m_questName: chosen },
+        accepted_suggestions: accepted,
+      });
     },
     onSuccess: async (result, sent) => {
       serverValidation.clear();
+      setNaming(false);
+      setNamingError(null);
       notifySuccess(savedMessage(result.quest_name));
-      for (const warning of result.warnings) {
+      for (const warning of 'warnings' in result ? result.warnings : []) {
         notifyWarning(warning);
       }
+      setApplied(new Map());
       // The baseline advances only when the saved document is still the live one: an edit made
       // while the request was in flight is *not* on disk, so it must keep the guard armed.
-      if (liveDocRef.current === sent) {
+      if (liveDocRef.current === sent.quest) {
         document.markSaved();
       }
       await queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: SUGGESTIONS_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: ['drafts'] });
+      if (draft !== undefined) {
+        // The file exists now: continue in its own editor (the guard lets this through once the
+        // baseline has advanced).
+        setSavedTo(`/quests/${encodeURIComponent(result.quest_name)}`);
+      }
     },
-    onError: (error) => {
+    onSettled: () => {
+      saving.current = false;
+    },
+    onError: (error, sent) => {
       // A dismissed identity dialog is not a failure: nothing was written and nothing may
       // claim otherwise.
       if (error instanceof UserNameCancelledError) {
+        return;
+      }
+      void reconcileAfterFailure();
+      if (draft !== undefined && isDraftAlreadySaved(error)) {
+        // The file exists: an earlier save committed but its answer was lost. Retrying the
+        // scaffold can only be refused again, so offer the file's own editor instead.
+        const savedName = draft.kind === 'missing' ? draft.questName : (sent.name ?? '');
+        setNaming(false);
+        setNamingError(null);
+        notifyErrorWithAction(
+          `"${savedName}" already has a file: an earlier save of this draft was written. Open ` +
+            'it to continue there (changes made here since are not in it).',
+          OPEN_SAVED_QUEST_LABEL,
+          () => navigate(`/quests/${encodeURIComponent(savedName)}`),
+        );
+        return;
+      }
+      if (naming) {
+        // D137: a duplicate (409) or unsafe (400) name is refused inline and nothing is written.
+        setNamingError(serverMessage(error, SAVE_FAILED_FALLBACK));
         return;
       }
       // The save pipeline's 400 carries a field map (D65); keep it for the validation summary.
@@ -354,11 +558,53 @@ function LoadedQuest({
     },
   });
 
+  /** Save: an unnamed draft asks for its name first (D137); everything else saves directly. */
+  const requestSave = (): void => {
+    if (draft?.kind === 'unnamed') {
+      setNamingError(null);
+      setNaming(true);
+      return;
+    }
+    submitSave({ quest: document.doc as QuestObject });
+  };
+
+  /** Every save goes through here: a second request while one is in flight is dropped. */
+  const submitSave = (variables: { quest: QuestObject; name?: string }): void => {
+    if (saving.current) {
+      return;
+    }
+    saving.current = true;
+    save.mutate(variables);
+  };
+
+  const withSuggestions = (tab: PreviewTab, body: JSX.Element): JSX.Element => (
+    <>
+      <TabSuggestions tab={tab} />
+      {body}
+    </>
+  );
+
+  /**
+   * The Overview (task 7.13) is in both modes and read-only, so it is outside the view/edit split
+   * below: view mode passes it alone. It counts the pending suggestions in either mode, which the
+   * channel below (edit mode only) does not.
+   */
+  const overview = (
+    <QuestOverviewPanel doc={document.doc} suggestions={suggestions.data?.suggestions ?? []} />
+  );
   const panels = editMode
     ? {
-        Info: <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-        Goals: <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-        'Goal Logic': (
+        Overview: overview,
+        Info: withSuggestions(
+          'Info',
+          <QuestInfoEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        ),
+        Goals: withSuggestions(
+          'Goals',
+          <QuestGoalsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        ),
+        'Goal Logic': withSuggestions(
+          'Goal Logic',
           <Suspense
             fallback={
               <p role="status" className="p-4 text-sm text-zinc-400">
@@ -367,15 +613,22 @@ function LoadedQuest({
             }
           >
             <QuestGoalLogicEditor state={document} modifiedAt={row?.modified_at ?? null} />
-          </Suspense>
+          </Suspense>,
         ),
-        Requirements: (
-          <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />
+        Requirements: withSuggestions(
+          'Requirements',
+          <QuestRequirementsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
         ),
-        Results: <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
-        Dialog: <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        Results: withSuggestions(
+          'Results',
+          <QuestResultsEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        ),
+        Dialog: withSuggestions(
+          'Dialog',
+          <QuestDialogEditor state={document} modifiedAt={row?.modified_at ?? null} />,
+        ),
       }
-    : undefined;
+    : { Overview: overview };
 
   return (
     /**
@@ -385,85 +638,149 @@ function LoadedQuest({
      * view-mode explanation — which is the honest reason, since view mode has no editable document.
      */
     <EvidenceFocusProvider>
-      {/* The two mode markers, so the state is observable without inferring it from the editors
+      <SuggestionsProvider
+        value={{
+          suggestions: editMode ? (suggestions.data?.suggestions ?? []) : [],
+          applied: new Set(applied.keys()),
+          doc: document.doc,
+          onAccept: acceptSuggestions,
+          onReject: (suggestion) => reject.mutate(suggestion),
+          rejecting: reject.isPending ? (reject.variables?.id ?? null) : null,
+        }}
+      >
+        {/* The two mode markers, so the state is observable without inferring it from the editors
           (a tier-1 spec and the browser evidence both read them). */}
-      <div className="flex flex-col gap-4" data-edit-mode={editMode} data-dirty={document.dirty}>
-        <QuestHeader
-          quest={quest}
-          questName={questName}
-          questTitle={row === undefined ? null : questFriendlyTitle(row)}
-          status={status}
-          railTab={railTab}
-          onToggleTab={(tab) => setRailTab((open) => (open === tab ? null : tab))}
-          transitionPending={transition.isPending}
-          onTransition={(target) => transition.request(questName, target)}
-          saveBlocked={validation.blocked}
-          onSave={() => save.mutate(document.doc as QuestObject)}
-          editMode={editMode}
-          onToggleEdit={() => setEditMode((on) => !on)}
-          dirty={document.dirty}
-          onDiscard={document.reset}
-        />
+        <div
+          className="flex flex-col gap-4"
+          data-edit-mode={editMode}
+          data-dirty={document.dirty}
+          data-draft={draft?.kind ?? 'file'}
+        >
+          <QuestHeader
+            quest={quest}
+            questName={questName}
+            questTitle={row === undefined ? null : questFriendlyTitle(row)}
+            status={status}
+            railTab={railTab}
+            onToggleTab={(tab) => setRailTab((open) => (open === tab ? null : tab))}
+            transitionPending={transition.isPending}
+            onTransition={(target) => transition.request(questName, target)}
+            saveBlocked={validation.blocked}
+            savePending={save.isPending}
+            onSave={requestSave}
+            editMode={editMode}
+            onToggleEdit={() => setEditMode((on) => !on)}
+            dirty={document.dirty}
+            onDiscard={() => {
+              document.reset();
+              setApplied(new Map());
+            }}
+            draft={draft !== undefined}
+          />
 
-        <QuestValidationBanner banner={validation.banner} />
+          <QuestValidationBanner banner={validation.banner} />
 
-        {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
+          {/* L537's "summary at top of form if multiple errors" for the save pipeline's own 400 field
             map (D64/D65) — findings the client's engine cannot produce. */}
-        <ValidationSummary messages={serverValidation.messages} />
+          <ValidationSummary messages={serverValidation.messages} />
 
-        <div className="flex min-h-0 gap-4">
-          <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
-            <FieldValidationProvider messages={validation.messages}>
-              <QuestPreview quest={quest} className="h-[70vh]" panels={panels} />
-            </FieldValidationProvider>
+          {/* PR #14 review 9f: a failed suggestions read is said, never shown as "nothing to
+            accept". A 404 is not a failure: a quest the store does not know has no suggestions. */}
+          {editMode && suggestions.isError && !isNotFoundError(suggestions.error) ? (
+            <div
+              role="alert"
+              data-testid="suggestions-read-error"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-red-600/40 bg-red-950/20 px-3 py-2 text-sm text-red-200"
+            >
+              <span>
+                {SUGGESTIONS_READ_FAILED}{' '}
+                {serverMessage(suggestions.error, 'The suggestions request failed.')}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                onClick={() => void suggestions.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : null}
+
+          {/* Task 7.7 (D144): "Accept all from this source" sits above the form. */}
+          <SuggestionsAcceptAll />
+
+          <div className="flex min-h-0 gap-4">
+            <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
+              <FieldValidationProvider messages={validation.messages}>
+                <QuestPreview quest={quest} className="h-[70vh]" panels={panels} />
+              </FieldValidationProvider>
+            </div>
+            {/* Exactly one of the two rail surfaces is mounted (see `QuestJsonPanel`). */}
+            {railTab !== null && !isMobile ? (
+              <QuestRail
+                tab={railTab}
+                onTabChange={setRailTab}
+                quest={document.doc}
+                evidence={evidence}
+                editable={editMode}
+                onInsert={applyInsert}
+              />
+            ) : null}
           </div>
-          {/* Exactly one of the two rail surfaces is mounted (see `QuestJsonPanel`). */}
-          {railTab !== null && !isMobile ? (
-            <QuestRail
-              tab={railTab}
-              onTabChange={setRailTab}
+
+          {isMobile ? (
+            <QuestJsonOverlay
+              open={railTab !== null}
+              onOpenChange={(open) => setRailTab(open ? (railTab ?? RAIL_TAB_JSON) : null)}
               quest={document.doc}
-              evidence={evidence}
-              editable={editMode}
-              onInsert={applyInsert}
+              tab={railTab ?? RAIL_TAB_JSON}
+              onTabChange={setRailTab}
+            >
+              <EvidencePanel
+                evidence={evidence.data}
+                isLoading={railTab === RAIL_TAB_EVIDENCE && evidence.isPending}
+                isError={evidence.isError}
+                target={null}
+                editable={editMode}
+                doc={document.doc}
+                onInsert={applyInsert}
+              />
+            </QuestJsonOverlay>
+          ) : null}
+
+          {draft === undefined ? (
+            <StatusHistoryPanel type="quests" objectKey={questName} noun="quest" />
+          ) : null}
+          <StatusNotesDialog {...transition.dialog} />
+          {draft?.kind === 'unnamed' ? (
+            <DraftNameDialog
+              open={naming}
+              prefill={namingPrefill(document.doc, suggestions.data?.suggestions ?? [])}
+              catalogId={draft.catalogId}
+              error={namingError}
+              submitting={save.isPending}
+              onSubmit={(name) => submitSave({ quest: document.doc as QuestObject, name })}
+              onCancel={() => {
+                setNaming(false);
+                setNamingError(null);
+              }}
             />
           ) : null}
+          <UnsavedChangesDialog
+            open={guard.blocked}
+            onOpenChange={(open) => {
+              // Escape, the close button and an overlay click all mean "stay": only the dialog's own
+              // destructive button leaves, and it calls `guard.discard` directly.
+              if (!open) {
+                guard.stay();
+              }
+            }}
+            onDiscard={guard.discard}
+          />
         </div>
-
-        {isMobile ? (
-          <QuestJsonOverlay
-            open={railTab !== null}
-            onOpenChange={(open) => setRailTab(open ? (railTab ?? RAIL_TAB_JSON) : null)}
-            quest={document.doc}
-            tab={railTab ?? RAIL_TAB_JSON}
-            onTabChange={setRailTab}
-          >
-            <EvidencePanel
-              evidence={evidence.data}
-              isLoading={railTab === RAIL_TAB_EVIDENCE && evidence.isPending}
-              isError={evidence.isError}
-              target={null}
-              editable={editMode}
-              doc={document.doc}
-              onInsert={applyInsert}
-            />
-          </QuestJsonOverlay>
-        ) : null}
-
-        <StatusHistoryPanel type="quests" objectKey={questName} noun="quest" />
-        <StatusNotesDialog {...transition.dialog} />
-        <UnsavedChangesDialog
-          open={guard.blocked}
-          onOpenChange={(open) => {
-            // Escape, the close button and an overlay click all mean "stay": only the dialog's own
-            // destructive button leaves, and it calls `guard.discard` directly.
-            if (!open) {
-              guard.stay();
-            }
-          }}
-          onDiscard={guard.discard}
-        />
-      </div>
+      </SuggestionsProvider>
     </EvidenceFocusProvider>
   );
 }
@@ -555,11 +872,13 @@ function QuestHeader({
   transitionPending,
   onTransition,
   saveBlocked,
+  savePending,
   onSave,
   editMode,
   onToggleEdit,
   dirty,
   onDiscard,
+  draft = false,
 }: {
   quest: QuestObject;
   questName: string;
@@ -578,6 +897,8 @@ function QuestHeader({
   onTransition: (target: TransitionTarget) => void;
   /** Story p3-09: the validation gate the Save affordance follows. */
   saveBlocked: boolean;
+  /** `true` while a save is in flight: Save is disabled until it settles (PR #14 review 3). */
+  savePending: boolean;
   /** Story p3-10: the save action — `POST /api/quests` (D65(f)'s single-prop seam). */
   onSave: () => void;
   /** Story p3-10: `true` while the tabs render the editors instead of the read-only bodies. */
@@ -587,6 +908,11 @@ function QuestHeader({
   dirty: boolean;
   /** Story p3-10: discard the edits and restore the loaded document byte for byte. */
   onDiscard: () => void;
+  /**
+   * Task 7.7: `true` for a draft with no file yet. It has no tracked status to show or move, so
+   * the badge and the two transitions give way to a plain-text "no file yet" marker.
+   */
+  draft?: boolean;
 }): JSX.Element {
   const questKey = typeof quest.m_questName === 'string' ? quest.m_questName : questName;
   // The QuestTemplate pair: `Wizard Tours (DS-ACAD-C01-001)`, collapsed to the name
@@ -606,7 +932,13 @@ function QuestHeader({
       >
         {displayName}
       </h2>
-      <StatusBadge status={status} />
+      {draft ? (
+        <span className="rounded border border-amber-600/50 px-2 py-0.5 text-xs text-amber-200">
+          Draft · no file yet
+        </span>
+      ) : (
+        <StatusBadge status={status} />
+      )}
 
       {/*
         `flex-wrap` is the same fix story p4-10 applied to `ObjectDetailLayout`'s action group,
@@ -619,7 +951,7 @@ function QuestHeader({
         On desktop nothing wraps and the row is unchanged.
       */}
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        {STATUS_TRANSITIONS.map((transition) => {
+        {(draft ? [] : STATUS_TRANSITIONS).map((transition) => {
           const current = isCurrentStatus(status, transition.status);
           const unavailable = current || transitionPending;
           return (
@@ -679,6 +1011,7 @@ function QuestHeader({
             */}
             <QuestSaveButton
               blocked={saveBlocked}
+              pending={savePending}
               describedBy={VALIDATION_BANNER_ID}
               onSave={onSave}
             />

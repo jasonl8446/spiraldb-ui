@@ -170,8 +170,8 @@ function isEnvelope(body: unknown): boolean {
  *   a well-formed but wrong-shaped body (`[]`) for the routes whose validator rejects it;
  * - a route with a `:param`: a key/type that cannot exist (404 for a missing resource)
  *   or a value the route's own type check rejects;
- * - the two routes with a documented query contract (`/api/activity`, `/api/search`
- *   `?limit=`): a limit that is not a positive integer (400);
+ * - the three routes with a documented query contract (`/api/activity`, `/api/search`,
+ *   `/api/drafts` `?limit=`): a limit that is not a positive integer (400);
  * - a route with **no input at all**: a garbage query string it must tolerate (200) —
  *   it can be made to fail only by breaking its dependency, which is the induced-500
  *   test at the end of this file.
@@ -238,7 +238,11 @@ function probesFor(route: RouteRecord): Probe[] {
       });
       return out;
     }
-    if (routePath === '/api/activity' || routePath === '/api/search') {
+    if (
+      routePath === '/api/activity' ||
+      routePath === '/api/search' ||
+      routePath === '/api/drafts'
+    ) {
       out.push({
         route,
         input: 'a limit that is not a positive integer',
@@ -268,7 +272,18 @@ function probesFor(route: RouteRecord): Probe[] {
     body: '{',
     status: 400,
   });
-  if (routePath === '/api/sync') {
+  // `/api/drafts/rebuild` ignores its body like `/api/sync` (task 7.6): a well-formed body would
+  // simply run the builder, so the broken-JSON probe is its whole malformed-input surface.
+  if (routePath === '/api/sync' || routePath === '/api/drafts/rebuild') {
+    return out;
+  }
+  if (routePath === '/api/suggestions/:id/reject') {
+    out.push({
+      route,
+      input: 'a suggestion id that does not exist',
+      url: `/api/suggestions/${MISSING}/reject`,
+      status: 404,
+    });
     return out;
   }
   if (routePath === '/api/status/:type/:key') {

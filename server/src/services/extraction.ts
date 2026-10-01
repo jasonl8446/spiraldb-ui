@@ -1,9 +1,12 @@
 import { execFile } from 'node:child_process';
-import fs from 'node:fs';
+import fs, { mkdtempSync } from 'node:fs';
 import { mkdtemp, readFile as readFileAsync, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+import type { ZodTypeAny } from 'zod';
+
+import { GoalTemplateSchema, QuestTemplateSchema } from '../../../shared/quest/index.js';
 import { resolveRepoRoot } from '../db.js';
 
 /**
@@ -35,6 +38,10 @@ import { resolveRepoRoot } from '../db.js';
  *     never an unhandled `SyntaxError` in the error middleware. The `maxBuffer`
  *     overflow also has an internal escape hatch: retry once with `--output <file>`
  *     (which keeps stdout empty) and read the file instead.
+ *
+ * Task 7.5 (D138) extends the run, not the D45 contract: every run passes `--suggestions <temp>/suggestions.json`
+ * and hands the sidecar's array back beside the quests (`ExtractionRun.suggestions`). stdout is the same array
+ * with or without the flag, and nothing in the sidecar is merged into a quest (D127).
  */
 
 /** Path of the CLI inside the project root — the artifact `npm run build:cli` builds. */
@@ -56,8 +63,11 @@ export const DEFAULT_TIMEOUT_MS = 0;
 /** How the response describes a not-built CLI — the story's ac3 wording. */
 export const CLI_BUILD_HINT = 'npm run build:cli';
 
-/** `--output` retry temp dir prefix (under `os.tmpdir()` unless injected). */
+/** Temp dir prefix (under `os.tmpdir()` unless injected) of the sidecar dir and the `--output` retry dir. */
 export const TEMP_DIR_PREFIX = 'spiraldb-extract-';
+
+/** The sidecar's file name inside the run's temp dir (task 7.5, D138). */
+export const SUGGESTIONS_FILE = 'suggestions.json';
 
 // ---------------------------------------------------------------------------
 // Injected subprocess surface
@@ -406,6 +416,180 @@ export function parseQuestArray(text: string, source: string): unknown[] {
 }
 
 // ---------------------------------------------------------------------------
+// The observed-field schema gate (task 7.3, D126/D127)
+// ---------------------------------------------------------------------------
+
+/** Quest-level keys the wrapper's observed-field post-pass writes (spec-domain-reference, Phase 7). */
+export const OBSERVED_QUEST_FIELDS = [
+  'm_questInfo',
+  'm_questNameID',
+  'm_noQuestHelper',
+  'm_skipQHAutoSelect',
+  'm_activityType',
+  'm_clientTags',
+] as const;
+
+/** Goal-level keys the post-pass writes. */
+export const OBSERVED_GOAL_FIELDS = [
+  'm_personaName',
+  'm_noQuestHelper',
+  'm_petOnlyQuest',
+  'm_completeText',
+  'm_hyperlink',
+] as const;
+
+/** One observed value the gate refused: the same fields as the wrapper's stderr report line. */
+export interface ObservedFieldReport {
+  quest: string;
+  path: string;
+  value: unknown;
+  reason: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Re-checks every observed key the wrapper wrote against the shared zod schema — the one place the
+ * corpus schema lives (the wrapper is C#). A rejected value is **reported and removed**, so it is never
+ * written, while the rest of the quest survives: one bad packet field must not cost the whole quest a
+ * 400 at save time. A key on a goal class whose schema does not declare it (e.g. `m_personaName` on a
+ * waypoint goal) counts as rejected too, because the passthrough object would otherwise wave it through.
+ * Only the observed keys are touched; every other field is the unchanged D45 payload. Mutates and
+ * returns `quests`.
+ */
+export function screenObservedFields(
+  quests: unknown[],
+  report: (entry: ObservedFieldReport) => void,
+): unknown[] {
+  const check = (
+    owner: Record<string, unknown>,
+    key: string,
+    schema: ZodTypeAny | undefined,
+    quest: string,
+    path: string,
+    missingReason: string,
+  ): void => {
+    if (!(key in owner)) {
+      return;
+    }
+    const value = owner[key];
+    const result = schema?.safeParse(value);
+    if (result?.success) {
+      return;
+    }
+    delete owner[key];
+    report({
+      quest,
+      path,
+      value,
+      reason: result
+        ? `the shared schema rejects it: ${result.error.issues.map((i) => i.message).join('; ')}`
+        : missingReason,
+    });
+  };
+
+  for (const quest of quests) {
+    if (!isRecord(quest)) {
+      continue;
+    }
+    const name = typeof quest.m_questName === 'string' ? quest.m_questName : '';
+    for (const key of OBSERVED_QUEST_FIELDS) {
+      check(
+        quest,
+        key,
+        QuestTemplateSchema.shape[key],
+        name,
+        key,
+        `the quest schema has no ${key}`,
+      );
+    }
+    for (const goal of Array.isArray(quest.m_goals) ? quest.m_goals : []) {
+      if (!isRecord(goal)) {
+        continue;
+      }
+      const member = GoalTemplateSchema.optionsMap.get(goal.$type as string);
+      if (!member) {
+        // An unknown $type is the save path's loud failure (invalid_discriminator), not this gate's.
+        continue;
+      }
+      const shape = member.shape as Record<string, ZodTypeAny>;
+      for (const key of OBSERVED_GOAL_FIELDS) {
+        check(
+          goal,
+          key,
+          shape[key],
+          name,
+          `m_goals[${String(goal.m_goalName)}].${key}`,
+          `the ${String(goal.$type).split(',')[0]} schema has no ${key}`,
+        );
+      }
+    }
+  }
+  return quests;
+}
+
+// ---------------------------------------------------------------------------
+// The suggestions sidecar (task 7.5, D127/D138)
+// ---------------------------------------------------------------------------
+
+/**
+ * One inferred value from the wrapper's `--suggestions` sidecar (docs/spec-domain-reference.md, "Phase 7:
+ * the `suggestions` sidecar"). It is passed through verbatim and **never merged into a quest**: only a
+ * human accepting it in the editor and saving through the pipeline puts a value in a file (D129).
+ */
+export interface CaptureSuggestion {
+  questName: string;
+  path: string;
+  value: unknown;
+  source: 'capture-order' | 'capture-rewards';
+  confidence: number;
+  note: string;
+}
+
+const isSuggestion = (entry: unknown): entry is CaptureSuggestion =>
+  isRecord(entry) &&
+  typeof entry.questName === 'string' &&
+  typeof entry.path === 'string' &&
+  'value' in entry &&
+  (entry.source === 'capture-order' || entry.source === 'capture-rewards') &&
+  typeof entry.confidence === 'number' &&
+  entry.confidence >= 0 &&
+  entry.confidence <= 1 &&
+  typeof entry.note === 'string';
+
+/**
+ * Parses the sidecar `{"suggestions":[…]}`. A malformed sidecar or entry is **reported and dropped**, never
+ * fatal: the quests are the extraction's result, and an inference the server cannot read must not cost the
+ * upload (the census's D55 posture).
+ */
+export function parseSuggestions(
+  text: string,
+  report: (message: string) => void,
+): CaptureSuggestion[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    report(
+      `the suggestions sidecar is not JSON: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return [];
+  }
+  if (!isRecord(parsed) || !Array.isArray(parsed.suggestions)) {
+    report('the suggestions sidecar has no top-level "suggestions" array');
+    return [];
+  }
+  return parsed.suggestions.filter((entry: unknown) => {
+    if (isSuggestion(entry)) {
+      return true;
+    }
+    report(`dropped a malformed suggestion: ${JSON.stringify(entry)}`);
+    return false;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // The service
 // ---------------------------------------------------------------------------
 
@@ -424,6 +608,11 @@ export interface ExtractionServiceOptions {
   tempRoot?: string;
   /** Injected temp-dir factory (tests pin the path). */
   createTempDir?: () => Promise<string>;
+  /**
+   * Injected factory of the dir the `--suggestions` sidecar is written to (task 7.5). Synchronous on
+   * purpose: the CLI must still be spawned inside `start()` so the route's D9 abort path sees its child.
+   */
+  createSidecarDir?: () => string;
   /** Injected file reader for the `--output` retry payload. */
   readTextFile?: (file: string) => Promise<string>;
   /** Injected removal of the retry temp dir. */
@@ -432,6 +621,10 @@ export interface ExtractionServiceOptions {
   fileExists?: (candidate: string) => boolean;
   /** Injected child-environment builder — the DOTNET_ROOT seam. */
   buildEnv?: (base: NodeJS.ProcessEnv) => NodeJS.ProcessEnv;
+  /** Where {@link screenObservedFields} reports a refused value; defaults to a process warning. */
+  reportObserved?: (entry: ObservedFieldReport) => void;
+  /** Where an unreadable suggestions sidecar is reported; defaults to a process warning. */
+  reportSuggestions?: (message: string) => void;
 }
 
 /**
@@ -441,6 +634,11 @@ export interface ExtractionServiceOptions {
 export interface ExtractionRun {
   readonly children: ChildRegistry;
   readonly result: Promise<unknown[]>;
+  /**
+   * The run's sidecar suggestions (task 7.5). Settles with `result`, and **never rejects**: a failed run has
+   * no suggestions (`[]`), and its error is `result`'s to report.
+   */
+  readonly suggestions: Promise<CaptureSuggestion[]>;
 }
 
 export interface ExtractionService {
@@ -474,12 +672,33 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
   const timeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const fileExists = options.fileExists ?? fs.existsSync;
   const buildEnv = options.buildEnv ?? ((base: NodeJS.ProcessEnv) => buildChildEnv(base));
+  const reportObserved =
+    options.reportObserved ??
+    ((entry: ObservedFieldReport) =>
+      process.emitWarning(`[extract] observed field not written: ${JSON.stringify(entry)}`));
+  const reportSuggestions =
+    options.reportSuggestions ??
+    ((message: string) => process.emitWarning(`[extract] suggestions: ${message}`));
   const readTextFile = options.readTextFile ?? ((file: string) => readFileAsync(file, 'utf8'));
   const removePath =
     options.removePath ?? ((target: string) => rm(target, { recursive: true, force: true }));
   const createTempDir =
     options.createTempDir ??
     (() => mkdtemp(path.join(options.tempRoot ?? os.tmpdir(), TEMP_DIR_PREFIX)));
+  const createSidecarDir =
+    options.createSidecarDir ??
+    (() => mkdtempSync(path.join(options.tempRoot ?? os.tmpdir(), TEMP_DIR_PREFIX)));
+
+  /** Removes a run's temp dir; a failure is a warning, never the run's error. */
+  async function removeTempDir(dir: string): Promise<void> {
+    await removePath(dir).catch((cleanupError: unknown) => {
+      process.emitWarning(
+        `[extract] could not remove the temp dir ${dir}: ${
+          cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
+        }`,
+      );
+    });
+  }
 
   /** Spawns once and keeps the child in the run's registry for D9. */
   async function runCli(
@@ -529,15 +748,55 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
     return failedToParse(error instanceof Error ? error.message : String(error), error);
   }
 
-  async function extract(capturePath: string, children: ChildRegistry): Promise<unknown[]> {
+  /** Reads the sidecar the CLI wrote; a missing or unreadable file is reported and yields `[]`. */
+  async function readSuggestions(file: string): Promise<CaptureSuggestion[]> {
+    let text: string;
+    try {
+      text = await readTextFile(file);
+    } catch (error) {
+      reportSuggestions(
+        `the CLI wrote no sidecar at ${file}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return [];
+    }
+    return parseSuggestions(text, reportSuggestions);
+  }
+
+  interface ExtractionOutput {
+    quests: unknown[];
+    suggestions: CaptureSuggestion[];
+  }
+
+  async function extract(capturePath: string, children: ChildRegistry): Promise<ExtractionOutput> {
     if (!fileExists(cliPath)) {
       throw cliMissingError(cliPath);
     }
     const env = buildEnv(baseEnv);
 
+    // The sidecar is always asked for (task 7.5, D138), so the response always carries `suggestions`.
+    const sidecarDir = createSidecarDir();
+    const sidecar = path.join(sidecarDir, SUGGESTIONS_FILE);
     try {
-      const { stdout } = await runCli(children, ['--input', capturePath], env);
-      return parseQuestArray(stdout, 'stdout');
+      return await extractWith(capturePath, children, env, sidecar);
+    } finally {
+      await removeTempDir(sidecarDir);
+    }
+  }
+
+  async function extractWith(
+    capturePath: string,
+    children: ChildRegistry,
+    env: NodeJS.ProcessEnv,
+    sidecar: string,
+  ): Promise<ExtractionOutput> {
+    try {
+      const { stdout } = await runCli(
+        children,
+        ['--input', capturePath, '--suggestions', sidecar],
+        env,
+      );
+      const quests = screenObservedFields(parseQuestArray(stdout, 'stdout'), reportObserved);
+      return { quests, suggestions: await readSuggestions(sidecar) };
     } catch (error) {
       if (children.cancelled) {
         throw new ExtractionCancelledError();
@@ -558,8 +817,16 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
       const tempDir = await createTempDir();
       const outFile = path.join(tempDir, 'quests.json');
       try {
-        await runCli(children, ['--input', capturePath, '--output', outFile], env);
-        return parseQuestArray(await readTextFile(outFile), outFile);
+        await runCli(
+          children,
+          ['--input', capturePath, '--output', outFile, '--suggestions', sidecar],
+          env,
+        );
+        const quests = screenObservedFields(
+          parseQuestArray(await readTextFile(outFile), outFile),
+          reportObserved,
+        );
+        return { quests, suggestions: await readSuggestions(sidecar) };
       } catch (retryError) {
         if (children.cancelled) {
           throw new ExtractionCancelledError();
@@ -567,13 +834,7 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
         throw describeFailure(retryError, true);
       } finally {
         // The retry payload can be tens of MB; never leave it behind.
-        await removePath(tempDir).catch((cleanupError: unknown) => {
-          process.emitWarning(
-            `[extract] could not remove the --output temp dir ${tempDir}: ${
-              cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
-            }`,
-          );
-        });
+        await removeTempDir(tempDir);
       }
     }
   }
@@ -582,7 +843,15 @@ export function createExtractionService(options: ExtractionServiceOptions = {}):
     cliPath,
     start(capturePath: string): ExtractionRun {
       const children = new ChildRegistry();
-      return { children, result: extract(capturePath, children) };
+      const output = extract(capturePath, children);
+      return {
+        children,
+        result: output.then((run) => run.quests),
+        suggestions: output.then(
+          (run) => run.suggestions,
+          () => [],
+        ),
+      };
     },
   };
 }

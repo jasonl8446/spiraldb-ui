@@ -22,7 +22,7 @@ import {
 } from '../../client/src/lib/evidence-insert';
 
 /**
- * Story p6-08 — the **insert reducer** (plan task 6.7; docs/spec-ui-design.md L437-444).
+ * Story p6-08 — the **insert reducer** (plan task 6.7; docs/spec-ui-design.md §"Evidence Panel (Phase 6 — P6-7…P6-10, D102–D105)").
  *
  * The reducer is the contract the panel's one-click insert rests on, so it is tested with no DOM,
  * no network and no document: `(row, target) → the mutation`, or the reason there is none. What
@@ -445,7 +445,7 @@ describe('the inferred badge, and the collision it must not fall into', () => {
   });
 
   it('does not fire for the quests LIST endpoint’s different title_source vocabulary', () => {
-    // spec-data-model L209-214: the list endpoint answers `resolved | rawKey | missing` for the
+    // spec-data-model §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)": the list endpoint answers `resolved | rawKey | missing` for the
     // same-named field, and the two must never be conflated. A value from the wrong enum yields
     // no badge — not a guess, and not a badge reading "rawKey".
     for (const listValue of ['resolved', 'rawKey', 'missing']) {

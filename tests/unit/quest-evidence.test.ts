@@ -23,7 +23,7 @@ import { seedNpc, seedString } from '../helpers/seed';
 
 /**
  * Story p6-07 — the per-quest **evidence** surface and the **NPC view**
- * (plan task 6.6; docs/spec-api.md L420-550).
+ * (plan task 6.6; docs/spec-api.md §"Quests").
  *
  * The suite runs on the **committed fixture corpus**
  * (`server/test/fixtures/evidence-corpus/`) — never on the 19 GB game tree and never
@@ -321,6 +321,8 @@ describe('the speaker ladder (ac1 — override → composed → template → raw
       persona: 'FIXTURE-NPC01_Persona',
       override_key: null,
       st_key: 'NPCFormats_First_Last',
+      // The persona's manifest id — what `/npcs/:npcId` opens (task 7.14).
+      template_id: 9002,
     });
     // The rung won *over* the persona's template name, which is deliberately different.
     expect(evidence.dialogue[0]?.speaker.name).not.toBe('Template Name Must Not Win');
@@ -332,6 +334,7 @@ describe('the speaker ladder (ac1 — override → composed → template → raw
       persona: 'FIXTURE-NPC02_Persona',
       override_key: 'WC-NPCs_00000027',
       st_key: null,
+      template_id: 9003,
     });
 
     // Rung 2 falls through (no components) → rung 3, the persona's template name.
@@ -344,6 +347,8 @@ describe('the speaker ladder (ac1 — override → composed → template → raw
       persona: 'FIXTURE-ABSENT_Persona',
       override_key: null,
       st_key: 'NPCFormats_First_Last',
+      // A persona the index cannot place has no NPC page to open.
+      template_id: null,
     });
     expect(evidence.warnings).toContain(
       '1 dialogue line resolve to the raw persona string: "FIXTURE-ABSENT_Persona" is absent from the manifest index (first at line 3)',
@@ -521,7 +526,7 @@ describe('the unknown arms (ac3)', () => {
       'direct',
     );
     // The list endpoint reports its own per-file resolution for the same quest — `resolved`, not
-    // `direct` (spec-data-model L209-214 records the collision).
+    // `direct` (spec-data-model §"Quest Catalog (Phase 6 — D96–D99, D103, D106, D107)" records the collision).
     const listed = await listQuests({ db, spiraldbPath: FIXTURE_ROOT });
     const row = listed.quests.find((quest) => quest.quest_name === 'P6-EVIDENCE-001');
     expect(row?.title_source).toBe('resolved');

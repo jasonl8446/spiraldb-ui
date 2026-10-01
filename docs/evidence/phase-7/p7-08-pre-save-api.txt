@@ -1,0 +1,40 @@
+$ curl -s "http://127.0.0.1:3291/api/drafts?named=1&has_file=0&limit=3"
+{"drafts":[{"quest_name":"WC-PreMR-MAIN-001","catalog_id":null,"title":"WC-PreMR-MAIN-001","has_definition":0,"reference_count":8,"pending":5,"accepted":0,"rejected":0,"evidence_richness":5,"sources":["evidence-goals","evidence-location"]},{"quest_name":"KT-WEAVE-MYTH-002","catalog_id":null,"title":"KT-WEAVE-MYTH-002","has_definition":0,"reference_count":5,"pending":5,"accepted":0,"rejected":0,"evidence_richness":5,"sources":["evidence-goals","evidence-location","evidence-requirements"]},{"quest_name":"AV-MSRAID-001","catalog_id":null,"title":"AV-MSRAID-001","has_definition":0,"reference_count":4,"pending":5,"accepted":0,"rejected":0,"evidence_richness":5,"sources":["evidence-goals","evidence-location"]}],"total":1002,"hidden_zero_evidence":385,"filters":{"named":true,"has_file":false,"source":null,"all":false}}
+$ curl -s http://127.0.0.1:3291/api/quests/NV-PUERT-MAIN-012/suggestions (values abbreviated by jq-less node filter: path/source/confidence/status + value length)
+{
+ "quest_name": "NV-PUERT-MAIN-012",
+ "catalog_id": 1562135,
+ "suggestions": [
+  {
+   "id": 1006,
+   "path": "m_goals",
+   "source": "evidence-goals",
+   "confidence": 0.109,
+   "status": "pending",
+   "evidence_ref": "goal_gates:NV-PUERT-MAIN-012 (Goal 3, Goal 4)",
+   "value_json_bytes": 1431
+  },
+  {
+   "id": 1005,
+   "path": "m_questTitle",
+   "source": "evidence-title",
+   "confidence": 0.78,
+   "status": "pending",
+   "evidence_ref": "quest_ids:1562135 (inferred)",
+   "value_json_bytes": 19
+  },
+  {
+   "id": 1007,
+   "path": "m_requirements",
+   "source": "evidence-requirements",
+   "confidence": 0.579,
+   "status": "pending",
+   "evidence_ref": "name series: NV-PUERT-MAIN-011 precedes NV-PUERT-MAIN-012",
+   "value_json_bytes": 302
+  }
+ ]
+}
+$ curl -s http://127.0.0.1:3291/api/quests/NV-PUERT-MAIN-012/scaffold  (the unwritten skeleton: link, title, key count)
+{"quest_name":"NV-PUERT-MAIN-012","link_kind":"inferred","title_key":null,"keys":36,"m_questTitle":null,"m_goals":[],"m_requirements":null}
+$ ls data/test-spiraldb/QuestTemplates/questtemplates_NV-PUERT-MAIN-012.json
+ls: cannot access 'data/test-spiraldb/QuestTemplates/questtemplates_NV-PUERT-MAIN-012.json': No such file or directory

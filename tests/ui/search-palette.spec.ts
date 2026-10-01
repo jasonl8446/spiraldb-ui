@@ -289,6 +289,11 @@ async function mockSearchApi(page: Page): Promise<Recorded> {
     if (path === '/api/quests/DS-ACAD-C01-001') {
       return json(QUEST_DOCUMENT);
     }
+    // Story p7-08: the quest editor reads the quest's pending suggestions (task 7.7, D143); this
+    // arm has none.
+    if (path === '/api/quests/DS-ACAD-C01-001/suggestions') {
+      return json({ quest_name: 'DS-ACAD-C01-001', catalog_id: null, suggestions: [] });
+    }
     if (path === '/api/quests') {
       return json({
         quests: [

@@ -16,6 +16,8 @@
  * are L119-123.
  */
 
+import type { CensusRow, ExtractCensus, SuggestionsStoreOutcome } from './api';
+
 /* ------------------------------------------------------------------- upload */
 
 /**
@@ -53,6 +55,47 @@ export const CANCEL_LABEL = 'Cancel';
 export const SAVE_ALL_LABEL = 'Save All to SpiralDB';
 export const SAVE_SELECTED_LABEL = 'Save Selected';
 export const DISCARD_LABEL = 'Discard';
+
+/**
+ * The census disclosure's summary (D139): the number is the count of ignored message/field rows, so a
+ * capture whose every field was read says `(0)` rather than hiding the disclosure.
+ */
+export function ignoredByReaderLabel(count: number): string {
+  return `Ignored by the reader (${count})`;
+}
+
+/** The census rows the reader does not read, in the census' own (message, field) order. */
+export function ignoredCensusRows(census: ExtractCensus | undefined): CensusRow[] {
+  return census === undefined || 'skipped' in census
+    ? []
+    : census.rows.filter((row) => !row.consumed);
+}
+
+/**
+ * The line the upload result shows about the capture suggestions (PR #14 review 9a/9d), or `null`
+ * when there is nothing to say: a store failure used to be a server-side warning only, and a
+ * suggestion for a quest the catalog does not hold is stored but not listed in Drafts yet.
+ */
+export function suggestionsStoreNotice(
+  outcome: SuggestionsStoreOutcome | undefined,
+  total: number,
+): string | null {
+  if (outcome === undefined) {
+    return null;
+  }
+  if (!outcome.stored) {
+    return `The ${total} inferred suggestions were not staged for review: ${outcome.reason}`;
+  }
+  if (outcome.uncatalogued === 0) {
+    return null;
+  }
+  const one = outcome.uncatalogued === 1;
+  return (
+    `${outcome.uncatalogued} of ${total} inferred suggestions ${one ? 'names' : 'name'} a quest ` +
+    `the catalog does not list yet: ${one ? 'it appears' : 'they appear'} in Drafts after a sync ` +
+    `adds that quest.`
+  );
+}
 
 /** The `new` status badge every freshly extracted quest carries (spec L224). */
 export const NEW_BADGE_LABEL = 'new';

@@ -129,6 +129,8 @@ async function openCleanQuest(
     );
   }
   await page.goto('/quests/DS-ACAD1-C01-001');
+  // p7-14 (D133): the page lands on Overview; these specs drive the Info editor, so open it.
+  await page.getByRole('tab', { name: 'Info', exact: true }).click();
   return recorded;
 }
 

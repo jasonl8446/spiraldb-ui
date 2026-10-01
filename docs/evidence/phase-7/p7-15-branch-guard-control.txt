@@ -1,0 +1,12 @@
+# p7-15 branch-guard negative control: the guard (savePipeline.ts `if (decision.kind === "refuse")`) disabled with `false &&`, then restored
+# repo on content/checked-out, settings.git_branch = content/somewhere-else, `main` exists
+⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  12 failed | 1 passed (13)
+     → {"quest_name":"GUARD-TEST-001","outcome":"created","action":"extract","commit":"5dfeb9d5d7d6ea1fa3f98baebdd52f3977edca03","branch":"content/somewhere-else","commit_message":"spiraldb: extract quest GUARD-TEST-001","file":"QuestTemplates/questtemplates_G
+     → {"quest_name":"GUARD-SCAFFOLD-001","link_kind":"none","title_key":null,"has_definition_before":0,"outcome":"created","action":"create","file":"QuestTemplates/questtemplates_GUARD-SCAFFOLD-001.json","metadata":"QuestMetadatas/questmetadata_GUARD-SCAFFOLD
+     → {"key":"GUARD-TEST-001","file_type":"droptable","object_type":"drop_table","outcome":"created","action":"create","commit":"642ace58349b7de98e0962b6dc15795fd6c1d307","branch":"content/somewhere-else","commit_message":"spiraldb: create drop_table GUARD-TE
+     → {"key":"990001","file_type":"npcinventory","object_type":"npc_inventory","outcome":"created","action":"create","commit":"facbdb9aef3e0893712a4069407f5a84384f4252","branch":"content/somewhere-else","commit_message":"spiraldb: create npc_inventory 990001"
+# restored:
+ Test Files  1 passed (1)
+      Tests  13 passed (13)

@@ -650,7 +650,7 @@ describe('POST /: the save path', () => {
 
 /**
  * The router itself, over the same fixture: the eight mount paths of
- * docs/spec-api.md L310-319, `GET /` / `GET /:key` / `POST /`, the 400/404/409/500
+ * docs/spec-api.md §"Other Object Types", `GET /` / `GET /:key` / `POST /`, the 400/404/409/500
  * mapping, and the ulong route-key canonicalisation. The app is built exactly the
  * way `routes/index.ts` builds it for the real server — one `createObjectRouter` per
  * table row, mounted at `config.urlPath` — but with an injected in-memory connection,
@@ -678,7 +678,7 @@ function appFor(h: Harness, fileTypes: readonly Parameters<typeof objectTypeConf
 }
 
 describe('the router: the spec mount paths and their HTTP contract', () => {
-  it('mounts exactly the eight base paths of docs/spec-api.md L310-319', () => {
+  it('mounts exactly the eight base paths of docs/spec-api.md §"Other Object Types"', () => {
     expect(OBJECT_TYPES.map((config) => config.urlPath)).toEqual(SPEC_BASE_PATHS);
   });
 
@@ -1081,7 +1081,7 @@ describe('friendly_name — resolved server-side from the family’s own names t
     }
     // …and the family is no longer in the "no friendly source" state: it has a source, so the
     // note explains the *miss* (why a real corpus key does not reach it) rather than a missing
-    // table. A row with no pair therefore still says why, which is spec-ui-design L65-69.
+    // table. A row with no pair therefore still says why, which is spec-ui-design §"Names: the friendly/technical pair (D105 / P6-16)".
     expect(objectTypeConfig('creaturespellbook').friendlyNamesType).toBe('decks');
     expect(objectTypeConfig('creaturespellbook').friendlyNameNote).toContain(
       '0 of the 134 corpus DeckName values',

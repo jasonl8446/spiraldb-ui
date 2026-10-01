@@ -656,6 +656,84 @@ describe('writeQuestCatalog — the merge, the refs, the ids and the coverage vi
     ).toBe(3);
   });
 
+  /**
+   * D182 / task 7.14: an inferred title used to fall back to the quest's name after a sync (a
+   * defined file with no title key keeps its own row's title; the catalog merge touched only
+   * `link_kind`/`title_source`). `quests.title_key` keeps the link's key and its text, on the
+   * first sync and on every re-sync, and never overwrites a file's own key.
+   */
+  it('keeps an inferred title across a re-sync through quests.title_key (D182)', () => {
+    const db = memoryDb();
+    seedStringTable(db);
+    // Q-A-005 has a file that names no title key, so its corpus row holds the name as its title.
+    // It is interpolated between the anchors Q-A-001 (id 1) and Q-A-009 (id 4) → id 2.
+    const corpusRows = [
+      { quest_name: 'Q-A-001', titleKey: 'QuestTitle_00000001' },
+      { quest_name: 'Q-A-005', titleKey: null },
+      { quest_name: 'Q-A-009', titleKey: 'QuestTitle_00000004' },
+    ];
+    const sync = (): void => {
+      db.transaction(() => {
+        for (const table of ['quest_catalog_refs', 'quest_ids', 'quests']) {
+          db.prepare(`DELETE FROM ${table}`).run();
+        }
+        const insert = db.prepare(
+          `INSERT INTO quests
+             (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count, title_key)
+           VALUES (?, ?, NULL, NULL, 1, 'none', 'none', 0, ?)`,
+        );
+        insert.run('Q-A-001', 'Corpus One', 'QuestTitle_00000001');
+        insert.run('Q-A-005', 'Q-A-005', null);
+        insert.run('Q-A-009', 'Corpus Two', 'QuestTitle_00000004');
+        const rows = [DIRECT_ROW, ...REFERENCE_ROWS];
+        writeQuestCatalog({
+          db,
+          collected: collectedOk(collectorOf(rows), rows.length),
+          corpusRows,
+          corpus: CORPUS,
+        });
+      })();
+    };
+    const read = () =>
+      db
+        .prepare('SELECT quest_name, title, title_key, link_kind FROM quests ORDER BY quest_name')
+        .all();
+
+    sync();
+    const first = read();
+    expect(first).toEqual([
+      // The file's own key is kept, and so is the text the corpus resolved for it.
+      {
+        quest_name: 'Q-A-001',
+        title: 'Corpus One',
+        title_key: 'QuestTitle_00000001',
+        link_kind: 'none',
+      },
+      // The inferred link's text and key, not the name.
+      {
+        quest_name: 'Q-A-005',
+        title: 'Inferred Title',
+        title_key: 'QuestTitle_00000002',
+        link_kind: 'inferred',
+      },
+      {
+        quest_name: 'Q-A-009',
+        title: 'Corpus Two',
+        title_key: 'QuestTitle_00000004',
+        link_kind: 'none',
+      },
+      {
+        quest_name: 'Q-B-001',
+        title: 'Direct Title',
+        title_key: 'QuestTitle_00000003',
+        link_kind: 'direct',
+      },
+    ]);
+
+    sync();
+    expect(read()).toEqual(first);
+  });
+
   it('empties both catalog tables on the skipped path and keeps every corpus row defined', () => {
     const db = memoryDb();
     seedStringTable(db);

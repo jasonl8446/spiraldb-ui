@@ -161,7 +161,7 @@ const FAMILIES: readonly FamilyFixture[] = [
     detailPath: '/global-registry',
     // The unkeyed family's "key" is the convention file name the save writes
     // (`GLOBAL_REGISTRY_FILE_NAME`), not a URL segment — there is nothing to select
-    // (docs/spec-api.md L474, p4-07). The list's rows are file **stems**, hence `rows` below.
+    // (docs/spec-api.md §"URL Routes (Frontend)", p4-07). The list's rows are file **stems**, hence `rows` below.
     key: 'globalregistry.json',
     rows: ['globalregistry'],
     document: { GlobalRegistryValues: { Christmas: 0, Halloween: 0 } },

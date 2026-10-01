@@ -133,7 +133,7 @@ async function openQuest(
     route.fulfill({ json: { quests: QUEST_ROWS } }),
   );
   // A single-id lookup for a value that is not in the cached list is the documented miss
-  // (spec-domain-reference L693-695) — never a request that reaches the dev stack.
+  // (spec-domain-reference §"Missing Keys") — never a request that reaches the dev stack.
   for (const type of ['zones', 'spells', 'npcs', 'drop_tables', 'quests']) {
     await page.route(`**/api/names/${type}/*`, (route) =>
       route.fulfill({ status: 404, json: { error: `Unknown ${type} id` } }),
@@ -164,13 +164,11 @@ function fieldMessages(page: Page, field: string): Locator {
 
 /**
  * Opens one goal card's editor. The field controls exist only while a card is expanded
- * (`GoalEditPanel` is conditional), and `m_destinationZone`/`m_goalName` live in the card's
- * collapsed **Shared base fields** disclosure — so both steps are the user's own path to the
- * control whose inline message this spec asserts.
+ * (`GoalEditPanel` is conditional). `m_destinationZone` and `m_goalName` are basic fields
+ * (task 7.11), so they are on the card without opening its Advanced disclosure.
  */
 async function expandCard(card: Locator): Promise<void> {
   await card.getByRole('button', { name: 'Edit' }).click();
-  await card.getByText('Shared base fields').click();
 }
 
 /* -------------------------------------------------------------------- tests */
@@ -202,7 +200,9 @@ test.describe('AC1 — a dangling m_startGoals reference blocks the save', () =>
     await expect(saveButton(page)).toHaveAttribute('data-blocked', 'false');
 
     // The AC's own flow: the Goals tab deletes the goal `m_startGoals` still names.
-    await cardNamed(region, '1_Start').getByRole('button', { name: 'Delete 1_Start' }).click();
+    await cardNamed(region, '1_Start')
+      .getByRole('button', { name: /^Delete .+, 1_Start$/ })
+      .click();
 
     // 1. The inline error, on the `m_startGoals` surface, with a red border (L547).
     const inline = page.getByTestId('start-goals-validation');
@@ -246,7 +246,7 @@ test.describe('AC1 — a dangling m_startGoals reference blocks the save', () =>
     await expandCard(secondCard);
     // `exact` on purpose: `getByLabel('m_goalName')` is a substring match and also resolves
     // the neighbouring `m_goalNameID` control.
-    const nameInput = secondCard.getByLabel('m_goalName', { exact: true });
+    const nameInput = secondCard.getByLabel('Goal Name (m_goalName)', { exact: true });
     await nameInput.fill('1_Start');
 
     const message = fieldMessages(page, 'm_goals[1].m_goalName');

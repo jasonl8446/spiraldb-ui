@@ -37,6 +37,7 @@
 import type { DocEdit, DocPath } from '@shared/document';
 
 import { formatNameValue, type NameRowMap } from './display';
+import { termText } from './term';
 
 /* ------------------------------------------------------- the field inventory */
 
@@ -311,14 +312,6 @@ export const ACTIVITY_TYPES = [
 /** Label of the no-value option (the document carries no usable activity type). */
 export const ACTIVITY_TYPE_UNSET_LABEL = '—';
 
-/** `ACTIVITY_NotActivity` → `Not Activity`: the enum's own name, spaced. */
-export function activityTypeLabel(value: string): string {
-  return value
-    .replace(/^ACTIVITY_/, '')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .trim();
-}
-
 /** One `<option>` of the activity select. */
 export interface ActivityTypeOption {
   value: string;
@@ -343,7 +336,8 @@ export function activityTypeSelectValue(current: unknown): string {
 export function activityTypeOptions(current: unknown): ActivityTypeOption[] {
   const listed: ActivityTypeOption[] = ACTIVITY_TYPES.map((value) => ({
     value,
-    label: activityTypeLabel(value),
+    // The glossary pair (D131, task 7.9): `Not an activity (ACTIVITY_NotActivity)`.
+    label: termText({ enum: 'ActivityType', value }),
     unlisted: false,
   }));
   const raw = activityTypeSelectValue(current);

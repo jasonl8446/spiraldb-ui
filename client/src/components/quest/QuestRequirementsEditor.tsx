@@ -1,3 +1,5 @@
+import { fieldLabel } from '@shared/glossary';
+
 import type { QuestDocumentState } from '../../hooks/useQuestDocument';
 import { goalName, NO_GOALS_TEXT } from '../../lib/quest-goals';
 import {
@@ -7,6 +9,8 @@ import {
   REQUIREMENTS_PATH,
 } from '../../lib/requirement-tree';
 import RequirementTreeEditor from '../shared/RequirementTreeEditor';
+import TermHelp from '../TermHelp';
+import TermLabel from '../TermLabel';
 
 /**
  * `QuestRequirementsEditor` — the Requirements tab's body (plan task 3.6, story p3-06).
@@ -43,13 +47,17 @@ export interface QuestRequirementsEditorProps {
 /** The panel's accessible name (the tier-1 spec scopes to it). */
 export const REQUIREMENTS_EDITOR_LABEL = 'Quest requirements editor';
 
-/** The three quest-level trees' accessible names. */
-export const REQUIREMENTS_TREE_LABEL = 'Requirements';
-export const PREP_REQUIREMENTS_TREE_LABEL = 'Preparation requirements';
-export const PRUNE_REQUIREMENTS_TREE_LABEL = 'Prune requirements';
+/**
+ * The three quest-level trees' accessible names — the glossary's labels, so a screen reader hears
+ * the term the visible heading shows (PR #14 review 7: a local copy had drifted to "Preparation
+ * requirements" beside the heading's "Prep requirements").
+ */
+export const REQUIREMENTS_TREE_LABEL = fieldLabel('m_requirements');
+export const PREP_REQUIREMENTS_TREE_LABEL = fieldLabel('m_prepRequirements');
+export const PRUNE_REQUIREMENTS_TREE_LABEL = fieldLabel('m_pruneRequirements');
 
 /** The per-goal section's accessible name; each goal's own tree is named after the goal. */
-export const GOAL_REQUIREMENTS_SECTION_LABEL = 'Goal requirements';
+export const GOAL_REQUIREMENTS_SECTION_LABEL = fieldLabel('m_goalRequirements');
 
 /** The slot hint for a field that is the corpus's `null` — the honest "nothing invented" note. */
 export const PREP_REQUIREMENTS_NOTE =
@@ -91,7 +99,9 @@ export default function QuestRequirementsEditor({
 
       <section aria-label={GOAL_REQUIREMENTS_SECTION_LABEL} className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-xs text-zinc-400">{GOAL_REQUIREMENTS_PATH}</h2>
+          <h2 className="text-xs text-zinc-400">
+            <TermLabel term={{ field: GOAL_REQUIREMENTS_PATH }} />
+          </h2>
           <p className="text-xs text-zinc-400">{GOAL_REQUIREMENTS_NOTE}</p>
         </div>
         {goals.length === 0 ? (
@@ -136,7 +146,12 @@ function Slot({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-col gap-1">
-        <h2 className="font-mono text-xs text-zinc-400">{fieldKey}</h2>
+        <div className="flex items-center gap-1">
+          <h2 className="text-xs text-zinc-400">
+            <TermLabel term={{ field: fieldKey }} />
+          </h2>
+          <TermHelp term={{ field: fieldKey }} />
+        </div>
         {note === undefined ? null : <p className="text-xs text-zinc-400">{note}</p>}
       </div>
       <RequirementTreeEditor state={state} path={path} label={label} />

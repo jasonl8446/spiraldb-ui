@@ -2,6 +2,7 @@ import type { SearchResponse, SearchResultRow } from './api';
 import { activityHref } from './dashboard';
 import { namePairDistinct } from './display';
 import { serverMessage } from './extract';
+import { npcPagePath } from './npcs';
 
 /**
  * The ⌘K palette's pure half (plan task 5.2, story p5-02).
@@ -20,7 +21,8 @@ import { serverMessage } from './extract';
  * `lib/objects.ts`: this function only gives the palette a name for the call, and deleting
  * `activityHref` breaks the feed and the palette together. There is deliberately no second
  * table of `object_type → route` anywhere in the client (D51/D76's one-shared-unit rule),
- * which is also why a friendly-name hit on an item/spell/NPC row resolves to `null`: the
+ * which is also why a friendly-name hit on an item/spell row resolves to `null` (an `npc` row
+ * has its own page since task 7.14, see `searchResultHref`): the
  * endpoint sends `object_type: null` for those rows, `activityHref` answers `null` for a
  * null type, and the palette prints "— not linked" instead of opening a route that does not
  * exist.
@@ -83,14 +85,36 @@ export function searchResultKey(groupType: string, row: SearchResultRow): string
 /**
  * The detail route of one search row, or `null` when there is no page to open.
  *
- * A direct call to `activityHref` — see the module doc-comment: this is not a second
- * mapping. `null` is the honest answer for the endpoint's `object_type: null` rows (every
- * items/spells/npcs name hit), not a missing case.
+ * An object row is a direct call to `activityHref` — see the module doc-comment: this is not a
+ * second mapping. An `npc` group row (task 7.14, D144) opens `/npcs/:npcId`, keyed by the row's
+ * `source_id` (the namespace's alias key, or the template id for an alias-less template — both
+ * forms `GET /api/npcs/:id` accepts). `null` is the honest answer for the endpoint's
+ * `object_type: null` item/spell rows, not a missing case.
  */
 export function searchResultHref(
-  row: Pick<SearchResultRow, 'object_type' | 'object_key'>,
+  row: Pick<SearchResultRow, 'object_type' | 'object_key'> & { source_id?: string | null },
+  groupType?: string,
 ): string | null {
+  if (groupType === 'npc') {
+    return typeof row.source_id === 'string' && row.source_id !== ''
+      ? npcPagePath(row.source_id)
+      : null;
+  }
   return activityHref(row);
+}
+
+/**
+ * How many rows the palette cannot open. The endpoint's `unresolved` counts every row with a null
+ * `object_type`, and an `npc` row is one of those on the wire yet opens `/npcs/:npcId` (task
+ * 7.14), so its linked rows are taken back out: the notice must count only rows that show
+ * "— not linked".
+ */
+export function unresolvedSearchCount(response: SearchResponse): number {
+  const linkedNpcRows = response.groups
+    .filter((group) => group.type === 'npc')
+    .flatMap((group) => group.results)
+    .filter((row) => searchResultHref(row, 'npc') !== null).length;
+  return response.unresolved - linkedNpcRows;
 }
 
 /**

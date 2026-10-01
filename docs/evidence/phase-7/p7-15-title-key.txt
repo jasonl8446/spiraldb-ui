@@ -1,0 +1,163 @@
+# p7-15 item 2 sidecar: quests.title_key, the 10 of 285, and the before/after drafts run
+# corpus: owner fork /home/jason/Documents/git-projects/spiraldb (330 quest files, read-only); DB: scratch copies of the synced dev DB
+
+## A. migration 0006 on a pre-0006 copy of data/spiraldb-ui.db (opened twice: the guarded add must not crash the second open)
+import { openDb } from '/home/jason/Documents/git-projects/spiraldb-ui/server/src/db.js';
+const f = '<scratch>/mig.db';
+for (let i = 1; i <= 2; i++) { const d = openDb({ file: f }); console.log('open', i, (d.pragma('table_info(quests)') as any[]).map((c) => c.name).join(','), d.prepare('select count(*) c from quests').get()); d.close(); }
+$ npx tsx mig.ts
+open 1 quest_name,title,level,is_mainline,updated_at,has_definition,link_kind,title_source,reference_count,title_key { c: 1717 }
+open 2 quest_name,title,level,is_mainline,updated_at,has_definition,link_kind,title_source,reference_count,title_key { c: 1717 }
+
+## B. BEFORE: npm run drafts on a copy of the dev DB, HEAD code (17adb32), before any 0006 code
+
+> spiraldb-ui@0.1.0 drafts
+> tsx scripts/build-drafts.ts --db <scratch>/before-run.db
+
+[spiraldb-ui] drafts database at <scratch>/before-run.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5458,
+  "inserted": 5458,
+  "unchanged": 0,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4026,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 64
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 228
+  },
+  "duration_ms": 5075
+}
+
+real	0m5.509s
+user	0m4.633s
+sys	0m1.222s
+
+## C. AFTER: npm run sync (RAW, see p7-15-sync-output.txt) then npm run drafts on the same DB
+
+> spiraldb-ui@0.1.0 drafts
+> tsx scripts/build-drafts.ts --db <scratch>/after.db
+
+[spiraldb-ui] drafts database at <scratch>/after.db
+[spiraldb-ui] SpiralDB root   at /home/jason/Documents/git-projects/spiraldb (read only)
+{
+  "proposed": 5437,
+  "inserted": 5437,
+  "unchanged": 0,
+  "removed": 0,
+  "by_source": {
+    "evidence-title": 4005,
+    "evidence-dialogue": 62,
+    "evidence-goals": 836,
+    "evidence-location": 85,
+    "evidence-requirements": 449,
+    "capture-order": 0,
+    "capture-rewards": 0
+  },
+  "drafts": {
+    "named_missing": 1387,
+    "named_defined": 330,
+    "unnamed": 4648,
+    "zero_evidence": 1360
+  },
+  "gate_precision": {
+    "matched": 7,
+    "gates": 64
+  },
+  "predecessor_precision": {
+    "matched": 132,
+    "files": 228
+  },
+  "duration_ms": 4355
+}
+
+real	0m4.682s
+user	0m3.670s
+sys	0m1.303s
+
+## D. title-suggestion counts, RAW query on each DB (evidence-title rows in quest_suggestions)
+$ node -e "select source,count(*) from quest_suggestions where source='evidence-title'" on before-run.db / after.db
+before-run.db {"evidence_title_rows":4026,"drafts_with_a_title_suggestion":4015,"confidence_1":4000,"confidence_below_1":26}
+before-run.db by evidence_ref kind [{"ref":"quest_ids:1217","n":124},{"ref":"quest_ids:1451","n":104},{"ref":"quest_ids:1397","n":99},{"ref":"quest_ids:2257","n":95},{"ref":"quest_ids:1233","n":95},{"ref":"quest_ids:1262","n":77},{"ref":"quest_ids:1240","n":75},{"ref":"quest_ids:1381","n":73},{"ref":"quest_ids:1520","n":72},{"ref":"quest_ids:1346","n":63},{"ref":"quest_ids:1249","n":61},{"ref":"quest_ids:1560","n":59},{"ref":"quest_ids:1300","n":58},{"ref":"quest_ids:1391","n":53},{"ref":"quest_ids:5271","n":52},{"ref":"quest_ids:1254","n":48},{"ref":"quest_ids:1263","n":45},{"ref":"quest_ids:4654","n":44},{"ref":"quest_ids:1205","n":42},{"ref":"quest_ids:1634","n":41},{"ref":"quest_ids:1367","n":41},{"ref":"quest_ids:6433","n":39},{"ref":"quest_ids:1704","n":37},{"ref":"quest_ids:1378","n":36},{"ref":"quest_ids:7411","n":35},{"ref":"quest_ids:5351","n":35},{"ref":"quest_ids:1488","n":35},{"ref":"quest_ids:1645","n":34},{"ref":"quest_ids:1608","n":33},{"ref":"quest_ids:1594","n":33},{"ref":"quest_ids:1546","n":33},{"ref":"quest_ids:6171","n":32},{"ref":"quest_ids:6891","n":31},{"ref":"quest_ids:7241","n":30},{"ref":"quest_ids:4661","n":30},{"ref":"quest_ids:1413","n":30},{"ref":"quest_ids:1361","n":30},{"ref":"quest_ids:1242","n":30},{"ref":"quest_ids:5378","n":29},{"ref":"quest_ids:1656","n":29},{"ref":"quest_ids:1521","n":29},{"ref":"quest_ids:5921","n":27},{"ref":"quest_ids:4653","n":27},{"ref":"quest_ids:2272","n":27},{"ref":"quest_ids:1675","n":26},{"ref":"quest_ids:1562","n":26},{"ref":"quest_ids:1507","n":26},{"ref":"quest_ids:1401","n":26},{"ref":"quest_ids:4721","n":25},{"ref":"quest_ids:1700","n":25},{"ref":"quest_ids:1447","n":25},{"ref":"quest_ids:6892","n":24},{"ref":"quest_ids:7011","n":23},{"ref":"quest_ids:2258","n":23},{"ref":"quest_ids:1731","n":23},{"ref":"quest_ids:1510","n":23},{"ref":"quest_ids:7260","n":22},{"ref":"quests.title \"","n":21},{"ref":"quest_ids:6831","n":21},{"ref":"quest_ids:4706","n":21},{"ref":"quest_ids:4091","n":21},{"ref":"quest_ids:3422","n":21},{"ref":"quest_ids:1575","n":21},{"ref":"quest_ids:1506","n":21},{"ref":"quest_ids:1370","n":21},{"ref":"quest_ids:3582","n":20},{"ref":"quest_ids:1487","n":20},{"ref":"quest_ids:7412","n":19},{"ref":"quest_ids:6432","n":18},{"ref":"quest_ids:5350","n":18},{"ref":"quest_ids:4702","n":18},{"ref":"quest_ids:4651","n":18},{"ref":"quest_ids:3581","n":18},{"ref":"quest_ids:1687","n":18},{"ref":"quest_ids:7261","n":17},{"ref":"quest_ids:1624","n":17},{"ref":"quest_ids:1513","n":17},{"ref":"quest_ids:1452","n":16},{"ref":"quest_ids:6172","n":15},{"ref":"quest_ids:6111","n":15},{"ref":"quest_ids:1433","n":15},{"ref":"quest_ids:4703","n":14},{"ref":"quest_ids:4560","n":13},{"ref":"quest_ids:1529","n":13},{"ref":"quest_ids:1524","n":13},{"ref":"quest_ids:1261","n":13},{"ref":"quest_ids:6170","n":12},{"ref":"quest_ids:4540","n":12},{"ref":"quest_ids:4652","n":11},{"ref":"quest_ids:1459","n":11},{"ref":"quest_ids:1260","n":11},{"ref":"quest_ids:8223","n":10},{"ref":"quest_ids:8114","n":10},{"ref":"quest_ids:7737","n":10},{"ref":"quest_ids:7736","n":10},{"ref":"quest_ids:7732","n":10},{"ref":"quest_ids:7731","n":10},{"ref":"quest_ids:7730","n":10},{"ref":"quest_ids:5379","n":10},{"ref":"quest_ids:4707","n":10},{"ref":"quest_ids:3999","n":10},{"ref":"quest_ids:3998","n":10},{"ref":"quest_ids:3981","n":10},{"ref":"quest_ids:3979","n":10},{"ref":"quest_ids:3927","n":10},{"ref":"quest_ids:3920","n":10},{"ref":"quest_ids:1730","n":10},{"ref":"quest_ids:8220","n":9},{"ref":"quest_ids:7738","n":9},{"ref":"quest_ids:4655","n":9},{"ref":"quest_ids:3978","n":9},{"ref":"quest_ids:3976","n":9},{"ref":"quest_ids:3975","n":9},{"ref":"quest_ids:3921","n":9},{"ref":"quest_ids:3818","n":9},{"ref":"quest_ids:1448","n":9},{"ref":"quest_ids:1435","n":9},{"ref":"quest_ids:8227","n":8},{"ref":"quest_ids:8226","n":8},{"ref":"quest_ids:8225","n":8},{"ref":"quest_ids:8224","n":8},{"ref":"quest_ids:8117","n":8},{"ref":"quest_ids:4411","n":8},{"ref":"quest_ids:4003","n":8},{"ref":"quest_ids:4002","n":8},{"ref":"quest_ids:3980","n":8},{"ref":"quest_ids:3977","n":8},{"ref":"quest_ids:3974","n":8},{"ref":"quest_ids:3949","n":8},{"ref":"quest_ids:3932","n":8},{"ref":"quest_ids:3819","n":8},{"ref":"quest_ids:1389","n":8},{"ref":"quest_ids:1201","n":8},{"ref":"quest_ids:8219","n":7},{"ref":"quest_ids:8132","n":7},{"ref":"quest_ids:8123","n":7},{"ref":"quest_ids:8116","n":7},{"ref":"quest_ids:8109","n":7},{"ref":"quest_ids:7729","n":7},{"ref":"quest_ids:6110","n":7},{"ref":"quest_ids:4705","n":7},{"ref":"quest_ids:4001","n":7},{"ref":"quest_ids:4000","n":7},{"ref":"quest_ids:3982","n":7},{"ref":"quest_ids:3933","n":7},{"ref":"quest_ids:3926","n":7},{"ref":"quest_ids:3827","n":7},{"ref":"quest_ids:3824","n":7},{"ref":"quest_ids:3823","n":7},{"ref":"quest_ids:8131","n":6},{"ref":"quest_ids:8113","n":6},{"ref":"quest_ids:8110","n":6},{"ref":"quest_ids:7735","n":6},{"ref":"quest_ids:6380","n":6},{"ref":"quest_ids:5171","n":6},{"ref":"quest_ids:4662","n":6},{"ref":"quest_ids:4092","n":6},{"ref":"quest_ids:3997","n":6},{"ref":"quest_ids:3936","n":6},{"ref":"quest_ids:3826","n":6},{"ref":"quest_ids:3825","n":6},{"ref":"quest_ids:3815","n":6},{"ref":"quest_ids:2671","n":6},{"ref":"quest_ids:2521","n":6},{"ref":"quest_ids:1702","n":6},{"ref":"quest_ids:1501","n":6},{"ref":"quest_ids:8222","n":5},{"ref":"quest_ids:8221","n":5},{"ref":"quest_ids:8212","n":5},{"ref":"quest_ids:8210","n":5},{"ref":"quest_ids:8209","n":5},{"ref":"quest_ids:8122","n":5},{"ref":"quest_ids:7727","n":5},{"ref":"quest_ids:7726","n":5},{"ref":"quest_ids:6751","n":5},{"ref":"quest_ids:3931","n":5},{"ref":"quest_ids:3922","n":5},{"ref":"quest_ids:2271","n":5},{"ref":"quest_ids:2114","n":5},{"ref":"quest_ids:1750","n":5},{"ref":"quest_ids:1353","n":5},{"ref":"quest_ids:8806","n":4},{"ref":"quest_ids:8218","n":4},{"ref":"quest_ids:8215","n":4},{"ref":"quest_ids:8140","n":4},{"ref":"quest_ids:8139","n":4},{"ref":"quest_ids:8138","n":4},{"ref":"quest_ids:8133","n":4},{"ref":"quest_ids:8111","n":4},{"ref":"quest_ids:8107","n":4},{"ref":"quest_ids:7733","n":4},{"ref":"quest_ids:5272","n":4},{"ref":"quest_ids:4701","n":4},{"ref":"quest_ids:4690","n":4},{"ref":"quest_ids:4398","n":4},{"ref":"quest_ids:3994","n":4},{"ref":"quest_ids:3930","n":4},{"ref":"quest_ids:3928","n":4},{"ref":"quest_ids:3925","n":4},{"ref":"quest_ids:3813","n":4},{"ref":"quest_ids:3812","n":4},{"ref":"quest_ids:3811","n":4},{"ref":"quest_ids:3810","n":4},{"ref":"quest_ids:2821","n":4},{"ref":"quest_ids:1646","n":4},{"ref":"quest_ids:8303","n":3},{"ref":"quest_ids:8240","n":3},{"ref":"quest_ids:8211","n":3},{"ref":"quest_ids:8208","n":3},{"ref":"quest_ids:8141","n":3},{"ref":"quest_ids:8129","n":3},{"ref":"quest_ids:8128","n":3},{"ref":"quest_ids:8126","n":3},{"ref":"quest_ids:8124","n":3},{"ref":"quest_ids:8121","n":3},{"ref":"quest_ids:8120","n":3},{"ref":"quest_ids:8119","n":3},{"ref":"quest_ids:7850","n":3},{"ref":"quest_ids:7740","n":3},{"ref":"quest_ids:7013","n":3},{"ref":"quest_ids:6832","n":3},{"ref":"quest_ids:6173","n":3},{"ref":"quest_ids:4412","n":3},{"ref":"quest_ids:4004","n":3},{"ref":"quest_ids:3973","n":3},{"ref":"quest_ids:3965","n":3},{"ref":"quest_ids:3937","n":3},{"ref":"quest_ids:3580","n":3},{"ref":"quest_ids:3231","n":3},{"ref":"quest_ids:3060","n":3},{"ref":"quest_ids:2820","n":3},{"ref":"quest_ids:2681","n":3},{"ref":"quest_ids:2300","n":3},{"ref":"quest_ids:2273","n":3},{"ref":"quest_ids:2110","n":3},{"ref":"quest_ids:1732","n":3},{"ref":"quest_ids:1463","n":3},{"ref":"quest_ids:1202","n":3},{"ref":"quest_ids:8786","n":2},{"ref":"quest_ids:8779","n":2},{"ref":"quest_ids:8304","n":2},{"ref":"quest_ids:8253","n":2},{"ref":"quest_ids:8252","n":2},{"ref":"quest_ids:8249","n":2},{"ref":"quest_ids:8239","n":2},{"ref":"quest_ids:8230","n":2},{"ref":"quest_ids:8229","n":2},{"ref":"quest_ids:8217","n":2},{"ref":"quest_ids:8136","n":2},{"ref":"quest_ids:8115","n":2},{"ref":"quest_ids:8108","n":2},{"ref":"quest_ids:7745","n":2},{"ref":"quest_ids:7410","n":2},{"ref":"quest_ids:7242","n":2},{"ref":"quest_ids:7012","n":2},{"ref":"quest_ids:6801","n":2},{"ref":"quest_ids:6517","n":2},{"ref":"quest_ids:5920","n":2},{"ref":"quest_ids:4695","n":2},{"ref":"quest_ids:4590","n":2},{"ref":"quest_ids:4311","n":2},{"ref":"quest_ids:3993","n":2},{"ref":"quest_ids:3948","n":2},{"ref":"quest_ids:3828","n":2},{"ref":"quest_ids:3816","n":2},{"ref":"quest_ids:3131","n":2},{"ref":"quest_ids:3090","n":2},{"ref":"quest_ids:2990","n":2},{"ref":"quest_ids:1754","n":2},{"ref":"quest_ids:1717","n":2},{"ref":"quest_ids:1563","n":2},{"ref":"quest_ids:1526","n":2},{"ref":"quest_ids:1444","n":2},{"ref":"quest_ids:1245","n":2},{"ref":"quest_ids:8507","n":1},{"ref":"quest_ids:8306","n":1},{"ref":"quest_ids:8299","n":1},{"ref":"quest_ids:8248","n":1},{"ref":"quest_ids:8241","n":1},{"ref":"quest_ids:8238","n":1},{"ref":"quest_ids:8228","n":1},{"ref":"quest_ids:8213","n":1},{"ref":"quest_ids:8142","n":1},{"ref":"quest_ids:8127","n":1},{"ref":"quest_ids:8125","n":1},{"ref":"quest_ids:7851","n":1},{"ref":"quest_ids:7785","n":1},{"ref":"quest_ids:7016","n":1},{"ref":"quest_ids:7014","n":1},{"ref":"quest_ids:7000","n":1},{"ref":"quest_ids:6800","n":1},{"ref":"quest_ids:66","n":1},{"ref":"quest_ids:6434","n":1},{"ref":"quest_ids:6430","n":1},{"ref":"quest_ids:6100","n":1},{"ref":"quest_ids:5530","n":1},{"ref":"quest_ids:5330","n":1},{"ref":"quest_ids:4880","n":1},{"ref":"quest_ids:4722","n":1},{"ref":"quest_ids:4650","n":1},{"ref":"quest_ids:4310","n":1},{"ref":"quest_ids:4040","n":1},{"ref":"quest_ids:3996","n":1},{"ref":"quest_ids:3991","n":1},{"ref":"quest_ids:3957","n":1},{"ref":"quest_ids:3956","n":1},{"ref":"quest_ids:3919","n":1},{"ref":"quest_ids:3913","n":1},{"ref":"quest_ids:3892","n":1},{"ref":"quest_ids:3814","n":1},{"ref":"quest_ids:3110","n":1},{"ref":"quest_ids:2744","n":1},{"ref":"quest_ids:1914","n":1},{"ref":"quest_ids:1644","n":1},{"ref":"quest_ids:1545","n":1},{"ref":"quest_ids:1461","n":1},{"ref":"quest_ids:1438","n":1},{"ref":"quest_ids:1406","n":1},{"ref":"quest_ids:1404","n":1},{"ref":"quest_ids:1380","n":1},{"ref":"quest_ids:1368","n":1},{"ref":"quest_ids:1360","n":1},{"ref":"quest_ids:1335","n":1},{"ref":"quest_ids:1268","n":1},{"ref":"quest_ids:1264","n":1},{"ref":"quest_ids:1206","n":1},{"ref":"quest_ids:0","n":1}]
+after.db {"evidence_title_rows":4005,"drafts_with_a_title_suggestion":4005,"confidence_1":4000,"confidence_below_1":5}
+after.db by evidence_ref kind [{"ref":"quest_ids:1217","n":124},{"ref":"quest_ids:1451","n":104},{"ref":"quest_ids:1397","n":99},{"ref":"quest_ids:2257","n":95},{"ref":"quest_ids:1233","n":95},{"ref":"quest_ids:1262","n":77},{"ref":"quest_ids:1240","n":75},{"ref":"quest_ids:1381","n":73},{"ref":"quest_ids:1520","n":72},{"ref":"quest_ids:1346","n":63},{"ref":"quest_ids:1249","n":61},{"ref":"quest_ids:1560","n":59},{"ref":"quest_ids:1300","n":58},{"ref":"quest_ids:1391","n":53},{"ref":"quest_ids:5271","n":52},{"ref":"quest_ids:1254","n":48},{"ref":"quest_ids:1263","n":45},{"ref":"quest_ids:4654","n":44},{"ref":"quest_ids:1205","n":42},{"ref":"quest_ids:1634","n":41},{"ref":"quest_ids:1367","n":41},{"ref":"quest_ids:6433","n":39},{"ref":"quest_ids:1704","n":37},{"ref":"quest_ids:1378","n":36},{"ref":"quest_ids:7411","n":35},{"ref":"quest_ids:5351","n":35},{"ref":"quest_ids:1488","n":35},{"ref":"quest_ids:1645","n":34},{"ref":"quest_ids:1608","n":33},{"ref":"quest_ids:1594","n":33},{"ref":"quest_ids:1546","n":33},{"ref":"quest_ids:6171","n":32},{"ref":"quest_ids:6891","n":31},{"ref":"quest_ids:7241","n":30},{"ref":"quest_ids:4661","n":30},{"ref":"quest_ids:1413","n":30},{"ref":"quest_ids:1361","n":30},{"ref":"quest_ids:1242","n":30},{"ref":"quest_ids:5378","n":29},{"ref":"quest_ids:1656","n":29},{"ref":"quest_ids:1521","n":29},{"ref":"quest_ids:5921","n":27},{"ref":"quest_ids:4653","n":27},{"ref":"quest_ids:2272","n":27},{"ref":"quest_ids:1675","n":26},{"ref":"quest_ids:1562","n":26},{"ref":"quest_ids:1507","n":26},{"ref":"quest_ids:1401","n":26},{"ref":"quest_ids:4721","n":25},{"ref":"quest_ids:1700","n":25},{"ref":"quest_ids:1447","n":25},{"ref":"quest_ids:6892","n":24},{"ref":"quest_ids:7011","n":23},{"ref":"quest_ids:2258","n":23},{"ref":"quest_ids:1731","n":23},{"ref":"quest_ids:1510","n":23},{"ref":"quest_ids:7260","n":22},{"ref":"quest_ids:6831","n":21},{"ref":"quest_ids:4706","n":21},{"ref":"quest_ids:4091","n":21},{"ref":"quest_ids:3422","n":21},{"ref":"quest_ids:1575","n":21},{"ref":"quest_ids:1506","n":21},{"ref":"quest_ids:1370","n":21},{"ref":"quest_ids:3582","n":20},{"ref":"quest_ids:1487","n":20},{"ref":"quest_ids:7412","n":19},{"ref":"quest_ids:6432","n":18},{"ref":"quest_ids:5350","n":18},{"ref":"quest_ids:4702","n":18},{"ref":"quest_ids:4651","n":18},{"ref":"quest_ids:3581","n":18},{"ref":"quest_ids:1687","n":18},{"ref":"quest_ids:7261","n":17},{"ref":"quest_ids:1624","n":17},{"ref":"quest_ids:1513","n":17},{"ref":"quest_ids:1452","n":16},{"ref":"quest_ids:6172","n":15},{"ref":"quest_ids:6111","n":15},{"ref":"quest_ids:1433","n":15},{"ref":"quest_ids:4703","n":14},{"ref":"quest_ids:4560","n":13},{"ref":"quest_ids:1529","n":13},{"ref":"quest_ids:1524","n":13},{"ref":"quest_ids:1261","n":13},{"ref":"quest_ids:6170","n":12},{"ref":"quest_ids:4540","n":12},{"ref":"quest_ids:4652","n":11},{"ref":"quest_ids:1459","n":11},{"ref":"quest_ids:1260","n":11},{"ref":"quest_ids:8223","n":10},{"ref":"quest_ids:8114","n":10},{"ref":"quest_ids:7737","n":10},{"ref":"quest_ids:7736","n":10},{"ref":"quest_ids:7732","n":10},{"ref":"quest_ids:7731","n":10},{"ref":"quest_ids:7730","n":10},{"ref":"quest_ids:5379","n":10},{"ref":"quest_ids:4707","n":10},{"ref":"quest_ids:3999","n":10},{"ref":"quest_ids:3998","n":10},{"ref":"quest_ids:3981","n":10},{"ref":"quest_ids:3979","n":10},{"ref":"quest_ids:3927","n":10},{"ref":"quest_ids:3920","n":10},{"ref":"quest_ids:1730","n":10},{"ref":"quest_ids:8220","n":9},{"ref":"quest_ids:7738","n":9},{"ref":"quest_ids:4655","n":9},{"ref":"quest_ids:3978","n":9},{"ref":"quest_ids:3976","n":9},{"ref":"quest_ids:3975","n":9},{"ref":"quest_ids:3921","n":9},{"ref":"quest_ids:3818","n":9},{"ref":"quest_ids:1448","n":9},{"ref":"quest_ids:1435","n":9},{"ref":"quest_ids:8227","n":8},{"ref":"quest_ids:8226","n":8},{"ref":"quest_ids:8225","n":8},{"ref":"quest_ids:8224","n":8},{"ref":"quest_ids:8117","n":8},{"ref":"quest_ids:4411","n":8},{"ref":"quest_ids:4003","n":8},{"ref":"quest_ids:4002","n":8},{"ref":"quest_ids:3980","n":8},{"ref":"quest_ids:3977","n":8},{"ref":"quest_ids:3974","n":8},{"ref":"quest_ids:3949","n":8},{"ref":"quest_ids:3932","n":8},{"ref":"quest_ids:3819","n":8},{"ref":"quest_ids:1389","n":8},{"ref":"quest_ids:1201","n":8},{"ref":"quest_ids:8219","n":7},{"ref":"quest_ids:8132","n":7},{"ref":"quest_ids:8123","n":7},{"ref":"quest_ids:8116","n":7},{"ref":"quest_ids:8109","n":7},{"ref":"quest_ids:7729","n":7},{"ref":"quest_ids:6110","n":7},{"ref":"quest_ids:4705","n":7},{"ref":"quest_ids:4001","n":7},{"ref":"quest_ids:4000","n":7},{"ref":"quest_ids:3982","n":7},{"ref":"quest_ids:3933","n":7},{"ref":"quest_ids:3926","n":7},{"ref":"quest_ids:3827","n":7},{"ref":"quest_ids:3824","n":7},{"ref":"quest_ids:3823","n":7},{"ref":"quest_ids:8131","n":6},{"ref":"quest_ids:8113","n":6},{"ref":"quest_ids:8110","n":6},{"ref":"quest_ids:7735","n":6},{"ref":"quest_ids:6380","n":6},{"ref":"quest_ids:5171","n":6},{"ref":"quest_ids:4662","n":6},{"ref":"quest_ids:4092","n":6},{"ref":"quest_ids:3997","n":6},{"ref":"quest_ids:3936","n":6},{"ref":"quest_ids:3826","n":6},{"ref":"quest_ids:3825","n":6},{"ref":"quest_ids:3815","n":6},{"ref":"quest_ids:2671","n":6},{"ref":"quest_ids:2521","n":6},{"ref":"quest_ids:1702","n":6},{"ref":"quest_ids:1501","n":6},{"ref":"quest_ids:8222","n":5},{"ref":"quest_ids:8221","n":5},{"ref":"quest_ids:8212","n":5},{"ref":"quest_ids:8210","n":5},{"ref":"quest_ids:8209","n":5},{"ref":"quest_ids:8122","n":5},{"ref":"quest_ids:7727","n":5},{"ref":"quest_ids:7726","n":5},{"ref":"quest_ids:6751","n":5},{"ref":"quest_ids:3931","n":5},{"ref":"quest_ids:3922","n":5},{"ref":"quest_ids:2271","n":5},{"ref":"quest_ids:2114","n":5},{"ref":"quest_ids:1750","n":5},{"ref":"quest_ids:1353","n":5},{"ref":"quest_ids:8806","n":4},{"ref":"quest_ids:8218","n":4},{"ref":"quest_ids:8215","n":4},{"ref":"quest_ids:8140","n":4},{"ref":"quest_ids:8139","n":4},{"ref":"quest_ids:8138","n":4},{"ref":"quest_ids:8133","n":4},{"ref":"quest_ids:8111","n":4},{"ref":"quest_ids:8107","n":4},{"ref":"quest_ids:7733","n":4},{"ref":"quest_ids:5272","n":4},{"ref":"quest_ids:4701","n":4},{"ref":"quest_ids:4690","n":4},{"ref":"quest_ids:4398","n":4},{"ref":"quest_ids:3994","n":4},{"ref":"quest_ids:3930","n":4},{"ref":"quest_ids:3928","n":4},{"ref":"quest_ids:3925","n":4},{"ref":"quest_ids:3813","n":4},{"ref":"quest_ids:3812","n":4},{"ref":"quest_ids:3811","n":4},{"ref":"quest_ids:3810","n":4},{"ref":"quest_ids:2821","n":4},{"ref":"quest_ids:1646","n":4},{"ref":"quest_ids:8303","n":3},{"ref":"quest_ids:8240","n":3},{"ref":"quest_ids:8211","n":3},{"ref":"quest_ids:8208","n":3},{"ref":"quest_ids:8141","n":3},{"ref":"quest_ids:8129","n":3},{"ref":"quest_ids:8128","n":3},{"ref":"quest_ids:8126","n":3},{"ref":"quest_ids:8124","n":3},{"ref":"quest_ids:8121","n":3},{"ref":"quest_ids:8120","n":3},{"ref":"quest_ids:8119","n":3},{"ref":"quest_ids:7850","n":3},{"ref":"quest_ids:7740","n":3},{"ref":"quest_ids:7013","n":3},{"ref":"quest_ids:6832","n":3},{"ref":"quest_ids:6173","n":3},{"ref":"quest_ids:4412","n":3},{"ref":"quest_ids:4004","n":3},{"ref":"quest_ids:3973","n":3},{"ref":"quest_ids:3965","n":3},{"ref":"quest_ids:3937","n":3},{"ref":"quest_ids:3580","n":3},{"ref":"quest_ids:3231","n":3},{"ref":"quest_ids:3060","n":3},{"ref":"quest_ids:2820","n":3},{"ref":"quest_ids:2681","n":3},{"ref":"quest_ids:2300","n":3},{"ref":"quest_ids:2273","n":3},{"ref":"quest_ids:2110","n":3},{"ref":"quest_ids:1732","n":3},{"ref":"quest_ids:1463","n":3},{"ref":"quest_ids:1202","n":3},{"ref":"quest_ids:8786","n":2},{"ref":"quest_ids:8779","n":2},{"ref":"quest_ids:8304","n":2},{"ref":"quest_ids:8253","n":2},{"ref":"quest_ids:8252","n":2},{"ref":"quest_ids:8249","n":2},{"ref":"quest_ids:8239","n":2},{"ref":"quest_ids:8230","n":2},{"ref":"quest_ids:8229","n":2},{"ref":"quest_ids:8217","n":2},{"ref":"quest_ids:8136","n":2},{"ref":"quest_ids:8115","n":2},{"ref":"quest_ids:8108","n":2},{"ref":"quest_ids:7745","n":2},{"ref":"quest_ids:7410","n":2},{"ref":"quest_ids:7242","n":2},{"ref":"quest_ids:7012","n":2},{"ref":"quest_ids:6801","n":2},{"ref":"quest_ids:6517","n":2},{"ref":"quest_ids:5920","n":2},{"ref":"quest_ids:4695","n":2},{"ref":"quest_ids:4590","n":2},{"ref":"quest_ids:4311","n":2},{"ref":"quest_ids:3993","n":2},{"ref":"quest_ids:3948","n":2},{"ref":"quest_ids:3828","n":2},{"ref":"quest_ids:3816","n":2},{"ref":"quest_ids:3131","n":2},{"ref":"quest_ids:3090","n":2},{"ref":"quest_ids:2990","n":2},{"ref":"quest_ids:1754","n":2},{"ref":"quest_ids:1717","n":2},{"ref":"quest_ids:1563","n":2},{"ref":"quest_ids:1526","n":2},{"ref":"quest_ids:1444","n":2},{"ref":"quest_ids:1245","n":2},{"ref":"quest_ids:8507","n":1},{"ref":"quest_ids:8306","n":1},{"ref":"quest_ids:8299","n":1},{"ref":"quest_ids:8248","n":1},{"ref":"quest_ids:8241","n":1},{"ref":"quest_ids:8238","n":1},{"ref":"quest_ids:8228","n":1},{"ref":"quest_ids:8213","n":1},{"ref":"quest_ids:8142","n":1},{"ref":"quest_ids:8127","n":1},{"ref":"quest_ids:8125","n":1},{"ref":"quest_ids:7851","n":1},{"ref":"quest_ids:7785","n":1},{"ref":"quest_ids:7016","n":1},{"ref":"quest_ids:7014","n":1},{"ref":"quest_ids:7000","n":1},{"ref":"quest_ids:6800","n":1},{"ref":"quest_ids:66","n":1},{"ref":"quest_ids:6434","n":1},{"ref":"quest_ids:6430","n":1},{"ref":"quest_ids:6100","n":1},{"ref":"quest_ids:5530","n":1},{"ref":"quest_ids:5330","n":1},{"ref":"quest_ids:4880","n":1},{"ref":"quest_ids:4722","n":1},{"ref":"quest_ids:4650","n":1},{"ref":"quest_ids:4310","n":1},{"ref":"quest_ids:4040","n":1},{"ref":"quest_ids:3996","n":1},{"ref":"quest_ids:3991","n":1},{"ref":"quest_ids:3957","n":1},{"ref":"quest_ids:3956","n":1},{"ref":"quest_ids:3919","n":1},{"ref":"quest_ids:3913","n":1},{"ref":"quest_ids:3892","n":1},{"ref":"quest_ids:3814","n":1},{"ref":"quest_ids:3110","n":1},{"ref":"quest_ids:2744","n":1},{"ref":"quest_ids:1914","n":1},{"ref":"quest_ids:1644","n":1},{"ref":"quest_ids:1545","n":1},{"ref":"quest_ids:1461","n":1},{"ref":"quest_ids:1438","n":1},{"ref":"quest_ids:1406","n":1},{"ref":"quest_ids:1404","n":1},{"ref":"quest_ids:1380","n":1},{"ref":"quest_ids:1368","n":1},{"ref":"quest_ids:1360","n":1},{"ref":"quest_ids:1335","n":1},{"ref":"quest_ids:1268","n":1},{"ref":"quest_ids:1264","n":1},{"ref":"quest_ids:1206","n":1},{"ref":"quest_ids:0","n":1}]
+
+## E. the diff of the two title-suggestion sets (before minus after; after minus before)
+before 4026 after 4005 removed 21 added 0
+REMOVED {"q":"DM-BLACK-SIDE-002","v":"\"QuestTitle_00002152\"","c":0.5,"r":"quests.title \"The Great Escapery\" (2 keys carry it)"}
+REMOVED {"q":"DM-BLACK-SIDE-002","v":"\"QuestTitle_00002208\"","c":0.5,"r":"quests.title \"The Great Escapery\" (2 keys carry it)"}
+REMOVED {"q":"DM-GRAVE-MAIN-007","v":"\"QuestTitle_00002163\"","c":0.5,"r":"quests.title \"Scholomari Parley\" (2 keys carry it)"}
+REMOVED {"q":"DM-GRAVE-MAIN-007","v":"\"QuestTitle_00002164\"","c":0.5,"r":"quests.title \"Scholomari Parley\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-DEATH-003","v":"\"QuestTitle_00002103\"","c":0.5,"r":"quests.title \"Diving for Death\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-DEATH-003","v":"\"QuestTitle_00002107\"","c":0.5,"r":"quests.title \"Diving for Death\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-FIRE-002","v":"\"QuestTitle_00002105\"","c":0.5,"r":"quests.title \"Smoke and Memories\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-FIRE-002","v":"\"QuestTitle_18EFE6\"","c":0.5,"r":"quests.title \"Smoke and Memories\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-FIRE-003","v":"\"QuestTitle_00002106\"","c":0.5,"r":"quests.title \"Fire Bad?\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-FIRE-003","v":"\"QuestTitle_18EFE8\"","c":0.5,"r":"quests.title \"Fire Bad?\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-MYTH-001","v":"\"QuestTitle_00002049\"","c":0.333,"r":"quests.title \"Legend in the Mesh\" (3 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-MYTH-001","v":"\"QuestTitle_00002071\"","c":0.333,"r":"quests.title \"Legend in the Mesh\" (3 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-MYTH-001","v":"\"QuestTitle_00002094\"","c":0.333,"r":"quests.title \"Legend in the Mesh\" (3 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-MYTH-003","v":"\"QuestTitle_00002099\"","c":0.5,"r":"quests.title \"Archie Mastery\" (2 keys carry it)"}
+REMOVED {"q":"KT-WEAVE-MYTH-003","v":"\"QuestTitle_18EFE3\"","c":0.5,"r":"quests.title \"Archie Mastery\" (2 keys carry it)"}
+REMOVED {"q":"WL-DREAM-MAIN-001","v":"\"QuestTitle_00002000\"","c":0.5,"r":"quests.title \"The Dream Master \" (2 keys carry it)"}
+REMOVED {"q":"WL-DREAM-MAIN-001","v":"\"QuestTitle_188AD0\"","c":0.5,"r":"quests.title \"The Dream Master \" (2 keys carry it)"}
+REMOVED {"q":"WL-DREAM-MAIN-002","v":"\"QuestTitle_00002001\"","c":0.5,"r":"quests.title \"Nightmare on Memory Lane\" (2 keys carry it)"}
+REMOVED {"q":"WL-DREAM-MAIN-002","v":"\"QuestTitle_188AD1\"","c":0.5,"r":"quests.title \"Nightmare on Memory Lane\" (2 keys carry it)"}
+REMOVED {"q":"WL-DREAM-MAIN-003","v":"\"QuestTitle_00002003\"","c":0.5,"r":"quests.title \"Veggie's Revenge\" (2 keys carry it)"}
+REMOVED {"q":"WL-DREAM-MAIN-003","v":"\"QuestTitle_188AD2\"","c":0.5,"r":"quests.title \"Veggie's Revenge\" (2 keys carry it)"}
+
+## F. the 10 of 285 direct links that wrote no title (p6-09): re-measured on the pre-0006 and post-0006 DBs
+$ npx tsx ten.ts   (resolveLink = the scaffold and the builder\x27s own resolver)
+import { openDb } from '/home/jason/Documents/git-projects/spiraldb-ui/server/src/db.js';
+import { resolveLink } from '/home/jason/Documents/git-projects/spiraldb-ui/server/src/services/questScaffold.js';
+const cnt = (f: string) => { const d = openDb({ file: f });
+ const direct = d.prepare("select quest_name,title,has_definition,link_kind,title_key from quests where link_kind='direct'").all() as any[];
+ const ids = new Set((d.prepare("select matched_quest_name n from quest_ids where matched_quest_name is not null and title_key is not null").all() as any[]).map(r=>r.n));
+ const keys = d.prepare("select key,value from string_table where key like 'QuestTitle\_%' escape '\\'").all() as any[];
+ const by = new Map<string,string[]>(); for (const k of keys) by.set(k.value,[...(by.get(k.value)??[]),k.key]);
+ let viaId=0, viaOwn=0, viaReverse=0, ambiguous=0, none=0; const amb: any[]=[];
+ for (const q of direct) { if (ids.has(q.quest_name)) {viaId++;continue;} if (q.title_key) {viaOwn++; if ((by.get(q.title)??[]).length>1) amb.push([q.quest_name,q.title,q.title_key,by.get(q.title)]); continue;}
+  const c=by.get(q.title)??[]; if(c.length===1) viaReverse++; else if (c.length>1) ambiguous++; else none++; }
+ console.log(f.split('/').pop(), {direct: direct.length, viaId, viaOwnTitleKeyNotId: viaOwn, viaReverse, ambiguous, none});
+ if (amb.length) console.log(JSON.stringify(amb,null,0));
+ const scaf = direct.filter(q=>q.has_definition===0).map(q=>[q.quest_name, resolveLink(d,q as any).titleKey]);
+ console.log('scaffold-eligible direct rows (has_definition=0):', scaf.length, 'writing a title:', scaf.filter(x=>x[1]).length, 'writing none:', scaf.filter(x=>!x[1]).length);
+};
+cnt('<scratch>/before-run.db'); cnt('<scratch>/after.db');
+before-run.db {
+  direct: 285,
+  viaId: 170,
+  viaOwnTitleKeyNotId: 0,
+  viaReverse: 105,
+  ambiguous: 10,
+  none: 0
+}
+scaffold-eligible direct rows (has_definition=0): 279 writing a title: 269 writing none: 10
+after.db {
+  direct: 285,
+  viaId: 170,
+  viaOwnTitleKeyNotId: 115,
+  viaReverse: 0,
+  ambiguous: 0,
+  none: 0
+}
+[["DM-BLACK-SIDE-002","The Great Escapery","QuestTitle_00002152",["QuestTitle_00002152","QuestTitle_00002208"]],["DM-GRAVE-MAIN-007","Scholomari Parley","QuestTitle_00002164",["QuestTitle_00002163","QuestTitle_00002164"]],["KT-WEAVE-DEATH-003","Diving for Death","QuestTitle_00002103",["QuestTitle_00002103","QuestTitle_00002107"]],["KT-WEAVE-FIRE-002","Smoke and Memories","QuestTitle_00002105",["QuestTitle_00002105","QuestTitle_18EFE6"]],["KT-WEAVE-FIRE-003","Fire Bad?","QuestTitle_00002106",["QuestTitle_00002106","QuestTitle_18EFE8"]],["KT-WEAVE-MYTH-001","Legend in the Mesh","QuestTitle_00002071",["QuestTitle_00002049","QuestTitle_00002071","QuestTitle_00002094"]],["KT-WEAVE-MYTH-003","Archie Mastery","QuestTitle_00002099",["QuestTitle_00002099","QuestTitle_18EFE3"]],["WL-DREAM-MAIN-001","The Dream Master ","QuestTitle_00002000",["QuestTitle_00002000","QuestTitle_188AD0"]],["WL-DREAM-MAIN-002","Nightmare on Memory Lane","QuestTitle_00002001",["QuestTitle_00002001","QuestTitle_188AD1"]],["WL-DREAM-MAIN-003","Veggie's Revenge","QuestTitle_00002003",["QuestTitle_00002003","QuestTitle_188AD2"]]]
+scaffold-eligible direct rows (has_definition=0): 279 writing a title: 279 writing none: 0

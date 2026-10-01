@@ -267,19 +267,39 @@ function list(page: Page, label: string): Locator {
   return editor(page).getByRole('region', { name: label, exact: true });
 }
 
-/** One tag section by its own accessible name (`Dialog tag 1 <address>`). */
+/**
+ * One tag section by its exact document address (its `data-path`; task 7.9 keeps a path out of
+ * every label) and the ordinal its accessible name starts with (`Dialog tag 1 <address in words>`).
+ */
 function tag(scope: Locator, index: number, address: string): Locator {
-  return scope.getByRole('region', { name: `Dialog tag ${index} ${address}`, exact: true });
+  return scope.locator(`section[data-path="${address}"][aria-label^="Dialog tag ${index} "]`);
 }
 
-/** One entry card by its own accessible name (`Entry 1 <address>`). */
+/** One entry card by its exact `data-path` and its ordinal (`Entry 1 <address in words>`). */
 function card(scope: Locator, index: number, address: string): Locator {
-  return scope.getByRole('article', { name: `Entry ${index} ${address}`, exact: true });
+  return scope.locator(`article[data-path="${address}"][aria-label^="Entry ${index} "]`);
+}
+
+/** A card's `Duplicate` / `Delete` action, by its exact `data-path` and its verb. */
+function action(scope: Locator, verb: string, address: string): Locator {
+  return scope.locator(`button[data-path="${address}"][aria-label^="${verb} "]`);
 }
 
 /** An accordion's disclosure button on one card. */
 function accordion(cardLoc: Locator, label: string): Locator {
   return cardLoc.getByRole('button', { name: label, exact: true });
+}
+
+/**
+ * Opens an accordion unless it is already open (task 7.11: one holding a non-default value, or a
+ * validation message, opens on its own, so a bare click would close it).
+ */
+async function reveal(cardLoc: Locator, label: string): Promise<void> {
+  const button = accordion(cardLoc, label);
+  if ((await button.getAttribute('aria-expanded')) === 'false') {
+    await button.click();
+  }
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
 }
 
 /** An accordion's body — `includeHidden` so a collapsed panel is assertable. */
@@ -444,18 +464,28 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
     for (const label of ['Basic', 'Camera', 'Sound', 'Animation', 'Advanced']) {
       await expect(accordion(questCard, label)).toBeVisible();
     }
-    // Spec L554: Basic open by default, the rest collapsed.
+    // Spec L554: Basic open by default, the rest collapsed, except an accordion that holds a value
+    // differing from **that field's own** default, or a validation message (task 7.11, D195). This
+    // entry's two advanced values, `m_cameraHidePlayers: 2` and `m_nameSTKey:
+    // 'NPCFormats_First_Last'`, are exactly what `newDialogEntry` writes, so Camera stays collapsed
+    // — under D179's generic empty rule it opened (this assertion changed deliberately with D195).
+    // Advanced still opens, for its validation message: the fixture's `m_walkAwayNpcTemplateID` is
+    // null, which the engine flags, and a message is never hidden.
     await expect(accordion(questCard, 'Basic')).toHaveAttribute('aria-expanded', 'true');
     await expect(panel(questCard, 'Basic')).toBeVisible();
-    for (const label of ['Camera', 'Sound', 'Animation', 'Advanced']) {
+    for (const label of ['Camera', 'Sound', 'Animation']) {
       await expect(accordion(questCard, label)).toHaveAttribute('aria-expanded', 'false');
       await expect(panel(questCard, label)).toBeHidden();
     }
+    await expect(accordion(questCard, 'Advanced')).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+      panel(questCard, 'Advanced').getByText('The value null must be a whole number'),
+    ).toBeVisible();
 
     // Opening one reveals its fields; closing Basic hides them again.
-    await accordion(questCard, 'Camera').click();
-    await expect(panel(questCard, 'Camera')).toBeVisible();
-    await expect(questCard.getByLabel('m_cameraName', { exact: true })).toBeVisible();
+    await accordion(questCard, 'Sound').click();
+    await expect(panel(questCard, 'Sound')).toBeVisible();
+    await expect(questCard.getByLabel('Music file (m_musicFile)', { exact: true })).toBeVisible();
     await accordion(questCard, 'Basic').click();
     await expect(panel(questCard, 'Basic')).toBeHidden();
   });
@@ -465,35 +495,48 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
 
     // Basic (open): the spec's own ASCII list.
-    await expect(questCard.getByLabel('m_dialog', { exact: true })).toBeVisible();
-    await expect(questCard.getByLabel('m_maxTimeSeconds', { exact: true })).toBeVisible();
+    await expect(questCard.getByLabel('Dialog text (m_dialog)', { exact: true })).toBeVisible();
     await expect(
-      questCard.getByRole('checkbox', { name: 'm_invisible', exact: true }),
+      questCard.getByLabel('Max display time (m_maxTimeSeconds)', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      questCard.getByRole('checkbox', { name: 'Invisible (m_invisible)', exact: true }),
     ).toBeVisible();
 
     // Camera.
-    await accordion(questCard, 'Camera').click();
-    await expect(questCard.getByLabel('m_cameraZoneName', { exact: true })).toBeVisible();
+    await reveal(questCard, 'Camera');
     await expect(
-      questCard.getByRole('combobox', { name: 'm_cameraHidePlayers', exact: true }),
+      questCard.getByLabel('Camera zone (m_cameraZoneName)', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      questCard.getByRole('combobox', { name: 'Hide players (m_cameraHidePlayers)', exact: true }),
     ).toBeVisible();
 
     // Audio → the Sound accordion.
-    await accordion(questCard, 'Sound').click();
-    await expect(questCard.getByLabel('m_musicFile', { exact: true })).toBeVisible();
+    await reveal(questCard, 'Sound');
+    await expect(questCard.getByLabel('Music file (m_musicFile)', { exact: true })).toBeVisible();
 
     // Animation & NPC → the Animation accordion.
-    await accordion(questCard, 'Animation').click();
-    await expect(questCard.getByLabel('m_dialogAnimationList', { exact: true })).toBeVisible();
+    await reveal(questCard, 'Animation');
+    await expect(
+      questCard.getByLabel('Dialog animations (m_dialogAnimationList)', { exact: true }),
+    ).toBeVisible();
 
     // Duration & Timing + Walk-Away + UI Controls → Advanced.
-    await accordion(questCard, 'Advanced').click();
+    await reveal(questCard, 'Advanced');
     await expect(
-      questCard.getByLabel('m_displayButtonsOnTimedDialog', { exact: true }),
+      questCard.getByLabel('Show buttons on timed dialog (m_displayButtonsOnTimedDialog)', {
+        exact: true,
+      }),
     ).toBeVisible();
-    await expect(questCard.getByLabel('m_walkAwayFadeTime', { exact: true })).toBeVisible();
     await expect(
-      questCard.getByRole('checkbox', { name: 'm_meetsRequirements', exact: true }),
+      questCard.getByLabel('Walk-away fade time (m_walkAwayFadeTime)', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      questCard.getByRole('checkbox', {
+        name: 'Meets requirements (m_meetsRequirements)',
+        exact: true,
+      }),
     ).toBeVisible();
   });
 
@@ -503,12 +546,8 @@ test.describe('AC1 — a corpus quest with m_dialogList', () => {
     await openDialog(page);
     const questList = list(page, QUEST_LIST);
     const questCard = card(questList, 1, QUEST_ADDRESS);
-    await expect(
-      questCard.getByRole('button', { name: `Duplicate ${QUEST_ADDRESS}`, exact: true }),
-    ).toBeVisible();
-    await expect(
-      questCard.getByRole('button', { name: `Delete ${QUEST_ADDRESS}`, exact: true }),
-    ).toBeVisible();
+    await expect(action(questCard, 'Duplicate', QUEST_ADDRESS)).toBeVisible();
+    await expect(action(questCard, 'Delete', QUEST_ADDRESS)).toBeVisible();
     await expect(
       tag(questList, 1, 'm_dialogList.m_dialogs[0]').getByRole('button', {
         name: 'Add Dialog Entry',
@@ -544,9 +583,7 @@ test.describe('the entry actions', () => {
     };
     await openDialog(page, seeded);
     const questList = list(page, QUEST_LIST);
-    await card(questList, 1, QUEST_ADDRESS)
-      .getByRole('button', { name: `Duplicate ${QUEST_ADDRESS}`, exact: true })
-      .click();
+    await action(card(questList, 1, QUEST_ADDRESS), 'Duplicate', QUEST_ADDRESS).click();
 
     await expect(card(questList, 2, 'm_dialogList.m_dialogs[0].m_dialogEntries[1]')).toBeVisible();
     const doc = await copyPanelDocument(page);
@@ -574,9 +611,7 @@ test.describe('the entry actions', () => {
     expect(entryOf(doc, 0, 1).m_requirements).toBeNull();
     expect(Object.keys(entryOf(doc, 0, 1))).not.toContain('m_defaultDialogAnimation');
 
-    await card(questList, 1, QUEST_ADDRESS)
-      .getByRole('button', { name: `Delete ${QUEST_ADDRESS}`, exact: true })
-      .click();
+    await action(card(questList, 1, QUEST_ADDRESS), 'Delete', QUEST_ADDRESS).click();
     // Deleting index 0 shifts the new entry into index 0: the card that remains is the new one,
     // and the deleted entry's persona is gone.
     await expect(card(questList, 1, 'm_dialogList.m_dialogs[0].m_dialogEntries[0]')).toContainText(
@@ -619,8 +654,10 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
   }) => {
     await openDialog(page);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
-    await questCard.getByLabel('m_dialog', { exact: true }).fill('WizQst1ED8D_00000009');
-    await questCard.getByLabel('m_nameOverride', { exact: true }).fill('Renamed');
+    await questCard
+      .getByLabel('Dialog text (m_dialog)', { exact: true })
+      .fill('WizQst1ED8D_00000009');
+    await questCard.getByLabel('Name override (m_nameOverride)', { exact: true }).fill('Renamed');
 
     const entry = entryOf(await copyPanelDocument(page), 0, 0);
     expect(Object.keys(entry)).toEqual(ENTRY_ORDER);
@@ -656,7 +693,9 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
     await expect(questCard.getByText('"kept"')).toBeVisible();
 
     // …and the key survives an edit to another field.
-    await questCard.getByLabel('m_dialog', { exact: true }).fill('WizQst1ED8D_00000010');
+    await questCard
+      .getByLabel('Dialog text (m_dialog)', { exact: true })
+      .fill('WizQst1ED8D_00000010');
     const entry = entryOf(await copyPanelDocument(page), 0, 0);
     expect(entry.m_legacyKey).toBe('kept');
     expect(entry.m_dialog).toBe('WizQst1ED8D_00000010');
@@ -667,7 +706,9 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
   }) => {
     await openDialog(page);
     const questCard = card(list(page, QUEST_LIST), 1, EMPTY_TAG_ADDRESS);
-    await questCard.getByLabel('m_dialog', { exact: true }).fill('WizQst1ED8D_00000007');
+    await questCard
+      .getByLabel('Dialog text (m_dialog)', { exact: true })
+      .fill('WizQst1ED8D_00000007');
 
     const entry = entryOf(await copyPanelDocument(page), 1, 0);
     expect(Object.keys(entry)).toHaveLength(45);
@@ -685,12 +726,12 @@ test.describe('AC2 — an edit preserves the entry’s shape', () => {
     const emptyTag = tag(questList, 2, 'm_dialogList.m_dialogs[1]');
     // The measured empty tag is real content: it renders as `(empty tag)` and its control
     // holds the empty string — it is not "fixed", and the key is not deleted.
-    await expect(emptyTag.getByLabel('m_dialogTag', { exact: true })).toHaveValue('');
-    await emptyTag.getByLabel('m_dialogTag', { exact: true }).fill('Prep');
+    await expect(emptyTag.getByLabel('Dialog tag (m_dialogTag)', { exact: true })).toHaveValue('');
+    await emptyTag.getByLabel('Dialog tag (m_dialogTag)', { exact: true }).fill('Prep');
     const group = groupsOf(await copyPanelDocument(page))[1] as Record<string, unknown>;
     expect(Object.keys(group)).toEqual(GROUP_ORDER);
     expect(group.m_dialogTag).toBe('Prep');
-    await emptyTag.getByLabel('m_dialogTag', { exact: true }).fill('');
+    await emptyTag.getByLabel('Dialog tag (m_dialogTag)', { exact: true }).fill('');
     const again = groupsOf(await copyPanelDocument(page))[1] as Record<string, unknown>;
     expect(Object.keys(again)).toEqual(GROUP_ORDER);
     expect(again.m_dialogTag).toBe('');
@@ -771,14 +812,17 @@ test.describe('the reference and string-key fields', () => {
     };
     await openDialog(page, seeded);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
-    const combobox = questCard.getByRole('combobox', { name: 'm_actorTemplateID', exact: true });
+    const combobox = questCard.getByRole('combobox', {
+      name: 'Actor template (m_actorTemplateID)',
+      exact: true,
+    });
     await expect(combobox).toContainText('Zarek Pickmaster (126322)');
 
     // 0 means "none" in the corpus (1675 entries) and must not become an empty lookup. The
     // field lives in the Walk-Away group, i.e. the Advanced accordion.
-    await accordion(questCard, 'Advanced').click();
+    await reveal(questCard, 'Advanced');
     const walkAway = questCard.getByRole('combobox', {
-      name: 'm_walkAwayNpcTemplateID',
+      name: 'Walk-away NPC (m_walkAwayNpcTemplateID)',
       exact: true,
     });
     await expect(walkAway).toContainText('0');
@@ -806,10 +850,10 @@ test.describe('the reference and string-key fields', () => {
     const { recorded } = await openDialog(page, seeded);
     const questList = list(page, QUEST_LIST);
     // `m_cameraZoneName` lives in the Camera group, so its accordion has to be opened first.
-    await accordion(card(questList, 1, QUEST_ADDRESS), 'Camera').click();
-    await accordion(card(questList, 1, EMPTY_TAG_ADDRESS), 'Camera').click();
+    await reveal(card(questList, 1, QUEST_ADDRESS), 'Camera');
+    await reveal(card(questList, 1, EMPTY_TAG_ADDRESS), 'Camera');
     const live = card(questList, 1, QUEST_ADDRESS).getByRole('combobox', {
-      name: 'm_cameraZoneName',
+      name: 'Camera zone (m_cameraZoneName)',
       exact: true,
     });
     // A miss shows the path itself; the fixture's zone list holds only two paths.
@@ -819,7 +863,7 @@ test.describe('the reference and string-key fields', () => {
     // An empty reference renders the placeholder and issues no request at all.
     await expect(
       card(questList, 1, EMPTY_TAG_ADDRESS).getByRole('combobox', {
-        name: 'm_cameraZoneName',
+        name: 'Camera zone (m_cameraZoneName)',
         exact: true,
       }),
     ).toContainText('Select zones');
@@ -852,7 +896,7 @@ test.describe('the reference and string-key fields', () => {
     expect(recorded.lookups.strings).not.toContain('');
 
     // Clearing the key deletes it rather than writing '' (D59c).
-    await questCard.getByLabel('m_dialog', { exact: true }).fill('');
+    await questCard.getByLabel('Dialog text (m_dialog)', { exact: true }).fill('');
     const entry = entryOf(await copyPanelDocument(page), 0, 0);
     expect(Object.prototype.hasOwnProperty.call(entry, 'm_dialog')).toBe(false);
     expect(Object.keys(entry)).toHaveLength(65);
@@ -870,8 +914,11 @@ test.describe('the reference and string-key fields', () => {
     };
     await openDialog(page, seeded);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
-    await accordion(questCard, 'Camera').click();
-    const select = questCard.getByRole('combobox', { name: 'm_cameraHidePlayers', exact: true });
+    await reveal(questCard, 'Camera');
+    const select = questCard.getByRole('combobox', {
+      name: 'Hide players (m_cameraHidePlayers)',
+      exact: true,
+    });
     // The measured domain is 0/1/2/3; 7 is not in it, so it is appended and stays selected.
     await expect(select).toHaveValue('7');
     await expect(select.locator('option[value="7"]')).toHaveText('7 (unlisted)');
@@ -898,8 +945,10 @@ test.describe('the reference and string-key fields', () => {
     };
     await openDialog(page, seeded);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
-    await accordion(questCard, 'Animation').click();
-    const animations = questCard.getByLabel('m_dialogAnimationList', { exact: true });
+    await reveal(questCard, 'Animation');
+    const animations = questCard.getByLabel('Dialog animations (m_dialogAnimationList)', {
+      exact: true,
+    });
     await expect(animations).toHaveValue('0|126322|Gen_Dial_01|5\n0|126312|Gen_Dial_02|3');
 
     // A no-op re-set writes the same elements back, in the same order, byte for byte.
@@ -920,7 +969,7 @@ test.describe('the m_requirements slot', () => {
     await openDialog(page);
     const questCard = card(list(page, QUEST_LIST), 1, QUEST_ADDRESS);
     const tree = questCard.getByRole('region', {
-      name: `Requirements for ${QUEST_ADDRESS}`,
+      name: 'Requirements for Dialog list › Dialog blocks 1 › Dialog entries 1',
       exact: true,
     });
     await expect(tree).toBeVisible();
@@ -931,10 +980,9 @@ test.describe('the m_requirements slot', () => {
     // The first Add writes the shared tree's own wrapper — the corpus never carries one, so
     // this is the fixture-only path and it must not disturb the entry around it.
     await tree
-      .getByRole('button', {
-        name: `Add Condition to ${QUEST_ADDRESS}.m_requirements`,
-        exact: true,
-      })
+      .locator(
+        `button[data-path="${QUEST_ADDRESS}.m_requirements"][aria-label^="Add Condition to "]`,
+      )
       .click();
     const entry = entryOf(await copyPanelDocument(page), 0, 0);
     expect(Object.keys(entry)).toEqual(ENTRY_ORDER);

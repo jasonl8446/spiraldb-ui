@@ -6,19 +6,16 @@ import { REQUIREMENT_OPERATORS, type RequirementOperator } from '@shared/quest/t
 import {
   addConditionEdits,
   addGroupEdits,
-  APPLY_NOT_LABEL,
   DELETE_NODE_LABEL,
   GROUP_LABEL,
   ADD_CONDITION_LABEL,
   ADD_GROUP_LABEL,
   initializeTreeEdits,
   NO_REQUIREMENTS_TEXT,
-  OPERATOR_LABEL,
   readRequirementTree,
   REQUIREMENT_LEAF_BORDER_CLASS,
   REQUIREMENT_OPERATOR_LABELS,
   REQUIREMENT_TREE_EDITOR_LABEL,
-  REQUIREMENT_TYPE_LABEL,
   requirementEffectiveOperator,
   requirementField,
   requirementGroupBorderClass,
@@ -36,10 +33,24 @@ import {
   deleteNodeEdits,
   type RequirementFieldSpec,
   type RequirementNodeView,
+  type RequirementSelectOption,
 } from '../../lib/requirement-tree';
+import { docPathWords, fieldValueText, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
-import { FieldMessages, useFieldMessages } from './FieldValidation';
+import TermHelp from '../TermHelp';
+import TermLabel from '../TermLabel';
+import { hasAdvancedValue, singleLegalValue, splitByTier } from '../../lib/advanced';
+import ReadOnlyEnumValue from './ReadOnlyEnumValue';
+import { requirementCardTitle } from '../../lib/card-titles';
+import { useCardNames } from '../../hooks/useCardNames';
+import {
+  FieldMessages,
+  useAnyFieldMessages,
+  useFieldMessages,
+  type FieldValidationMessage,
+} from './FieldValidation';
+import AdvancedDisclosure from './AdvancedDisclosure';
 import { Button } from '../ui/button';
 
 /**
@@ -70,18 +81,19 @@ import { Button } from '../ui/button';
  * | element | accessible name | how |
  * |---|---|---|
  * | the editor's container | the `label` prop (default `Requirement tree editor`) | `<section aria-label>` → a `region` |
- * | a group card | `Group <address>` | `<article aria-label>` |
- * | a leaf card | `<ClassName> <address>` (`ReqHasQuest m_requirements[0]`) | `<article aria-label>` |
- * | the operator toggle's pair | `AND for <address>` / `OR for <address>` (text `AND`/`OR`) | `aria-label` + `aria-pressed` |
- * | the group toggle's wrapper | `Operator for <address>` | `role="group" aria-label` |
- * | delete | `Delete <address>` | `aria-label` on a `×` button |
- * | add | `Add Condition to <address>` / `Add Group to <address>` | `aria-label` |
- * | a field control | its own `field.label` (`Quest`, `Entry`, `School`, `Type`, `NOT`, `Operator`) | a real `<label htmlFor>` + unique `id`; the card's name disambiguates the repeats |
+ * | a group card | `Group <words>` | `<article aria-label>` + `data-path` |
+ * | a leaf card | `<class pair> <words>` (`Requires quest (ReqHasQuest) Requirements 1`) | `<article aria-label>` + `data-path` |
+ * | the operator toggle's pair | `AND for <words>` / `OR for <words>` (text `AND`/`OR`) | `aria-label` + `aria-pressed` + `data-path` |
+ * | the group toggle's wrapper | `Operator (m_operator) for <words>` | `role="group" aria-label` + `data-path` |
+ * | delete | `Delete <words>` | `aria-label` + `data-path` on a `×` button |
+ * | add | `Add Condition to <words>` / `Add Group to <words>` | `aria-label` + `data-path` |
+ * | a field control | its field's glossary pair (`Quest name (m_questName)`, `Type ($type)`, …) | a real `<label htmlFor>` + unique `id`; the card's name disambiguates the repeats |
  *
- * `<address>` is {@link RequirementNodeView.address}: the slot's document path plus one
- * `[index]` per level (`m_requirements[1]`, `m_goals[3].m_goalRequirements[0]`), so it is
- * unique across every slot mounted on a page and never repeats the `m_requirements` child
- * key.
+ * `<words>` is the node's path in words (`lib/term.ts`'s `docPathWords`: `Requirements 2 › 1`,
+ * `Goals 4 › Goal requirements 1`), because a document path never appears in a label (D131, task
+ * 7.9). The path itself — {@link RequirementNodeView.address}, the slot's document path plus one
+ * `[index]` per level (`m_requirements[1]`, `m_goals[3].m_goalRequirements[0]`), unique across
+ * every slot mounted on a page — is the element's `data-path`, which is what a test addresses.
  */
 export interface RequirementTreeEditorProps {
   /**
@@ -146,6 +158,7 @@ function EmptySlot({
   path: DocPath;
 }): JSX.Element {
   const address = formatDocPath(path);
+  const words = docPathWords(path);
   return (
     <div className="flex flex-col gap-2 rounded-md border border-dashed border-zinc-800 p-3">
       <p className="text-sm text-zinc-400">{NO_REQUIREMENTS_TEXT}</p>
@@ -154,7 +167,8 @@ function EmptySlot({
           type="button"
           size="sm"
           variant="outline"
-          aria-label={`${ADD_CONDITION_LABEL} to ${address}`}
+          aria-label={`${ADD_CONDITION_LABEL} to ${words}`}
+          data-path={address}
           onClick={() => state.editAll(initializeTreeEdits(path, 'condition'))}
         >
           {`+ ${ADD_CONDITION_LABEL}`}
@@ -163,7 +177,8 @@ function EmptySlot({
           type="button"
           size="sm"
           variant="outline"
-          aria-label={`${ADD_GROUP_LABEL} to ${address}`}
+          aria-label={`${ADD_GROUP_LABEL} to ${words}`}
+          data-path={address}
           onClick={() => state.editAll(initializeTreeEdits(path, 'group'))}
         >
           {`+ ${ADD_GROUP_LABEL}`}
@@ -227,7 +242,7 @@ function UnreadableCard({
             {JSON.stringify(node.value)}
           </pre>
         </div>
-        <DeleteButton state={state} path={node.path} label={address} />
+        <DeleteButton state={state} path={node.path} address={address} />
       </div>
     </li>
   );
@@ -245,10 +260,12 @@ function GroupCard({
   node: RequirementNodeView;
 }): JSX.Element {
   const address = node.address;
+  const words = docPathWords(node.path);
   return (
     <li className="min-w-0">
       <article
-        aria-label={`${GROUP_LABEL} ${address}`}
+        aria-label={`${GROUP_LABEL} ${words}`}
+        data-path={address}
         className={cn(
           'min-w-0 rounded-md border border-zinc-800 border-l-4 bg-zinc-900/50 p-3',
           requirementGroupBorderClass(node.value),
@@ -258,7 +275,7 @@ function GroupCard({
           <span className="font-mono text-xs text-zinc-400">{GROUP_LABEL}</span>
           <OperatorToggle state={state} node={node} />
           <div className="ml-auto">
-            <DeleteButton state={state} path={node.path} label={address} />
+            <DeleteButton state={state} path={node.path} address={address} />
           </div>
         </header>
 
@@ -277,7 +294,8 @@ function GroupCard({
             type="button"
             size="sm"
             variant="outline"
-            aria-label={`${ADD_CONDITION_LABEL} to ${address}`}
+            aria-label={`${ADD_CONDITION_LABEL} to ${words}`}
+            data-path={address}
             onClick={() => state.editAll(addConditionEdits(node.path, node.children.length))}
           >
             {`+ ${ADD_CONDITION_LABEL}`}
@@ -286,7 +304,8 @@ function GroupCard({
             type="button"
             size="sm"
             variant="outline"
-            aria-label={`${ADD_GROUP_LABEL} to ${address}`}
+            aria-label={`${ADD_GROUP_LABEL} to ${words}`}
+            data-path={address}
             onClick={() => state.editAll(addGroupEdits(node.path, node.children.length))}
           >
             {`+ ${ADD_GROUP_LABEL}`}
@@ -309,10 +328,15 @@ function OperatorToggle({
   state: RequirementTreeDocumentState;
   node: RequirementNodeView;
 }): JSX.Element {
-  const address = node.address;
+  const words = docPathWords(node.path);
   const current = requirementEffectiveOperator(node.value);
   return (
-    <div role="group" aria-label={`${OPERATOR_LABEL} for ${address}`} className="flex gap-1">
+    <div
+      role="group"
+      aria-label={`${termText({ field: 'm_operator' })} for ${words}`}
+      data-path={node.address}
+      className="flex gap-1"
+    >
       {REQUIREMENT_OPERATORS.map((operator: RequirementOperator) => (
         <Button
           key={operator}
@@ -320,7 +344,8 @@ function OperatorToggle({
           size="sm"
           variant={current === operator ? 'default' : 'outline'}
           aria-pressed={current === operator}
-          aria-label={`${REQUIREMENT_OPERATOR_LABELS[operator]} for ${address}`}
+          aria-label={`${REQUIREMENT_OPERATOR_LABELS[operator]} for ${words}`}
+          data-path={node.address}
           onClick={() => state.edit(setOperatorEdit(node.path, operator))}
         >
           {REQUIREMENT_OPERATOR_LABELS[operator]}
@@ -340,24 +365,36 @@ function LeafCard({
 }): JSX.Element {
   const address = node.address;
   const id = useId();
+  // Titled by meaning with the quest's resolved name (task 7.10).
+  const title = requirementCardTitle(node.value, useCardNames(['quests']));
+  // Basic fields first, the rest under Advanced (task 7.11): the glossary's tier per field key.
+  const { basic: basicFields, advanced: advancedFields } = splitByTier(node.spec?.fields ?? []);
+  const advancedPaths = advancedFields.map((field) => [...node.path, field.key]);
+  const advancedHasError = useAnyFieldMessages(advancedPaths);
   return (
     <li className="min-w-0">
       <article
-        aria-label={`${node.title} ${address}`}
+        aria-label={`${title} ${docPathWords(node.path)}`}
+        data-path={address}
         className={cn(
           'min-w-0 rounded-md border border-zinc-800 border-l-4 bg-zinc-900/40 p-3',
           REQUIREMENT_LEAF_BORDER_CLASS,
         )}
       >
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-sm text-zinc-100">{node.title}</span>
+          <span className="text-sm text-zinc-100">{title}</span>
+          {node.typeString === null ? null : (
+            <span className="text-xs text-zinc-400">
+              <TermLabel term={{ type: node.typeString }} />
+            </span>
+          )}
           <div className="ml-auto">
-            <DeleteButton state={state} path={node.path} label={address} />
+            <DeleteButton state={state} path={node.path} address={address} />
           </div>
         </header>
 
         <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Labelled id={`${id}-type`} label={REQUIREMENT_TYPE_LABEL}>
+          <Labelled id={`${id}-type`} fieldKey="$type">
             <select
               id={`${id}-type`}
               value={requirementTypeSelectValue(node.value)}
@@ -377,7 +414,7 @@ function LeafCard({
             </select>
           </Labelled>
 
-          {(node.spec?.fields ?? []).map((field) => (
+          {basicFields.map((field) => (
             <LeafField key={field.key} state={state} node={node} field={field} idPrefix={id} />
           ))}
 
@@ -386,7 +423,7 @@ function LeafCard({
             class card). A presumably-checked box for an absent or `null` value stays
             untouched until the user actually toggles it.
           */}
-          <Labelled id={`${id}-not`} label={APPLY_NOT_LABEL}>
+          <Labelled id={`${id}-not`} fieldKey="m_applyNOT">
             <input
               id={`${id}-not`}
               type="checkbox"
@@ -396,7 +433,7 @@ function LeafCard({
             />
           </Labelled>
 
-          <Labelled id={`${id}-operator`} label={OPERATOR_LABEL}>
+          <Labelled id={`${id}-operator`} fieldKey="m_operator">
             <select
               id={`${id}-operator`}
               value={requirementSelectValue(requirementField(node.value, 'm_operator'))}
@@ -418,11 +455,32 @@ function LeafCard({
                 REQUIREMENT_OPERATORS,
               ).map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {option.value === '' ? option.label : fieldValueText('m_operator', option.value)}
                 </option>
               ))}
             </select>
           </Labelled>
+
+          {advancedFields.length === 0 ? null : (
+            <AdvancedDisclosure
+              className="sm:col-span-2"
+              count={advancedFields.length}
+              mustOpen={hasAdvancedValue(state, advancedPaths)}
+              hasError={advancedHasError}
+            >
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                {advancedFields.map((field) => (
+                  <LeafField
+                    key={field.key}
+                    state={state}
+                    node={node}
+                    field={field}
+                    idPrefix={id}
+                  />
+                ))}
+              </div>
+            </AdvancedDisclosure>
+          )}
         </div>
       </article>
     </li>
@@ -446,9 +504,16 @@ function LeafField({
   const present = state.has([...node.path, field.key]);
   const address = node.address;
   const describedBy = `${id}-help`;
+  const messages = useFieldMessages([...node.path, field.key]);
 
   return (
-    <Labelled id={id} label={field.label} help={field.help} helpId={describedBy}>
+    <Labelled
+      id={id}
+      fieldKey={field.key}
+      help={field.help}
+      helpId={describedBy}
+      messages={messages}
+    >
       <FieldControl
         state={state}
         node={node}
@@ -492,13 +557,19 @@ function FieldControl({
         <FriendlyNameDropdown
           type="quests"
           name={`${address}-${field.key}`}
-          aria-label={`${field.label} ${address}`}
+          aria-label={`${termText({ field: field.key })} ${docPathWords(node.path)}`}
           value={typeof value === 'string' && value !== '' ? value : null}
           allowEmpty
           onChange={(rawId) => state.edit(setLeafFieldEdit(node.path, field.key, present, rawId))}
         />
       );
-    case 'enum':
+    case 'enum': {
+      const only = singleLegalValue(field.options ?? [], value);
+      if (only !== null) {
+        return (
+          <ReadOnlyEnumValue id={id} fieldKey={field.key} value={only} describedBy={describedBy} />
+        );
+      }
       return (
         <select
           id={id}
@@ -511,11 +582,12 @@ function FieldControl({
         >
           {requirementSelectOptions(value, field.options ?? []).map((option) => (
             <option key={option.value} value={option.value}>
-              {option.unlisted ? `${option.label} (unlisted)` : option.label}
+              {optionText(field.key, option)}
             </option>
           ))}
         </select>
       );
+    }
     case 'boolean':
       return (
         <input
@@ -549,18 +621,19 @@ function FieldControl({
 function DeleteButton({
   state,
   path,
-  label,
+  address,
 }: {
   state: RequirementTreeDocumentState;
   path: DocPath;
-  label: string;
+  address: string;
 }): JSX.Element {
   return (
     <Button
       type="button"
       size="sm"
       variant="ghost"
-      aria-label={`${DELETE_NODE_LABEL} ${label}`}
+      aria-label={`${DELETE_NODE_LABEL} ${docPathWords(path)}`}
+      data-path={address}
       onClick={() => state.editAll(deleteNodeEdits(path))}
     >
       ×
@@ -568,33 +641,49 @@ function DeleteButton({
   );
 }
 
-/** A labelled control: the visible label, the control, and the field's one-line help. */
+/**
+ * A labelled control: the visible label (the field's glossary pair, task 7.9), the control, and
+ * the field's one-line help.
+ */
 function Labelled({
   id,
-  label,
+  fieldKey,
   help,
   helpId,
+  messages,
   children,
 }: {
   id: string;
-  label: string;
+  fieldKey: string;
   help?: string;
   helpId?: string;
+  /** This field's validation findings, rendered below the control (an Advanced field's too). */
+  messages?: readonly FieldValidationMessage[];
   children: ReactNode;
 }): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {label}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </label>
+        <TermHelp term={{ field: fieldKey }} />
+      </div>
       {children}
       {help === undefined || help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-400">
           {help}
         </p>
       )}
+      {messages === undefined ? null : <FieldMessages messages={messages} />}
     </div>
   );
+}
+
+/** A select option's text: an enum value as its glossary pair, an unlisted one marked so. */
+function optionText(fieldKey: string, option: RequirementSelectOption): string {
+  const text = option.value === '' ? option.label : fieldValueText(fieldKey, option.value);
+  return option.unlisted ? `${text} (unlisted)` : text;
 }
 
 /** The shared input/select styling (the same classes the Info/Goals editors use). */

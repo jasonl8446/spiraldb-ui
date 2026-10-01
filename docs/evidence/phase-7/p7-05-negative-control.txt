@@ -1,0 +1,59 @@
+# Negative control: the CI-bound golden checks (tests/unit/p7-observed-fields.test.ts) run against goldens
+# produced by the p7-04 binary (docs/evidence/phase-7/p7-05-before/), then restored to the committed p7-05 goldens.
+# swap <Q> = cp p7-05-before/<Q>.stdout.json p7/<Q>.extract.json; grep "^{\"report\":" p7-05-before/<Q>.stderr.txt > p7/<Q>.extract.reports.jsonl
+
+## 1. swap DS-ACAD2-C01-005 MS-DTH1-C01-002 WC-TUT-C05-001
+$ npx vitest run tests/unit/p7-observed-fields.test.ts -t "CI-bound" --reporter=verbose
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > extracts exactly the one planted quest 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 0ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 10ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > prints exactly the reader-repair and goal-excluded lines the capture explains 1ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > extracts exactly the one planted quest 0ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 2ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 0ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 1ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > prints exactly the reader-repair and goal-excluded lines the capture explains 1ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > extracts exactly the one planted quest 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 1ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 1ms
+ × tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 1ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > prints exactly the reader-repair and goal-excluded lines the capture explains 0ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  7 failed | 34 passed | 13 skipped (54)
+
+## 2. swap DS-ACAD1-C04-003 (the p7-04 binary exited 1 on it: its stdout is empty)
+$ wc -c p7/DS-ACAD1-C04-003.extract.json
+0
+$ npx vitest run tests/unit/p7-observed-fields.test.ts -t "CI-bound" --reporter=verbose
+ FAIL  tests/unit/p7-observed-fields.test.ts [ tests/unit/p7-observed-fields.test.ts ]
+SyntaxError: Unexpected end of JSON input
+ Test Files  1 failed (1)
+      Tests  no tests
+
+## 3. restored
+$ for f in <scratch>/golden-backup/*; do cmp $f p7/$(basename $f); done   (no output = identical)
+$ npx vitest run tests/unit/p7-observed-fields.test.ts -t "CI-bound" --reporter=verbose
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD1-C04-003 > extracts exactly the one planted quest 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD1-C04-003 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD1-C04-003 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD1-C04-003 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD1-C04-003 > prints exactly the reader-repair and goal-excluded lines the capture explains 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > extracts exactly the one planted quest 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > DS-ACAD2-C01-005 > prints exactly the reader-repair and goal-excluded lines the capture explains 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > extracts exactly the one planted quest 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > MS-DTH1-C01-002 > prints exactly the reader-repair and goal-excluded lines the capture explains 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > extracts exactly the one planted quest 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > recovers every planted observed value exactly, or reports it with a reason (field-level diff = 0) 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > joins every goal the capture introduces to exactly one extracted goal, named {n}_{m_goalTitle} 0ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > gives each container exactly the dialog tags of the packets joined to it, and each planted dialog its lines 1ms
+ ✓ tests/unit/p7-observed-fields.test.ts > p7 wrapper goldens against their --inject specs (CI-bound) > WC-TUT-C05-001 > prints exactly the reader-repair and goal-excluded lines the capture explains 0ms
+ Test Files  1 passed (1)
+      Tests  41 passed | 13 skipped (54)

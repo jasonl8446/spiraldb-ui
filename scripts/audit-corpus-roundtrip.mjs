@@ -7,8 +7,8 @@
 //     corpus quest -> tools/bin/fixturegen -> tools/bin/imview-packet-reader -> quest'
 //
 // and compares quest' against the source on the same field list (name, title, level, mainline, goal
-// count, goal names in order, goal types, dialog block count, dialog entry count, per-container dialog
-// entry map). FixtureGen encodes with the game's own Imcodec serializer and the reader is Imview's
+// count, goal names in order, goal types, goal persona names in order (task 7.3), dialog block count,
+// dialog entry count, per-container dialog entry map). FixtureGen encodes with the game's own Imcodec serializer and the reader is Imview's
 // QuestBuilder, so a pass over the real corpus is the strongest fidelity evidence available without a
 // recorded live capture; a mismatch is a concrete extraction defect with a named quest and field.
 //
@@ -105,9 +105,11 @@ if (questFiles.length === 0) {
 // FixtureGen refuses a quest it cannot represent faithfully rather than emitting a lossy capture
 // (tools/FixtureGen). Those refusals are a *coverage* limit of the synthetic harness, measured in
 // p2-03's corpus sweep as generated=181 / refused=141 — they are reported with their reasons and do
-// NOT count as fidelity failures. Only a recorded live capture can cover them.
+// NOT count as fidelity failures. Only a recorded live capture can cover them. Task 7.4 (p7-05) lifted
+// three of the refusals once the wrapper could rebuild those shapes: a compilation goal carrying dialogs
+// (re-sent by MSG_SENDGOAL, dialogs attached by GoalID), a goal dialog tagged QuestInfo (the quest-level
+// Prep is taken from a GoalID-0 packet) and a quest with no goals.
 const REFUSAL_KEYS = [
-  ['cannot attach a dialog to a compilation goal', 'goal-level dialog on a compilation goal'],
   [
     'cannot round-trip on goal names',
     'm_goalName != "{n}_{m_goalTitle}" (ACHIEVERANK/empty title)',
@@ -121,11 +123,6 @@ const REFUSAL_KEYS = [
     'quest-level dialog tag not Prep/Completion',
   ],
   ['QuestBuilder replaces instead of adding', 'two quest-level dialogs share a tag'],
-  [
-    "carries a dialog tagged 'QuestInfo'",
-    'goal dialog tagged QuestInfo also matches quest-level prep',
-  ],
-  ['quest has no goals', 'quest has no goals'],
   ['quest has an empty m_questName', 'quest has an empty m_questName'],
 ];
 
@@ -267,6 +264,19 @@ console.log(
 
 for (const [reason, count] of [...refusalHistogram.entries()].sort((a, b) => b[1] - a[1])) {
   console.log(`  ${String(count).padStart(4)}  ${reason}`);
+}
+
+// Every refusal is classified (an unclassified one is a <fixturegen crash> failure above); list them
+// so each refused quest can be named with its class.
+if (refusals.length > 0) {
+  console.log('');
+  console.log('REFUSED QUESTS (first problem per quest)');
+
+  for (const refusal of [...refusals].sort(
+    (a, b) => a.reason.localeCompare(b.reason) || a.label.localeCompare(b.label),
+  )) {
+    console.log(`  ${refusal.label.padEnd(24)}  ${refusal.reason}`);
+  }
 }
 
 if (failures.length > 0) {

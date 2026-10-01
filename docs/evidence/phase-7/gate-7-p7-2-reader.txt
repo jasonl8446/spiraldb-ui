@@ -1,0 +1,152 @@
+$ export DOTNET_ROOT=/nix/store/pachr4l4gi2x21jw7q14d4knyzhnj8nh-dotnet-sdk-9.0.318/share/dotnet
+$ for each p7 fixture: tools/bin/imview-packet-reader --input server/test/fixtures/captures/p7/<Q>.json --suggestions <scratch>/<Q>.s.json > <scratch>/<Q>.out 2> <scratch>/<Q>.err
+DS-ACAD1-C04-001     exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=3 sources=["capture-orderx1","capture-rewardsx2"]
+DS-ACAD1-C04-003     exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=0 sources=[]
+DS-ACAD2-C01-005     exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=1 sources=["capture-orderx1"]
+DS-ACAD-C01-003      exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=3 sources=["capture-orderx1","capture-rewardsx2"]
+MS-DTH1-C01-002      exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=1 sources=["capture-orderx1"]
+WC-HAUNTED-MAIN-001  exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=8 sources=["capture-orderx1","capture-rewardsx7"]
+WC-MAIN-C01-013      exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=2 sources=["capture-rewardsx2"]
+WC-TUT-C05-001       exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=4 sources=["capture-orderx2","capture-rewardsx2"]
+WC-UNICORN-MAIN-002  exit=0 quests=1 stdout-vs-golden=identical sidecar-vs-golden=identical suggestions=3 sources=["capture-orderx1","capture-rewardsx2"]
+
+# observed values in stdout: do any inferred sources leak into the quest objects? (grep the suggestion values' sources: suggestions exist only in the sidecar)
+DS-ACAD1-C04-001     stdout contains the word "suggestion": 0
+DS-ACAD1-C04-003     stdout contains the word "suggestion": 0
+DS-ACAD2-C01-005     stdout contains the word "suggestion": 0
+DS-ACAD-C01-003      stdout contains the word "suggestion": 0
+MS-DTH1-C01-002      stdout contains the word "suggestion": 0
+WC-HAUNTED-MAIN-001  stdout contains the word "suggestion": 0
+WC-MAIN-C01-013      stdout contains the word "suggestion": 0
+WC-TUT-C05-001       stdout contains the word "suggestion": 0
+WC-UNICORN-MAIN-002  stdout contains the word "suggestion": 0
+
+$ ONLY=WC-MAIN-C01-013,DS-ACAD-C01-003,WC-UNICORN-MAIN-002,DS-ACAD1-C04-001,WC-TUT-C05-001 node p7-field-diff.mjs
+#   the p7-04 field-diff script (docs/evidence/phase-7/p7-04.md 'Field-diff script'), verbatim except for the ONLY filter:
+#   it models the p7-04 plants (quest/goal observed fields) and is run on the five fixtures it was written for. An unfiltered
+#   first run crashed on DS-ACAD1-C04-003 (a p7-05 fixture whose plant is MSG_SENDGOAL.GoalType, which the script has no
+#   mapping for) - shown in gate-7.md; the p7-05 plants are checked by the CI-bound vitest below.
+
+=== DS-ACAD-C01-003  (exit 0; 17 planted/observed values; 3 report line(s); unexplained reports: 0)
+  ok   WRITTEN  MSG_SENDQUEST.QuestNameID                    m_questNameID = 7700002
+  ok   WRITTEN  MSG_SENDQUEST.QuestInfo                      m_questInfo = "P7-PLANT-QuestInfo-DS-ACAD-C01-003"
+  ok   WRITTEN  MSG_SENDQUEST.NoQuestHelper                  m_noQuestHelper = true
+  ok   WRITTEN  MSG_SENDQUEST.SkipQHAutoSelect               m_skipQHAutoSelect = true
+  ok   WRITTEN  MSG_SENDQUEST.ActivityType                   m_activityType = "ACTIVITY_Crafting"
+  ok   WRITTEN  MSG_SENDQUEST.ClientTags                     m_clientTags = ["P7-PLANT-QuestTag-DS-ACAD-C01-003-A","P7-PLANT-QuestTag-DS-ACAD-C01-003-B"]
+  ok   REPORTED MSG_SENDQUEST.PetOnlyQuest                   m_petOnlyQuest = 1  (the quest schema has no m_petOnlyQuest (only goals carry it))
+  ok   REPORTED MSG_SENDGOAL.PersonaName (goal 0)            m_goals[1_WizardQuestGoals_UseItem].m_personaName = "P7-PLANT-PersonaName-DS-ACAD-C01-003-g0"  (WaypointGoalTemplate has no m_personaName (only PersonaGoalTemplate does))
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 0)       m_goals[1_WizardQuestGoals_UseItem].m_completeText = "P7-PLANT-CompleteGoal-DS-ACAD-C01-003-g0"
+  ok   WRITTEN  MSG_SENDGOAL.PersonaName (goal 1)            m_goals[2_WizardQuestGoals_TalkNPC].m_personaName = "P7-PLANT-PersonaName-DS-ACAD-C01-003-g1"
+  ok   WRITTEN  MSG_PERSONAINFO.GoalHyperlink (goal 1)       m_goals[2_WizardQuestGoals_TalkNPC].m_hyperlink = "P7-PLANT-GoalHyperlink-DS-ACAD-C01-003-g1"
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 1)       m_goals[2_WizardQuestGoals_TalkNPC].m_completeText = "P7-PLANT-CompleteGoal-DS-ACAD-C01-003-g1"
+  ok   REPORTED MSG_COMPLETEQUEST.CompleteText (goal -)      m_questComplete = "P7-PLANT-CompleteQuest-DS-ACAD-C01-003"  (m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value)
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 535559446 m_goals[1_WizardQuestGoals_UseItem].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 5355594466 m_goals[1_WizardQuestGoals_UseItem].m_petOnlyQuest = false
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 535559336 m_goals[2_WizardQuestGoals_TalkNPC].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 5355593366 m_goals[2_WizardQuestGoals_TalkNPC].m_petOnlyQuest = false
+
+=== DS-ACAD1-C04-001  (exit 0; 17 planted/observed values; 3 report line(s); unexplained reports: 0)
+  ok   WRITTEN  MSG_SENDQUEST.QuestNameID                    m_questNameID = 7700004
+  ok   WRITTEN  MSG_SENDQUEST.QuestInfo                      m_questInfo = "P7-PLANT-QuestInfo-DS-ACAD1-C04-001"
+  ok   WRITTEN  MSG_SENDQUEST.NoQuestHelper                  m_noQuestHelper = true
+  ok   WRITTEN  MSG_SENDQUEST.SkipQHAutoSelect               m_skipQHAutoSelect = true
+  ok   WRITTEN  MSG_SENDQUEST.ActivityType                   m_activityType = "ACTIVITY_Crafting"
+  ok   WRITTEN  MSG_SENDQUEST.ClientTags                     m_clientTags = ["P7-PLANT-QuestTag-DS-ACAD1-C04-001-A","P7-PLANT-QuestTag-DS-ACAD1-C04-001-B"]
+  ok   REPORTED MSG_SENDQUEST.PetOnlyQuest                   m_petOnlyQuest = 1  (the quest schema has no m_petOnlyQuest (only goals carry it))
+  ok   REPORTED MSG_SENDGOAL.PersonaName (goal 0)            m_goals[1_WizardQuestGoals_KillCollect].m_personaName = "P7-PLANT-PersonaName-DS-ACAD1-C04-001-g0"  (ScavengeGoalTemplate has no m_personaName (only PersonaGoalTemplate does))
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 0)       m_goals[1_WizardQuestGoals_KillCollect].m_completeText = "P7-PLANT-CompleteGoal-DS-ACAD1-C04-001-g0"
+  ok   WRITTEN  MSG_SENDGOAL.PersonaName (goal 1)            m_goals[2_WizardQuestGoals_TalkNPC].m_personaName = "P7-PLANT-PersonaName-DS-ACAD1-C04-001-g1"
+  ok   WRITTEN  MSG_PERSONAINFO.GoalHyperlink (goal 1)       m_goals[2_WizardQuestGoals_TalkNPC].m_hyperlink = "P7-PLANT-GoalHyperlink-DS-ACAD1-C04-001-g1"
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 1)       m_goals[2_WizardQuestGoals_TalkNPC].m_completeText = "P7-PLANT-CompleteGoal-DS-ACAD1-C04-001-g1"
+  ok   REPORTED MSG_COMPLETEQUEST.CompleteText (goal -)      m_questComplete = "P7-PLANT-CompleteQuest-DS-ACAD1-C04-001"  (m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value)
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 414497259 m_goals[1_WizardQuestGoals_KillCollect].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 4144972599 m_goals[1_WizardQuestGoals_KillCollect].m_petOnlyQuest = false
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 414496160 m_goals[2_WizardQuestGoals_TalkNPC].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 4144961604 m_goals[2_WizardQuestGoals_TalkNPC].m_petOnlyQuest = false
+
+=== WC-MAIN-C01-013  (exit 0; 12 planted/observed values; 3 report line(s); unexplained reports: 0)
+  ok   WRITTEN  MSG_SENDQUEST.QuestNameID                    m_questNameID = 7700001
+  ok   WRITTEN  MSG_SENDQUEST.QuestInfo                      m_questInfo = "P7-PLANT-QuestInfo-WC-MAIN-C01-013"
+  ok   WRITTEN  MSG_SENDQUEST.NoQuestHelper                  m_noQuestHelper = true
+  ok   WRITTEN  MSG_SENDQUEST.SkipQHAutoSelect               m_skipQHAutoSelect = true
+  ok   WRITTEN  MSG_SENDQUEST.ActivityType                   m_activityType = "ACTIVITY_Crafting"
+  ok   WRITTEN  MSG_SENDQUEST.ClientTags                     m_clientTags = ["P7-PLANT-QuestTag-WC-MAIN-C01-013-A","P7-PLANT-QuestTag-WC-MAIN-C01-013-B"]
+  ok   REPORTED MSG_SENDQUEST.PetOnlyQuest                   m_petOnlyQuest = 1  (the quest schema has no m_petOnlyQuest (only goals carry it))
+  ok   REPORTED MSG_SENDGOAL.PersonaName (goal 0)            m_goals[1_WizardQuestGoals_Explore].m_personaName = "P7-PLANT-PersonaName-WC-MAIN-C01-013-g0"  (WaypointGoalTemplate has no m_personaName (only PersonaGoalTemplate does))
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 0)       m_goals[1_WizardQuestGoals_Explore].m_completeText = "P7-PLANT-CompleteGoal-WC-MAIN-C01-013-g0"
+  ok   REPORTED MSG_COMPLETEQUEST.CompleteText (goal -)      m_questComplete = "P7-PLANT-CompleteQuest-WC-MAIN-C01-013"  (m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value)
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 409522637 m_goals[1_WizardQuestGoals_Explore].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 4095226374 m_goals[1_WizardQuestGoals_Explore].m_petOnlyQuest = false
+
+=== WC-TUT-C05-001  (exit 0; 20 planted/observed values; 11 report line(s); unexplained reports: 8)
+  ok   WRITTEN  MSG_SENDQUEST.QuestNameID                    m_questNameID = 7700005
+  ok   WRITTEN  MSG_SENDQUEST.QuestInfo                      m_questInfo = "P7-PLANT-QuestInfo-WC-TUT-C05-001"
+  ok   WRITTEN  MSG_SENDQUEST.NoQuestHelper                  m_noQuestHelper = true
+  ok   WRITTEN  MSG_SENDQUEST.SkipQHAutoSelect               m_skipQHAutoSelect = true
+  ok   WRITTEN  MSG_SENDQUEST.ActivityType                   m_activityType = "ACTIVITY_Crafting"
+  ok   WRITTEN  MSG_SENDQUEST.ClientTags                     m_clientTags = ["P7-PLANT-QuestTag-WC-TUT-C05-001-A","P7-PLANT-QuestTag-WC-TUT-C05-001-B"]
+  ok   REPORTED MSG_SENDQUEST.PetOnlyQuest                   m_petOnlyQuest = 1  (the quest schema has no m_petOnlyQuest (only goals carry it))
+  ok   REPORTED MSG_SENDGOAL.PersonaName (goal 0)            m_goals[1_].m_personaName = "P7-PLANT-PersonaName-WC-TUT-C05-001-g0"  (AchieveRankGoalTemplate has no m_personaName (only PersonaGoalTemplate does))
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 0)       m_goals[1_].m_completeText = "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0"
+  DIFF REPORTED MSG_SENDGOAL.PersonaName (goal 1)            m_goals[GoalID 5091030643723153931].m_personaName = "P7-PLANT-PersonaName-WC-TUT-C05-001-g1"  (undefined)
+  DIFF REPORTED MSG_COMPLETEGOAL.CompleteText (goal 1)       m_goals[GoalID 5091030643723153931].m_completeText = "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1"  (undefined)
+  DIFF REPORTED MSG_SENDGOAL.PersonaName (goal 2)            m_goals[GoalID 5091031743234782143].m_personaName = "P7-PLANT-PersonaName-WC-TUT-C05-001-g2"  (undefined)
+  DIFF REPORTED MSG_COMPLETEGOAL.CompleteText (goal 2)       m_goals[GoalID 5091031743234782143].m_completeText = "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2"  (undefined)
+  DIFF REPORTED MSG_SENDGOAL.PersonaName (goal 3)            m_goals[GoalID 5091032842746410353].m_personaName = "P7-PLANT-PersonaName-WC-TUT-C05-001-g3"  (undefined)
+  DIFF REPORTED MSG_COMPLETEGOAL.CompleteText (goal 3)       m_goals[GoalID 5091032842746410353].m_completeText = "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3"  (undefined)
+  DIFF REPORTED MSG_SENDGOAL.PersonaName (goal 4)            m_goals[GoalID 5091033942258038565].m_personaName = "P7-PLANT-PersonaName-WC-TUT-C05-001-g4"  (undefined)
+  DIFF REPORTED MSG_COMPLETEGOAL.CompleteText (goal 4)       m_goals[GoalID 5091033942258038565].m_completeText = "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4"  (undefined)
+  ok   REPORTED MSG_COMPLETEQUEST.CompleteText (goal -)      m_questComplete = "P7-PLANT-CompleteQuest-WC-TUT-C05-001"  (m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value)
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 509102954 m_goals[1_].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 5091029544 m_goals[1_].m_petOnlyQuest = false
+
+=== WC-UNICORN-MAIN-002  (exit 0; 17 planted/observed values; 3 report line(s); unexplained reports: 0)
+  ok   WRITTEN  MSG_SENDQUEST.QuestNameID                    m_questNameID = 7700003
+  ok   WRITTEN  MSG_SENDQUEST.QuestInfo                      m_questInfo = "P7-PLANT-QuestInfo-WC-UNICORN-MAIN-002"
+  ok   WRITTEN  MSG_SENDQUEST.NoQuestHelper                  m_noQuestHelper = true
+  ok   WRITTEN  MSG_SENDQUEST.SkipQHAutoSelect               m_skipQHAutoSelect = true
+  ok   WRITTEN  MSG_SENDQUEST.ActivityType                   m_activityType = "ACTIVITY_Crafting"
+  ok   WRITTEN  MSG_SENDQUEST.ClientTags                     m_clientTags = ["P7-PLANT-QuestTag-WC-UNICORN-MAIN-002-A","P7-PLANT-QuestTag-WC-UNICORN-MAIN-002-B"]
+  ok   REPORTED MSG_SENDQUEST.PetOnlyQuest                   m_petOnlyQuest = 1  (the quest schema has no m_petOnlyQuest (only goals carry it))
+  ok   REPORTED MSG_SENDGOAL.PersonaName (goal 0)            m_goals[1_WizardQuestGoals_Kill].m_personaName = "P7-PLANT-PersonaName-WC-UNICORN-MAIN-002-g0"  (BountyGoalTemplate has no m_personaName (only PersonaGoalTemplate does))
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 0)       m_goals[1_WizardQuestGoals_Kill].m_completeText = "P7-PLANT-CompleteGoal-WC-UNICORN-MAIN-002-g0"
+  ok   WRITTEN  MSG_SENDGOAL.PersonaName (goal 1)            m_goals[2_WizardQuestGoals_TalkNPC].m_personaName = "P7-PLANT-PersonaName-WC-UNICORN-MAIN-002-g1"
+  ok   WRITTEN  MSG_PERSONAINFO.GoalHyperlink (goal 1)       m_goals[2_WizardQuestGoals_TalkNPC].m_hyperlink = "P7-PLANT-GoalHyperlink-WC-UNICORN-MAIN-002-g1"
+  ok   WRITTEN  MSG_COMPLETEGOAL.CompleteText (goal 1)       m_goals[2_WizardQuestGoals_TalkNPC].m_completeText = "P7-PLANT-CompleteGoal-WC-UNICORN-MAIN-002-g1"
+  ok   REPORTED MSG_COMPLETEQUEST.CompleteText (goal -)      m_questComplete = "P7-PLANT-CompleteQuest-WC-UNICORN-MAIN-002"  (m_questComplete is a string-table key; nothing shows MSG_COMPLETEQUEST.CompleteText carries the same kind of value)
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 120418284 m_goals[1_WizardQuestGoals_Kill].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 1204182847 m_goals[1_WizardQuestGoals_Kill].m_petOnlyQuest = false
+  ok   WRITTEN  MSG_SENDGOAL.NoQuestHelper (GoalID 120418174 m_goals[2_WizardQuestGoals_TalkNPC].m_noQuestHelper = false
+  ok   WRITTEN  MSG_SENDGOAL.PetOnlyQuest (GoalID 1204181747 m_goals[2_WizardQuestGoals_TalkNPC].m_petOnlyQuest = false
+
+field-level diff: 16 over 83 value(s)
+exit=1
+
+$ npx vitest run tests/unit/p7-observed-fields.test.ts tests/unit/p7-capture-census.test.ts tests/unit/p7-suggestions.test.ts
+   ✓ p7 wrapper goldens regenerate byte-identically (local-only) > WC-UNICORN-MAIN-002  301ms
+ ✓ tests/unit/p7-capture-census.test.ts (57 tests) 2844ms
+
+ Test Files  3 passed (3)
+      Tests  176 passed (176)
+   Start at  04:15:39
+   Duration  11.25s (transform 376ms, setup 0ms, collect 654ms, tests 10.10s, environment 0ms, prepare 158ms)
+
+
+# WC-TUT-C05-001: the 8 DIFF rows above are the p7-04 script's GoalID->GoalNameID join failing, not a lost value.
+# p7-05 (reader defect 2) adds back the four ACHIEVERANK goals that share GoalNameID 0 with goal 1, so 'the first GoalID to carry
+# a GoalNameID owns that goal' maps GoalIDs 2..5 to no goal. The values themselves, read straight from the fresh stdout/stderr:
+$ node -e '<print each m_goals entry: name, nameID, type, m_personaName, m_completeText>' <scratch>/WC-TUT-C05-001.out
+  1_ nameID 0 ObjectProperty m_personaName= undefined m_completeText= P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0
+  2_ nameID 0 ObjectProperty m_personaName= undefined m_completeText= P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1
+  3_ nameID 0 ObjectProperty m_personaName= undefined m_completeText= P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2
+  4_ nameID 0 ObjectProperty m_personaName= undefined m_completeText= P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3
+  5_ nameID 0 ObjectProperty m_personaName= undefined m_completeText= P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4
+$ grep observed-field <scratch>/WC-TUT-C05-001.err | cut -c1-230
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_petOnlyQuest","source":"MSG_SENDQUEST.PetOnlyQuest","value":1,"reason":"the quest schema has no m_petOnlyQuest (only goals carry it)"}
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_questComplete","source":"MSG_COMPLETEQUEST.CompleteText","value":"P7-PLANT-CompleteQuest-WC-TUT-C05-001","reason":"m_questComplete is a string-table key; nothing shows 
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[1_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g0","reason":"AchieveRankGoalTemplate has no m_personaName (on
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[2_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g1","reason":"AchieveRankGoalTemplate has no m_personaName (on
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[3_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g2","reason":"AchieveRankGoalTemplate has no m_personaName (on
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[4_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g3","reason":"AchieveRankGoalTemplate has no m_personaName (on
+{"report":"observed-field","quest":"WC-TUT-C05-001","path":"m_goals[5_].m_personaName","source":"MSG_SENDGOAL.PersonaName","value":"P7-PLANT-PersonaName-WC-TUT-C05-001-g4","reason":"AchieveRankGoalTemplate has no m_personaName (on

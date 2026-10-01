@@ -202,7 +202,7 @@ const REAL_CAPTURE_QUEST = {
   m_dialogList: null,
 } as const;
 
-/** A `SaveQuestResult` body (docs/spec-api.md L239-251) for one saved quest. */
+/** A `SaveQuestResult` body (docs/spec-api.md §"Quests") for one saved quest. */
 function saveResultFor(quest: Record<string, unknown>): Record<string, unknown> {
   const name = String(quest.m_questName ?? '');
   return {
@@ -266,7 +266,7 @@ interface MockOptions {
   browseRows?: MockQuestRow[];
 }
 
-/** A `GET /api/quests` body (docs/spec-api.md L190-208) for the given names. */
+/** A `GET /api/quests` body (docs/spec-api.md §"Quests") for the given names. */
 function questListResult(names: string[]): Record<string, unknown> {
   return {
     quests: names.map((quest_name) => ({
@@ -367,7 +367,7 @@ async function mockApi(page: Page, options: MockOptions = {}): Promise<Recorded>
     await route.fulfill({ json: { ...settings } });
   });
 
-  await page.route('**/api/extract/quests', async (route) => {
+  await page.route('**/api/extract/quests*', async (route) => {
     recorded.extractRequests += 1;
     if (options.onExtract !== undefined) {
       await options.onExtract(route);
@@ -469,6 +469,10 @@ async function openResults(page: Page): Promise<void> {
   await openExtractionPage(page);
   await uploadCapture(page);
   await expect(page.getByRole('listbox', { name: 'Extracted quests' })).toBeVisible();
+  // The progress notice ends with the extraction (D183). Left up, it settled over `Save All` /
+  // `Save Selected`, and a click that landed on it parked the pointer there, which pauses
+  // sonner's timer: the next click then waited on a toast that never left (the 60 s timeouts).
+  await expect(toast(page, 'Extracting quests... this may take a moment')).toHaveCount(0);
 }
 
 /** One sonner toast, matched by its text (sonner marks every toast `li`). */
@@ -689,7 +693,7 @@ test.describe('upload phase', () => {
       .poll(() =>
         page.evaluate(() => (window as unknown as { __abortedFetches: string[] }).__abortedFetches),
       )
-      .toContain('/api/extract/quests');
+      .toContain('/api/extract/quests?census=1');
     // …and the network layer agrees.
     await expect.poll(() => failedRequests.join(' | ')).toMatch(/ERR_ABORTED/);
 
@@ -882,6 +886,100 @@ test.describe('results phase', () => {
  * the existing names are on screen before anything is written, and a `POST
  * /api/quests` cannot happen before the user confirms.
  */
+/**
+ * Task 7.2 (p7-03, D139): the extraction page always asks `?census=1` and lists what the reader
+ * ignored in an "Ignored by the reader (n)" disclosure. The mocked census is the **committed golden**
+ * for the planted-value fixture `WC-UNICORN-MAIN-002` (CI has no .NET binary, D55), so the rows the
+ * spec sees are the rows the real `capture-census` printed.
+ */
+const CENSUS_GOLDEN = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../server/test/fixtures/captures/p7/WC-UNICORN-MAIN-002.census.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+) as { messages: number; rows: Array<{ message: string; field: string; consumed: boolean }> };
+
+test.describe('packet census disclosure (task 7.2, D139)', () => {
+  test('asks for ?census=1 and lists the ignored message/field rows behind a count', async ({
+    page,
+  }) => {
+    const seen: string[] = [];
+    await mockApi(page, {
+      onExtract: (route) => {
+        seen.push(route.request().url());
+        return route.fulfill({
+          json: { quests: QUESTS, count: QUESTS.length, census: CENSUS_GOLDEN },
+        });
+      },
+    });
+    await openResults(page);
+
+    expect(seen.map((url) => new URL(url).search)).toEqual(['?census=1']);
+
+    const ignored = CENSUS_GOLDEN.rows.filter((row) => !row.consumed);
+    expect(ignored.length).toBeGreaterThan(0);
+    const disclosure = page.getByTestId('ignored-fields');
+    await expect(disclosure.locator('summary')).toHaveText(
+      `Ignored by the reader (${ignored.length})`,
+    );
+
+    // Closed until opened; then every ignored row is listed and no consumed one is.
+    await expect(disclosure.getByRole('table')).toBeHidden();
+    await disclosure.locator('summary').click();
+    await expect(disclosure.getByRole('table')).toBeVisible();
+    await expect(disclosure.locator('tbody tr')).toHaveCount(ignored.length);
+    // Story p7-08 re-pin: since p7-04's post-pass (D153) the reader consumes
+    // MSG_SENDGOAL.PersonaName, and the golden says so (`consumed: true`); the ignored persona
+    // row is now MSG_ACTORDIALOG's. One of each, so both halves of the rule stay asserted.
+    const personaRow = (message: string) =>
+      disclosure
+        .locator('tbody tr')
+        .filter({ hasText: message })
+        .filter({ hasText: 'PersonaName' });
+    expect(
+      CENSUS_GOLDEN.rows
+        .filter((row) => row.field === 'PersonaName')
+        .map((row) => [row.message, row.consumed]),
+    ).toEqual([
+      ['MSG_ACTORDIALOG', false],
+      ['MSG_SENDGOAL', true],
+    ]);
+    await expect(personaRow('MSG_ACTORDIALOG')).toHaveCount(1);
+    await expect(personaRow('MSG_SENDGOAL')).toHaveCount(0);
+    await expect(disclosure.locator('tbody tr').filter({ hasText: 'GoalNameID' })).toHaveCount(0);
+  });
+
+  test('says so when the census could not run, instead of implying nothing was ignored', async ({
+    page,
+  }) => {
+    await mockApi(page, {
+      onExtract: (route) =>
+        route.fulfill({
+          json: {
+            quests: QUESTS,
+            count: QUESTS.length,
+            census: { skipped: 'capture-census not found. Build it with: npm run build:census' },
+          },
+        }),
+    });
+    await openResults(page);
+
+    await expect(page.getByTestId('census-skipped')).toContainText('npm run build:census');
+    await expect(page.getByTestId('ignored-fields')).toHaveCount(0);
+  });
+
+  test('shows no census UI when the response carries none', async ({ page }) => {
+    await mockApi(page);
+    await openResults(page);
+
+    await expect(page.getByTestId('ignored-fields')).toHaveCount(0);
+    await expect(page.getByTestId('census-skipped')).toHaveCount(0);
+  });
+});
+
 test.describe('overwrite confirmation (gap A)', () => {
   const EXISTING = 'WC-UNICORN-MAIN-004';
   const NEW_QUEST = 'DS-ACAD1-C01-001';
@@ -1161,7 +1259,9 @@ test.describe('save → browse, the P2 AC#13 chain', () => {
     // The committed artifact's on-disk length, asserted first so the file card's
     // text below cannot be satisfied by a substituted fixture (README pins this file
     // by SHA-256 at corpus commit `c55ccab…`).
-    expect(REAL_CAPTURE.byteLength).toBe(14_235);
+    // Story p7-08 re-pin: 14,235 → 14,351 bytes. p7-04 re-cut this fixture (FixtureGen now emits
+    // MSG_SENDGOAL.PersonaName, D153; +116 bytes, commit 2df452d) and left this pin behind.
+    expect(REAL_CAPTURE.byteLength).toBe(14_351);
 
     // The "before": the browse list this save is about to grow, and the numbers the
     // "after" is measured against. The capture's quest is absent from it, so the save
@@ -1182,7 +1282,8 @@ test.describe('save → browse, the P2 AC#13 chain', () => {
 
     // The file card names the uploaded file and shows its real size in KB.
     await expect(page.getByText(REAL_CAPTURE_NAME)).toBeVisible();
-    await expect(page.getByText('13.9 KB')).toBeVisible();
+    // 14,351 / 1024 = 14.01 (the p7-04 re-cut above; 13.9 KB before it).
+    await expect(page.getByText('14.0 KB')).toBeVisible();
     await expect(
       page.getByRole('status').filter({ hasText: /^Extracting quests\.\.\.$/ }),
     ).toBeVisible();

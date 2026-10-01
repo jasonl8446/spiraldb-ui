@@ -267,7 +267,7 @@ test.describe('AC#13 chain 1 — a goal field edit reaches the JSON panel', () =
     await main_(page).getByRole('tab', { name: 'Goals' }).click();
     const card = goalsEditor(page).getByRole('article').first();
     await card.getByRole('button', { name: 'Edit' }).click();
-    await card.getByLabel('m_proximityTag', { exact: true }).fill(NEW_PROXIMITY);
+    await card.getByLabel('Proximity Tag (m_proximityTag)', { exact: true }).fill(NEW_PROXIMITY);
 
     const doc = await copyPanelDocument(page);
     const goals = goalsOf(doc);
@@ -309,7 +309,7 @@ test.describe('AC#13 chain 2 — deleting a referenced start goal blocks the sav
     await goalsEditor(page)
       .getByRole('article')
       .first()
-      .getByRole('button', { name: `Delete ${START_GOAL}` })
+      .getByRole('button', { name: new RegExp(`^Delete .+, ${START_GOAL}$`) })
       .click();
 
     // 1. The inline error on the `m_startGoals` surface (the field's own red-bordered strip).
@@ -366,9 +366,7 @@ test.describe('AC#13 chain 3 — adding a requirement leaf serializes into the p
     expect((await copyPanelDocument(page)).m_requirements).toBeNull();
 
     const tree = editor.getByRole('region', { name: 'Requirements', exact: true });
-    await tree
-      .getByRole('button', { name: 'Add Condition to m_requirements', exact: true })
-      .click();
+    await tree.getByRole('button', { name: 'Add Condition to Requirements', exact: true }).click();
 
     const doc = await copyPanelDocument(page);
     const wrapper = doc.m_requirements as Record<string, unknown>;
@@ -390,7 +388,10 @@ test.describe('AC#13 chain 3 — adding a requirement leaf serializes into the p
     ]);
     // The visible tree agrees with the document it wrote.
     await expect(
-      tree.getByRole('article', { name: 'ReqHasQuest m_requirements[0]', exact: true }),
+      tree.getByRole('article', {
+        name: 'Requires quest Requirements 1',
+        exact: true,
+      }),
     ).toBeVisible();
   });
 });

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import ExtractDropzone from '../components/quest/ExtractDropzone';
 import ExtractingCard from '../components/quest/ExtractingCard';
+import IgnoredFieldsDisclosure from '../components/quest/IgnoredFieldsDisclosure';
 import OverwriteConfirmDialog from '../components/quest/OverwriteConfirmDialog';
 import QuestListPanel from '../components/quest/QuestListPanel';
 import QuestPreview from '../components/quest/QuestPreview';
@@ -283,6 +284,18 @@ export default function ExtractionPage(): JSX.Element {
             )}
           </div>
         )}
+
+        {extraction.suggestionsNotice === null ? null : (
+          <p
+            role="status"
+            className="text-xs text-amber-300"
+            data-testid="suggestions-store-notice"
+          >
+            {extraction.suggestionsNotice}
+          </p>
+        )}
+
+        <IgnoredFieldsDisclosure census={extraction.census} />
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-zinc-800 pt-4">
           <Button

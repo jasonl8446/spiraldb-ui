@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 
-import { extractQuests, type QuestObject } from '../lib/api';
-import { extractErrorMessage, EXTRACTING_TOAST_MESSAGE } from '../lib/extract';
-import { notifyError, notifyInfo } from '../lib/notify';
+import { extractQuests, type ExtractCensus, type QuestObject } from '../lib/api';
+import {
+  extractErrorMessage,
+  EXTRACTING_TOAST_MESSAGE,
+  suggestionsStoreNotice,
+} from '../lib/extract';
+import { dismissNotification, notifyError, notifyInfo } from '../lib/notify';
 
 /**
  * The extraction controller (plan task 2.6, story p2-07).
@@ -25,6 +29,13 @@ import { notifyError, notifyInfo } from '../lib/notify';
  * lands after the user cancelled — or after a second start — is dropped. That is
  * also why `status` is driven here rather than by a TanStack mutation: a mutation
  * has no notion of "this result belongs to a superseded request".
+ *
+ * **The "Extracting quests..." notice ends with the extraction (D183).** It is a
+ * progress notice, so it is taken down the moment the run settles (results, failure,
+ * cancel, discard or unmount) instead of outliving it for the rest of its 5 s. Left up,
+ * it sat bottom-right over the results' `Save All to SpiralDB` / `Save Selected`
+ * buttons, and a pointer resting on it pauses sonner's timer, so the stale notice
+ * could cover the page's next action indefinitely (measured in p7-16).
  */
 export type ExtractionStatus = 'idle' | 'extracting' | 'results';
 
@@ -34,6 +45,10 @@ export interface ExtractionState {
   quests: QuestObject[];
   /** `count` as the API returned it — informational; `quests.length` is rendered. */
   count: number;
+  /** The packet census of the capture (D139), when the server answered with one. */
+  census: ExtractCensus | undefined;
+  /** What became of the capture suggestions, when there is something to say (review 9a/9d). */
+  suggestionsNotice: string | null;
   /** The capture being extracted (or the last one tried), for the file card. */
   file: File | null;
   /**
@@ -52,10 +67,20 @@ export interface ExtractionController extends ExtractionState {
   discard: () => void;
 }
 
+/** Takes down the run's "Extracting quests..." notice, if it is still up. */
+function endExtractingNotice(notice: MutableRefObject<string | number | null>): void {
+  if (notice.current !== null) {
+    dismissNotification(notice.current);
+    notice.current = null;
+  }
+}
+
 const INITIAL: ExtractionState = {
   status: 'idle',
   quests: [],
   count: 0,
+  census: undefined,
+  suggestionsNotice: null,
   file: null,
   error: null,
 };
@@ -65,12 +90,14 @@ export function useExtraction(): ExtractionController {
   const controllerRef = useRef<AbortController | null>(null);
   /** Bumped by every start/cancel/discard; results with a stale epoch are dropped. */
   const epochRef = useRef(0);
+  const noticeRef = useRef<string | number | null>(null);
 
   // Leaving the page mid-extraction must not leave a CLI child running, so the
   // unmount behaves like Cancel (the server sees the closed response).
   useEffect(
     () => () => {
       controllerRef.current?.abort();
+      endExtractingNotice(noticeRef);
     },
     [],
   );
@@ -81,8 +108,17 @@ export function useExtraction(): ExtractionController {
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    setState({ status: 'extracting', quests: [], count: 0, file, error: null });
-    notifyInfo(EXTRACTING_TOAST_MESSAGE);
+    setState({
+      status: 'extracting',
+      quests: [],
+      count: 0,
+      census: undefined,
+      suggestionsNotice: null,
+      file,
+      error: null,
+    });
+    endExtractingNotice(noticeRef);
+    noticeRef.current = notifyInfo(EXTRACTING_TOAST_MESSAGE);
 
     extractQuests(file, { signal: controller.signal })
       .then((result) => {
@@ -90,10 +126,17 @@ export function useExtraction(): ExtractionController {
           return; // superseded by a cancel or a newer start
         }
         controllerRef.current = null;
+        endExtractingNotice(noticeRef);
         setState({
           status: 'results',
           quests: result.quests,
           count: result.count,
+          census: result.census,
+          suggestionsNotice: suggestionsStoreNotice(
+            result.suggestions_store,
+            // A pre-task-7.5 body (and the older tier-1 mocks) carries no `suggestions`.
+            (result.suggestions ?? []).length,
+          ),
           file,
           error: null,
         });
@@ -103,8 +146,17 @@ export function useExtraction(): ExtractionController {
           return; // a cancel is not a failure, and it must not toast
         }
         controllerRef.current = null;
+        endExtractingNotice(noticeRef);
         const message = extractErrorMessage(error);
-        setState({ status: 'idle', quests: [], count: 0, file: null, error: message });
+        setState({
+          status: 'idle',
+          quests: [],
+          count: 0,
+          census: undefined,
+          suggestionsNotice: null,
+          file: null,
+          error: message,
+        });
         notifyError(message);
       });
   }, []);
@@ -113,6 +165,7 @@ export function useExtraction(): ExtractionController {
     epochRef.current += 1;
     controllerRef.current?.abort();
     controllerRef.current = null;
+    endExtractingNotice(noticeRef);
     setState(INITIAL);
   }, []);
 
@@ -120,6 +173,7 @@ export function useExtraction(): ExtractionController {
     epochRef.current += 1;
     controllerRef.current?.abort();
     controllerRef.current = null;
+    endExtractingNotice(noticeRef);
     setState(INITIAL);
   }, []);
 

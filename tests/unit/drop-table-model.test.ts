@@ -38,7 +38,7 @@ import {
 import type { FieldValidationMessage } from '../../client/src/lib/validation-message';
 
 /**
- * Story p4-02's model + rules test — plan task 4.2, docs/spec-domain-reference.md L77-91 and
+ * Story p4-02's model + rules test — plan task 4.2, docs/spec-domain-reference.md §"DropTable" and
  * L536-540.
  *
  * Two arms, mirroring `tests/unit/quest-validation.test.ts`'s shape:

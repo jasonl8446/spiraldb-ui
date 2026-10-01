@@ -1,0 +1,47 @@
+{
+  "description": "p7 inject spec for WC-HAUNTED-MAIN-001 (task 7.5): a three-goal chain and every reward packet. Waypoint (compilation goal 0, re-sent), BountyCollect, Persona, each completed then removed before the next is sent; MSG_COMPLETEQUEST closes the quest after goal 2. The reward previews ride MSG_QUESTOFFER.Rewards and MSG_SENDQUEST.Rewards (gold, magic XP, an item; the send adds a spell), MSG_QUESTREWARDS carries the spell as Imlight sends it, and MSG_LOOT carries a different roll (gold, magic XP, another item), as the drop table handlers send it after MSG_COMPLETEQUEST.",
+  "questOfferFields": {
+    "Rewards": {
+      "$blob": "LootInfoList",
+      "gold": 1006,
+      "magicXp": 506,
+      "items": [{ "id": 7700611, "count": 1 }]
+    }
+  },
+  "sendQuestFields": {
+    "Rewards": {
+      "$blob": "LootInfoList",
+      "gold": 1006,
+      "magicXp": 506,
+      "items": [{ "id": 7700611, "count": 1 }],
+      "spells": [7700621]
+    }
+  },
+  "sequence": [
+    { "message": "MSG_SENDGOAL", "goal": 0 },
+    { "message": "MSG_COMPLETEGOAL", "goal": 0 },
+    { "message": "MSG_REMOVEGOAL", "goal": 0 },
+    { "message": "MSG_SENDGOAL", "goal": 1 },
+    { "message": "MSG_COMPLETEGOAL", "goal": 1 },
+    { "message": "MSG_REMOVEGOAL", "goal": 1 },
+    { "message": "MSG_SENDGOAL", "goal": 2 },
+    { "message": "MSG_PERSONAINFO", "goal": 2 },
+    { "message": "MSG_COMPLETEGOAL", "goal": 2 },
+    { "message": "MSG_COMPLETEQUEST" },
+    {
+      "message": "MSG_QUESTREWARDS",
+      "fields": { "LootList": { "$blob": "LootInfoList", "spells": [7700621] } }
+    },
+    {
+      "message": "MSG_LOOT",
+      "fields": {
+        "LootList": {
+          "$blob": "LootInfoList",
+          "gold": 1016,
+          "magicXp": 516,
+          "items": [{ "id": 7700612, "count": 3 }]
+        }
+      }
+    }
+  ]
+}

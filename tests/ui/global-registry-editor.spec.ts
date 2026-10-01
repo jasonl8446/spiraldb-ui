@@ -188,7 +188,7 @@ function main(page: Page): ReturnType<Page['getByRole']> {
   return page.getByRole('main');
 }
 
-/** Opens the editor, which is the family's single route (docs/spec-api.md L474). */
+/** Opens the editor, which is the family's single route (docs/spec-api.md §"URL Routes (Frontend)"). */
 async function openEditor(page: Page): Promise<void> {
   await page.goto(FAMILY.urlPath.replace('/api', ''));
   await expect(main(page).getByRole('list', { name: 'Registry values' })).toBeVisible();

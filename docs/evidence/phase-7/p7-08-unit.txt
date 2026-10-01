@@ -1,0 +1,25 @@
+$ npx vitest run tests/unit/p7-accept.test.ts tests/unit/p7-draft-queue.test.ts tests/unit/ui-shell.test.ts tests/unit/quest-scaffold.test.ts tests/unit/p7-drafts.test.ts tests/unit/imlight-harness.test.ts
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — accepted_suggestions parsing (D141) > reads absent/null as none, de-duplicates, and refuses anything but positive integer ids 1ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests with accepted_suggestions (D141) > writes exactly the accepted field and flips its id only after the commit 196ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests with accepted_suggestions (D141) > refuses an unknown, decided or foreign id with a 400 before writing anything 40ms
+stderr | tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests with accepted_suggestions (D141) > leaves every id pending when the commit fails
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests with accepted_suggestions (D141) > leaves every id pending when the commit fails 167ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests/scaffold with a draft document (D142) > writes the skeleton plus the accepted field in the scaffold commit, then flips the id 169ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests/scaffold with a draft document (D142) > refuses a document whose m_questName is not the save name, writing nothing 30ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests/scaffold with a draft document (D142) > answers the unwritten skeleton read with 404 for an unknown name and 409 for a defined one 30ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — naming an unnamed draft (D137/D142) > creates exactly one catalog row and one file, links the id and names its suggestions 171ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — naming an unnamed draft (D137/D142) > refuses a duplicate name (409) and a path-escaping one (400), writing nothing 79ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — naming an unnamed draft (D137/D142) > refuses an id already linked to another quest, and an unknown id 31ms
+ ✓ tests/unit/p7-accept.test.ts > p7-08 — acceptSuggestions inside an outer transaction > rolls back with the outer transaction when a later statement fails 4ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — the draft queue > turns every filter into a server query parameter and nothing else 1ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — the draft queue > opens a file as itself, a missing named quest on its skeleton, an unnamed id on its own 0ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — the draft queue > shows the name pair, with the id as the unnamed tier’s technical half 0ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — the draft queue > says both numbers as text, and the hidden count only while hidden 14ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — Accept as an edit of the in-memory document > sets a top-level field with one set edit 1ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — Accept as an edit of the in-memory document > disables a field inside a container the document does not have yet, naming it 0ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — Accept as an edit of the in-memory document > appends a reward result, and shows a null result as an observation that cannot be accepted (D159) 1ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — Accept as an edit of the in-memory document > places each suggestion in the tab that holds its field 0ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — Accept as an edit of the in-memory document > groups pending suggestions by source in the server’s source order 0ms
+ ✓ tests/unit/p7-draft-queue.test.ts > p7-08 — Accept as an edit of the in-memory document > pre-fills an unnamed draft’s name from its title key, never from nothing (D137) 0ms
+ Test Files  6 passed (6)
+      Tests  182 passed (182)

@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 /**
  * Story p4-05's tier-1 UI spec (decisions D40/D44): plan task 4.7's `TreasureCardInventory`
  * editor and the one warn-not-block rule the phase's AC#11 names
- * (docs/spec-domain-reference.md L183-208, L542-546).
+ * (docs/spec-domain-reference.md §"TreasureCardInventory", §"General Validation").
  *
  * Hermetic by construction: every request the page makes is fulfilled from the fixtures below,
  * so the run reaches neither the dev stack's SQLite file nor the D17 clone. The wire contracts

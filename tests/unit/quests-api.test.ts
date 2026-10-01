@@ -40,8 +40,8 @@ import {
 } from '../helpers/temp-git-repo';
 
 /**
- * Task 2.5 / story p2-06 — the quests API (docs/plan-phase-2-quest-extraction.md
- * §2.5, docs/spec-api.md L164-180).
+ * Task 2.5 / story p2-06 — the quests API (the Phase 2 plan §2.5 "Quests API",
+ * docs/spec-api.md §"Quests").
  *
  * Hermetic by construction: a temp corpus directory under `data/__test-scratch__/`
  * (or `os.tmpdir()`), an in-memory database, throwaway `git init` repositories from
@@ -659,6 +659,25 @@ describe('POST /api/quests — save pipeline (ac3)', () => {
     expect((res.body as { status: { status: string } }).status.status).toBe('extracted');
   });
 
+  it('400s a quest name carrying control characters, writing and committing nothing (PR #14 review 6)', async () => {
+    const repo = gitRepo();
+    const h = harness({ root: repo.dir, spiraldbPath: repo.dir });
+    const before = commitSubjects(repo);
+    const res = await request(h.app)
+      .post('/api/quests')
+      .send({
+        quest: {
+          // The reviewer's payload: without the naming guard it committed a forged subject line.
+          m_questName: 'A\n\nspiraldb: create quest PWNED\n\nx',
+          m_goals: [{ $type: TYPE_STRINGS.WaypointGoalTemplate, m_goalName: '1_A' }],
+        },
+      });
+    expect(res.status, res.text).toBe(400);
+    expect((res.body as { error: string }).error).toContain('control character');
+    expect(commitSubjects(repo)).toEqual(before);
+    expect(repo.git(['status', '--porcelain']).trim()).toBe('');
+  });
+
   it('round-trips GET → POST unmodified with no field loss (explicit nulls preserved)', async () => {
     const repo = gitRepo();
     const legacy = readFileSync(path.join(FIXTURES, 'quest_DS-ACAD-C01-003.json'), 'utf8');
@@ -998,7 +1017,7 @@ describe('capture source note — gap B of p2-07 (plan §2.4)', () => {
   // The live defect (measured in a real browser run): WC-UNICORN-MAIN-004 already
   // exists in the corpus, so the save is `outcome: 'updated'` — but the entry's first
   // appearance in tracking must still carry the capture note. The trigger is the
-  // `entry_status` row insert, not the file outcome (plan §2.4, spec-api L122).
+  // `entry_status` row insert, not the file outcome (plan §2.4, spec-api §"GET /api/status/:type/:key/history").
   it('writes the capture note when an existing file is saved for an untracked entry', async () => {
     const repo = gitRepo();
     writeFile(

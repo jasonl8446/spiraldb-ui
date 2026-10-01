@@ -348,10 +348,11 @@ describe('the 66-key inventory', () => {
       dialogFieldsInGroup(group).map((f) => f.key),
     );
     expect(inGroups.sort()).toEqual(DIALOG_ENTRY_FIELD_SPECS.map((field) => field.key).sort());
-    // Advanced is the three groups the spec's five tabs leave over.
+    // Advanced is the three groups the spec's five tabs leave over, plus the Basic group's three
+    // `advanced`-tier fields (task 7.11); Basic keeps its ten `basic`-tier ones.
     const accordion = (id: string) => DIALOG_ACCORDIONS.find((entry) => entry.id === id) as never;
-    expect(dialogFieldsInAccordion(accordion('Advanced')).length).toBe(14);
-    expect(dialogFieldsInAccordion(accordion('Basic')).length).toBe(13);
+    expect(dialogFieldsInAccordion(accordion('Advanced')).length).toBe(17);
+    expect(dialogFieldsInAccordion(accordion('Basic')).length).toBe(10);
     expect(dialogFieldsInAccordion(accordion('Camera')).length).toBe(22);
     expect(dialogFieldsInAccordion(accordion('Sound')).length).toBe(10);
     expect(dialogFieldsInAccordion(accordion('Animation')).length).toBe(7);

@@ -90,6 +90,10 @@ function snapshot(quest, normalizeType) {
     goalCount: goals.length,
     goalNames: goals.map((g) => g.m_goalName),
     goalTypes: goals.map((g) => normalizeType(g.m_goalType)),
+    // Task 7.3: the wrapper's post-pass copies MSG_SENDGOAL.PersonaName into m_personaName. The corpus
+    // spells "no persona" as "" (or omits the key on non-persona goals) and the wrapper writes nothing
+    // for an empty wire string, so absent/null/"" all compare as "".
+    personaNames: goals.map((g) => g.m_personaName ?? ''),
     dialogBlocks: blocks,
     dialogEntries: entries,
     containers: containerMap(quest),
@@ -145,6 +149,11 @@ export function compareSnapshots(wanted, got, knownDefects = {}) {
     ['goal count', wanted.goalCount, got.goalCount],
     ['goal names (in order)', formatList(wanted.goalNames), formatList(got.goalNames)],
     ['goal types', formatTypes(wanted.goalTypes), formatTypes(got.goalTypes)],
+    [
+      'goal persona names (in order)',
+      formatList(wanted.personaNames),
+      formatList(got.personaNames),
+    ],
     ['dialog blocks (ActorDialog count)', wanted.dialogBlocks, got.dialogBlocks],
     ['dialog entries (NPCDialogEntry count)', wanted.dialogEntries, got.dialogEntries],
     [

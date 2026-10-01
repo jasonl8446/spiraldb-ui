@@ -26,6 +26,10 @@ import type {
   QuestEvidenceTextRow,
 } from '../../lib/api';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+
+import { parseDocPath } from '@shared/document';
+
 import {
   dialogueInsertRow,
   inferredTitleBadge,
@@ -37,7 +41,10 @@ import {
   type EvidenceInsertRow,
   type EvidenceInsertTarget,
 } from '../../lib/evidence-insert';
+import { npcPagePath } from '../../lib/npcs';
+import { docPathWords, fieldAddressText } from '../../lib/term';
 import { cn } from '../../lib/utils';
+import TermLabel from '../TermLabel';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 
@@ -145,7 +152,11 @@ export default function EvidencePanel({
         )}
         <p className="text-xs text-zinc-400" data-testid="evidence-target">
           {`${EVIDENCE_TARGET_LABEL}: `}
-          <span className="font-mono text-zinc-300">{target?.label ?? EVIDENCE_TARGET_NONE}</span>
+          {target === null ? (
+            <span className="font-mono text-zinc-300">{EVIDENCE_TARGET_NONE}</span>
+          ) : (
+            <FieldAddress address={target.label} className="text-zinc-300" />
+          )}
         </p>
       </header>
 
@@ -202,8 +213,8 @@ function InsertAction({
       aria-label={`${EVIDENCE_INSERT_LABEL} ${row.key}`}
       title={
         plan.overwrites
-          ? `Overwrite ${plan.label} with this key`
-          : `Add ${plan.label} with this key`
+          ? `Overwrite ${fieldAddressText(plan.path)} with this key`
+          : `Add ${fieldAddressText(plan.path)} with this key`
       }
       onClick={() => onInsert(plan)}
     >
@@ -218,8 +229,38 @@ function InsertTarget({ plan }: { plan: EvidenceInsertPlan }): JSX.Element | nul
     return null;
   }
   return (
-    <span className="min-w-0 truncate font-mono text-[10px] text-zinc-400" title={plan.label}>
-      {`→ ${plan.label}`}
+    <span
+      className="min-w-0 truncate text-[10px] text-zinc-400"
+      title={fieldAddressText(plan.path)}
+    >
+      {'→ '}
+      <FieldAddress address={plan.label} />
+    </span>
+  );
+}
+
+/**
+ * A document address in words (task 7.9): the field's glossary pair, then where it sits
+ * (`Goal text (m_goalText) in Goals 3`). The path itself is kept in `data-path`, never shown. A
+ * string that is not a document path (the used-rows group `—`) renders as itself.
+ */
+function FieldAddress({
+  address,
+  className,
+}: {
+  address: string;
+  className?: string;
+}): JSX.Element {
+  const path = parseDocPath(address);
+  const key = path === null ? undefined : path[path.length - 1];
+  if (path === null || typeof key !== 'string') {
+    return <span className={cn('font-mono', className)}>{address}</span>;
+  }
+  const where = docPathWords(path.slice(0, -1));
+  return (
+    <span data-path={address} className={className}>
+      <TermLabel term={{ field: key }} />
+      {where === '' ? null : ` in ${where}`}
     </span>
   );
 }
@@ -309,7 +350,9 @@ function TextSection({
         <ul className="flex flex-col gap-3">
           {groupedByField(rows, entries).map(([field, group]) => (
             <li key={field} className="flex flex-col gap-1">
-              <p className="font-mono text-[11px] text-emerald-300/90">{field}</p>
+              <p className="text-[11px] text-emerald-300/90">
+                <FieldAddress address={field} />
+              </p>
               <ul className="flex flex-col gap-2">
                 {group.map((entry) => (
                   <TextRow
@@ -423,7 +466,18 @@ function DialogueSection({
           <li key={row.id} className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2">
               <span className="min-w-0 truncate text-xs text-zinc-200" title={entry.speaker.name}>
-                {entry.speaker.name}
+                {entry.speaker.template_id === null ? (
+                  entry.speaker.name
+                ) : (
+                  // D144: a resolved speaker opens that NPC's page (`/npcs/:npcId`).
+                  <Link
+                    to={npcPagePath(entry.speaker.template_id)}
+                    data-testid={`evidence-speaker-link-${entry.index}`}
+                    className="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    {entry.speaker.name}
+                  </Link>
+                )}
                 {entry.own_table ? null : (
                   <span className="ml-1 text-zinc-400">(sibling table)</span>
                 )}
@@ -481,7 +535,10 @@ function ReferencesSection({ references }: { references: QuestEvidenceReference[
       <ul className="flex flex-col gap-2">
         {references.map((reference) => (
           <li key={reference.field} className="flex flex-col">
-            <span className="break-all font-mono text-[11px] text-zinc-400">{reference.field}</span>
+            <FieldAddress
+              address={reference.field}
+              className="break-all text-[11px] text-zinc-400"
+            />
             <span className="text-xs text-zinc-200">
               {reference.resolved === null
                 ? `unresolved (${reference.kind ?? 'no namespace'}) ${String(reference.value)}`

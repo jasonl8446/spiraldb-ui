@@ -1,0 +1,45 @@
+{
+  "description": "p7 inject spec for WC-MAIN-C01-013: Waypoint, single goal (7.5: a single-goal capture yields no chain). Order per goal: MSG_SENDGOAL, MSG_PERSONAINFO (persona goals), MSG_COMPLETEGOAL, then MSG_REMOVEGOAL unless it is the last goal; MSG_COMPLETEQUEST closes the quest, so the goal completed right before it is the terminal one.",
+  "sendQuestFields": {
+    "QuestNameID": 7700001,
+    "QuestInfo": "P7-PLANT-QuestInfo-WC-MAIN-C01-013",
+    "NoQuestHelper": 1,
+    "SkipQHAutoSelect": 1,
+    "ActivityType": 2,
+    "ClientTags": {
+      "$blob": "ClientTagList",
+      "tags": [
+        "P7-PLANT-QuestTag-WC-MAIN-C01-013-A",
+        "P7-PLANT-QuestTag-WC-MAIN-C01-013-B"
+      ]
+    },
+    "PetOnlyQuest": 1,
+    "Rewards": {
+      "$blob": "LootInfoList",
+      "gold": 1001,
+      "magicXp": 501
+    }
+  },
+  "sequence": [
+    {
+      "message": "MSG_SENDGOAL",
+      "goal": 0,
+      "fields": {
+        "PersonaName": "P7-PLANT-PersonaName-WC-MAIN-C01-013-g0"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "goal": 0,
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteGoal-WC-MAIN-C01-013-g0"
+      }
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "fields": {
+        "CompleteText": "P7-PLANT-CompleteQuest-WC-MAIN-C01-013"
+      }
+    }
+  ]
+}

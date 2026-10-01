@@ -138,6 +138,7 @@
  */
 
 import { formatDocPath, type DocEdit, type DocPath } from '@shared/document';
+import { fieldTier, groupLabel } from '@shared/glossary';
 import { TYPE_STRINGS } from '@shared/quest/typeConstants';
 
 import { formatNameValue, type NameRowMap, type NamesType } from './display';
@@ -352,11 +353,11 @@ export interface DialogAccordionSpec {
  *
  * | accordion | domain group(s) | fields |
  * |---|---|---|
- * | Basic (open) | Basic | 13 |
+ * | Basic (open) | Basic, `basic` tier only | 10 |
  * | Camera | Camera | 22 |
  * | Sound | Audio | 10 |
  * | Animation | Animation & NPC | 7 (6 corpus + `m_defaultDialogAnimation`) |
- * | Advanced | Duration & Timing + Walk-Away + UI Controls | 6 + 5 + 3 = 14 |
+ * | Advanced | Duration & Timing + Walk-Away + UI Controls, plus the Basic group's `advanced` tier | 14 + 3 = 17 |
  *
  * The spec's ASCII shows only five Basic fields (dialog text, portrait, actor template, max
  * time, invisible); the domain reference's Basic group is 13 fields including `m_soundFile`,
@@ -365,13 +366,18 @@ export interface DialogAccordionSpec {
  * puts it) while the *Audio* group's `m_soundEffectFile`/`m_musicFile` go to `Sound`.
  */
 export const DIALOG_ACCORDIONS: readonly DialogAccordionSpec[] = [
-  { id: 'Basic', label: 'Basic', groups: ['Basic'], openByDefault: true },
-  { id: 'Camera', label: 'Camera', groups: ['Camera'], openByDefault: false },
-  { id: 'Sound', label: 'Sound', groups: ['Audio'], openByDefault: false },
-  { id: 'Animation', label: 'Animation', groups: ['Animation & NPC'], openByDefault: false },
+  { id: 'Basic', label: groupLabel('Basic'), groups: ['Basic'], openByDefault: true },
+  { id: 'Camera', label: groupLabel('Camera'), groups: ['Camera'], openByDefault: false },
+  { id: 'Sound', label: groupLabel('Sound'), groups: ['Audio'], openByDefault: false },
+  {
+    id: 'Animation',
+    label: groupLabel('Animation'),
+    groups: ['Animation & NPC'],
+    openByDefault: false,
+  },
   {
     id: 'Advanced',
-    label: 'Advanced',
+    label: groupLabel('Advanced'),
     groups: ['Duration & Timing', 'Walk-Away', 'UI Controls'],
     openByDefault: false,
   },
@@ -860,7 +866,18 @@ export function dialogFieldsInGroup(group: DialogFieldGroup): DialogFieldSpec[] 
 
 /** The value fields of one accordion, in the corpus's own order (its groups concatenated). */
 export function dialogFieldsInAccordion(accordion: DialogAccordionSpec): DialogFieldSpec[] {
-  return DIALOG_ENTRY_FIELD_SPECS.filter((field) => accordion.groups.includes(field.group));
+  // The glossary tier decides what shows first (task 7.11, D132): Basic holds the Basic group's
+  // `basic` fields; that group's `advanced` ones (`m_nameSTKey`, `m_guiDisplay`, `m_action`) join
+  // the Advanced accordion. The other four accordions are advanced by group.
+  return DIALOG_ENTRY_FIELD_SPECS.filter((field) => {
+    if (accordion.id === 'Basic') {
+      return field.group === 'Basic' && fieldTier(field.key) === 'basic';
+    }
+    if (accordion.id === 'Advanced' && field.group === 'Basic') {
+      return fieldTier(field.key) === 'advanced';
+    }
+    return accordion.groups.includes(field.group);
+  });
 }
 
 /** The field spec for {@link key}, or `undefined`. */

@@ -1,0 +1,93 @@
+# Every problem fixturegen names for each of the 8 refused quests (D17 clone, 18dc924).
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_Tutorial_Intro.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_Tutorial_Intro.json' — 2 problem(s):
+  - goal[0] m_goalName 'OnlyGoal' is not '1_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[0] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-TUT-C03-001.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_WC-TUT-C03-001.json' — 39 problem(s):
+  - goal[0] m_goalName 'player damage 1' is not '1_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[0] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[1] m_goalName 'CloseDoor' is not '2_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[1] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[2] m_goalName 'Clear hand mob 0' is not '3_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[2] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[3] m_goalName 'Clear hand mob 1' is not '4_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[3] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[4] m_goalName 'mob damage 2' is not '5_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[4] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[5] m_goalName 'mob damage 3' is not '6_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[5] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[6] m_goalName 'mob damage 4' is not '7_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[6] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[7] m_goalName 'mob weakness' is not '8_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[7] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[8] m_goalName 'mob damage 5' is not '9_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[8] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[9] m_goalName 'mob damage 6' is not '10_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[9] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[10] m_goalName 'mob damage 7' is not '11_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[10] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[11] m_goalName 'mob damage 8' is not '12_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[11] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[12] m_goalName 'player heal' is not '13_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[12] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[13] m_goalName 'player damage 2' is not '14_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[13] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[14] m_goalName 'player blade' is not '15_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[14] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[15] m_goalName 'player damage 3' is not '16_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[15] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[16] m_goalName 'Give 3 pips to player' is not '17_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[16] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[17] m_goalName 'give 4 pips to player' is not '18_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[17] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[18] m_goalName 'Update pips' is not '19_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[18] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - m_goalNameID 0 appears on more than one goal: QuestBuilder skips a packet whose GoalNameID is already present, which would shift every later goal name.
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-TUT-C05-001.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_WC-TUT-C05-001.json' — 11 problem(s):
+  - goal[0] m_goalName 'Trigger Storm' is not '1_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[0] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[1] m_goalName 'Despawn Ambrose Outside' is not '2_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[1] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[2] m_goalName 'Trigger Rubble' is not '3_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[2] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[3] m_goalName 'Trigger Silhouette' is not '4_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[3] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - goal[4] m_goalName 'Walk Ambrose' is not '5_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[4] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+  - m_goalNameID 0 appears on more than one goal: QuestBuilder skips a packet whose GoalNameID is already present, which would shift every later goal name.
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-TUT-C08-001.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_WC-TUT-C08-001.json' — 2 problem(s):
+  - goal[0] m_goalName 'Teleport' is not '1_': QuestBuilder derives the goal name as "{n}_{m_goalTitle}", so this quest cannot round-trip on goal names (every GOAL_TYPE_ACHIEVERANK quest in the corpus has an empty m_goalTitle and hits exactly this).
+  - goal[0] has m_goalNameID 0: a packet-delivered goal would be skipped by QuestBuilder's duplicate check (and the first one would swallow the rest).
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_MB-MUSEHub-C02-002.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_MB-MUSEHub-C02-002.json' — 1 problem(s):
+  - quest-level dialog tag '' is not representable: QuestBuilder only attaches quest-level dialogs from a MSG_ACTORDIALOG with CompletionType 'QuestInfo' (tag Prep) or 'Completion' (tag Completion) — and only the first of each.
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_MS-WAR1-C01-004.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_MS-WAR1-C01-004.json' — 1 problem(s):
+  - quest-level dialog tag '' is not representable: QuestBuilder only attaches quest-level dialogs from a MSG_ACTORDIALOG with CompletionType 'QuestInfo' (tag Prep) or 'Completion' (tag Completion) — and only the first of each.
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_MS-WAR1-C01-008.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_MS-WAR1-C01-008.json' — 3 problem(s):
+  - quest-level dialog tag '' is not representable: QuestBuilder only attaches quest-level dialogs from a MSG_ACTORDIALOG with CompletionType 'QuestInfo' (tag Prep) or 'Completion' (tag Completion) — and only the first of each.
+  - quest-level dialog tag '' is not representable: QuestBuilder only attaches quest-level dialogs from a MSG_ACTORDIALOG with CompletionType 'QuestInfo' (tag Prep) or 'Completion' (tag Completion) — and only the first of each.
+  - two quest-level dialogs share tag '': QuestBuilder replaces instead of adding, so one dialog block (and its entries) would be lost.
+exit=1
+
+$ tools/bin/fixturegen --quest data/test-spiraldb/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-005.json --output $SCRATCH/refused.json
+error: refusing to generate a capture from 'data/test-spiraldb/QuestTemplates/questtemplates_WC-CYCLOPS-MAIN-005.json' — 1 problem(s):
+  - quest-level dialog tag '' is not representable: QuestBuilder only attaches quest-level dialogs from a MSG_ACTORDIALOG with CompletionType 'QuestInfo' (tag Prep) or 'Completion' (tag Completion) — and only the first of each.
+exit=1

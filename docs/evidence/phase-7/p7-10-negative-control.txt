@@ -1,0 +1,97 @@
+# p7-10 scanner negative control (RAW). Corpus: D17 clone data/test-spiraldb, quest WC-CYCLOPS-MAIN-003.
+
+## RED: one label rendered bare — the Info tab prints `m_questLevel` itself instead of its TermLabel
+$ diff -u <story tree> client/src/components/quest/QuestInfoEditor.tsx
+--- /tmp/claude-1000/-home-jason-Documents-git-projects-spiraldb-ui/02fd355f-842d-451a-968b-024163d5c555/scratchpad/QIE.bak	2026-09-30 00:53:30.058167971 -0400
++++ client/src/components/quest/QuestInfoEditor.tsx	2026-09-30 00:53:53.868691168 -0400
+@@ -126,7 +126,7 @@
+   return (
+     <div className="flex min-w-0 flex-col gap-1">
+       <label htmlFor={id} className="text-xs text-zinc-400">
+-        <TermLabel term={{ field: field.key }} />
++        {field.key === 'm_questLevel' ? field.key : <TermLabel term={{ field: field.key }} />}
+       </label>
+       <FieldControl
+         field={field}
+
+$ npm run test:ui -- tests/ui/p7-label-scan.spec.ts -g "WC-CYCLOPS-MAIN-003: every" --reporter=line
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/p7-label-scan.spec.ts -g WC-CYCLOPS-MAIN-003: every --reporter=line
+
+
+
+
+
+
+
+
+
+
+
+
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests/ui/p7-label-scan.spec.ts:250:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:250:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-CYCLOPS-MAIN-003: edit/Info: 21 [data-term]; edit/Goals: 43 [data-term]; edit/Goals#1: 63 [data-term]; edit/Goals#2: 64 [data-term]; edit/Goals#3: 62 [data-term]; edit/Goals#4: 64 [data-term]; edit/Goals#5: 64 [data-term]; edit/Goals#6: 64 [data-term]; edit/Goals#7: 62 [data-term]; edit/Goal Logic: 19 [data-term]; edit/Requirements: 12 [data-term]; edit/Results: 7 [data-term]; edit/Dialog: 218 [data-term]; view/Info: 20 [data-term]; view/Goals: 152 [data-term]; view/Goal Logic: 35 [data-term]; view/Requirements: 3 [data-term]; view/Results: 3 [data-term]; view/Dialog: 1 [data-term]
+
+WC-CYCLOPS-MAIN-003: 1 hit(s)
+[edit/Info] text "m_questLevel" in <label for=":rj:" class="text-xs text-zinc-400">m_questLevel</label>
+
+  1) [chromium] › tests/ui/p7-label-scan.spec.ts:250:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "[edit/Info] text \"m_questLevel\" in <label for=\":rj:\" class=\"text-xs text-zinc-400\">m_questLevel</label>",
+    + ]
+
+      283 |       console.log(`${quest}: ${coverage.join('; ')}`);
+      284 |       console.log(`${quest}: ${found.length} hit(s)\n${found.join('\n')}`);
+    > 285 |       expect(found).toEqual([]);
+          |                     ^
+      286 |     });
+      287 |   }
+      288 | });
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-label-scan.spec.ts:285:21
+
+    Error Context: test-results/p7-label-scan-p7-10-label--4a581-e-Evidence-Insert-into-line-chromium/error-context.md
+
+
+  1 failed
+    [chromium] › tests/ui/p7-label-scan.spec.ts:250:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line 
+
+## GREEN: the edit reverted (git diff of QuestInfoEditor.tsx back to the story tree), same command
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/p7-label-scan.spec.ts -g WC-CYCLOPS-MAIN-003: every --reporter=line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests/ui/p7-label-scan.spec.ts:250:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+[chromium] › tests/ui/p7-label-scan.spec.ts:250:5 › p7-10 label scan — no bare technical term outside [data-term] › WC-CYCLOPS-MAIN-003: every tab, edit and view mode, and the Evidence "Insert into" line
+WC-CYCLOPS-MAIN-003: edit/Info: 22 [data-term]; edit/Goals: 43 [data-term]; edit/Goals#1: 63 [data-term]; edit/Goals#2: 64 [data-term]; edit/Goals#3: 62 [data-term]; edit/Goals#4: 64 [data-term]; edit/Goals#5: 64 [data-term]; edit/Goals#6: 64 [data-term]; edit/Goals#7: 62 [data-term]; edit/Goal Logic: 19 [data-term]; edit/Requirements: 12 [data-term]; edit/Results: 7 [data-term]; edit/Dialog: 218 [data-term]; view/Info: 20 [data-term]; view/Goals: 152 [data-term]; view/Goal Logic: 35 [data-term]; view/Requirements: 3 [data-term]; view/Results: 3 [data-term]; view/Dialog: 1 [data-term]
+
+WC-CYCLOPS-MAIN-003: 0 hit(s)
+
+
+  1 passed (6.4s)

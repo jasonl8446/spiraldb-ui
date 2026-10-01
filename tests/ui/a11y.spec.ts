@@ -4,6 +4,8 @@ import type { Result } from 'axe-core';
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { lockClone } from '../helpers/clone-fixture';
+
 import { ITEM_ROWS, mockDocument, mockRows, QUEST_ROWS, SELF_KEY } from './drop-table-mocks';
 import { MOCK_CATALOG_ROWS, MOCK_COVERAGE, MOCK_QUEST, mockQuestRows } from './quests-mocks';
 
@@ -11,7 +13,7 @@ import { MOCK_CATALOG_ROWS, MOCK_COVERAGE, MOCK_QUEST, mockQuestRows } from './q
  * Story p5-07's tier-1 accessibility spec — **Phase-5 AC#13** (plan task 5.7; decisions D23
  * tier 1, D40/D44, D67(d), D81, D85(a), D87).
  *
- * The acceptance criterion, quoted (`docs/plan-phase-5-dashboard-polish.md` L61):
+ * The acceptance criterion, quoted (the Phase 5 plan, §"Acceptance Criteria"):
  *
  * > **UI test suite (D23 tier 1)**: committed `tests/ui/a11y.spec.ts` (`@axe-core/playwright`,
  * > zero critical/serious violations on the four key pages) and `tests/ui/responsive.spec.ts`
@@ -302,7 +304,7 @@ async function mockA11yApi(page: Page): Promise<Mocked> {
       return route.fulfill({ status: 404, json: { error: `unmocked status ${path}` } });
     }
 
-    // 5. The quests list + one bare quest document (docs/spec-api.md L190-208, D49).
+    // 5. The quests list + one bare quest document (docs/spec-api.md §"Quests", D49).
     //
     // Story p6-11's two static reads are matched **before** the `/:key` prefix below, because
     // `/api/quests/coverage` and `/api/quests/catalog` start with the same prefix and would
@@ -519,8 +521,19 @@ const editMode = (page: Page): Locator => page.locator('[data-edit-mode="true"]'
 const dropTableView = (page: Page): Locator => page.locator('[data-edit-mode="view"]');
 const dropTableEdit = (page: Page): Locator => page.locator('[data-edit-mode="edit"]');
 
-/** The six tabs the quest detail page renders, in the order its tab strip holds them. */
-const PREVIEW_TABS = ['Info', 'Goals', 'Goal Logic', 'Requirements', 'Results', 'Dialog'] as const;
+/**
+ * The tabs the quest detail page renders, in the order its tab strip holds them: Overview first
+ * and the landing tab (p7-14, D133), then the six editors.
+ */
+const PREVIEW_TABS = [
+  'Overview',
+  'Info',
+  'Goals',
+  'Goal Logic',
+  'Requirements',
+  'Results',
+  'Dialog',
+] as const;
 
 /* ------------------------------------------------- §1 the four pages, each in its own state */
 
@@ -556,7 +569,7 @@ test.describe('§1 AC#13: zero critical/serious on the four key pages', () => {
       // The page starts in edit mode (D66(b)); clicking `Edit` here would turn it OFF and scan
       // the read-only bodies, which is this story's named false-negative trap.
       await expect(editMode(page)).toBeVisible();
-      if (tab !== 'Info') {
+      if (tab !== 'Overview') {
         await page.getByRole('tab', { name: tab, exact: true }).click();
       }
       await expect(page.getByRole('tabpanel')).toBeVisible();
@@ -700,16 +713,22 @@ test.describe('§4 the corpus condition this suite is proven under (D81)', () =>
   test('the server reads exactly the corpus on disk at the path it reports', async ({
     request,
   }) => {
-    const settings = (await (await request.get('/api/settings')).json()) as {
-      spiraldb_path: string;
-    };
-    const list = (await (await request.get('/api/quests')).json()) as {
-      quests: unknown[];
-      skipped: Array<{ file: string; message: string }>;
-    };
-    const dir = join(settings.spiraldb_path, 'QuestTemplates');
-    const present = existsSync(dir);
-    const files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+    // The list and the directory are two readings of the clone; a clone-writing spec on another
+    // worker (`p7-drafts.spec.ts`) must not land a file between them (D183).
+    const release = await lockClone();
+    let settings: { spiraldb_path: string };
+    let list: { quests: unknown[]; skipped: Array<{ file: string; message: string }> };
+    let present: boolean;
+    let files: number;
+    try {
+      settings = (await (await request.get('/api/settings')).json()) as typeof settings;
+      list = (await (await request.get('/api/quests')).json()) as typeof list;
+      const dir = join(settings.spiraldb_path, 'QuestTemplates');
+      present = existsSync(dir);
+      files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+    } finally {
+      release();
+    }
     console.log(
       `[corpus] ${JSON.stringify({
         envSpiraldbPath: process.env.SPIRALDB_PATH ?? null,

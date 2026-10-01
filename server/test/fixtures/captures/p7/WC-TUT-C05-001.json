@@ -1,0 +1,490 @@
+[
+  {
+    "data": {
+      "name": "MSG_QUESTOFFER",
+      "fields": {
+        "MobileID": {
+          "value": 8471021970825132649
+        },
+        "QuestName": {
+          "value": "WC-TUT-C05-001"
+        },
+        "QuestTitle": {
+          "value": ""
+        },
+        "QuestInfo": {
+          "value": ""
+        },
+        "Level": {
+          "value": 0
+        },
+        "Rewards": {
+          "value": ""
+        },
+        "GoalData": {
+          "value": "70C7216300000000"
+        },
+        "Mainline": {
+          "value": 0
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDQUEST",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "QuestTitle": {
+          "value": ""
+        },
+        "QuestNameID": {
+          "value": 7700005
+        },
+        "QuestInfo": {
+          "value": "P7-PLANT-QuestInfo-WC-TUT-C05-001"
+        },
+        "NoQuestHelper": {
+          "value": 1
+        },
+        "SkipQHAutoSelect": {
+          "value": 1
+        },
+        "ActivityType": {
+          "value": 2
+        },
+        "ClientTags": {
+          "value": "15E8FF0B02000000220050372D504C414E542D51756573745461672D57432D5455542D4330352D3030312D41220050372D504C414E542D51756573745461672D57432D5455542D4330352D3030312D42"
+        },
+        "PetOnlyQuest": {
+          "value": 1
+        },
+        "Rewards": {
+          "value": "2A0367480100000089876B65050000000000F90100005E39841B01000000ED030000"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091029544211525721
+        },
+        "GoalNameID": {
+          "value": 0
+        },
+        "GoalTitle": {
+          "value": ""
+        },
+        "GoalLocation": {
+          "value": ""
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": ""
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 7
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": ""
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": "P7-PLANT-PersonaName-WC-TUT-C05-001-g0"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_COMPLETEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091029544211525721
+        },
+        "CompleteText": {
+          "value": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g0"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_REMOVEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091029544211525721
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091030643723153931
+        },
+        "GoalNameID": {
+          "value": 0
+        },
+        "GoalTitle": {
+          "value": ""
+        },
+        "GoalLocation": {
+          "value": ""
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": ""
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 7
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": ""
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": "P7-PLANT-PersonaName-WC-TUT-C05-001-g1"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_COMPLETEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091030643723153931
+        },
+        "CompleteText": {
+          "value": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g1"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_REMOVEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091030643723153931
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091031743234782143
+        },
+        "GoalNameID": {
+          "value": 0
+        },
+        "GoalTitle": {
+          "value": ""
+        },
+        "GoalLocation": {
+          "value": ""
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": ""
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 7
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": ""
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": "P7-PLANT-PersonaName-WC-TUT-C05-001-g2"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_COMPLETEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091031743234782143
+        },
+        "CompleteText": {
+          "value": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g2"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_REMOVEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091031743234782143
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091032842746410353
+        },
+        "GoalNameID": {
+          "value": 0
+        },
+        "GoalTitle": {
+          "value": ""
+        },
+        "GoalLocation": {
+          "value": ""
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": ""
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 7
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": ""
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": "P7-PLANT-PersonaName-WC-TUT-C05-001-g3"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_COMPLETEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091032842746410353
+        },
+        "CompleteText": {
+          "value": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g3"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_REMOVEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091032842746410353
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_SENDGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091033942258038565
+        },
+        "GoalNameID": {
+          "value": 0
+        },
+        "GoalTitle": {
+          "value": ""
+        },
+        "GoalLocation": {
+          "value": ""
+        },
+        "GoalDestinationZone": {
+          "value": ""
+        },
+        "GoalImage1": {
+          "value": ""
+        },
+        "GoalImage2": {
+          "value": ""
+        },
+        "GoalType": {
+          "value": 7
+        },
+        "GoalTotal": {
+          "value": 0
+        },
+        "ClientTags": {
+          "value": ""
+        },
+        "NoQuestHelper": {
+          "value": 0
+        },
+        "PetOnlyQuest": {
+          "value": 0
+        },
+        "UseTally": {
+          "value": 0
+        },
+        "GoalMadlibs": {
+          "value": ""
+        },
+        "PersonaName": {
+          "value": "P7-PLANT-PersonaName-WC-TUT-C05-001-g4"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_COMPLETEGOAL",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "GoalID": {
+          "value": 5091033942258038565
+        },
+        "CompleteText": {
+          "value": "P7-PLANT-CompleteGoal-WC-TUT-C05-001-g4"
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "name": "MSG_COMPLETEQUEST",
+      "fields": {
+        "QuestID": {
+          "value": 5231722105877907883
+        },
+        "CompleteText": {
+          "value": "P7-PLANT-CompleteQuest-WC-TUT-C05-001"
+        }
+      }
+    }
+  }
+]

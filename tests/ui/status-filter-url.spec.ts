@@ -6,7 +6,7 @@ import { mockQuestRows, mockQuestsApi } from './quests-mocks';
  * Story p5-03's tier-1 spec (plan task 5.3; decision D23 tier 1 / D40): the status
  * filter as a **URL param**, on an object family **and** on the quests page.
  *
- * The AC it covers (`docs/plan-phase-5-dashboard-polish.md` L53):
+ * The AC it covers (the Phase 5 plan, §"Acceptance Criteria"):
  *
  * > *Every list view: four filter tabs with counts equal to the status API summary;
  * > filter survives reload via URL param; empty state per filter.*

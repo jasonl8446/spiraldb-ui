@@ -22,6 +22,13 @@ import {
   type QuestCoverage,
 } from './quest-catalog';
 import type { SyncCounts } from './toast';
+import {
+  draftsRequestPath,
+  type DraftFilter,
+  type DraftList,
+  type Suggestion,
+  type SuggestionsBody,
+} from './suggestions';
 
 /** Body shape of every non-2xx JSON response (docs/spec-api.md L227). */
 interface ApiErrorBody {
@@ -762,14 +769,52 @@ export interface QuestObject {
   [key: string]: unknown;
 }
 
-/** `POST /api/extract/quests` success body (docs/spec-api.md L303-307). */
+/** One `capture-census` row (D139): a message type's field, how many messages carry it, and whether the reader reads it. */
+export interface CensusRow {
+  message: string;
+  field: string;
+  count: number;
+  consumed: boolean;
+}
+
+/** The census of the uploaded capture, or why it could not run (D55 posture). */
+export type ExtractCensus = { messages: number; rows: CensusRow[] } | { skipped: string };
+
+/**
+ * One inferred value from the wrapper's sidecar (task 7.5, D138): shown and stored as a suggestion, never
+ * merged into a quest (D127/D129).
+ */
+export interface CaptureSuggestion {
+  questName: string;
+  path: string;
+  value: unknown;
+  source: 'capture-order' | 'capture-rewards';
+  confidence: number;
+  note: string;
+}
+
+/**
+ * Whether the run's capture suggestions were staged as `quest_suggestions` rows (PR #14 review
+ * 9a/9d; D195) — present only when the run inferred any.
+ */
+export type SuggestionsStoreOutcome =
+  | { stored: true; inserted: number; unchanged: number; uncatalogued: number }
+  | { stored: false; reason: string };
+
+/** `POST /api/extract/quests` success body (docs/spec-api.md L303-307; `census` only with `?census=1`, D139). */
 export interface ExtractQuestsResult {
   quests: QuestObject[];
   count: number;
+  /** Always present since task 7.5, `[]` when nothing was inferred. */
+  suggestions: CaptureSuggestion[];
+  suggestions_store?: SuggestionsStoreOutcome;
+  census?: ExtractCensus;
 }
 
 /** The extraction endpoint and its multipart field name (docs/spec-api.md L301). */
 export const EXTRACT_QUESTS_PATH = '/api/extract/quests';
+/** The extraction page always asks for the census (D139), so the upload result can show what was ignored. */
+export const EXTRACT_QUESTS_CENSUS_PATH = `${EXTRACT_QUESTS_PATH}?census=1`;
 export const EXTRACT_FILE_FIELD = 'file';
 
 /**
@@ -789,7 +834,7 @@ export function extractQuests(
 ): Promise<ExtractQuestsResult> {
   const body = new FormData();
   body.append(EXTRACT_FILE_FIELD, file);
-  return apiFetch<ExtractQuestsResult>(EXTRACT_QUESTS_PATH, {
+  return apiFetch<ExtractQuestsResult>(EXTRACT_QUESTS_CENSUS_PATH, {
     method: 'POST',
     body,
     signal: options.signal,
@@ -925,6 +970,8 @@ export interface QuestEvidenceSpeaker {
   persona: string;
   override_key: string | null;
   st_key: string | null;
+  /** The persona's manifest id — the NPC page's route param; `null` when the persona is unindexed. */
+  template_id: number | null;
 }
 
 /** One `NPCDialogEntry` the quest file records. */
@@ -981,6 +1028,68 @@ export function getQuestEvidence(name: string): Promise<QuestEvidence> {
   return apiFetch<QuestEvidence>(`/api/quests/${encodeURIComponent(name)}/evidence`);
 }
 
+/** `GET /api/quest-ids/:id/evidence` — the same shape for an unnamed-tier id (task 6.6). */
+export function getQuestIdEvidence(id: number): Promise<QuestEvidence> {
+  return apiFetch<QuestEvidence>(`/api/quest-ids/${id}/evidence`);
+}
+
+/* ------------------------------------------------------------------- NPC view */
+
+/** One persona of an NPC (`GET /api/npcs/:id`, spec-api "NPC View"). */
+export interface NpcViewPersona {
+  persona_key: string;
+  first: string | null;
+  last: string | null;
+  template_id: number | null;
+}
+
+/** One dialogue line an NPC speaks in a corpus quest file. */
+export interface NpcViewDialog {
+  quest_name: string;
+  index: number;
+  text: string | null;
+}
+
+/** One NPC-keyed inventory file. */
+export interface NpcViewInventoryRow {
+  key: string;
+  file: string;
+}
+
+/** The NPC view: aliases, personas, dialogs, quests and inventories, with matching `counts`. */
+export interface NpcView {
+  npc_key: string;
+  template_id: number | null;
+  display_name: string;
+  aliases: string[];
+  personas: NpcViewPersona[];
+  dialogs: NpcViewDialog[];
+  quests: string[];
+  inventories: {
+    npc_inventories: NpcViewInventoryRow[];
+    npc_spell_inventories: NpcViewInventoryRow[];
+    npc_drop_tables: NpcViewInventoryRow[];
+  };
+  counts: { aliases: number; personas: number; dialogs: number; quests: number };
+  /** Why an arm is empty when the reason is not "there are no rows". */
+  notes: string[];
+}
+
+/** TanStack Query key for one NPC view (the id, in either accepted form, is part of the key). */
+export function npcQueryKey(id: string): readonly [string, string] {
+  return ['npc', id] as const;
+}
+
+/**
+ * `GET /api/npcs/:id` — the NPC view (task 6.6, D112) that the `/npcs/:npcId` page (task 7.14)
+ * reads. `id` is a template id or an alias key; an unknown NPC is a 404 whose message is the
+ * server's own (`Unknown NPC "…"`).
+ */
+export async function getNpc(id: string): Promise<NpcView> {
+  const response = await apiFetch<{ npc: NpcView }>(`/api/npcs/${encodeURIComponent(id)}`);
+  return response.npc;
+}
+
 /* ------------------------------------------------------------- quests (save) */
 
 /**
@@ -1002,6 +1111,11 @@ export interface SaveQuestBody {
    * no note and never resets the status. Absent ⇒ exactly the old behaviour.
    */
   source?: string;
+  /**
+   * Task 7.7 (D141): the suggestion ids this document applies. Validated before the write and
+   * flipped to `accepted` only after the commit.
+   */
+  accepted_suggestions?: number[];
 }
 
 /** `POST /api/quests` success body (docs/spec-api.md L239-251, decision D49(a)). */
@@ -1020,6 +1134,8 @@ export interface SaveQuestResult {
   status: StatusEntry;
   /** The D48(d) duplicate-metadata report; empty when there is none. */
   warnings: string[];
+  /** Task 7.7: the ids this save flipped to `accepted` (absent on a pre-7.7 server). */
+  accepted_suggestions?: number[];
 }
 
 /**
@@ -1086,6 +1202,91 @@ export function scaffoldQuest(questName: string): Promise<ScaffoldQuestResult> {
     method: 'POST',
     body: JSON.stringify({ quest_name: questName }),
   });
+}
+
+/**
+ * Task 7.7 (D142): a draft's first save — the scaffold route with the editor's in-memory document
+ * (`quest`), the ids it applies, and for an unnamed draft the `catalog_id` its chosen name is given
+ * to. `404`/`409`/`400` keep the scaffold's meanings; a naming refusal writes nothing.
+ */
+export interface ScaffoldDraftBody {
+  quest_name: string;
+  quest: QuestObject;
+  catalog_id?: number;
+  accepted_suggestions: number[];
+}
+
+export function scaffoldDraft(
+  body: ScaffoldDraftBody,
+): Promise<ScaffoldQuestResult & { named: boolean; accepted_suggestions: number[] }> {
+  return apiFetch('/api/quests/scaffold', { method: 'POST', body: JSON.stringify(body) });
+}
+
+/** `GET /api/quests/:name/scaffold` — the unwritten D118 skeleton a missing named draft opens on. */
+export interface QuestSkeleton {
+  quest_name: string;
+  link_kind: EvidenceTitleSource;
+  title_key: string | null;
+  quest: QuestObject;
+}
+
+export function getQuestSkeleton(questName: string): Promise<QuestSkeleton> {
+  return apiFetch<QuestSkeleton>(`/api/quests/${encodeURIComponent(questName)}/scaffold`);
+}
+
+/* -------------------------------------------------------------- drafts (task 7.6) */
+
+/** TanStack Query key of one draft-queue read; the filter is part of the key. */
+export function draftsQueryKey(filter: DraftFilter): readonly unknown[] {
+  return ['drafts', filter] as const;
+}
+
+/** `GET /api/drafts` — the queue, filtered and ranked by the server (D143). */
+export function listDrafts(filter: DraftFilter): Promise<DraftList> {
+  return apiFetch<DraftList>(draftsRequestPath(filter));
+}
+
+/** The draft whose suggestions are read: a catalog name, or an unnamed-tier id. */
+export type SuggestionDraftKey = { questName: string } | { catalogId: number };
+
+/** Prefix key of every suggestion read, so a save or reject can invalidate them all. */
+export const SUGGESTIONS_QUERY_KEY = ['suggestions'] as const;
+
+export function suggestionsQueryKey(draft: SuggestionDraftKey): readonly unknown[] {
+  return [...SUGGESTIONS_QUERY_KEY, draft] as const;
+}
+
+/** `GET /api/quests/:name/suggestions` or `GET /api/quest-ids/:id/suggestions` (pending rows). */
+export function getSuggestions(draft: SuggestionDraftKey): Promise<SuggestionsBody> {
+  return apiFetch<SuggestionsBody>(
+    'questName' in draft
+      ? `/api/quests/${encodeURIComponent(draft.questName)}/suggestions`
+      : `/api/quest-ids/${draft.catalogId}/suggestions`,
+  );
+}
+
+/** `POST /api/suggestions/:id/reject` — immediate and durable (D141). */
+export function rejectSuggestion(id: number): Promise<Suggestion> {
+  return apiFetch<Suggestion>(`/api/suggestions/${id}/reject`, { method: 'POST' });
+}
+
+/** `POST /api/drafts/rebuild`'s body (D143) — every count read from the run. */
+export interface DraftRebuildResult {
+  proposed: number;
+  inserted: number;
+  unchanged: number;
+  removed: number;
+  by_source: Record<string, number>;
+  drafts: { named_missing: number; named_defined: number; unnamed: number; zero_evidence: number };
+  duration_ms: number;
+}
+
+/**
+ * `POST /api/drafts/rebuild` — runs the draft builder (the same code as `npm run drafts`) and
+ * answers when it is done; a `409` means one is already running. Touches only SQLite.
+ */
+export function postDraftsRebuild(): Promise<DraftRebuildResult> {
+  return apiFetch<DraftRebuildResult>('/api/drafts/rebuild', { method: 'POST' });
 }
 
 /* ------------------------------------------------- quests (coverage + catalog) */

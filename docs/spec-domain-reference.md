@@ -632,6 +632,148 @@ The CLI wrapper is a blocking subprocess with no streaming output. The extractio
 
 Quest extraction supports **drag-and-drop** and **file picker** only. No manual filesystem path input. Standard web file upload via `POST /api/extract/quests`.
 
+### Phase 7: the post-pass's observed fields (D126, D127 — tasks 7.3/7.4)
+
+The wrapper re-reads the raw capture after `QuestBuilder` returns, exactly as `ApplyOfferLevels` already does
+for `MSG_QUESTOFFER.Level` (D46). Imview is never modified (D126). Every value below is **observed**: it is
+copied verbatim from one packet field, so it is written into the extraction output like any other extracted
+field (D127). Values are matched by `QuestID`/`GoalID`, never by position. A message without a `QuestID`
+(`MSG_QUESTOFFER`) joins through its quest title to `MSG_SENDQUEST.QuestID`, as `QuestBuilder.cs:105-114` does.
+
+| Written field | Source packet field | Matched by |
+|---|---|---|
+| goal `m_personaName` | `MSG_SENDGOAL.PersonaName` (declared in Imcodec's `QuestMessages.xml`, never read by the reader) | `GoalID` |
+| `m_questInfo` | `MSG_SENDQUEST.QuestInfo` (and `MSG_QUESTOFFER.QuestInfo`, which the reader parses and drops) | `QuestID` (offer: title join) |
+| `m_questNameID` | `MSG_SENDQUEST.QuestNameID` | `QuestID` |
+| `m_noQuestHelper` | `MSG_SENDQUEST.NoQuestHelper` | `QuestID` |
+| `m_skipQHAutoSelect` | `MSG_SENDQUEST.SkipQHAutoSelect` | `QuestID` |
+| `m_activityType` | `MSG_SENDQUEST.ActivityType`, a byte decoded through Imcodec's own enum table to its `ACTIVITY_*` literal | `QuestID` |
+| `m_clientTags` | `MSG_SENDQUEST.ClientTags`, a blob decoded through Imcodec's serializer to a string array | `QuestID` |
+| goal `m_noQuestHelper` | `MSG_SENDGOAL.NoQuestHelper` | `GoalID` |
+| goal `m_petOnlyQuest` | `MSG_SENDGOAL.PetOnlyQuest` (the reader parses and drops it) | `GoalID` |
+| goal `m_completeText` | `MSG_COMPLETEGOAL.CompleteText` | `GoalID` |
+| goal `m_hyperlink` | `MSG_PERSONAINFO.GoalHyperlink` | `GoalID` |
+
+Rules that bind every row:
+
+- **A lossless decode through Imcodec counts as observed** (D127): byte → `ACTIVITY_*` literal, blob →
+  `m_clientTags` array. A byte with no enum mapping is **reported and not written**.
+- **Every written value must be one the corpus schema accepts** (the `shared/quest/` zod schemas). A value the
+  schema rejects is reported and not written.
+- `MSG_COMPLETEQUEST.CompleteText` is written only if the schema has a quest-level field for it. The candidate is
+  `m_questComplete` (a string-table key per the table above); if task 7.3 cannot show they carry the same kind of
+  value, the text is reported rather than written.
+- **The D45 contract is unchanged for every field not listed here.** The output stays a JSON array of
+  `QuestTemplate` objects on stdout or `--output`.
+- **Reported** means one line on stderr per unwritten value, naming the quest, the path and the reason, so the
+  Node caller's stdout parse is never disturbed (Phase 7, chosen at p7-01).
+
+**Reader defect repairs (task 7.4)**, all in the post-pass: the completion dialog is attached by `GoalID` (D46(4));
+an `ACHIEVERANK` goal with an empty title gets a stable name instead of breaking the `{n}_{title}` derivation; and an
+unlisted goal type no longer aborts the capture. The CLI catches `QuestBuilder`'s throw, re-runs with that goal
+excluded, and reports the exclusion. The post-pass also reads `MSG_ENCOUNTERDIALOG`, the underway dialogs and the
+`ActorDialog` `IsYesNo`/`DefaultDialogAnimation` fields.
+
+**As built (p7-04/p7-05).** `MSG_SENDQUEST.PetOnlyQuest` and `MSG_COMPLETEQUEST.CompleteText` are reported, not
+written: the quest schema has no pet-only field, and `m_questComplete` is a string-table key that Imlight never
+fills from that packet. `IsYesNo`/`DefaultDialogAnimation` are reported too, because the dialog block has no field for
+either (D156). Empty wire values are neither written nor reported (D151). Report lines are JSON on stderr, of kinds
+`observed-field`, `reader-repair` and `goal-excluded` (D152, D154). The goal join, the ACHIEVERANK naming, the
+dialog attachment and the exclusion loop are D150, D155, D156 and D157.
+
+### Phase 7: the `suggestions` sidecar (D127 — task 7.5)
+
+A value that needs reasoning across packets, or a type mapping, is **inferred**. Inferred values are never written
+into a template: not by the wrapper, and not by the server. They travel in a separate `suggestions` array.
+
+**Where it is written (Phase 7, chosen at p7-01).** The CLI gains `--suggestions <path>`. When it is given, the
+wrapper writes a JSON object to that path whose top-level key `suggestions` holds the array. The templates stay on
+stdout or `--output` as the unchanged D45 array. Without the flag nothing about the output changes. This is how the
+contract is "extended, not changed": a caller that never passes the flag, such as `verify:captures`, parses exactly
+what it parsed before.
+
+```json
+{
+  "suggestions": [
+    {
+      "questName": "WC-UNICORN-MAIN-004",
+      "path": "m_goalLogic",
+      "value": [{ "m_goalsAND": ["1_Talk"], "m_goalsOR": [], "m_goalsToAdd": ["2_Go"], "m_completeQuest": false, "m_requiredORCount": 0 }],
+      "source": "capture-order",
+      "confidence": 0.8,
+      "note": "MSG_COMPLETEGOAL 1_Talk, then MSG_REMOVEGOAL 1_Talk, then MSG_SENDGOAL 2_Go on QuestID 7021"
+    },
+    {
+      "questName": "WC-UNICORN-MAIN-004",
+      "path": "m_endResults.m_results",
+      "value": { "kind": "gold", "amount": 120 },
+      "source": "capture-rewards",
+      "confidence": 0.5,
+      "note": "rolled observation from MSG_QUESTREWARDS (gold 120); not a drop-table name"
+    }
+  ]
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `questName` | string | The `m_questName` of the extracted template the suggestion belongs to |
+| `path` | string | Document path the value would fill, in the same form as the save endpoint's `fields` map (`m_startGoals`, `m_goalLogic`, `m_endResults.m_results`) |
+| `value` | JSON | The proposed value. For `capture-rewards` it is a labelled rolled observation `{kind: "gold"\|"xp"\|"item"\|"spell", …}`, never a drop-table name |
+| `source` | `"capture-order"` \| `"capture-rewards"` | Packet order (goal logic, `m_startGoals`, the terminal goal) or reward packets (`Rewards`, `MSG_QUESTREWARDS`, `MSG_LOOT`, decoded through Imcodec's `LootInfo` classes) |
+| `confidence` | number in `[0, 1]` | The wrapper's own estimate (Phase 7, chosen at p7-01: a number, so the draft queue can rank on it) |
+| `note` | string | Human-readable provenance: which packets, in which order, produced the value |
+
+- **Packet order** yields `m_goalLogic` chains and `m_startGoals`: complete, then remove, then send a new goal on the
+  same `QuestID`. `MSG_COMPLETEQUEST` marks the terminal goal (`m_completeQuest: true`). A single-goal capture
+  yields no chain.
+- The server stores each entry as a pending `quest_suggestions` row
+  ([data model](./spec-data-model.md#quest-suggestions-phase-7-migration-0005_quest_suggestionssql--d129-d130)).
+  Nothing in the array is ever merged into a template automatically (D127/D129).
+
+**As built (p7-06).** A reward value is `{kind, …, result}`: `gold`/`xp` carry `amount` (`xp` also `school` when the
+packet names one), `item` carries `itemId` and `count`, `spell` carries `spellId`. `result` is the corpus result node
+that accepting appends to `m_endResults.m_results`: a spell is `ResLearnSpell {m_templateID}`, because Imlight sends a
+quest's `ResLearnSpell` as exactly that `AddSpellLootInfo`; gold, XP and items have no result type in the schema (a
+drop table rolled them), so their `result` is `null` and accepting writes nothing. Each distinct entry is one
+suggestion whose note names every packet that carried it. `MSG_LOOT` has no `QuestID`, so it belongs to the quest
+whose `MSG_COMPLETEQUEST` most recently precedes it (a `MSG_LOOT` after a later `MSG_COMPLETEGOAL` is a goal-result
+drop and is reported). Confidence: a closed chain and start goals 0.8, a chain with no `MSG_COMPLETEQUEST` 0.6, a
+spell 0.6, gold/XP/items 0.3. `m_startGoals` is suggested only when the extraction has none. A chain is emitted only
+whole: a goal the join cannot name (an excluded goal) makes it a `{"report":"suggestion", …}` stderr line instead.
+The wrapper infers only when `--suggestions` is given, so its stderr without the flag is unchanged. See D159.
+
+### Phase 7: the packet census (D128 — task 7.2)
+
+`tools/CaptureCensus` (assembly `capture-census`, built by `npm run build:census` with the D18 flags into
+`tools/bin/capture-census`, against `$(ImviewRoot)/submodule/Imcodec`) reads any capture. It reports every message
+type and field the capture carries, and whether the wrapper consumes each one, so the next gap is found from data
+rather than from reading the reader.
+
+```
+Usage: capture-census --input <path> [--output <path|->]
+```
+
+The output shape (Phase 7, chosen at p7-01) is one row per message type and field:
+
+```json
+{
+  "input": "session_1.json",
+  "messages": 412,
+  "rows": [
+    { "message": "MSG_SENDGOAL", "field": "PersonaName", "count": 5, "consumed": true },
+    { "message": "MSG_SENDNPCOPTIONS", "field": "Options", "count": 3, "consumed": false }
+  ]
+}
+```
+
+- `messages` is the number of envelopes read. `count` is the number of messages of that type that carry the field.
+- `consumed` is `true` when `QuestBuilder` or the wrapper's post-pass reads that field. The consumed set is data in
+  the census tool (one home), and it is updated in the same change that teaches the wrapper a new field.
+- Rows are sorted by `message`, then by `field`, so a golden byte-compares.
+- The same rows are optionally returned by `POST /api/extract/quests` ([API](./spec-api.md#post-apiextractquests)),
+  so the upload UI can show what the reader ignored.
+
 ---
 
 ## Friendly Name Sync

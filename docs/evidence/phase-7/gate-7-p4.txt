@@ -1,0 +1,405 @@
+$ node p4-02b-smoke.mjs   (the final-verify script, BASE → :3292)
+### P4-2 per-type smoke loop — a REAL edit per type
+
+--- droptable (/drop-tables/DS-ACAD-C01-001) ---
+edit: Description ("" -> "+FV")
+save http=200 {"outcome":"updated","action":"update","file":"DropTables/droptables_ds-acad-c01-001.json","commit":"4883d99007814eb644bf65f1d65883f964ab103f","commit_message":"spiraldb: update drop_table DS-ACAD-C01-001\n\ngate-7 P4-02 real edit","warnings":[]}
+git log -1 --format=%s -> spiraldb: update drop_table DS-ACAD-C01-001
+git diff --name-only HEAD~1 -> DropTables/droptables_ds-acad-c01-001.json
+git diff HEAD~1 --stat ->
+DropTables/droptables_ds-acad-c01-001.json | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+restore http=200 {"outcome":"updated","commit":"8050cd0cccbec892eab3c13dd029f8e6d0151ccb"}
+git log -1 --format=%s -> spiraldb: update drop_table DS-ACAD-C01-001
+RESULT droptable: SAVED (edit committed), then restored
+
+--- npcinventory (/npc-inventories/87112) ---
+edit: Inventory ([126913,126914,126915,126916,126917,126918,126919,77614,87237,4873] -> [126913,126914,126915,126916,126917,126918,126919,77614,87237,4873,4873])
+save http=200 {"outcome":"updated","action":"update","file":"NpcInventory/NPCInventories_1-A.json","commit":"11a0ecb20fb0afa99cb054cb279a1a2a609a8576","commit_message":"spiraldb: update npc_inventory 87112\n\ngate-7 P4-02 real edit","warnings":[]}
+git log -1 --format=%s -> spiraldb: update npc_inventory 87112
+git diff --name-only HEAD~1 -> NpcInventory/NPCInventories_1-A.json
+git diff HEAD~1 --stat ->
+NpcInventory/NPCInventories_1-A.json | 1 +
+ 1 file changed, 1 insertion(+)
+restore http=200 {"outcome":"updated","commit":"89d5d1bcf186e2a6092e65852cf400896bd3fc55"}
+git log -1 --format=%s -> spiraldb: update npc_inventory 87112
+RESULT npcinventory: SAVED (edit committed), then restored
+
+--- npcspellinventory (/npc-spell-inventories/38226) ---
+edit: Spells ([{"TemplateID":1143963608,"RequiredSpellID":0,"Level":0},{"TemplateID":2102149986,"RequiredSpellID":0,"Level":0},{"TemplateID":656317330,"RequiredSpellID":1765559002,"Level":40},{"TemplateID":387881874,"RequiredSpellID":1765559002,"Level":40},{"TemplateID":2137063126,"RequiredSpellID":
+save http=200 {"outcome":"updated","action":"update","file":"NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json","commit":"c99e27b7d4993f3319e6ac2cb96e9656ae0f1346","commit_message":"spiraldb: update npc_spell_inventory 38226\n\ngate-7 P4-02 real edit","warnings":[]}
+git log -1 --format=%s -> spiraldb: update npc_spell_inventory 38226
+git diff --name-only HEAD~1 -> NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json
+git diff HEAD~1 --stat ->
+NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json | 5 +++++
+ 1 file changed, 5 insertions(+)
+restore http=200 {"outcome":"updated","commit":"db2ffe42f12d276f23d539623493ae0f16670cc2"}
+git log -1 --format=%s -> spiraldb: update npc_spell_inventory 38226
+RESULT npcspellinventory: SAVED (edit committed), then restored
+
+--- creaturespellbook (/creature-spellbooks/Mdeck-L-BR-DS-SylviaDrake-A-50) ---
+edit: SpellTemplateIds ([409737272,1321504283,603728324,400309488,580590443,1792950125,775630999,1965296812,1691813655,975292929,729953007] -> [409737272,1321504283,603728324,400309488,580590443,1792950125,775630999,1965296812,1691813655,975292929,729953007,729953007])
+save http=200 {"outcome":"updated","action":"update","file":"CreatureSpellbook/CreatureSpellbooks_1-A.json","commit":"726dd379155058d047c596c798ccfd13d93afaee","commit_message":"spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50\n\ngate-7 P4-02 real edit","warnings":[]}
+git log -1 --format=%s -> spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50
+git diff --name-only HEAD~1 -> CreatureSpellbook/CreatureSpellbooks_1-A.json
+git diff HEAD~1 --stat ->
+CreatureSpellbook/CreatureSpellbooks_1-A.json | 1 +
+ 1 file changed, 1 insertion(+)
+restore http=200 {"outcome":"updated","commit":"33df4981d203e5c49a11bea81cdcf9d2e5863104"}
+git log -1 --format=%s -> spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50
+RESULT creaturespellbook: SAVED (edit committed), then restored
+
+--- npcdroptable (/npc-drop-tables/87113) ---
+SKIPPED npcdroptable: no array field to append to
+
+--- treasurecardinventory (/treasure-card-inventories/38214) ---
+edit: TreasureCards ([{"SpellName":"Fire Shield TC","Price":100},{"SpellName":"Fire Trap TC","Price":100},{"SpellName":"Fire Cat TC","Price":150},{"SpellName":"Fire Elf TC","Price":200},{"SpellName":"Sunbird TC","Price":200},{"SpellName":"Meteor Strike TC","Price":250},{"SpellName":"Phoenix TC","Pri
+save http=200 {"outcome":"updated","action":"update","file":"TreasureCardInventory/NpcTreasureCards_2019-A.json","commit":"f51d3d01e868bcce5d59a10c92db97a582d7ae10","commit_message":"spiraldb: update treasure_card_inventory 38214\n\ngate-7 P4-02 real edit","warnings":[]}
+git log -1 --format=%s -> spiraldb: update treasure_card_inventory 38214
+git diff --name-only HEAD~1 -> TreasureCardInventory/NpcTreasureCards_2019-A.json
+git diff HEAD~1 --stat ->
+TreasureCardInventory/NpcTreasureCards_2019-A.json | 359 +++++++++++++++++----
+ 1 file changed, 288 insertions(+), 71 deletions(-)
+restore http=200 {"outcome":"updated","commit":"68e1bc9ef475cd45d2dd0e039291e257ad869d93"}
+git log -1 --format=%s -> spiraldb: update treasure_card_inventory 38214
+RESULT treasurecardinventory: SAVED (edit committed), then restored
+
+--- zonetransfer (/zone-transfers/WizardCity/WC_Hub) ---
+edit: Teleports ([{"TriggerName":"Trigger TelepotToUW","Teleport":{"m_destinationLoc":"-87.59521,-533.309,18.50042,3.087131","m_destinationZone":"WizardCity/WC_Streets/WC_Unicorn","m_exitTeleporter":0,"m_teleporterTag":0,"m_teleportType":"TELEPORT_STATIC","m_transitionID":0}},{"TriggerName":"Trigger
+save http=200 {"outcome":"updated","action":"update","file":"ZoneTransfer/WizardZoneDatas_1-A.json","commit":"8b6ceeb527a5d36bcf3cef4396808feb0aaaa30a","commit_message":"spiraldb: update zone_transfer WizardCity/WC_Hub\n\ngate-7 P4-02 real edit","warnings":[]}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff --name-only HEAD~1 -> ZoneTransfer/WizardZoneDatas_1-A.json
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+restore http=200 {"outcome":"updated","commit":"6f38ec9ad215a08df541f6bf57136d38c89b0f51"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+RESULT zonetransfer: SAVED (edit committed), then restored
+
+### P4-2 closing check: every family back to its starting bytes?
+droptable                doc-before=eff9639bc6f8c7ebb724c4f8a57b67a1 doc-after=eff9639bc6f8c7ebb724c4f8a57b67a1 IDENTICAL
+npcinventory             doc-before=03e80409e4528e7b057a65c57ba0fdc5 doc-after=03e80409e4528e7b057a65c57ba0fdc5 IDENTICAL
+npcspellinventory        doc-before=b57315f68d4975cbdde9c82d9e54d945 doc-after=b57315f68d4975cbdde9c82d9e54d945 IDENTICAL
+creaturespellbook        doc-before=cd2f9ea4d1983710c51c112b66a07df3 doc-after=cd2f9ea4d1983710c51c112b66a07df3 IDENTICAL
+npcdroptable             doc-before=null doc-after=null IDENTICAL
+treasurecardinventory    doc-before=2c90568865673bb85b57126669b63f81 doc-after=2c90568865673bb85b57126669b63f81 IDENTICAL
+zonetransfer             doc-before=f6b517fee3f97bc091a535fdd73c0a51 doc-after=f6b517fee3f97bc091a535fdd73c0a51 IDENTICAL
+clone porcelain lines: 0
+rc=0
+
+$ node p4-02-03-loop.mjs   (final-verify script: P4-2 no-op pass + P4-3 create loop)
+### P4-2 per-type smoke loop (list -> first entry -> edit -> save -> git)
+
+--- droptable (/drop-tables) ---
+list http=200 rows=317 summary={"total":317,"extracted":317,"reviewed":0,"verified":0}
+first key="DS-ACAD-C01-001" doc http=200
+save http=200 {"outcome":"updated","action":"update","file":"DropTables/droptables_ds-acad-c01-001.json","commit":"","branch":"content/2026-09-27","commit_message":"spiraldb: update drop_table DS-ACAD-C01-001\n\ngate-7 P4-02 live smoke"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 -----------
+ 1 file changed, 11 deletions(-)
+RESULT droptable: SAVED
+
+--- npcinventory (/npc-inventories) ---
+list http=200 rows=215 summary={"total":215,"extracted":215,"reviewed":0,"verified":0}
+first key="87112" doc http=200
+save http=200 {"outcome":"updated","action":"update","file":"NpcInventory/NPCInventories_1-A.json","commit":"","branch":"content/2026-09-27","commit_message":"spiraldb: update npc_inventory 87112\n\ngate-7 P4-02 live smoke"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 -----------
+ 1 file changed, 11 deletions(-)
+RESULT npcinventory: SAVED
+
+--- npcspellinventory (/npc-spell-inventories) ---
+list http=200 rows=77 summary={"total":77,"extracted":77,"reviewed":0,"verified":0}
+first key="38226" doc http=200
+save http=200 {"outcome":"updated","action":"update","file":"NpcSpellInventory/7cd0cf23-3bba-4eb1-b7fb-1b0e9bd1e11f.json","commit":"","branch":"content/2026-09-27","commit_message":"spiraldb: update npc_spell_inventory 38226\n\ngate-7 P4-02 live smoke"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 -----------
+ 1 file changed, 11 deletions(-)
+RESULT npcspellinventory: SAVED
+
+--- creaturespellbook (/creature-spellbooks) ---
+list http=200 rows=134 summary={"total":134,"extracted":134,"reviewed":0,"verified":0}
+first key="Mdeck-L-BR-DS-SylviaDrake-A-50" doc http=200
+save http=200 {"outcome":"updated","action":"update","file":"CreatureSpellbook/CreatureSpellbooks_1-A.json","commit":"","branch":"content/2026-09-27","commit_message":"spiraldb: update creature_spellbook Mdeck-L-BR-DS-SylviaDrake-A-50\n\ngate-7 P4-02 live smoke"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 -----------
+ 1 file changed, 11 deletions(-)
+RESULT creaturespellbook: SAVED
+
+--- npcdroptable (/npc-drop-tables) ---
+list http=200 rows=0 summary={"total":0,"extracted":0,"reviewed":0,"verified":0}
+SKIPPED npcdroptable: no entries in the list
+
+--- treasurecardinventory (/treasure-card-inventories) ---
+list http=200 rows=1 summary={"total":1,"extracted":1,"reviewed":0,"verified":0}
+first key="38214" doc http=200
+save http=200 {"outcome":"updated","action":"update","file":"TreasureCardInventory/NpcTreasureCards_2019-A.json","commit":"","branch":"content/2026-09-27","commit_message":"spiraldb: update treasure_card_inventory 38214\n\ngate-7 P4-02 live smoke"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 -----------
+ 1 file changed, 11 deletions(-)
+RESULT treasurecardinventory: SAVED
+
+--- zonetransfer (/zone-transfers) ---
+list http=200 rows=1205 summary={"total":1205,"extracted":1205,"reviewed":0,"verified":0}
+first key="WizardCity/WC_Hub" doc http=200
+save http=200 {"outcome":"updated","action":"update","file":"ZoneTransfer/WizardZoneDatas_1-A.json","commit":"","branch":"content/2026-09-27","commit_message":"spiraldb: update zone_transfer WizardCity/WC_Hub\n\ngate-7 P4-02 live smoke"}
+git log -1 --format=%s -> spiraldb: update zone_transfer WizardCity/WC_Hub
+git diff HEAD~1 --stat ->
+ZoneTransfer/WizardZoneDatas_1-A.json | 11 -----------
+ 1 file changed, 11 deletions(-)
+RESULT zonetransfer: SAVED
+
+### P4-3 create-one-new-entry loop per type
+
+--- droptable new key="FV-NEW-DROPTABLE-001" ---
+create http=200 {"outcome":"created","action":"create","file":"DropTables/droptable_FV-NEW-DROPTABLE-001.json","commit":"4f0ae570ca31d0a8841670bc8e9691474e1751cd","warnings":[]}
+expected filename (spec-data-model naming table): DropTables/droptable_FV-NEW-DROPTABLE-001.json
+actual path committed HEAD: DropTables/droptable_FV-NEW-DROPTABLE-001.json
+git log -1 --format=%s -> spiraldb: create drop_table FV-NEW-DROPTABLE-001
+file exists: yes
+
+--- npcinventory new key=900000001 ---
+create http=200 {"outcome":"created","action":"create","file":"NpcInventory/npcinventory_900000001.json","commit":"2967d6188fccd914bb71fde3427093a6da153c42","warnings":[]}
+expected filename (spec-data-model naming table): NpcInventory/npcinventory_900000001.json
+actual path committed HEAD: NpcInventory/npcinventory_900000001.json
+git log -1 --format=%s -> spiraldb: create npc_inventory 900000001
+file exists: yes
+
+--- npcspellinventory new key=900000002 ---
+create http=200 {"outcome":"created","action":"create","file":"NpcSpellInventory/npcspellinventory_900000002.json","commit":"d2eb698a5395ac31a8fcb875df73df6ac8f787e5","warnings":[]}
+expected filename (spec-data-model naming table): NpcSpellInventory/npcspellinventory_900000002.json
+actual path committed HEAD: NpcSpellInventory/npcspellinventory_900000002.json
+git log -1 --format=%s -> spiraldb: create npc_spell_inventory 900000002
+file exists: yes
+
+--- creaturespellbook new key="FV-NEW-DECK-001" ---
+create http=200 {"outcome":"created","action":"create","file":"CreatureSpellbook/creaturespellbook_FV-NEW-DECK-001.json","commit":"7802b71f4db27a401d9d9ce64a7b285cbac521ff","warnings":[]}
+expected filename (spec-data-model naming table): CreatureSpellbook/creaturespellbook_FV-NEW-DECK-001.json
+actual path committed HEAD: CreatureSpellbook/creaturespellbook_FV-NEW-DECK-001.json
+git log -1 --format=%s -> spiraldb: create creature_spellbook FV-NEW-DECK-001
+file exists: yes
+
+--- npcdroptable new key=900000004 ---
+SKIPPED npcdroptable: no source entry to clone
+
+--- treasurecardinventory new key=900000003 ---
+create http=200 {"outcome":"created","action":"create","file":"TreasureCardInventory/treasurecardinventory_900000003.json","commit":"2c56f339a0229829c771b1548f51ba935d7e9cb0","warnings":[]}
+expected filename (spec-data-model naming table): TreasureCardInventory/treasurecardinventory_900000003.json
+actual path committed HEAD: TreasureCardInventory/treasurecardinventory_900000003.json
+git log -1 --format=%s -> spiraldb: create treasure_card_inventory 900000003
+file exists: yes
+
+--- zonetransfer new key="FV_New_Zone_Verify" ---
+create http=200 {"outcome":"created","action":"create","file":"ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json","commit":"211ae3381cc96fcc02cb48bf178c9f1a64c7329b","warnings":[]}
+expected filename (spec-data-model naming table): ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json
+actual path committed HEAD: ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json
+git log -1 --format=%s -> spiraldb: create zone_transfer FV_New_Zone_Verify
+file exists: yes
+rc=0
+
+######## P4-2 npcdroptable arm: the family is absent in the frozen clone, so it is edited after P4-3 created 900000004
+
+$ curl -s localhost:3292/api/npc-drop-tables/900000004 | jq -c .
+{"error":"Unknown NPC Drop Tables entry \"900000004\""}
+rc=0
+
+$ curl -s localhost:3292/api/npc-drop-tables/900000004 | jq -c '{key: "900000004", object: (.object // .document // . | .DropTableNames += ["DS-ACAD-C01-001"]), notes: "gate-7 P4-02 npcdroptable edit"}' | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/npc-drop-tables
+{"error":"Cannot save npcdroptable \"900000004\": the object's \"TemplateID\" must be an unsigned integer (received undefined)."}
+http=400rc=0
+
+$ git -C data/test-spiraldb log -1 --format=%s; git -C data/test-spiraldb diff --name-only HEAD~1; git -C data/test-spiraldb diff HEAD~1 --stat
+spiraldb: create zone_transfer FV_New_Zone_Verify
+ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json
+ ZoneTransfer/zonetransfer_FV_New_Zone_Verify.json | 138 ++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
+rc=0
+
+$ node p4-04-negatives.mjs   (final-verify script)
+
+--- Name empty ---
+http=400
+{"error":"DropTable validation failed with 1 validation error (Missing name).","fields":{"Name":["A drop table needs a non-empty Name before it can be saved. The Name is also the file’s key and what NpcDropTable and ResDropTable reference."]}}
+
+--- Name duplicate (another table's name) ---
+http=200
+{"key":"DS-ACAD-C01-002","file_type":"droptable","object_type":"drop_table","outcome":"updated","action":"update","commit":"9fa1f82a91a25df87ef4dd7ef7dab99f10bd2313","branch":"content/2026-09-27","commit_message":"spiraldb: update drop_table DS-ACAD-C01-002","file":"DropTables/droptables_ds-acad-c01-002.json","status":{"object_type":"drop_table","object_key":"DS-ACAD-C01-002","status":"extracted","extracted_at":"2026-09-30T08:29:07.638Z","reviewed_at":null,"verified_at":null,"latest_notes":null},"status_created":false,"warnings":[]}
+
+--- RollChance 1.5 ---
+http=400
+{"error":"DropTable validation failed with 1 validation error (Roll chance out of range).","fields":{"RollChance":["Roll chance 1.5 must be a number between 0 and 1."]}}
+
+--- NoneChance -0.1 ---
+http=400
+{"error":"DropTable validation failed with 1 validation error (None chance out of range).","fields":{"NoneChance":["None chance -0.1 must be a number between 0 and 1."]}}
+
+--- MinGold 100 + MaxGold 10 ---
+http=400
+{"error":"DropTable validation failed with 1 validation error (Inverted gold range).","fields":{"MaxGold":["Minimum gold (100) must not be greater than maximum gold (10)."]}}
+rc=0
+
+######## P4-4 UI arm (gate-7-ui.mjs p4_4)
+[P4-4] Roll chance value "1.5" -> Save aria-disabled=true; banner: 1 validation error blocks saving: Roll chance out of range. Fix them and Save enables again.; field errors ["Roll chance 1.5 must be a number between 0 and 1."]
+[P4-4] Name "" -> Save aria-disabled=true; banner: 1 validation error blocks saving: Missing name. Fix them and Save enables again.; field errors ["A drop table needs a non-empty Name before it can be saved. The Name is also the file’s key and what NpcDropTable and ResDropTable reference."]
+[P4-4] Minimum gold "100" + Maximum gold "10" -> Save aria-disabled=true; banner: 1 validation error blocks saving: Inverted gold range. Fix them and Save enables again.; field errors ["Minimum gold (100) must not be greater than maximum gold (10)."]
+[P4-4] restored inputs -> Save aria-disabled=null
+[p4_4] ARM DONE
+
+# the script's 'Name duplicate' probe posted key = the document's own Name, i.e. the legitimate update arm (the same invalid probe final-verify recorded) - it committed an update of DS-ACAD-C01-002; the two documented duplicate arms (server/src/services/dropTables.ts) follow, then a control
+
+$ curl -s localhost:3292/api/drop-tables/DS-ACAD-C01-001 | jq -c '{key: "DS-ACAD-C01-001", object: (.object // . | .Name = "DS-ACAD-C01-002")}' | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/drop-tables | cut -c1-400
+{"error":"DropTable validation failed with 1 validation error (Duplicate name).","fields":{"Name":["The name \"DS-ACAD-C01-002\" is already used by another drop table. Names must be unique across all drop tables, because other files reference a table by name."]}}
+http=400
+rc=0
+
+$ curl -s localhost:3292/api/drop-tables/DS-ACAD-C01-001 | jq -c '{object: (.object // .)}' | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/drop-tables | cut -c1-400
+{"error":"DropTable validation failed with 1 validation error (Duplicate name).","fields":{"Name":["The name \"DS-ACAD-C01-001\" is already used by another drop table. Names must be unique across all drop tables, because other files reference a table by name."]}}
+http=400
+rc=0
+
+$ curl -s localhost:3292/api/drop-tables/DS-ACAD-C01-001 | jq -c '{object: (.object // . | .Name = "GATE7-Z")}' | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/drop-tables | cut -c1-300
+{"key":"GATE7-Z","file_type":"droptable","object_type":"drop_table","outcome":"created","action":"create","commit":"ee161f209b2b1dab460da48754c363fe1ef36fe7","branch":"content/2026-09-27","commit_message":"spiraldb: create drop_table GATE7-Z","file":"DropTables/droptable_GATE7-Z.json","status":{"obj
+http=200
+rc=0
+
+######## P4-3 npcdroptable arm (the family's directory is absent in the frozen clone)
+
+$ ls -d data/test-spiraldb/NpcDropTable
+ls: cannot access 'data/test-spiraldb/NpcDropTable': No such file or directory
+rc=2
+
+$ curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d '{"object":{"TemplateID":900000004,"DropTableNames":[]},"notes":"gate-7 P4-03 create"}' localhost:3292/api/npc-drop-tables | cut -c1-400
+{"key":"900000004","file_type":"npcdroptable","object_type":"npc_drop_table","outcome":"created","action":"create","commit":"fc8b58db3711a885127aaf608e191390e609d17b","branch":"content/2026-09-27","commit_message":"spiraldb: create npc_drop_table 900000004\n\ngate-7 P4-03 create","file":"NpcDropTable/npcdroptable_900000004.json","status":{"object_type":"npc_drop_table","object_key":"900000004","st
+http=200
+rc=0
+
+$ git -C data/test-spiraldb log -1 --format=%s; git -C data/test-spiraldb show --name-status --format= HEAD; cat data/test-spiraldb/NpcDropTable/npcdroptable_900000004.json
+spiraldb: create npc_drop_table 900000004
+A	NpcDropTable/npcdroptable_900000004.json
+{
+  "TemplateID": 900000004,
+  "DropTableNames": []
+}
+rc=0
+
+######## P4-2 npcdroptable arm: edit the entry just created
+
+$ curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d '{"key":"900000004","object":{"TemplateID":900000004,"DropTableNames":["DS-ACAD-C01-001"]},"notes":"gate-7 P4-02 edit"}' localhost:3292/api/npc-drop-tables | cut -c1-400
+{"key":"900000004","file_type":"npcdroptable","object_type":"npc_drop_table","outcome":"updated","action":"update","commit":"da35610c723d32f36520b27951ce5bcc48e9165d","branch":"content/2026-09-27","commit_message":"spiraldb: update npc_drop_table 900000004\n\ngate-7 P4-02 edit","file":"NpcDropTable/npcdroptable_900000004.json","status":{"object_type":"npc_drop_table","object_key":"900000004","stat
+http=200
+rc=0
+
+$ git -C data/test-spiraldb log -1 --format=%s; git -C data/test-spiraldb diff --name-only HEAD~1; git -C data/test-spiraldb diff HEAD~1 --stat
+spiraldb: update npc_drop_table 900000004
+NpcDropTable/npcdroptable_900000004.json
+ NpcDropTable/npcdroptable_900000004.json | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+rc=0
+
+######## F3 re-probe (final-verify finding): NpcDropTable.DropTableNames with a null element
+
+$ curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d '{"key":"900000004","object":{"TemplateID":900000004,"DropTableNames":[null]}}' localhost:3292/api/npc-drop-tables | cut -c1-300
+{"error":"NPC Drop Tables validation failed with 1 validation error (Null list element).","fields":{"DropTableNames[0]":["The list element is null. Every element must be present — remove the empty element from the document before saving."]}}
+http=400
+rc=0
+
+######## P4-5 — GlobalRegistry consolidation
+
+$ ls data/test-spiraldb/GlobalRegistry/
+GlobalRegistryModels_1-A.json
+rc=0
+
+$ curl -s localhost:3292/api/global-registry | jq -c 'keys'
+["duplicate_keys","missing_directory","objects","skipped","summary"]
+rc=0
+
+$ curl -s localhost:3292/api/global-registry | jq -c '.object // .document // . | {keys: keys, flags: (.GlobalRegistryValues|length), Krampus: .GlobalRegistryValues.Krampus}'
+{"keys":["duplicate_keys","missing_directory","objects","skipped","summary"],"flags":0,"Krampus":null}
+rc=0
+
+$ curl -s localhost:3292/api/global-registry | jq -c '{object: (.object // .document // . | .GlobalRegistryValues.Krampus = 1), notes: "gate-7 P4-05 registry consolidation"}' | tee <scratch>/g7/gr-post.json | curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @- localhost:3292/api/global-registry | cut -c1-500
+{"key":"globalregistry","file_type":"globalregistry","object_type":null,"outcome":"created","action":"update","commit":"1a957109e5ac81a0bfa6c31667917ad379d3eda9","branch":"content/2026-09-27","commit_message":"spiraldb: update global_registry globalregistry\n\ngate-7 P4-05 registry consolidation","file":"GlobalRegistry/globalregistry.json","status":null,"status_created":false,"warnings":["Consolidated 1 file(s) into GlobalRegistry/globalregistry.json in one commit: GlobalRegistry/GlobalRegistryM
+http=200
+rc=0
+
+$ git -C data/test-spiraldb show --name-status --format='%h %s' HEAD
+1a95710 spiraldb: update global_registry globalregistry
+
+D	GlobalRegistry/GlobalRegistryModels_1-A.json
+A	GlobalRegistry/globalregistry.json
+rc=0
+
+$ git -C data/test-spiraldb show --no-renames --name-status --format= HEAD
+D	GlobalRegistry/GlobalRegistryModels_1-A.json
+A	GlobalRegistry/globalregistry.json
+rc=0
+
+$ ls data/test-spiraldb/GlobalRegistry/
+globalregistry.json
+rc=0
+
+$ node -e "const a=JSON.parse(require('fs').readFileSync('data/test-spiraldb/GlobalRegistry/globalregistry.json','utf8'));const b=JSON.parse(require('fs').readFileSync('<scratch>/g7/gr-post.json','utf8')).object;console.log('written deep-equal to posted:', require('util').isDeepStrictEqual(a,b), 'flags', Object.keys(a.GlobalRegistryValues).length, 'Krampus', a.GlobalRegistryValues.Krampus)"
+written deep-equal to posted: true flags 1 Krampus 1
+rc=0
+
+$ curl -s -w '\nhttp=%{http_code}' localhost:3292/api/status/global_registry
+{"error":"Unknown status type \"global_registry\". Valid types: quests, drop_tables, npc_inventories, npc_spell_inventories, creature_spellbooks, npc_drop_tables, treasure_card_inventories, zone_transfers, all"}
+http=404rc=0
+
+# CORRECTION (stated, not smoothed): the POST above sent the LIST response (duplicate_keys/objects/…) as the document — my probe's error, not the app's. That commit (1a95710) was dropped (git reset --hard HEAD~1 in the clone, which is reset to 18dc924 at the end anyway) and P4-5 re-run with the entry's own document:
+
+$ git -C data/test-spiraldb reset -q --hard HEAD~1; git -C data/test-spiraldb log -1 --format='%h %s'; ls data/test-spiraldb/GlobalRegistry/
+da35610 spiraldb: update npc_drop_table 900000004
+GlobalRegistryModels_1-A.json
+rc=0
+
+$ curl -s localhost:3292/api/global-registry/GlobalRegistryModels_1-A | jq -c 'keys'
+["GlobalRegistryValues"]
+rc=0
+
+$ curl -s localhost:3292/api/global-registry/GlobalRegistryModels_1-A > <scratch>/g7/gr-get.json; node -e "const g=JSON.parse(require('fs').readFileSync('<scratch>/g7/gr-get.json','utf8'));const d=g.object??g.document??g;const raw=JSON.parse(require('fs').readFileSync('data/test-spiraldb/GlobalRegistry/GlobalRegistryModels_1-A.json','utf8'));console.log('keys',Object.keys(d),'flags',Object.keys(d.GlobalRegistryValues).length,'Krampus',d.GlobalRegistryValues.Krampus,'deep-equal to the raw file:',require('util').isDeepStrictEqual(d,raw))"
+keys [ 'GlobalRegistryValues' ] flags 23 Krampus 0 deep-equal to the raw file: true
+rc=0
+
+$ jq -c '{object: ((.object // .document // .) | .GlobalRegistryValues.Krampus = 1), notes: "gate-7 P4-05 registry consolidation"}' <scratch>/g7/gr-get.json > <scratch>/g7/gr-post.json; curl -s -w '\nhttp=%{http_code}' -H 'content-type: application/json' -d @<scratch>/g7/gr-post.json localhost:3292/api/global-registry | cut -c1-400
+{"key":"globalregistry","file_type":"globalregistry","object_type":null,"outcome":"created","action":"update","commit":"46cc746afe21363fb12a08443e267664950430b9","branch":"content/2026-09-27","commit_message":"spiraldb: update global_registry globalregistry\n\ngate-7 P4-05 registry consolidation","file":"GlobalRegistry/globalregistry.json","status":null,"status_created":false,"warnings":["Consolid
+http=200
+rc=0
+
+$ git -C data/test-spiraldb show --name-status --format='%h %s' HEAD
+46cc746 spiraldb: update global_registry globalregistry
+
+R096	GlobalRegistry/GlobalRegistryModels_1-A.json	GlobalRegistry/globalregistry.json
+rc=0
+
+$ git -C data/test-spiraldb show --no-renames --name-status --format= HEAD
+D	GlobalRegistry/GlobalRegistryModels_1-A.json
+A	GlobalRegistry/globalregistry.json
+rc=0
+
+$ ls data/test-spiraldb/GlobalRegistry/
+globalregistry.json
+rc=0
+
+$ node -e "const a=JSON.parse(require('fs').readFileSync('data/test-spiraldb/GlobalRegistry/globalregistry.json','utf8'));const b=JSON.parse(require('fs').readFileSync('<scratch>/g7/gr-post.json','utf8')).object;console.log('written deep-equal to posted:', require('util').isDeepStrictEqual(a,b), 'flags', Object.keys(a.GlobalRegistryValues).length, 'Krampus', a.GlobalRegistryValues.Krampus)"
+written deep-equal to posted: true flags 23 Krampus 1
+rc=0
+
+######## P4-6 viewport sweep (UI arm 'viewport'; shared with P5-4)
+[P4-6/P5-4] 375 /quests: tables=0 burger=true
+[P4-6/P5-4] 375 /drop-tables: tables=0 burger=true
+[P4-6/P5-4] 375 /npc-inventories: tables=0 burger=true
+[P4-6/P5-4] 375 /zone-transfers: tables=0 burger=true
+[P4-6/P5-4] width 375: sidebar widths seen ["0"]
+[P4-6/P5-4] 768 /quests: tables=1
+[P4-6/P5-4] 768 /drop-tables: tables=1
+[P4-6/P5-4] width 768: sidebar widths seen ["200"]
+[P4-6/P5-4] width 1440: sidebar widths seen ["260"]
+[P4-6/P5-4] route x width cells: 69; overflow violations (>1px): none
+[viewport] ARM DONE
+
+######## tier-1: responsive.spec.ts / object-mobile.spec.ts in the green full npm run test:ui (gate-7-freeze-and-gates.txt)

@@ -189,8 +189,6 @@ internal static class Extract {
             return row;
         }
 
-        var headerHash = HeaderHash(payload);
-
         try {
             var serializer = new BindSerializer();
 
@@ -207,12 +205,14 @@ internal static class Extract {
             ok = false;
             row["error"] = $"deserialize threw: {Program.Describe(exception)}";
 
-            if (headerHash is not null) {
-                row["hash"] = headerHash.Value;
+            if (HeaderHash(payload) is { } thrownHash) {
+                row["hash"] = thrownHash;
             }
 
             return row;
         }
+
+        var headerHash = HeaderHash(payload);
 
         ok = false;
         row["error"] = headerHash is null

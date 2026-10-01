@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 
 import type { DocEdit, DocPath } from '@shared/document';
 
+import { hasAdvancedValue } from '../../lib/advanced';
 import { getName, nameLookupQueryKey } from '../../lib/api';
 import {
   ADD_DIALOG_ENTRY_LABEL,
@@ -49,11 +50,20 @@ import {
   type DialogGroupView,
 } from '../../lib/quest-dialog';
 import { shouldLookupStringKey } from '../../lib/quest-info';
+import { docPathWords, termText } from '../../lib/term';
 import { cn } from '../../lib/utils';
 import { useEvidenceCardFocus } from '../quest/EvidenceFocus';
 import FriendlyNameDropdown from '../FriendlyNameDropdown';
+import TermHelp from '../TermHelp';
+import TermLabel from '../TermLabel';
 import { withValidationBorder } from '../../lib/quest-validation';
-import { FieldMessages, useFieldMessages, type FieldValidationMessage } from './FieldValidation';
+import { useAutoOpen } from './AdvancedDisclosure';
+import {
+  FieldMessages,
+  useAnyFieldMessages,
+  useFieldMessages,
+  type FieldValidationMessage,
+} from './FieldValidation';
 import { Button } from '../ui/button';
 import RequirementTreeEditor from './RequirementTreeEditor';
 
@@ -82,9 +92,10 @@ import RequirementTreeEditor from './RequirementTreeEditor';
  *
  * 1. **Nothing is written on mount.** Merely opening the tab mounts the sections and the
  *    controls; every builder fires only from a user action (D57).
- * 2. **The field keys are the labels.** Each control's visible label and accessible name is the
- *    document key itself (`m_dialog`), and the card's own address disambiguates the repeats —
- *    the same habit `ResultListEditor` and `QuestGoalsEditor` have.
+ * 2. **The field keys are the labels, as glossary pairs.** Each control's visible label and
+ *    accessible name is the document key's `Friendly (technical)` pair (`Dialog text (m_dialog)`,
+ *    D131, task 7.9), and the card's own name disambiguates the repeats — the same habit
+ *    `ResultListEditor` and `QuestGoalsEditor` have.
  * 3. **The five accordions are the spec's `[Basic][Camera][Sound][Animation][Advanced]`**, with
  *    Basic open by default and the other four collapsed (spec L554). They are real disclosure
  *    buttons (`aria-expanded` + `aria-controls`), not `<details>`, so their state is
@@ -109,16 +120,16 @@ import RequirementTreeEditor from './RequirementTreeEditor';
  * | element | accessible name | how |
  * |---|---|---|
  * | the list's container | the `label` prop (default `Dialog list editor`) | `<section aria-label>` → a `region` |
- * | a tag section | `Dialog tag <n> <address>` (`Dialog tag 1 m_dialogList.m_dialogs[0]`) | `<section aria-label>` |
- * | the tag control | `m_dialogTag` | a real `<label htmlFor>` |
- * | an entry card | `Entry <n> <address>` | `<article aria-label>` |
+ * | a tag section | `Dialog tag <n> <words>` (`Dialog tag 1 Dialog list › Dialog blocks 1`) | `<section aria-label>` + `data-path` (the address) |
+ * | the tag control | `Dialog tag (m_dialogTag)` | a real `<label htmlFor>` |
+ * | an entry card | `Entry <n> <words>` | `<article aria-label>` + `data-path` |
  * | an accordion | `Basic` / `Camera` / `Sound` / `Animation` / `Advanced` | the button's own text + `aria-expanded` |
  * | an accordion's body | `<label> fields` (`Basic fields`) | `role="group" aria-label` |
- * | a text/number/boolean/select field | its document key (`m_dialog`), via a real `<label htmlFor>` | see {@link DialogFieldControl} |
- * | a friendly-name field | its document key | `aria-label` on the combobox (a `<button>` cannot be named by `htmlFor`) |
- * | the requirement slot | `Requirements for <address>` | the shared tree's `<section aria-label>` |
- * | duplicate | `Duplicate <address>` | `aria-label` on a button |
- * | delete | `Delete <address>` | `aria-label` on a button |
+ * | a text/number/boolean/select field | its glossary pair (`Dialog text (m_dialog)`), via a real `<label htmlFor>` | see {@link DialogFieldControl} |
+ * | a friendly-name field | its glossary pair | `aria-label` on the combobox (a `<button>` cannot be named by `htmlFor`) |
+ * | the requirement slot | `Requirements for <words>` | the shared tree's `<section aria-label>` |
+ * | duplicate | `Duplicate <words>` | `aria-label` + `data-path` on a button |
+ * | delete | `Delete <words>` | `aria-label` + `data-path` on a button |
  * | Add Dialog Entry | `Add Dialog Entry` (scoped to its tag section) | button text |
  * | Add Dialog Tag / its selector | `Add Dialog Tag` / `New dialog tag` | button text + a real `<label htmlFor>` |
  * | the raw-fields disclosure | `Raw fields (N unmodelled)` | `<summary>` |
@@ -196,7 +207,8 @@ function DialogTagSection({
   return (
     <li className="min-w-0">
       <section
-        aria-label={`Dialog tag ${view.index + 1} ${view.address}`}
+        aria-label={`Dialog tag ${view.index + 1} ${docPathWords(view.path)}`}
+        data-path={view.address}
         className="min-w-0 rounded-md border border-zinc-800 border-l-4 border-l-blue-500 bg-zinc-900/30 p-3"
       >
         <header className="flex flex-wrap items-center gap-2">
@@ -210,8 +222,8 @@ function DialogTagSection({
         </header>
 
         <div className="mt-3 flex min-w-0 flex-col gap-1">
-          <label htmlFor={`${view.address}-tag`} className="font-mono text-xs text-zinc-400">
-            m_dialogTag
+          <label htmlFor={`${view.address}-tag`} className="text-xs text-zinc-400">
+            <TermLabel term={{ field: 'm_dialogTag' }} />
           </label>
           <input
             id={`${view.address}-tag`}
@@ -316,15 +328,18 @@ function DialogEntryCard({
   return (
     <li className="min-w-0">
       <article
-        aria-label={`Entry ${view.index + 1} ${view.address}`}
+        aria-label={`Entry ${view.index + 1} ${docPathWords(view.path)}`}
+        data-path={view.address}
         className="min-w-0 rounded-md border border-zinc-800 bg-zinc-900/40 p-3"
         {...evidenceCardFocus}
       >
         <header className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-zinc-400">{view.ordinal}</span>
-          <span className="font-mono text-sm text-zinc-100">
-            {view.personaName ?? 'NPCDialogEntry'}
-          </span>
+          {view.personaName === null ? (
+            <TermLabel term={{ type: 'NPCDialogEntry' }} className="text-sm text-zinc-100" />
+          ) : (
+            <span className="font-mono text-sm text-zinc-100">{view.personaName}</span>
+          )}
           {view.typeString === null ? (
             <span className="text-xs text-amber-400">no $type — kept absent</span>
           ) : null}
@@ -333,7 +348,8 @@ function DialogEntryCard({
               type="button"
               size="sm"
               variant="outline"
-              aria-label={`${DUPLICATE_ENTRY_LABEL} ${view.address}`}
+              aria-label={`${DUPLICATE_ENTRY_LABEL} ${docPathWords(view.path)}`}
+              data-path={view.address}
               onClick={() =>
                 state.editAll(
                   duplicateEntryEdits(view.listPath, view.groupIndex, view.index, view.value),
@@ -346,7 +362,8 @@ function DialogEntryCard({
               type="button"
               size="sm"
               variant="ghost"
-              aria-label={`${DELETE_ENTRY_LABEL} ${view.address}`}
+              aria-label={`${DELETE_ENTRY_LABEL} ${docPathWords(view.path)}`}
+              data-path={view.address}
               onClick={() =>
                 state.editAll(deleteEntryEdits(view.listPath, view.groupIndex, view.index))
               }
@@ -359,7 +376,7 @@ function DialogEntryCard({
         {view.readable ? (
           <div className="mt-3 flex min-w-0 flex-col gap-2">
             {DIALOG_ACCORDIONS.map((accordion) => (
-              <EntryAccordion key={accordion.id} accordion={accordion}>
+              <EntryAccordion key={accordion.id} accordion={accordion} state={state} view={view}>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-3 p-3 sm:grid-cols-2">
                   {dialogFieldsInAccordion(accordion).map((field) => (
                     <DialogFieldControl
@@ -399,12 +416,22 @@ function DialogEntryCard({
  */
 function EntryAccordion({
   accordion,
+  state,
+  view,
   children,
 }: {
   accordion: DialogAccordionSpec;
+  state: DialogListDocumentState;
+  view: DialogEntryView;
   children: JSX.Element;
 }): JSX.Element {
-  const [open, setOpen] = useState(accordion.openByDefault);
+  // Task 7.11 (D132): a non-Basic accordion opens on load when one of its fields differs from the
+  // skeleton default, and opens (and stays open) when one has a validation error, so neither a
+  // value nor an error is ever hidden. Basic is open by default.
+  const paths = dialogFieldsInAccordion(accordion).map((field) => [...view.path, field.key]);
+  const hasError = useAnyFieldMessages(paths);
+  const mustOpen = accordion.id !== 'Basic' && hasAdvancedValue(state, paths);
+  const [open, setOpen] = useAutoOpen(mustOpen, hasError, accordion.openByDefault);
   const id = useId();
   const panelId = `${id}-panel`;
   return (
@@ -414,11 +441,11 @@ function EntryAccordion({
         id={`${id}-button`}
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
       >
         <span aria-hidden="true">{open ? '▾' : '▸'}</span>
-        {accordion.label}
+        <TermLabel term={{ group: accordion.id }} />
       </button>
       <div
         id={panelId}
@@ -467,7 +494,7 @@ function DialogFieldControl({
     return (
       <Labelled
         id={id}
-        label={field.key}
+        fieldKey={field.key}
         help={field.help}
         helpId={describedBy}
         messages={messages}
@@ -476,7 +503,7 @@ function DialogFieldControl({
         <FriendlyNameDropdown
           type={sources[0] ?? 'npcs'}
           name={`${view.address}-${field.key}`}
-          aria-label={field.key}
+          aria-label={termText({ field: field.key })}
           value={raw === '' ? null : raw}
           allowEmpty
           invalid={ariaInvalid}
@@ -500,11 +527,16 @@ function DialogFieldControl({
   if (field.kind === 'requirements') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <RequirementTreeEditor
           state={state}
           path={path}
-          label={`Requirements for ${view.address}`}
+          label={`Requirements for ${docPathWords(view.path)}`}
         />
         <p id={describedBy} className="text-xs text-zinc-400">
           {REQUIREMENTS_FIXTURE_NOTE}
@@ -516,7 +548,12 @@ function DialogFieldControl({
   if (field.kind === 'raw-object') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <span className="font-mono text-xs text-zinc-400">{field.key}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </span>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <pre className="max-h-40 overflow-auto rounded-md border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-300">
           {fieldView.present ? JSON.stringify(fieldView.value, null, 2) : 'absent'}
         </pre>
@@ -530,9 +567,12 @@ function DialogFieldControl({
   if (field.kind === 'string-list') {
     return (
       <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-        <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-          {field.key}
-        </label>
+        <div className="flex items-center gap-1">
+          <label htmlFor={id} className="text-xs text-zinc-400">
+            <TermLabel term={{ field: field.key }} />
+          </label>
+          <TermHelp term={{ field: field.key }} />
+        </div>
         <textarea
           id={id}
           aria-describedby={describedBy}
@@ -574,7 +614,7 @@ function DialogFieldControl({
   return (
     <Labelled
       id={id}
-      label={field.key}
+      fieldKey={field.key}
       help={field.help}
       helpId={describedBy}
       messages={messages}
@@ -709,9 +749,12 @@ function StringKeyField({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {field.key}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: field.key }} />
+        </label>
+        <TermHelp term={{ field: field.key }} />
+      </div>
       <input
         id={id}
         aria-describedby={describedBy}
@@ -823,10 +866,13 @@ function AddDialogTagControl({
   );
 }
 
-/** A labelled control: the visible label, the control, and the field's one-line help. */
+/**
+ * A labelled control: the visible label (the field's glossary pair, task 7.9), the control, and
+ * the field's one-line help.
+ */
 function Labelled({
   id,
-  label,
+  fieldKey,
   help,
   helpId,
   messages = [],
@@ -834,7 +880,7 @@ function Labelled({
   children,
 }: {
   id: string;
-  label: string;
+  fieldKey: string;
   help?: string;
   helpId?: string;
   /** Story p3-09: this field's findings, rendered below the control (L547). */
@@ -844,9 +890,12 @@ function Labelled({
 }): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="font-mono text-xs text-zinc-400">
-        {label}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-xs text-zinc-400">
+          <TermLabel term={{ field: fieldKey }} />
+        </label>
+        <TermHelp term={{ field: fieldKey }} />
+      </div>
       {children}
       {help === undefined || help === '' ? null : (
         <p id={helpId} className="text-xs text-zinc-400">

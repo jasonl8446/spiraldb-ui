@@ -82,6 +82,7 @@
  */
 
 import type { DocEdit, DocPath } from '@shared/document';
+import { fieldLabel, type TermRef } from '@shared/glossary';
 import {
   GOAL_TYPES,
   GOAL_TYPE_VALUES,
@@ -165,15 +166,25 @@ export const GOAL_TYPE_SPECS: readonly GoalTypeSpec[] = [
       {
         key: 'm_zoneTag',
         kind: 'zone',
-        label: 'Zone',
+        label: fieldLabel('m_zoneTag'),
         help: 'Zone path (the zones table’s zone_path)',
       },
-      { key: 'm_zoneEntry', kind: 'boolean', label: 'Entry', help: 'Counts entering the zone' },
-      { key: 'm_zoneExit', kind: 'boolean', label: 'Exit', help: 'Counts leaving the zone' },
+      {
+        key: 'm_zoneEntry',
+        kind: 'boolean',
+        label: fieldLabel('m_zoneEntry'),
+        help: 'Counts entering the zone',
+      },
+      {
+        key: 'm_zoneExit',
+        kind: 'boolean',
+        label: fieldLabel('m_zoneExit'),
+        help: 'Counts leaving the zone',
+      },
       {
         key: 'm_proximityTag',
         kind: 'text',
-        label: 'Proximity Tag',
+        label: fieldLabel('m_proximityTag'),
         help: 'Proximity trigger tag',
       },
     ],
@@ -187,13 +198,13 @@ export const GOAL_TYPE_SPECS: readonly GoalTypeSpec[] = [
       {
         key: 'm_personaName',
         kind: 'npcName',
-        label: 'Persona',
+        label: fieldLabel('m_personaName'),
         help: 'NPC name (a name, not a template id; free text with npc-name suggestions)',
       },
       {
         key: 'm_usePatron',
         kind: 'boolean',
-        label: 'Use Patron',
+        label: fieldLabel('m_usePatron'),
         help: 'Requires the patron interaction',
       },
     ],
@@ -207,19 +218,19 @@ export const GOAL_TYPE_SPECS: readonly GoalTypeSpec[] = [
       {
         key: 'm_npcAdjectives',
         kind: 'tags',
-        label: 'NPC Adjectives',
+        label: fieldLabel('m_npcAdjectives'),
         help: 'Mob tags this bounty counts',
       },
       {
         key: 'm_bountyTotal',
         kind: 'number',
-        label: 'Bounty Total',
+        label: fieldLabel('m_bountyTotal'),
         help: 'Number of mobs to kill',
       },
       {
         key: 'm_bountyType',
         kind: 'select',
-        label: 'Bounty Type',
+        label: fieldLabel('m_bountyType'),
         help: 'Bounty classification (measured: BT_MOB_KILL only)',
         options: ['BT_MOB_KILL'],
       },
@@ -234,13 +245,13 @@ export const GOAL_TYPE_SPECS: readonly GoalTypeSpec[] = [
       {
         key: 'm_itemAdjectives',
         kind: 'tags',
-        label: 'Item Adjectives',
+        label: fieldLabel('m_itemAdjectives'),
         help: 'Item tags this goal counts',
       },
       {
         key: 'm_itemTotal',
         kind: 'number',
-        label: 'Item Total',
+        label: fieldLabel('m_itemTotal'),
         help: 'Number of items to collect',
       },
     ],
@@ -250,7 +261,7 @@ export const GOAL_TYPE_SPECS: readonly GoalTypeSpec[] = [
     $type: GOAL_TYPES.AchieveRankGoalTemplate,
     defaultGoalType: 'GOAL_TYPE_ACHIEVERANK',
     badgeClass: 'border-emerald-500 bg-emerald-500/15 text-emerald-300',
-    fields: [{ key: 'm_rank', kind: 'number', label: 'Rank', help: 'Required rank' }],
+    fields: [{ key: 'm_rank', kind: 'number', label: fieldLabel('m_rank'), help: 'Required rank' }],
   },
 ];
 
@@ -302,84 +313,104 @@ export const GOAL_EDITABLE_BASE_FIELDS: readonly GoalFieldSpec[] = [
   {
     key: 'm_goalName',
     kind: 'text',
-    label: 'Goal Name',
+    label: fieldLabel('m_goalName'),
     help: 'Unique goal name within this quest',
   },
   {
     key: 'm_goalNameID',
     kind: 'number',
-    label: 'Goal Name ID',
+    label: fieldLabel('m_goalNameID'),
     help: 'Hashed goal name ID (may be 0)',
   },
   {
     key: 'm_goalTitle',
     kind: 'text',
-    label: 'Goal Title',
+    label: fieldLabel('m_goalTitle'),
     help: 'String table key for the goal title',
   },
-  { key: 'm_goalUnderway', kind: 'text', label: 'Underway', help: 'In-progress description' },
+  {
+    key: 'm_goalUnderway',
+    kind: 'text',
+    label: fieldLabel('m_goalUnderway'),
+    help: 'In-progress description',
+  },
   {
     key: 'm_hyperlink',
     kind: 'text',
-    label: 'Hyperlink',
+    label: fieldLabel('m_hyperlink'),
     help: 'Help link shown in the quest log',
   },
-  { key: 'm_completeText', kind: 'text', label: 'Complete Text', help: 'Completion text' },
+  {
+    key: 'm_completeText',
+    kind: 'text',
+    label: fieldLabel('m_completeText'),
+    help: 'Completion text',
+  },
   {
     key: 'm_locationName',
     kind: 'text',
-    label: 'Location Name',
+    label: fieldLabel('m_locationName'),
     help: 'String table key for the location',
   },
   {
     key: 'm_displayImage1',
     kind: 'text',
-    label: 'Display Image 1',
+    label: fieldLabel('m_displayImage1'),
     help: 'Quest helper image path',
   },
   {
     key: 'm_displayImage2',
     kind: 'text',
-    label: 'Display Image 2',
+    label: fieldLabel('m_displayImage2'),
     help: 'Second quest helper image path',
   },
-  { key: 'm_clientTags', kind: 'tags', label: 'Client Tags', help: 'Tags for client UI filtering' },
+  {
+    key: 'm_clientTags',
+    kind: 'tags',
+    label: fieldLabel('m_clientTags'),
+    help: 'Tags for client UI filtering',
+  },
   {
     key: 'm_autoQualify',
     kind: 'boolean',
-    label: 'Auto Qualify',
+    label: fieldLabel('m_autoQualify'),
     help: 'Qualifies the goal automatically',
   },
   {
     key: 'm_autoComplete',
     kind: 'boolean',
-    label: 'Auto Complete',
+    label: fieldLabel('m_autoComplete'),
     help: 'Completes the goal automatically',
   },
   {
     key: 'm_destinationZone',
     kind: 'zone',
-    label: 'Destination Zone',
+    label: fieldLabel('m_destinationZone'),
     help: 'Zone path (zone_path)',
   },
   {
     key: 'm_goalType',
     kind: 'select',
-    label: 'Goal Type',
+    label: fieldLabel('m_goalType'),
     help: 'Quest-log classification (independent of $type; unknown values are kept)',
     options: GOAL_TYPE_VALUES,
   },
   {
     key: 'm_noQuestHelper',
     kind: 'boolean',
-    label: 'No Quest Helper',
+    label: fieldLabel('m_noQuestHelper'),
     help: 'Disables the quest helper arrow',
   },
-  { key: 'm_petOnlyQuest', kind: 'boolean', label: 'Pet Only Quest', help: 'Pet-play mode flag' },
+  {
+    key: 'm_petOnlyQuest',
+    kind: 'boolean',
+    label: fieldLabel('m_petOnlyQuest'),
+    help: 'Pet-play mode flag',
+  },
   {
     key: 'm_hideGoalFloatyText',
     kind: 'boolean',
-    label: 'Hide Goal Floaty Text',
+    label: fieldLabel('m_hideGoalFloatyText'),
     help: 'Hides the on-screen goal text',
   },
 ];
@@ -440,8 +471,6 @@ export const EDIT_GOAL_LABEL = 'Edit';
 export const DELETE_GOAL_LABEL = 'Delete';
 /** The drag handle's accessible name prefix (an ordinal and the goal name follow). */
 export const REORDER_HANDLE_LABEL = 'Reorder goal';
-/** The collapsible base-field section inside the inline editor. */
-export const SHARED_BASE_FIELDS_LABEL = 'Shared base fields';
 /** The read-only disclosure of complex + unmodelled keys. */
 export const RAW_FIELDS_LABEL = 'Raw fields';
 /** The empty-list message. */
@@ -513,6 +542,23 @@ export function goalShortTypeName(goal: unknown): string {
     return goalType;
   }
   return lenientShortTypeName(typeString) ?? 'unknown';
+}
+
+/**
+ * The glossary term a goal's class badge renders (task 7.9): the `$type` when the constant table
+ * knows it, the raw `m_goalType` when it does not, and {@link goalShortTypeName}'s last resort
+ * otherwise (which has no entry, so `<TermLabel />` shows it alone, never a guess).
+ */
+export function goalTypeTerm(goal: unknown): TermRef {
+  const typeString = goalField(goal, '$type');
+  if (typeof typeString === 'string' && shortTypeName(typeString) !== undefined) {
+    return { type: typeString };
+  }
+  const goalType = goalField(goal, 'm_goalType');
+  if (typeof goalType === 'string' && goalType !== '') {
+    return { enum: 'GoalType', value: goalType };
+  }
+  return { type: goalShortTypeName(goal) };
 }
 
 /** The badge class for a goal — the spec's colour, or the neutral fallback. */
@@ -601,6 +647,9 @@ export function goalScalarText(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/** A summary line's text for an empty value. */
+export const GOAL_SUMMARY_EMPTY_TEXT = '(empty)';
+
 /** One field's card-summary display: `✓`/`✗`, the joined tags, or the scalar text. */
 export function goalFieldDisplay(field: GoalFieldSpec, value: unknown): string {
   if (field.kind === 'boolean') {
@@ -608,14 +657,16 @@ export function goalFieldDisplay(field: GoalFieldSpec, value: unknown): string {
   }
   if (field.kind === 'tags') {
     const text = clientTagsToText(value);
-    return text === '' ? '(empty)' : text;
+    return text === '' ? GOAL_SUMMARY_EMPTY_TEXT : text;
   }
   const text = goalScalarText(value);
-  return text === '' ? '(empty)' : text;
+  return text === '' ? GOAL_SUMMARY_EMPTY_TEXT : text;
 }
 
 /** One summary line of a goal card. */
 export interface GoalSummaryLine {
+  /** The document key the line shows — the card renders it as its glossary pair (task 7.9). */
+  key: string;
   label: string;
   value: string;
 }
@@ -628,16 +679,17 @@ export interface GoalSummaryLine {
  */
 export function goalSummaryLines(goal: unknown): GoalSummaryLine[] {
   const lines: GoalSummaryLine[] = goalTypeFields(goal).map((field) => ({
+    key: field.key,
     label: field.label,
     value: goalFieldDisplay(field, goalField(goal, field.key)),
   }));
   const tags = clientTagsToText(goalField(goal, 'm_clientTags'));
   if (tags !== '') {
-    lines.push({ label: 'Client Tags', value: tags });
+    lines.push({ key: 'm_clientTags', label: fieldLabel('m_clientTags'), value: tags });
   }
   const image = goalField(goal, 'm_displayImage1');
   if (typeof image === 'string' && image !== '') {
-    lines.push({ label: 'Display Image', value: image });
+    lines.push({ key: 'm_displayImage1', label: fieldLabel('m_displayImage1'), value: image });
   }
   return lines;
 }

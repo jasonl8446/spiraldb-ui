@@ -589,11 +589,17 @@ export function writeQuestCatalog(options: WriteQuestCatalogOptions): QuestCatal
 
   const insertQuest = db.prepare(
     `INSERT INTO quests
-       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count)
-     VALUES (?, ?, NULL, NULL, 0, ?, ?, 0)
+       (quest_name, title, level, is_mainline, has_definition, link_kind, title_source, reference_count, title_key)
+     VALUES (?, ?, NULL, NULL, 0, ?, ?, 0, ?)
      ON CONFLICT(quest_name) DO UPDATE SET
        link_kind = excluded.link_kind,
-       title_source = excluded.title_source`,
+       title_source = excluded.title_source,
+       -- A file with no title key of its own keeps the link's key AND its text (D182): the
+       -- linked (direct or inferred, labelled by title_source) title, not a fallback to the name.
+       -- A file that has its own key is never touched.
+       title = CASE WHEN quests.title_key IS NULL AND excluded.title_key IS NOT NULL
+                    THEN excluded.title ELSE quests.title END,
+       title_key = COALESCE(quests.title_key, excluded.title_key)`,
   );
   const insertReference = db.prepare(
     `INSERT INTO quest_catalog_refs (quest_name, wad, entry, class, goal_name, required_status)
@@ -625,8 +631,11 @@ export function writeQuestCatalog(options: WriteQuestCatalogOptions): QuestCatal
     // showing a guessed title beside `link_kind = 'none'` would display inferred material
     // without its label (the phase's never-unlabelled rule).
     const title = stored?.value ?? record.quest_name;
+    // The key is kept only alongside the text it resolved to, so a row never holds a key whose
+    // title is not the row's title (an inferred loser stores neither).
+    const titleKey = stored === undefined ? null : record.link.title_key;
     const existed = findQuest.get(record.quest_name) !== undefined;
-    insertQuest.run(record.quest_name, title, kind, kind);
+    insertQuest.run(record.quest_name, title, kind, kind, titleKey);
     if (existed) {
       merged += 1;
     } else {

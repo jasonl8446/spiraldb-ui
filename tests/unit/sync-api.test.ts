@@ -9,7 +9,7 @@ import { ZERO_BREADTH_REPORT } from '@server/services/sync/breadth';
 import { notRunQuestCatalogReport } from '@server/services/sync/questCatalog';
 
 /**
- * Task 1.4g — the three sync endpoints (docs/spec-api.md L235-287).
+ * Task 1.4g — the three sync endpoints (docs/spec-api.md §"Sync").
  *
  * Follows the lazy-mount pattern's test shape: a fresh app mounts the router
  * under `/api/sync` (exactly where `routes/index.ts` puts it) with an injected

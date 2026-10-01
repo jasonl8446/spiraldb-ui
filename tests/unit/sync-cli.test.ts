@@ -253,6 +253,32 @@ describe('formatSyncSummary', () => {
     expect(text).toContain('dropped (PK)        : 13,006 rows (items 1, spells 13,003, npcs 2)');
   });
 
+  it("prints the speaker ladder's three fall-through classes with counts and shares (D124)", () => {
+    const text = formatSyncSummary({
+      ...SUCCESS,
+      speakerLadder: {
+        corpus: '/fake/data/test-spiraldb',
+        files: 322,
+        unreadable: 0,
+        lines: 1_800,
+        classes: {
+          'override-key-missing': 0,
+          'composition-unfilled': 1_674,
+          'persona-not-indexed': 45,
+        },
+      },
+    }).join('\n');
+
+    expect(text).toContain(
+      'speaker ladder      : 1,800 dialogue rows in 322 quest files (0 unreadable) — /fake/data/test-spiraldb',
+    );
+    expect(text).toContain('override missing  : 0 of 1,800 rows (0.0%)');
+    expect(text).toContain('composition unfilled: 1,674 of 1,800 rows (93.0%)');
+    expect(text).toContain('persona not indexed: 45 of 1,800 rows (2.5%)');
+    // A result that carries no measurement (a fixture, a failed run) prints no ladder lines.
+    expect(formatSyncSummary(SUCCESS).join('\n')).not.toContain('speaker ladder');
+  });
+
   it('prints the catalog stage, its counts and the sync-time hold-out (task 6.4)', () => {
     const text = formatSyncSummary(SUCCESS).join('\n');
 

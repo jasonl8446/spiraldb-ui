@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   EXTRACT_FILE_FIELD,
+  EXTRACT_QUESTS_CENSUS_PATH,
   EXTRACT_QUESTS_PATH,
   extractQuests,
   listQuests,
@@ -21,6 +22,9 @@ import {
   extractErrorMessage,
   formatFileSize,
   goalCount,
+  ignoredByReaderLabel,
+  ignoredCensusRows,
+  suggestionsStoreNotice,
   isAbortError,
   NEW_BADGE_LABEL,
   OVERWRITE_HEADING,
@@ -198,6 +202,38 @@ describe('toast error bodies surface the server message', () => {
   });
 });
 
+describe('the census disclosure (task 7.2, D139)', () => {
+  const rows = [
+    { message: 'MSG_SENDGOAL', field: 'GoalID', count: 2, consumed: true },
+    { message: 'MSG_SENDGOAL', field: 'PersonaName', count: 2, consumed: false },
+    { message: 'MSG_COMPLETEGOAL', field: 'CompleteText', count: 1, consumed: false },
+  ];
+
+  it('labels the disclosure with the number of ignored rows', () => {
+    expect(ignoredByReaderLabel(0)).toBe('Ignored by the reader (0)');
+    expect(ignoredByReaderLabel(12)).toBe('Ignored by the reader (12)');
+  });
+
+  it('keeps only the rows the reader does not consume, in census order', () => {
+    expect(ignoredCensusRows({ messages: 5, rows }).map((r) => `${r.message}.${r.field}`)).toEqual([
+      'MSG_SENDGOAL.PersonaName',
+      'MSG_COMPLETEGOAL.CompleteText',
+    ]);
+  });
+
+  it('has no ignored rows when the census is absent or skipped', () => {
+    expect(ignoredCensusRows(undefined)).toEqual([]);
+    expect(ignoredCensusRows({ skipped: 'capture-census not found' })).toEqual([]);
+  });
+
+  it('asks for the census with ?census=1 and hands the result back', async () => {
+    const census = { messages: 5, rows };
+    fetchMock.mockResolvedValue(json({ quests: [], count: 0, census }));
+    const result = await extractQuests(new File(['{}'], 's.json'));
+    expect(result.census).toEqual(census);
+  });
+});
+
 describe('formatFileSize', () => {
   it('renders the spec mockup precision', () => {
     expect(formatFileSize(12.4 * 1024 * 1024)).toBe('12.4 MB');
@@ -270,7 +306,9 @@ describe('extractQuests', () => {
       count: 1,
     });
 
-    expect(sentUrl()).toBe(EXTRACT_QUESTS_PATH);
+    // The page always asks for the packet census (D139).
+    expect(EXTRACT_QUESTS_CENSUS_PATH).toBe(`${EXTRACT_QUESTS_PATH}?census=1`);
+    expect(sentUrl()).toBe(EXTRACT_QUESTS_CENSUS_PATH);
     const init = sentInit();
     expect(init.method).toBe('POST');
     expect(init.body).toBeInstanceOf(FormData);
@@ -395,5 +433,29 @@ describe('saveQuest', () => {
       quest,
       source: 'session_2026-09-24.json',
     });
+  });
+});
+
+describe('the suggestion store outcome (PR #14 review 9a, 9d)', () => {
+  it('says when the capture suggestions were not staged, with the server reason', () => {
+    expect(suggestionsStoreNotice({ stored: false, reason: 'database is locked' }, 3)).toBe(
+      'The 3 inferred suggestions were not staged for review: database is locked',
+    );
+  });
+
+  it('says how many staged suggestions name a quest the catalog does not list yet', () => {
+    expect(
+      suggestionsStoreNotice({ stored: true, inserted: 2, unchanged: 0, uncatalogued: 1 }, 2),
+    ).toBe(
+      '1 of 2 inferred suggestions names a quest the catalog does not list yet: it appears in ' +
+        'Drafts after a sync adds that quest.',
+    );
+  });
+
+  it('says nothing when every suggestion is staged and listed, or nothing was stored', () => {
+    expect(
+      suggestionsStoreNotice({ stored: true, inserted: 2, unchanged: 0, uncatalogued: 0 }, 2),
+    ).toBeNull();
+    expect(suggestionsStoreNotice(undefined, 0)).toBeNull();
   });
 });

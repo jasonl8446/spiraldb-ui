@@ -1,0 +1,252 @@
+{
+  "input": "WC-TUT-C05-001.json",
+  "messages": 17,
+  "rows": [
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "field": "CompleteText",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "field": "GoalID",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_COMPLETEGOAL",
+      "field": "QuestID",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "field": "CompleteText",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_COMPLETEQUEST",
+      "field": "QuestID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "GoalData",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "Level",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "Mainline",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "MobileID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "QuestInfo",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "QuestName",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "QuestTitle",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_QUESTOFFER",
+      "field": "Rewards",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "field": "GoalID",
+      "count": 4,
+      "consumed": true
+    },
+    {
+      "message": "MSG_REMOVEGOAL",
+      "field": "QuestID",
+      "count": 4,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "ClientTags",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalDestinationZone",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalID",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalImage1",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalImage2",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalLocation",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalMadlibs",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalNameID",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalTitle",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalTotal",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "GoalType",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "NoQuestHelper",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "PersonaName",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "PetOnlyQuest",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "QuestID",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDGOAL",
+      "field": "UseTally",
+      "count": 5,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "ActivityType",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "ClientTags",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "NoQuestHelper",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "PetOnlyQuest",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "QuestID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "QuestInfo",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "QuestNameID",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "QuestTitle",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "Rewards",
+      "count": 1,
+      "consumed": true
+    },
+    {
+      "message": "MSG_SENDQUEST",
+      "field": "SkipQHAutoSelect",
+      "count": 1,
+      "consumed": true
+    }
+  ]
+}

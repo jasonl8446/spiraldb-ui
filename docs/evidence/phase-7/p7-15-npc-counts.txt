@@ -1,0 +1,33 @@
+# p7-15 item 1 sidecar: NPC page counts vs a direct query
+# DB: scratch copy of the synced dev DB after a fresh sync (see p7-15-sync-output.txt); corpus: owner fork (read-only). A throwaway server on 3190 (stopped afterwards), never 3001/5173.
+
+## the API (GET /api/npcs/:id through a throwaway server: PORT=3190 SPIRALDB_UI_DB=<scratch>/after.db npx tsx server/src/index.ts)
+38168 {"display_name":"Merle Ambrose","npc_key":"WC-NPCs_00000013","counts":{"aliases":2,"personas":1,"dialogs":80,"quests":21},"inventories":{"npc_inventories":0,"npc_spell_inventories":0,"npc_drop_tables":0},"lens":{"aliases":2,"personas":1,"dialogs":80,"quests":21}}
+44169 {"display_name":"Victor Darkwood","npc_key":"NPCs_00000059","counts":{"aliases":2,"personas":1,"dialogs":4,"quests":1},"inventories":{"npc_inventories":1,"npc_spell_inventories":0,"npc_drop_tables":0},"lens":{"aliases":2,"personas":1,"dialogs":4,"quests":1}}
+
+## the direct query (node direct.cjs <db> <corpus> 38168 44169): better-sqlite3 for npcs/string_table/persona_index, json5 over the corpus files, no import of the server module
+$ node direct.cjs after.db /home/jason/Documents/git-projects/spiraldb 38168 44169
+38168 {"name":"Merle Ambrose","aliases":2,"personas":1,"dialogs":80,"quests":21,"npc_inventories":0,"npc_spell_inventories":0,"npc_drop_tables":0}
+44169 {"name":"Victor Darkwood","aliases":2,"personas":1,"dialogs":4,"quests":1,"npc_inventories":1,"npc_spell_inventories":0,"npc_drop_tables":0}
+
+## direct.cjs source
+// A direct query, independent of server/src/services/npcNames.ts: better-sqlite3 for the tables,
+// json5 over the corpus files for dialogs/quests/inventories.
+const D = require('better-sqlite3'); const JSON5 = require('json5'); const fs = require('fs'); const path = require('path');
+const db = new D(process.argv[2], { readonly: true }); const root = process.argv[3];
+const CATS = ['WC-NPCs','NPCs','WizardNPC','Persona,First','Persona, Last','Persona,Last'];
+for (const id of process.argv.slice(4).map(Number)) {
+  const npc = db.prepare('select name from npcs where template_id=?').get(id);
+  const first = npc.name.split(/\s+/)[0];
+  const aliasValues = db.prepare(`select distinct value from string_table where category in (${CATS.map(()=>'?').join(',')}) and (value=? or value=?)`).all(...CATS, npc.name, first).map(r=>r.value);
+  const personas = db.prepare('select object_name from persona_index where template_id=?').all(id).map(r=>r.object_name);
+  const pset = new Set(personas);
+  let dialogs = 0; const quests = new Set();
+  const walk = (v, q) => { if (Array.isArray(v)) return v.forEach(x=>walk(x,q)); if (v && typeof v==='object') {
+    if (typeof v.$type==='string' && v.$type.includes('NPCDialogEntry')) { const p=(v.m_personaName||'').replace(/_Persona$/,''); if ((p && pset.has(p)) || v.m_actorTemplateID===id || v.m_walkAwayNpcTemplateID===id) { dialogs++; quests.add(q);} }
+    for (const [k,c] of Object.entries(v)) if (k!=='$type') walk(c,q); } };
+  const dir = path.join(root,'QuestTemplates');
+  for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.json')) continue; const doc = JSON5.parse(fs.readFileSync(path.join(dir,f),'utf8')); walk(doc, doc.m_questName||f); }
+  const inv = (d) => { const p=path.join(root,d); if(!fs.existsSync(p)) return 0; return fs.readdirSync(p).filter(f=>f.endsWith('.json')).filter(f=>{try{return Number(JSON5.parse(fs.readFileSync(path.join(p,f),'utf8')).TemplateID)===id}catch{return false}}).length; };
+  console.log(id, JSON.stringify({ name: npc.name, aliases: aliasValues.length, personas: personas.length, dialogs, quests: quests.size, npc_inventories: inv('NpcInventory'), npc_spell_inventories: inv('NpcSpellInventory'), npc_drop_tables: inv('NpcDropTable') }));
+}

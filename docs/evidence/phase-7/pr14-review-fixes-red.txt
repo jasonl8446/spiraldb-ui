@@ -1,0 +1,378 @@
+PR #14 review fixes — RAW red runs (each test written first and run against the pre-fix code).
+Branch phase-7-coverage-usability at 29b1bf9 + the working tree; D17 clone data/test-spiraldb (322 quests) at 18dc924.
+ANSI colour codes stripped; otherwise verbatim tool output (vitest / playwright line reporter tails).
+
+===== 1 — empty-corpus rebuild: npx vitest run tests/unit/p7-drafts.test.ts =====
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/p7-drafts.test.ts > the builder on the fixture catalog (CI) > refuses a rebuild whose quest-file read found no file while evidence rows are pending, writing nothing (PR #14 review 1)
+AssertionError: expected [Function] to throw an error
+ ❯ tests/unit/p7-drafts.test.ts:515:58
+    513|     expect(stats).toMatchObject({ indexed: 0, missingDirectories: ['Qu…
+    514| 
+    515|     expect(() => buildDrafts({ db, index: unreadable })).toThrow(Draft…
+       |                                                          ^
+    516|     expect(() => buildDrafts({ db, index: unreadable })).toThrow(
+    517|       /read no quest file from .*QuestTemplates.*pending evidence sugg…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/p7-drafts.test.ts > the drafts and suggestions API (D141, D143) > answers 409 naming the missing directory when the settings root reads no quest file, and deletes nothing (PR #14 review 1)
+AssertionError: expected 200 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 200
+
+ ❯ tests/unit/p7-drafts.test.ts:631:24
+    629|     const res = await request(app(db)).post('/api/drafts/rebuild');
+    630| 
+    631|     expect(res.status).toBe(409);
+       |                        ^
+    632|     expect(res.body.error).toContain('QuestTemplates');
+    633|     expect(res.body.error).toContain(`${before} pending evidence sugge…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 16 passed (18)
+   Start at  18:28:11
+   Duration  839ms (transform 285ms, setup 0ms, collect 479ms, tests 199ms, environment 0ms, prepare 42ms)
+
+
+===== 1 — toast: npm run test:ui -- tests/ui/p7-rebuild-drafts.spec.ts =====
+      138 |       'Drafts rebuilt: 12 new suggestions, 0 removed (6,365 drafts)',
+      139 |     );
+      140 |     await expect(toast).toHaveAttribute('data-type', 'success');
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-rebuild-drafts.spec.ts:137:25
+
+    Error Context: test-results/p7-rebuild-drafts-Rebuild--61a20-n-toasts-the-inserted-count-chromium/error-context.md
+
+
+[2/3] [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:148:3 › Rebuild drafts (task 7.6) › a 409 (a rebuild already running) is an info toast, not an error
+[3/3] [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:164:3 › Rebuild drafts (task 7.6) › a 409 refusing an unreadable corpus is an error toast carrying the server message (PR #14 review 1)
+  2) [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:164:3 › Rebuild drafts (task 7.6) › a 409 refusing an unreadable corpus is an error toast carrying the server message (PR #14 review 1) 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator: locator('[data-sonner-toast]').filter({ hasText: 'read no quest file' })
+    Expected: "error"
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveAttribute" locator('[data-sonner-toast]').filter({ hasText: 'read no quest file' }) with timeout 10000ms
+      - waiting for locator('[data-sonner-toast]').filter({ hasText: 'read no quest file' })
+
+
+      175 |
+      176 |     const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'read no quest file' });
+    > 177 |     await expect(toast).toHaveAttribute('data-type', 'error');
+          |                         ^
+      178 |     await expect(toast).toContainText('5373 pending evidence suggestions');
+      179 |     await expect(page.locator('[data-sonner-toast][data-type="info"]')).toHaveCount(0);
+      180 |   });
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-rebuild-drafts.spec.ts:177:25
+
+    Error Context: test-results/p7-rebuild-drafts-Rebuild--3bfbf-ver-message-PR-14-review-1--chromium/error-context.md
+
+
+  2 failed
+    [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:111:3 › Rebuild drafts (task 7.6) › sits in the progress section title row, spins while the rebuild runs, then toasts the inserted count 
+    [chromium] › tests/ui/p7-rebuild-drafts.spec.ts:164:3 › Rebuild drafts (task 7.6) › a 409 refusing an unreadable corpus is an error toast carrying the server message (PR #14 review 1) 
+  1 passed (24.1s)
+
+===== 1 — CLI after the fix: npm run drafts -- --db <copy of dev DB> --spiraldb data/test-spiraldb/QuestTemplates =====
+[spiraldb-ui] SpiralDB root   at data/test-spiraldb/QuestTemplates (read only)
+[spiraldb-ui] The rebuild read no quest file from /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/QuestTemplates (missing or empty), and 5469 pending evidence suggestions would be deleted as "no longer proposed". Nothing was changed. Check spiraldb_path in Settings: it must be the SpiralDB repository root, the directory holding QuestTemplates/.
+exit=1
+
+===== 2 + 5 — branch guard: npx vitest run tests/unit/quest-scaffold.test.ts tests/unit/write-route-branch-guard.test.ts =====
+   ✓ p6-09 ac2 — the scaffold document > emits 36 keys in the corpus order, which is not the schema’s declaration order 3ms
+   ✓ p6-09 ac2 — the scaffold document > writes the skeleton values the corpus itself carries, with explicit nulls where it has them 1ms
+   ✓ p6-09 ac2 — the scaffold document > has no top-level $type, and an annotated m_dialogList 0ms
+   ✓ p6-09 ac2 — the scaffold document > writes m_questTitle only for a direct link that resolved exactly one key 0ms
+   ✓ p6-09 ac2 — the scaffold document > validates against the corpus schema the save pipeline itself uses, and round-trips 2ms
+   ✓ p6-09 ac2 — the scaffold document > refuses a nameless scaffold 0ms
+   ✓ p6-09 ac3 — the target-path guard > refuses any target path that is not directly inside QuestTemplates/ 0ms
+   ✓ p6-09 ac3 — the target-path guard > accepts the convention path — the positive partner of the refusal 1ms
+   ✓ p6-09 ac3 — the target-path guard > refuses every hostile name through the writer’s own path resolution 0ms
+   ✓ p6-09 — the writer end to end > writes the file + metadata + one commit for a direct link, and records the provenance 186ms
+   ✓ p6-09 — the writer end to end > writes no title for an inferred link even when the catalog holds a title key 151ms
+   ✓ p6-09 — the writer end to end > recovers the title key from a unique reverse lookup when the id tier has no row 148ms
+   ✓ p6-09 — the writer end to end > writes no title when two keys share the text (never a guess) 146ms
+   ✓ p6-09 — the writer end to end > writes the link's own key when two keys share the text, from quests.title_key (D182) 149ms
+   ✓ p6-09 — the writer end to end > refuses a path outside QuestTemplates/ before writing anything, and the same call succeeds with a legitimate name (the positive partner) 160ms
+   ✓ p6-09 — the writer end to end > refuses an unknown catalog name (404) and a quest that already has a definition (409) 22ms
+   ✓ p6-09 — the writer end to end > validates the request body the way POST /api/quests validates its own 1ms
+   ✓ p6-09 — the writer end to end > describes the provenance for every link kind 0ms
+   ✓ p6-09 — the corpus (the frozen D17 clone) > re-derives the emitted key order from the 322 files: 320 canonical, 2 extractor-sparse 69ms
+   ✓ p6-09 — the corpus (the frozen D17 clone) > flips has_definition 0 → 1 on the next sync, on a real file the evidence service then reads as inferred  1958ms
+   ✓ p6-09 — POST /api/quests/scaffold (the surface task 6.10 calls) > answers 200 with the scaffold result, 400/404/409 for the four refusals 196ms
+   ✓ p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > follows the checked-out branch when none is named, and moves the setting to it 0ms
+   ✓ p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > refuses a named branch that is not checked out, and says what to do instead 0ms
+   ✓ p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > names the setting as the remedy when the save pipeline is the caller (D182) 0ms
+   ✓ p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > allows a branch that is not checked out only while the tree is on main (D182) 0ms
+   × p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > exempts main only for a branch that does not exist yet (PR #14 review 2, D195) 7ms
+     → setting: expected 'use' to be 'refuse' // Object.is equality
+   ✓ p6-09 — which branch a scaffold commits to (the D76(b)-shaped trap) > has no opinion outside a git working tree 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > classifies every write route: guarded (with a test below) or exempt (with a reason) 2ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/quests > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/quests/scaffold > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/drop-tables > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/npc-inventories > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/npc-spell-inventories > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/creature-spellbooks > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/npc-drop-tables > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/treasure-card-inventories > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/zone-transfers > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > post /api/global-registry > refuses with a 409 while settings.git_branch is not the checked-out branch 0ms
+   ✓ D119 branch guard on every write route (task 7.14) > left the repository exactly as it was: same branch, no new branch, clean tree 12ms
+   ✓ D119 branch guard on every write route (task 7.14) > accepts every guarded route once the setting names the checked-out branch (positive partner)  1342ms
+   × D119 branch guard on every write route (task 7.14) > follows the checked-out branch when git_branch is blank, as the CLI does (PR #14 review 5) 77ms
+     → {"error":"Refusing to save on branch \"content/2026-09-30\" (settings.git_branch): the working tree is on \"content/checked-out\". Committing to a branch that is not checked out creates it from main and replaces the tree with main's contents, stranding anything that exists only on \"content/checked-out\". Check it out first (git -C <root> checkout content/2026-09-30) or set git_branch to \"content/checked-out\" in Settings to commit there."}: expected 409 to be 200 // Object.is equality
+   × D119 branch guard on every write route (task 7.14) > the tree on main (PR #14 review 2, D195) > refuses every guarded route when git_branch names a branch that already exists: main's tree is not replaced 154ms
+     → post /api/quests: {"quest_name":"GUARD-TEST-001","outcome":"created","action":"extract","commit":"c57071377df9502749e3eeaf87064e3b8f8ab2a4","branch":"content/checked-out","commit_message":"spiraldb: extract quest GUARD-TEST-001","file":"QuestTemplates/questtemplates_GUARD-TEST-001.json","metadata":"QuestMetadatas/questmetadata_GUARD-TEST-001.json","metadata_outcome":"created","status":{"object_type":"quest","object_key":"GUARD-TEST-001","status":"extracted","extracted_at":"2026-09-30T22:31:31.716Z","reviewed_at":null,"verified_at":null,"latest_notes":null},"warnings":[],"accepted_suggestions":[]}: expected 200 to be 409 // Object.is equality
+   × D119 branch guard on every write route (task 7.14) > the tree on main (PR #14 review 2, D195) > still creates a branch that does not exist yet from main (the spec's session branch), keeping main's tree 70ms
+     → {"error":"Refusing to save on branch \"content/fresh-from-main\" (settings.git_branch): the working tree is on \"content/checked-out\". Committing to a branch that is not checked out creates it from main and replaces the tree with main's contents, stranding anything that exists only on \"content/checked-out\". Check it out first (git -C <root> checkout content/fresh-from-main) or set git_branch to \"content/checked-out\" in Settings to commit there."}: expected 409 to be 200 // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > follows the checked-out branch when git_branch is blank, as the CLI does (PR #14 review 5)
+ FAIL  tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > the tree on main (PR #14 review 2, D195) > refuses every guarded route when git_branch names a branch that already exists: main's tree is not replaced
+ FAIL  tests/unit/write-route-branch-guard.test.ts > D119 branch guard on every write route (task 7.14) > the tree on main (PR #14 review 2, D195) > still creates a branch that does not exist yet from main (the spec's session branch), keeping main's tree
+      Tests  3 failed | 13 passed (16)
+
+===== 3 — reconcile: npx vitest run tests/unit/p7-draft-queue.test.ts =====
+   × PR #14 review 3 — a failed save reconciles the accepted ids with the server > keeps the ids still pending and drops the rest, so a retry cannot loop on the 400 3ms
+     → reconcileApplied is not a function
+   × PR #14 review 3 — a failed save reconciles the accepted ids with the server > recognises a draft first save refused because its file now exists 0ms
+     → isDraftAlreadySaved is not a function
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 10 passed (12)
+
+===== 3 — tier-1 against the pre-fix QuestDetailPage/QuestSaveButton: npm run test:ui -- tests/ui/p7-save-inflight.spec.ts (renamed p7-editor-review-fixes.spec.ts) =====
+[1/3] [chromium] › tests/ui/p7-save-inflight.spec.ts:106:1 › a double-click on Save sends exactly one POST, and Save is disabled while it is in flight
+  1) [chromium] › tests/ui/p7-save-inflight.spec.ts:106:1 › a double-click on Save sends exactly one POST, and Save is disabled while it is in flight 
+    Error: expect(locator).toHaveAttribute(expected) failed
+    Expected: "true"
+    Received: "false"
+[2/3] [chromium] › tests/ui/p7-save-inflight.spec.ts:138:1 › a failed save drops the accepted ids the server no longer holds as pending, so the retry succeeds
+  2) [chromium] › tests/ui/p7-save-inflight.spec.ts:138:1 › a failed save drops the accepted ids the server no longer holds as pending, so the retry succeeds 
+    Error: expect(locator).toBeVisible() failed
+    Expected: visible
+    Error: element(s) not found
+    Error Context: test-results/p7-save-inflight-a-failed--e0f5b-nding-so-the-retry-succeeds-chromium/error-context.md
+[3/3] [chromium] › tests/ui/p7-save-inflight.spec.ts:180:1 › a draft whose file now exists offers to open it instead of a dead-end 409
+  3) [chromium] › tests/ui/p7-save-inflight.spec.ts:180:1 › a draft whose file now exists offers to open it instead of a dead-end 409 
+    Error: expect(locator).toBeVisible() failed
+    Expected: visible
+    Error: element(s) not found
+  3 failed
+    [chromium] › tests/ui/p7-save-inflight.spec.ts:106:1 › a double-click on Save sends exactly one POST, and Save is disabled while it is in flight 
+    [chromium] › tests/ui/p7-save-inflight.spec.ts:138:1 › a failed save drops the accepted ids the server no longer holds as pending, so the retry succeeds 
+    [chromium] › tests/ui/p7-save-inflight.spec.ts:180:1 › a draft whose file now exists offers to open it instead of a dead-end 409 
+
+===== 4 — per-field default rule against the pre-fix advanced.ts: npx vitest run tests/unit/quest-tiers.test.ts =====
+   × the Advanced auto-open rule > treats null/absent and the field default as not opening Advanced 3ms
+     → fieldDefault is not a function
+   × the Advanced auto-open rule > opens on any value other than the field default, including another "empty" one 3ms
+     → "": expected false to be true // Object.is equality
+   × the Advanced auto-open rule > opens an authored false/0 where the field defaults to true/non-zero (the reviewer’s cases) 0ms
+     → m_bypassCameraOnReview: expected false to be true // Object.is equality
+   × the Advanced auto-open rule > keeps a freshly added dialog entry collapsed: every value equals its own default 1ms
+     → Basic: expected true to be false // Object.is equality
+   × the Advanced auto-open rule > falls back to the empty rule for a field no builder writes 0ms
+     → fieldDefault is not a function
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  5 failed | 13 passed (18)
+
+===== 4 — tier-1 against the pre-fix advanced.ts: npm run test:ui -- tests/ui/quests-advanced-disclosure.spec.ts =====
+    Error: expect(locator).toHaveAttribute(expected) failed
+    Expected: "false"
+    Received: "true"
+    Error: expect(locator).toHaveAttribute(expected) failed
+    Expected: "false"
+    Received: "true"
+    Error: expect(locator).toHaveAttribute(expected) failed
+    Expected: "false"
+    Received: "true"
+    Error: expect(locator).toHaveAttribute(expected) failed
+    Expected: ""
+    Error: element(s) not found
+  4 failed
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:105:3 › Basic vs Advanced › a skeleton-shaped dialog entry shows at most 12 fields, advanced collapsed 
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:142:3 › Basic vs Advanced › an authored false where the field defaults to true opens its accordion (D195) 
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:155:3 › Basic vs Advanced › a freshly added dialog entry stays collapsed: its values are its own defaults (D195) 
+    [chromium] › tests/ui/quests-advanced-disclosure.spec.ts:171:3 › Basic vs Advanced › a real clone ReqHasEntry with m_isQuestRegistry false opens its Advanced (D195) 
+  3 passed (48.4s)
+
+===== 4 — measurement over the D17 clone (temporary vitest file, removed): accordions opened by a value, old rule vs new =====
+MEASURE D17 clone data/test-spiraldb: 322 quest files, 1706 dialog entries
+MEASURE Camera: opens by value — D179 generic-empty rule 1689, D195 per-field rule 1612
+MEASURE Sound: opens by value — D179 generic-empty rule 1677, D195 per-field rule 69
+MEASURE Animation: opens by value — D179 generic-empty rule 540, D195 per-field rule 540
+MEASURE Advanced: opens by value — D179 generic-empty rule 1672, D195 per-field rule 428
+
+===== 6 — control characters: npx vitest run tests/unit/naming.test.ts tests/unit/quests-api.test.ts =====
+   ✓ POST /api/quests — save pipeline (ac3) > rule validation → 400 with a per-field error map (story p3-09) > 400s a dangling m_startGoals entry and maps the message to its exact path 4ms
+   ✓ POST /api/quests — save pipeline (ac3) > rule validation → 400 with a per-field error map (story p3-09) > reaches the pipeline for a body whose only findings are warnings 2ms
+   ✓ POST /api/quests — save pipeline (ac3) > rule validation → 400 with a per-field error map (story p3-09) > maps a schema failure to the same field-key shape, and leaves the Phase-2 checks map-free 5ms
+   × POST /api/quests — save pipeline (ac3) > 400s a quest name carrying control characters, writing and committing nothing (PR #14 review 6) 169ms
+     → {"quest_name":"A\n\nspiraldb: create quest PWNED\n\nx","outcome":"created","action":"extract","commit":"ef1c56ec97d719e8132a7e60e59f5adc06ac7455","branch":"content/2026-09-30","commit_message":"spiraldb: extract quest A\n\nspiraldb: create quest PWNED\n\nx","file":"QuestTemplates/questtemplates_A\n\nspiraldb: create quest PWNED\n\nx.json","metadata":"QuestMetadatas/questmetadata_A\n\nspiraldb: create quest PWNED\n\nx.json","metadata_outcome":"created","status":{"object_type":"quest","object_key":"A\n\nspiraldb: create quest PWNED\n\nx","status":"extracted","extracted_at":"2026-09-30T22:33:24.907Z","reviewed_at":null,"verified_at":null,"latest_notes":null},"warnings":[],"accepted_suggestions":[]}: expected 200 to be 400 // Object.is equality
+   ✓ POST /api/quests — save pipeline (ac3) > round-trips GET → POST unmodified with no field loss (explicit nulls preserved) 202ms
+   ✓ OBJECT_FILE_SPECS — the spec table as data > uses a unique prefix per type — prefix → type is a bijection 0ms
+   ✓ the zone slash→underscore transform is lossy (documented, not guessed back) > writes the slash as an underscore and yields the FILE KEY, not the ZoneName 0ms
+   ✓ the zone slash→underscore transform is lossy (documented, not guessed back) > does not transform other types — a slash there is rejected 0ms
+   × fileNameFor validation > rejects every control character, so no key can start a line of a commit message (PR #14 review 6) 5ms
+     → expected [Function] to throw an error
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  2 failed (2)
+      Tests  2 failed | 116 passed (118)
+
+===== 7 — single-home shape 5: npx vitest run tests/unit/glossary-single-home.test.ts =====
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+ ❯ tests/unit/glossary-single-home.test.ts (3 tests | 1 failed) 42ms
+   × the glossary is the one label home > finds no second label table in client/src, shared or server/src 41ms
+     → expected [ { …(4) }, { …(4) }, { …(4) }, …(2) ] to deeply equal []
+   ✓ the glossary is the one label home > sees each shape of second table in a scratch source (negative control) 1ms
+   ✓ the glossary is the one label home > does not mistake defaults, enum values, key names or CSS classes for labels 0ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/unit/glossary-single-home.test.ts > the glossary is the one label home > finds no second label table in client/src, shared or server/src
+AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(2) ] to deeply equal []
+- Expected
++ Received
+- []
++ [
++   {
++     "file": "client/src/components/quest/QuestRequirementsEditor.tsx",
++     "line": 49,
++     "shape": "label constant copying the glossary",
++     "text": "export const REQUIREMENTS_TREE_LABEL = 'Requirements';",
++   },
++   {
++     "file": "client/src/components/quest/QuestRequirementsEditor.tsx",
++     "line": 51,
++     "shape": "label constant copying the glossary",
++     "text": "export const PRUNE_REQUIREMENTS_TREE_LABEL = 'Prune requirements';",
++   },
++   {
++     "file": "client/src/components/quest/QuestRequirementsEditor.tsx",
++     "line": 54,
++     "shape": "label constant copying the glossary",
++     "text": "export const GOAL_REQUIREMENTS_SECTION_LABEL = 'Goal requirements';",
++   },
++   {
++     "file": "client/src/components/quest/QuestResultsEditor.tsx",
++     "line": 60,
++     "shape": "label constant copying the glossary",
++     "text": "export const START_RESULTS_LABEL = 'Start results';",
++   },
++   {
++     "file": "client/src/components/quest/QuestResultsEditor.tsx",
++     "line": 61,
++     "shape": "label constant copying the glossary",
++     "text": "export const END_RESULTS_LABEL = 'End results';",
++   },
++ ]
+ ❯ tests/unit/glossary-single-home.test.ts:154:37
+    152|       hitsIn(sources.find((s) => s.file === 'client/src/lib/quest-goal…
+    153|     ).toEqual([]);
+    154|     expect(sources.flatMap(hitsIn)).toEqual([]);
+       |                                     ^
+    155|   });
+    156| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  18:34:51
+   Duration  279ms (transform 60ms, setup 0ms, collect 62ms, tests 42ms, environment 0ms, prepare 43ms)
+
+===== 8 — m_startGoals tab: npx vitest run tests/unit/p7-draft-queue.test.ts =====
+   × p7-08 — Accept as an edit of the in-memory document > places each suggestion in the tab that holds its field 5ms
+     → expected 'Goal Logic' to be 'Goals' // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+Expected: "Goals"
+Received: "Goal Logic"
+      Tests  1 failed | 9 passed (10)
+
+===== 9a/9d — server: npx vitest run tests/unit/p7-drafts.test.ts =====
+   × the drafts and suggestions API (D141, D143) > the store outcome is part of the answer (PR #14 review 9a, 9d) > reports a store failure in the 200 body instead of only a server warning 8ms
+     → expected undefined to deeply equal { stored: false, …(1) }
+   × the drafts and suggestions API (D141, D143) > the store outcome is part of the answer (PR #14 review 9a, 9d) > awaits the store and counts suggestions whose quest the catalog does not hold 6ms
+     → expected undefined to deeply equal { stored: true, inserted: 2, …(2) }
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 18 passed (20)
+
+===== 9a/9d — client notice: npx vitest run tests/unit/extract-ui.test.ts =====
+   × the suggestion store outcome (PR #14 review 9a, 9d) > says when the capture suggestions were not staged, with the server reason 3ms
+     → suggestionsStoreNotice is not a function
+   × the suggestion store outcome (PR #14 review 9a, 9d) > says how many staged suggestions name a quest the catalog does not list yet 0ms
+     → suggestionsStoreNotice is not a function
+   × the suggestion store outcome (PR #14 review 9a, 9d) > says nothing when every suggestion is staged and listed, or nothing was stored 0ms
+     → suggestionsStoreNotice is not a function
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  3 failed | 30 passed (33)
+
+===== 9c — census rows + release: npx vitest run tests/unit/census-service.test.ts =====
+   × census service > runs the binary on the capture and returns messages + rows (dropping the temp input name) 11ms
+     → expected [ 1 ] to deeply equal []
+   × census service > is skipped when the tool prints something that is not a census 3ms
+     → {"message":"MSG_SENDGOAL","field":"PersonaName","count":2}: expected { messages: 1, …(1) } to deeply equal { Object (skipped) }
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 2 passed (4)
+
+===== 9e — /drafts empty state: npx vitest run tests/unit/p7-draft-queue.test.ts =====
+   × PR #14 review 9e — the /drafts empty state says which empty it is > never claims an empty catalog while coverage is loading or failed 4ms
+     → draftsEmptyState is not a function
+   × PR #14 review 9e — the /drafts empty state says which empty it is > tells no match (a filter is set) from no catalog and no suggestions 0ms
+     → draftsEmptyState is not a function
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 12 passed (14)
+
+===== 9f/9g — tier-1 against the pre-fix QuestDetailPage/QuestSuggestions: npm run test:ui -- tests/ui/p7-editor-review-fixes.spec.ts -g 'review 9' =====
+[1/2] [chromium] › tests/ui/p7-editor-review-fixes.spec.ts:230:1 › a failed suggestions read is shown with a retry, never as "nothing to accept" (review 9f)
+  1) [chromium] › tests/ui/p7-editor-review-fixes.spec.ts:230:1 › a failed suggestions read is shown with a retry, never as "nothing to accept" (review 9f) 
+    Error: expect(locator).toBeVisible() failed
+    Expected: visible
+    Error: element(s) not found
+    Error: expect(locator).toHaveAttribute(expected) failed
+    Expected: "true"
+    Received: "false"
+  2 failed
+    [chromium] › tests/ui/p7-editor-review-fixes.spec.ts:230:1 › a failed suggestions read is shown with a retry, never as "nothing to accept" (review 9f) 
+    [chromium] › tests/ui/p7-editor-review-fixes.spec.ts:255:1 › Accept waits while the same row’s Reject is in flight (review 9g) 
+
+===== 9i — one home: npx vitest run tests/unit/p7-draft-queue.test.ts =====
+   × PR #14 review 9i — the suggestion sources have one home > is the same list on the client and the server, not a copy that can drift 252ms
+     → Cannot find module '@shared/suggestions' imported from '/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/p7-draft-queue.test.ts'.
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+Error: Cannot find module '@shared/suggestions' imported from '/home/jason/Documents/git-projects/spiraldb-ui/tests/unit/p7-draft-queue.test.ts'.
+      Tests  1 failed | 14 passed (15)
+
+===== 9j — /glossary collapse, GlossaryPage.tsx stashed: npm run test:ui -- tests/ui/p7-glossary-help.spec.ts -g D135 =====
+    Error: expect(locator).toHaveCount(expected) failed
+    Expected: 2
+    Received: 3
+  1 failed
+
+===== 9l — orphan actor dialog, CLI built at HEAD: npx vitest run tests/unit/p7-observed-fields.test.ts -t 9l =====
+ ❯ tests/unit/p7-observed-fields.test.ts (61 tests | 1 failed | 60 skipped) 309ms
+   × p7 wrapper goldens regenerate byte-identically (local-only) > reports an MSG_ACTORDIALOG whose GoalID no extracted quest introduces, as the encounter twin does (PR #14 review 9l) 308ms
+     → expected [] to have a length of 1 but got +0
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 60 skipped (61)
+
+===== zone-transfer DB guard — fresh worktree at 29b1bf9 without data/: SPIRALDB_SIMPLE_OBJECTS_ROOT=<owner fork> npx vitest run tests/unit/zone-transfer-model.test.ts =====
+[p4-06 zones] the zones sweep was skipped — no <scratch>/wt-head/data/spiraldb-ui.db. The dropdown's source semantics are still pinned by the fixtures.
+   × AC1 + AC2 — the live corpus (1207 files) > resolves every one of the 1072 destination refs in the zones table, and reads the labels from it 4ms
+     → Cannot open database because the directory does not exist
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 18 passed (19)
+
+===== zone-transfer DB guard — same worktree, the fixed test file copied in =====
+[p4-06 zones] the zones sweep was skipped — no <scratch>/wt-head/data/spiraldb-ui.db. The dropdown's source semantics are still pinned by the fixtures.
+ ✓ tests/unit/zone-transfer-model.test.ts (19 tests | 1 skipped) 268ms
+      Tests  18 passed | 1 skipped (19)

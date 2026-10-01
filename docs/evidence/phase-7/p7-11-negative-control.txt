@@ -1,0 +1,142 @@
+
+ RUN  v3.2.7 /home/jason/Documents/git-projects/spiraldb-ui
+
+ ❯ tests/unit/card-titles.test.ts (7 tests | 5 failed) 18ms
+   × card titles pinned over real D17-clone quests > pins the goal, result and requirement titles of every fixture quest 8ms
+     → expected { quest: 'DS-ACAD-C01-001', …(1) } to deeply equal { quest: 'DS-ACAD-C01-001', …(1) }
+   ✓ card titles pinned over real D17-clone quests > covers every goal class, including the Usage and Bounty variants 0ms
+   × card titles pinned over real D17-clone quests > never titles a fixture card by the generated goal id, with or without names 1ms
+     → expected '1_WizardQuestGoals_UseItem' not to match /^\d+_WizardQuestGoals_/
+   × the fallbacks > falls back to the raw id, then to the glossary class label, when a name is unresolved 1ms
+     → expected '5_WizardQuestGoals_TalkNPC' to be 'Talk to DS-ACAD-NPC01_Persona (Person…' // Object.is equality
+   × the fallbacks > titles an unknown class by its glossary label or its own short name 0ms
+     → expected '1_WizardQuestGoals_1' to be 'Talk to an NPC (Persona goal)' // Object.is equality
+   ✓ the fallbacks > prefixes a negated requirement 0ms
+   × every goal of the D17 clone (322 quests) > is titled by meaning, never by its generated goal id 7ms
+     → questtemplates_DS-ACAD-C01-001.json: expected '1_WizardQuestGoals_UseItem' not to match /^\d+_WizardQuestGoals_/
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/card-titles.test.ts > card titles pinned over real D17-clone quests > pins the goal, result and requirement titles of every fixture quest
+AssertionError: expected { quest: 'DS-ACAD-C01-001', …(1) } to deeply equal { quest: 'DS-ACAD-C01-001', …(1) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[2m    "goals": [[22m
+[2m      [[22m
+[2m        "1_WizardQuestGoals_UseItem",[22m
+[32m-       "Go to Haunted Cave (Waypoint goal)",[39m
+[31m+       "1_WizardQuestGoals_UseItem",[39m
+[2m      ],[22m
+[2m      [[22m
+[2m        "2_WizardQuestGoals_UseItem",[22m
+[32m-       "Go to Biti's Chamber (Waypoint goal)",[39m
+[31m+       "2_WizardQuestGoals_UseItem",[39m
+[2m      ],[22m
+[2m      [[22m
+[2m        "3_WizardQuestGoals_UseItem",[22m
+[32m-       "Go to Shakes Clocktower (Waypoint goal)",[39m
+[31m+       "3_WizardQuestGoals_UseItem",[39m
+[2m      ],[22m
+[2m      [[22m
+[2m        "4_WizardQuestGoals_UseItem",[22m
+[32m-       "Go to Ancient Burial Grounds (Waypoint goal)",[39m
+[31m+       "4_WizardQuestGoals_UseItem",[39m
+[2m      ],[22m
+[2m      [[22m
+[31m+       "5_WizardQuestGoals_TalkNPC",[39m
+[2m        "5_WizardQuestGoals_TalkNPC",[22m
+[32m-       "Talk to Ashley (Persona goal)",[39m
+[2m      ],[22m
+[2m    ],[22m
+[2m    "quest": "DS-ACAD-C01-001",[22m
+[2m  }[22m
+
+ ❯ tests/unit/card-titles.test.ts:248:38
+    246|         goalCardTitle(goal, names),
+    247|       ]);
+    248|       expect({ quest: name, goals }).toEqual({ quest: name, goals: pin…
+       |                                      ^
+    249|       expect({ quest: name, nodes: nodeTitles(quest) }).toEqual({
+    250|         quest: name,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/unit/card-titles.test.ts > card titles pinned over real D17-clone quests > never titles a fixture card by the generated goal id, with or without names
+AssertionError: expected '1_WizardQuestGoals_UseItem' not to match /^\d+_WizardQuestGoals_/
+
+[32m- Expected:[39m 
+/^\d+_WizardQuestGoals_/
+
+[31m+ Received:[39m 
+"1_WizardQuestGoals_UseItem"
+
+ ❯ tests/unit/card-titles.test.ts:279:48
+    277|     for (const quest of Object.values(quests)) {
+    278|       for (const goal of quest.m_goals as Node[]) {
+    279|         expect(goalCardTitle(goal, names)).not.toMatch(GENERATED_GOAL_…
+       |                                                ^
+    280|         expect(goalCardTitle(goal, NO_CARD_NAMES)).not.toMatch(GENERAT…
+    281|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/unit/card-titles.test.ts > the fallbacks > falls back to the raw id, then to the glossary class label, when a name is unresolved
+AssertionError: expected '5_WizardQuestGoals_TalkNPC' to be 'Talk to DS-ACAD-NPC01_Persona (Person…' // Object.is equality
+
+Expected: [32m"Talk to DS-ACAD-NPC01_Persona (Persona goal)"[39m
+Received: [31m"5_WizardQuestGoals_TalkNPC"[39m
+
+ ❯ tests/unit/card-titles.test.ts:294:51
+    292|   it('falls back to the raw id, then to the glossary class label, when…
+    293|     // No NPC name, but the dialog still names its persona: the raw pe…
+    294|     expect(goalCardTitle(persona, NO_CARD_NAMES)).toBe(
+       |                                                   ^
+    295|       'Talk to DS-ACAD-NPC01_Persona (Persona goal)',
+    296|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/unit/card-titles.test.ts > the fallbacks > titles an unknown class by its glossary label or its own short name
+AssertionError: expected '1_WizardQuestGoals_1' to be 'Talk to an NPC (Persona goal)' // Object.is equality
+
+Expected: [32m"Talk to an NPC (Persona goal)"[39m
+Received: [31m"1_WizardQuestGoals_1"[39m
+
+ ❯ tests/unit/card-titles.test.ts:322:7
+    320|         names,
+    321|       ),
+    322|     ).toBe('Talk to an NPC (Persona goal)');
+       |       ^
+    323|     expect(
+    324|       goalCardTitle({ $type: 'X.NewGoalTemplate, X', m_goalName: '1_Wi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/unit/card-titles.test.ts > every goal of the D17 clone (322 quests) > is titled by meaning, never by its generated goal id
+AssertionError: questtemplates_DS-ACAD-C01-001.json: expected '1_WizardQuestGoals_UseItem' not to match /^\d+_WizardQuestGoals_/
+
+[32m- Expected:[39m 
+/^\d+_WizardQuestGoals_/
+
+[31m+ Received:[39m 
+"1_WizardQuestGoals_UseItem"
+
+ ❯ tests/unit/card-titles.test.ts:353:62
+    351|       for (const goal of (quest.m_goals as Node[] | undefined) ?? []) {
+    352|         goals += 1;
+    353|         expect(goalCardTitle(goal, NO_CARD_NAMES), file).not.toMatch(G…
+       |                                                              ^
+    354|         expect(goalCardTitle(goal, names), file).not.toMatch(GENERATED…
+    355|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 2 passed (7)
+   Start at  01:24:45
+   Duration  436ms (transform 186ms, setup 0ms, collect 238ms, tests 18ms, environment 0ms, prepare 42ms)
+

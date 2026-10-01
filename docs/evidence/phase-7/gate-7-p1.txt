@@ -1,0 +1,127 @@
+######## P1-1 — isolated sync into a scratch DB (D44 override; the literal rm -rf data would delete the owner's dev DB)
+
+$ NODE_ENV=test SPIRALDB_UI_DB=<scratch>/g7/ui.db npm run --silent sync
+[spiraldb-ui] sync database at <scratch>/g7/ui.db
+=== SpiralDB UI — friendly-name sync ===
+  status              : SUCCESS
+  revision            : V_r806919.Wizard_1_610
+  tree                : unpacked /tmp/spiraldb-wad-bnL2Ry
+  items               : 79,835
+  spells              : 18,173
+  npcs                : 23,033
+  quests              : 322
+  zones               : 3,357
+  drop_tables         : 317
+  string_table        : 216,991
+  persona_index       : 23,003 persona object names
+  recipes             : 12,402
+  decks               : 599
+  manifest entries    : 137,423 ids
+  manifest ids used   : 121,041 rows keyed by the manifest (fallback 0)
+  id mismatches       : 0 rows (embedded m_templateID vs manifest)
+  missing manifest    : 0 rows
+  dropped (PK)        : 0 rows (items 0, spells 0, npcs 0)
+  unpack / scan / write: 15.4 s / 8.3 s / 558 ms
+  total               : 30.3 s
+  sync_history        : success row written at 2026-09-30T08:29:04Z
+  catalog status      : OK
+  catalog rows        : 1,449 (merged 54, new 1,395)
+  quests rows         : 1,717 (has_definition = 1: 322)
+  catalog refs        : 2,855 rows kept (3,003 raw rows; 148 not inserted by the UNIQUE)
+  reference keys      : 2,796 distinct (quest, wad, entry, class, goal) with a NULL goal_name read as '' — SQLite's UNIQUE keeps a NULL goal_name distinct, so the table holds 59 more rows
+  quest ids           : 4,823 (linked 175; 115 links outside the text tier; 2 losing names on 2 ids)
+  links extracted     : 286 direct, 6 inferred, 1,157 none (the extractor's own count, catalog rows only)
+  links lost          : 1 direct + 1 inferred name(s) claimed an id another name owns; a loser keeps link_kind = none
+  id collisions       : NV-PostWL-MAIN-002 (direct) lost id 1608203 to LM-PostWL-MAIN-001; LM-HEAP-MAIN-009 (inferred) lost id 1524782 to LM-HEAP-MAIN-007
+  hold-out            : 78.0% (neighbour-midpoint; 168 cases, 131 hits) on /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+  catalog timing      : 4.7 s extract + 321 ms read + 81 ms write
+  breadth status      : OK
+  zones               : old 1,241 (corpus ZoneTransfer) -> new 3,357 (WizZoneData 3,356, +1 corpus-only kept, 1,240 relabelled)
+  zones corpus-only   : Karamelle/KM_Z06_Mines
+  recipes             : 12,402 rows kept of 12,402 read (dropped 0: no manifest entry 0, duplicate id 0)
+  decks               : 599 rows kept of 599 read (dropped 0: no manifest entry 0, duplicate id 0, duplicate deck_name 0)
+  manifest join (D35) : recipes 12,366 exact + 36 repaired + 0 missing; decks 599 exact + 0 repaired + 0 missing (repair collisions 0)
+  breadth run         : gamedata.bin on /home/jason/Documents/git-projects/Aurorium/data/V_r806919.Wizard_1_610/Data/GameData — wad-scan extract: 3356 row(s) in 2733 ms (gamedata.bin 3356); deserialized 3356, failed 0; unreadable archives 0; out /tmp/spiraldb-ui-breadth-AHe35z/zones.ndjson
+  breadth run         : Decks/** on /tmp/spiraldb-ui-wadscope-2OXMun — wad-scan extract: 599 row(s) in 280 ms (Decks/** 599); deserialized 599, failed 0; unreadable archives 0; out /tmp/spiraldb-ui-breadth-AHe35z/decks.ndjson
+  breadth run         : ObjectData/** on /tmp/spiraldb-ui-wadscope-V4W081 — wad-scan extract: 12402 row(s) in 1435 ms (ObjectData/** 12402); deserialized 12402, failed 0; unreadable archives 0; out /tmp/spiraldb-ui-breadth-AHe35z/recipes.ndjson
+  speaker ladder      : 1,706 dialogue rows in 322 quest files (0 unreadable) — /home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb
+    override missing  : 0 of 1,706 rows (0.0%) — m_nameOverride names no string-table key
+    composition unfilled: 1,566 of 1,706 rows (91.8%) — m_nameSTKey has no format or the persona lacks a component
+    persona not indexed: 48 of 1,706 rows (2.8%) — raw persona string used as the speaker name
+rc=0
+
+$ node -e "const d=require('better-sqlite3')('<scratch>/g7/ui.db',{readonly:true});for(const {name} of d.prepare(\"select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name\").all())console.log(name.padEnd(24),d.prepare('select count(*) n from '+name).get().n)"
+decks                    599
+drop_tables              317
+entry_status             0
+items                    79835
+npcs                     23033
+persona_index            23003
+quest_catalog_refs       2855
+quest_ids                4823
+quest_suggestions        0
+quests                   1717
+recipes                  12402
+settings                 5
+spells                   18173
+status_history           0
+string_table             216991
+sync_history             1
+zones                    3357
+rc=0
+
+######## stack up (PORT=3292, the scratch DB, SPIRALDB_PATH=the D17 clone, built client) + settings pin
+stack pid 3728818: {"status":"ok"}
+Imported 2271 existing entries from SpiralDB
+[spiraldb-ui] import detail: 3 skipped, 0 unparsable
+[spiraldb-ui] import duplicate keys (first file wins): WizardCity/Tutorial_Exterior, WizardCity/Tutorial_Interior
+[spiraldb-ui] API listening on http://127.0.0.1:3292 (loopback only)
+[spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+$ curl -s -X PUT -H 'content-type: application/json' -d '{"user_name":"Gate7 Sweep","git_branch":"content/2026-09-27"}' localhost:3292/api/settings
+{"aurorium_path":"/home/jason/Documents/git-projects/Aurorium","git_branch":"content/2026-09-27","imcodec_path":"/home/jason/Documents/git-projects/Imview/submodule/Imcodec/src/Imcodec.Cli/bin/Debug/net9.0/linux-x64/imcodec","spiraldb_path":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","user_name":"Gate7 Sweep"}rc=0
+
+######## P1-2
+
+$ curl -s localhost:3292/api/names/items | head -c 400
+{"items":[{"gid":1740074,"name":" +100 Energy Elixir"},{"gid":1374633,"name":" Lounging Pigswick Student"},{"gid":1374437,"name":" Placeholder"},{"gid":1664694,"name":"'Porters of the Spiral Bundle"},{"gid":1441942,"name":"+1 Character & Lvl 50 Elixirs"},{"gid":1740071,"name":"+10 Energy Elixir"},{"gid":1740072,"name":"+25 Energy Elixir"},{"gid":1740070,"name":"+5 Energy Elixir"},{"gid":1740073,"nrc=0
+
+######## P1-3
+
+$ curl -s localhost:3292/api/status/all | jq -c .summary
+{"total":2271,"extracted":2271,"reviewed":0,"verified":0}
+rc=0
+
+$ curl -s localhost:3292/api/status/all | jq -c '.entries | group_by(.object_type) | map({object_type: .[0].object_type, n: length})'
+[{"object_type":"creature_spellbook","n":134},{"object_type":"drop_table","n":317},{"object_type":"npc_inventory","n":215},{"object_type":"npc_spell_inventory","n":77},{"object_type":"quest","n":322},{"object_type":"treasure_card_inventory","n":1},{"object_type":"zone_transfer","n":1205}]
+rc=0
+
+$ ls data/test-spiraldb/QuestTemplates/*.json | wc -l
+322
+rc=0
+
+$ ls /home/jason/Documents/git-projects/spiraldb/QuestTemplates/*.json | wc -l
+330
+rc=0
+
+######## P1-4
+
+$ curl -s -X PATCH -H 'content-type: application/json' localhost:3292/api/status/quests/DS-ACAD1-C01-001 -d '{"status":"reviewed","notes":"gate-7 fresh run","changed_by":"gate-7"}'
+{"object_type":"quest","object_key":"DS-ACAD1-C01-001","status":"reviewed","extracted_at":"2026-09-30T08:29:07.638Z","reviewed_at":"2026-09-30T08:29:08.359Z","verified_at":null,"latest_notes":"gate-7 fresh run"}rc=0
+
+$ curl -s localhost:3292/api/status/quests/DS-ACAD1-C01-001/history
+{"history":[{"old_status":"extracted","new_status":"reviewed","notes":"gate-7 fresh run","changed_by":"gate-7","changed_at":"2026-09-30T08:29:08.359Z"}]}rc=0
+
+$ node -e "const d=require('better-sqlite3')('<scratch>/g7/ui.db',{readonly:true});console.log(JSON.stringify(d.prepare('SELECT * FROM status_history ORDER BY id DESC LIMIT 3').all()));console.log(JSON.stringify(d.prepare(\"SELECT * FROM entry_status WHERE object_key='DS-ACAD1-C01-001'\").all()))"
+[{"id":1,"entry_status_id":6,"old_status":"extracted","new_status":"reviewed","notes":"gate-7 fresh run","changed_by":"gate-7","changed_at":"2026-09-30T08:29:08.359Z"}]
+[{"id":6,"object_type":"quest","object_key":"DS-ACAD1-C01-001","status":"reviewed","extracted_at":"2026-09-30T08:29:07.638Z","reviewed_at":"2026-09-30T08:29:08.359Z","verified_at":null,"reviewed_by":"gate-7","verified_by":null},{"id":328,"object_type":"drop_table","object_key":"DS-ACAD1-C01-001","status":"extracted","extracted_at":"2026-09-30T08:29:07.638Z","reviewed_at":null,"verified_at":null,"reviewed_by":null,"verified_by":null}]
+rc=0
+
+######## P1-6 (UI arms p1_6 + p1_6b, gate-7-ui-sweep.mjs.txt)
+[P1-6] settings main text: Friendly Name Sync Where the sync reads WAD data from and which repository it writes into. Paths are validated by the server before they are stored. Aurorium Path Repository holding the WAD revisions under data/V_r* Imcodec Path The imcodec executable used to unpack and deserialize templates SpiralDB Path Required by the settings API — the SpiralDB repository that sync writes into User Name Used to attribute status changes, metadata and commits. Git Branch Set automatically when a save creates this session's content/YYYY-MM-DD branch. Read-only: the save pipeline owns the branch strategy. Save Last Sync Friendly names are replaced wholesale by every sync. LAST SYNC Sep 30, 2026 at 4:29 AM RE
+[P1-6] toast: Sync complete: 79,835 items · 18,173 spells · 23,033 NPCs · 322 quests · 3,357 zones
+[p1_6] ARM FAILED: TimeoutError: locator.waitFor: Timeout 30000ms exceeded. Call log:  - waiting for getByRole('combobox').first() to be visible
+[P1-6] combo aria-label: NPC TemplateID; trigger: Ugo Kalahad (87112)
+[P1-6] typed "Gretta" -> ["Gretta Darkkettle (38098)","Gretta Darkkettle (1365085)","Gretta Darkkettle (1402234)","Gretta Darkkettle (1521048)","Gretta Darkkettle (1624015)"]
+[P1-6] after select: trigger "Gretta Darkkettle (38098)"; hidden inputs ["TemplateID=38098"]
+[p1_6b] ARM DONE

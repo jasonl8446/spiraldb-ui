@@ -95,6 +95,15 @@ function targetLine(page: Page): Locator {
   return rail(page, 'Quest evidence').getByTestId('evidence-target');
 }
 
+/**
+ * The target line names `path` (task 7.9): the field's glossary pair and its place in words are the
+ * visible text, and the exact document path is the `data-path` attribute (never a label).
+ */
+async function expectTarget(page: Page, path: string, words: string): Promise<void> {
+  await expect(targetLine(page).locator('[data-path]')).toHaveAttribute('data-path', path);
+  await expect(targetLine(page)).toContainText(`Insert into: ${words}`);
+}
+
 /** The section the row lives in, so a key lookup cannot escape into another section. */
 function section(page: Page, heading: string): Locator {
   return rail(page, 'Quest evidence').getByRole('region', { name: heading });
@@ -132,7 +141,7 @@ function goalDialogInput(page: Page, goalIndex: number): Locator {
   return goalDialogSection(page)
     .getByRole('article')
     .nth(goalIndex)
-    .getByLabel('m_dialog', { exact: true });
+    .getByLabel('Dialog text (m_dialog)', { exact: true });
 }
 
 /** The two rail tabs. */
@@ -277,8 +286,8 @@ test.describe('one right rail, two tabs', () => {
     const recorded = await openQuest(page);
     await expect(rail(page, 'Quest evidence')).toHaveCount(0);
     // The page has settled (its editors are on screen) and the panel's route was never hit. The
-    // preview opens on Info, so that is the settled marker here.
-    await expect(main_(page).getByRole('tab', { name: 'Info' })).toHaveAttribute(
+    // preview opens on Overview (p7-14, D133), so that is the settled marker here.
+    await expect(main_(page).getByRole('tab', { name: 'Overview' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -364,7 +373,7 @@ test.describe('one-click insert, into the field it belongs to', () => {
     await page.getByRole('tab', { name: 'Goals' }).click();
     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
     await page.getByRole('tab', { name: 'Evidence' }).click();
-    await expect(targetLine(page)).toContainText('m_goals[0].m_goalText');
+    await expectTarget(page, 'm_goals[0].m_goalText', 'Goal text (m_goalText) in Goals 1');
 
     const insert = sectionInsertButton(page, 'Available', AVAILABLE_KEY);
     await expect(insert).toBeVisible();
@@ -395,16 +404,19 @@ test.describe('one-click insert, into the field it belongs to', () => {
     await openQuest(page, { search: '?panel=evidence' });
     await page.getByRole('tab', { name: 'Goals' }).click();
     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
-    // The shared base fields are a collapsed disclosure; opening it reveals m_locationName.
-    await goalCard(page, 0).getByText('Shared base fields').click();
-    await goalCard(page, 0).getByLabel('m_locationName', { exact: true }).click();
+    // m_locationName is a basic field (task 7.11): it is on the card without opening Advanced.
+    await goalCard(page, 0).getByLabel('Location Name (m_locationName)', { exact: true }).click();
 
     // Read the document first: the rail's JSON tab swaps the *body* only, so the focus report
     // survives the round trip — asserted, not assumed.
     await page.getByRole('tab', { name: 'JSON' }).click();
     const before = await copyDocument(page);
     await page.getByRole('tab', { name: 'Evidence' }).click();
-    await expect(targetLine(page)).toContainText('m_goals[0].m_locationName');
+    await expectTarget(
+      page,
+      'm_goals[0].m_locationName',
+      'Location Name (m_locationName) in Goals 1',
+    );
 
     await sectionInsertButton(page, 'Available', AVAILABLE_KEY).click();
 
@@ -421,8 +433,10 @@ test.describe('one-click insert, into the field it belongs to', () => {
     // Focus the goal-level entry card: reading its m_dialog input is also the assertion target.
     await goalDialogInput(page, 0).click();
     await page.getByRole('tab', { name: 'Evidence' }).click();
-    await expect(targetLine(page)).toContainText(
+    await expectTarget(
+      page,
       'm_goals[0].m_dialogList.m_dialogs[0].m_dialogEntries[0].m_dialog',
+      'Dialog text (m_dialog) in Goals 1 › Dialog list › Dialog blocks 1 › Dialog entries 1',
     );
 
     await expect(section(page, 'Dialogue')).toContainText('Cyrus Drake');
@@ -442,7 +456,7 @@ test.describe('one-click insert, into the field it belongs to', () => {
     await page.getByRole('tab', { name: 'Goals' }).click();
     await goalCard(page, 0).getByRole('button', { name: 'Edit' }).click();
     await page.getByRole('tab', { name: 'Evidence' }).click();
-    await expect(targetLine(page)).toContainText('m_goals[0].m_goalText');
+    await expectTarget(page, 'm_goals[0].m_goalText', 'Goal text (m_goalText) in Goals 1');
 
     // The dialogue section carries no button at all in this state…
     const dialogue = section(page, 'Dialogue');

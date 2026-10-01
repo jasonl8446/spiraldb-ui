@@ -19,6 +19,10 @@ import ExtractionPage from './pages/ExtractionPage';
 import GlobalRegistryPage from './pages/GlobalRegistryPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestCatalogPage from './pages/QuestCatalogPage';
+import DraftsPage from './pages/DraftsPage';
+import GlossaryPage from './pages/GlossaryPage';
+import NpcPage from './pages/NpcPage';
+import DraftEditorPage from './pages/DraftEditorPage';
 import QuestsPage from './pages/QuestsPage';
 import SettingsPage from './pages/SettingsPage';
 import TreasureCardInventoryDetailPage from './pages/TreasureCardInventoryDetailPage';
@@ -118,6 +122,18 @@ function elementFor(route: AppRoute): JSX.Element {
       return <QuestCatalogPage />;
     case '/quests/:questName':
       return <QuestDetailPage />;
+    case '/drafts':
+      // Task 7.7 / story p7-08: the draft review queue.
+      return <DraftsPage />;
+    case '/glossary':
+      // Task 7.12 / story p7-13: every glossary term, searchable by either half.
+      return <GlossaryPage />;
+    case '/npcs/:npcId':
+      // Task 7.14 / story p7-15: one NPC's aliases, personas, dialogs, quests and inventories.
+      return <NpcPage />;
+    case '/drafts/quest/:questName':
+    case '/drafts/id/:questId':
+      return <DraftEditorPage />;
     case '/drop-tables':
       return <ObjectListPage config={DROP_TABLE} nounPlural="drop tables" keyHeader="Drop table" />;
     case '/drop-tables/:name':

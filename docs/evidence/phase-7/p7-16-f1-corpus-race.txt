@@ -1,0 +1,1529 @@
+p7-16 flake F1 — the corpus-count race (a11y.spec.ts corpus arm vs p7-drafts.spec.ts). RAW.
+
+==================================================================
+== probe source, BEFORE the fix (tests/ui/zz-p716-probe.spec.ts, temporary, deleted)
+==================================================================
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { expect, test } from '@playwright/test';
+
+// p7-16 TEMPORARY race probe (deleted after the measurement; copied into the evidence sidecar):
+// the body of a11y.spec.ts's "the server reads exactly the corpus on disk at the path it reports",
+// verbatim, repeated so it samples the clone for the whole time p7-drafts.spec.ts writes on another
+// worker.
+for (let i = 0; i < 400; i += 1) {
+  test(`corpus arm copy ${i}`, async ({ request }) => {
+    const settings = (await (await request.get('/api/settings')).json()) as {
+      spiraldb_path: string;
+    };
+    const list = (await (await request.get('/api/quests')).json()) as {
+      quests: unknown[];
+      skipped: Array<{ file: string; message: string }>;
+    };
+    const dir = join(settings.spiraldb_path, 'QuestTemplates');
+    const present = existsSync(dir);
+    const files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+    if (present) {
+      expect(list.quests.length + list.skipped.length).toBe(files);
+    } else {
+      expect(list.quests.length).toBe(0);
+      expect(list.skipped.length).toBe(1);
+    }
+  });
+}
+
+==================================================================
+== BEFORE: npm run test:ui -- tests/ui/zz-p716-probe.spec.ts tests/ui/p7-drafts.spec.ts --workers=2 --reporter=list
+==================================================================
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/zz-p716-probe.spec.ts tests/ui/p7-drafts.spec.ts --workers=2 --reporter=list
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 231 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [WebServer] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [spiraldb-ui] API listening on http://127.0.0.1:3181 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 406 tests using 2 workers
+
+  ✓    1 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 0 (923ms)
+  ✓    3 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 1 (851ms)
+  ✓    4 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 2 (492ms)
+  ✓    2 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (3.4s)
+  ✓    5 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 3 (1.2s)
+  ✓    7 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 4 (1.1s)
+  ✓    8 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 5 (1.4s)
+  ✓    6 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (2.7s)
+  ✓    9 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 6 (1.3s)
+  ✘   11 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 7 (1.2s)
+  ✓   10 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (3.0s)
+  ✓   12 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 8 (1.5s)
+  ✓   14 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 9 (950ms)
+  ✓   13 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload (2.5s)
+  ✓   15 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 10 (545ms)
+  ✓   17 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 11 (958ms)
+  ✘   18 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 12 (1.3s)
+  ✓   16 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits (3.0s)
+  ✓   19 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 13 (1.4s)
+  ✘   21 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 14 (1.5s)
+  ✓   20 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file (3.3s)
+  ✓   22 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 15 (963ms)
+  ✓   23 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 16 (414ms)
+  ✓   24 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 17 (411ms)
+  ✓   25 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 18 (412ms)
+  ✓   26 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 19 (425ms)
+  ✓   27 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 20 (411ms)
+  ✓   28 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 21 (410ms)
+  ✓   29 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 22 (415ms)
+  ✓   30 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 23 (423ms)
+  ✓   31 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 24 (412ms)
+  ✓   32 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 25 (438ms)
+  ✓   33 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 26 (456ms)
+  ✓   34 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 27 (460ms)
+  ✓   35 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 28 (525ms)
+  ✓   36 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 29 (464ms)
+  ✓   37 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 30 (452ms)
+  ✓   38 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 31 (438ms)
+  ✓   39 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 32 (424ms)
+  ✓   40 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 33 (421ms)
+  ✓   41 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 34 (439ms)
+  ✓   42 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 35 (437ms)
+  ✓   43 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 36 (436ms)
+  ✓   44 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 37 (424ms)
+  ✓   45 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 38 (430ms)
+  ✓   46 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 39 (463ms)
+  ✓   47 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 40 (424ms)
+  ✓   48 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 41 (423ms)
+  ✓   49 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 42 (421ms)
+  ✓   50 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 43 (427ms)
+  ✓   51 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 44 (464ms)
+  ✓   52 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 45 (421ms)
+  ✓   53 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 46 (423ms)
+  ✓   54 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 47 (499ms)
+  ✓   55 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 48 (427ms)
+  ✓   56 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 49 (423ms)
+  ✓   57 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 50 (432ms)
+  ✓   58 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 51 (428ms)
+  ✓   59 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 52 (425ms)
+  ✓   60 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 53 (451ms)
+  ✓   61 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 54 (424ms)
+  ✓   62 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 55 (438ms)
+  ✓   63 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 56 (444ms)
+  ✓   64 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 57 (427ms)
+  ✓   65 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 58 (425ms)
+  ✓   66 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 59 (432ms)
+  ✓   67 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 60 (425ms)
+  ✓   68 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 61 (442ms)
+  ✓   69 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 62 (420ms)
+  ✓   70 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 63 (431ms)
+  ✓   71 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 64 (423ms)
+  ✓   72 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 65 (464ms)
+  ✓   73 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 66 (491ms)
+  ✓   74 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 67 (466ms)
+  ✓   75 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 68 (470ms)
+  ✓   76 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 69 (455ms)
+  ✓   77 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 70 (464ms)
+  ✓   78 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 71 (462ms)
+  ✓   79 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 72 (463ms)
+  ✓   80 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 73 (511ms)
+  ✓   81 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 74 (489ms)
+  ✓   82 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 75 (513ms)
+  ✓   83 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 76 (470ms)
+  ✓   84 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 77 (479ms)
+  ✓   85 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 78 (471ms)
+  ✓   86 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 79 (452ms)
+  ✓   87 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 80 (460ms)
+  ✓   88 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 81 (535ms)
+  ✓   89 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 82 (483ms)
+  ✓   90 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 83 (528ms)
+  ✓   91 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 84 (474ms)
+  ✓   92 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 85 (462ms)
+  ✓   93 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 86 (465ms)
+  ✓   94 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 87 (474ms)
+  ✓   95 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 88 (456ms)
+  ✓   96 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 89 (448ms)
+  ✓   97 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 90 (475ms)
+  ✓   98 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 91 (462ms)
+  ✓   99 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 92 (446ms)
+  ✓  100 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 93 (519ms)
+  ✓  101 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 94 (562ms)
+  ✓  102 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 95 (510ms)
+  ✓  103 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 96 (476ms)
+  ✓  104 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 97 (470ms)
+  ✓  105 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 98 (487ms)
+  ✓  106 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 99 (466ms)
+  ✓  107 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 100 (454ms)
+  ✓  108 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 101 (446ms)
+  ✓  109 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 102 (441ms)
+  ✓  110 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 103 (428ms)
+  ✓  111 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 104 (430ms)
+  ✓  112 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 105 (446ms)
+  ✓  113 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 106 (427ms)
+  ✓  114 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 107 (427ms)
+  ✓  115 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 108 (425ms)
+  ✓  116 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 109 (425ms)
+  ✓  117 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 110 (426ms)
+  ✓  118 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 111 (429ms)
+  ✓  119 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 112 (425ms)
+  ✓  120 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 113 (423ms)
+  ✓  121 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 114 (443ms)
+  ✓  122 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 115 (427ms)
+  ✓  123 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 116 (424ms)
+  ✓  124 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 117 (436ms)
+  ✓  125 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 118 (422ms)
+  ✓  126 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 119 (427ms)
+  ✓  127 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 120 (421ms)
+  ✓  128 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 121 (426ms)
+  ✓  129 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 122 (418ms)
+  ✓  130 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 123 (439ms)
+  ✓  131 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 124 (423ms)
+  ✓  132 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 125 (427ms)
+  ✓  133 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 126 (431ms)
+  ✓  134 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 127 (427ms)
+  ✓  135 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 128 (430ms)
+  ✓  136 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 129 (444ms)
+  ✓  137 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 130 (435ms)
+  ✓  138 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 131 (446ms)
+  ✓  139 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 132 (446ms)
+  ✓  140 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 133 (430ms)
+  ✓  141 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 134 (442ms)
+  ✓  142 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 135 (430ms)
+  ✓  143 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 136 (425ms)
+  ✓  144 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 137 (425ms)
+  ✓  145 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 138 (439ms)
+  ✓  146 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 139 (423ms)
+  ✓  147 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 140 (423ms)
+  ✓  148 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 141 (424ms)
+  ✓  149 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 142 (422ms)
+  ✓  150 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 143 (428ms)
+  ✓  151 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 144 (434ms)
+  ✓  152 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 145 (422ms)
+  ✓  153 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 146 (443ms)
+  ✓  154 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 147 (428ms)
+  ✓  155 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 148 (426ms)
+  ✓  156 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 149 (422ms)
+  ✓  157 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 150 (445ms)
+  ✓  158 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 151 (502ms)
+  ✓  159 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 152 (442ms)
+  ✓  160 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 153 (426ms)
+  ✓  161 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 154 (430ms)
+  ✓  162 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 155 (423ms)
+  ✓  163 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 156 (491ms)
+  ✓  164 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 157 (448ms)
+  ✓  165 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 158 (435ms)
+  ✓  166 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 159 (419ms)
+  ✓  167 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 160 (438ms)
+  ✓  168 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 161 (423ms)
+  ✓  169 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 162 (427ms)
+  ✓  170 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 163 (414ms)
+  ✓  171 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 164 (418ms)
+  ✓  172 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 165 (430ms)
+  ✓  173 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 166 (417ms)
+  ✓  174 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 167 (427ms)
+  ✓  175 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 168 (427ms)
+  ✓  176 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 169 (427ms)
+  ✓  177 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 170 (425ms)
+  ✓  178 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 171 (452ms)
+  ✓  179 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 172 (445ms)
+  ✓  180 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 173 (428ms)
+  ✓  181 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 174 (416ms)
+  ✓  182 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 175 (434ms)
+  ✓  183 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 176 (420ms)
+  ✓  184 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 177 (468ms)
+  ✓  185 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 178 (419ms)
+  ✓  186 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 179 (428ms)
+  ✓  187 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 180 (438ms)
+  ✓  188 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 181 (438ms)
+  ✓  189 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 182 (429ms)
+  ✓  190 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 183 (462ms)
+  ✓  191 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 184 (431ms)
+  ✓  192 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 185 (421ms)
+  ✓  193 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 186 (419ms)
+  ✓  194 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 187 (434ms)
+  ✓  195 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 188 (415ms)
+  ✓  196 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 189 (419ms)
+  ✓  197 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 190 (419ms)
+  ✓  198 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 191 (422ms)
+  ✓  199 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 192 (423ms)
+  ✓  200 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 193 (453ms)
+  ✓  201 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 194 (421ms)
+  ✓  202 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 195 (420ms)
+  ✓  203 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 196 (468ms)
+  ✓  204 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 197 (426ms)
+  ✓  205 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 198 (419ms)
+  ✓  206 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 199 (433ms)
+  ✓  207 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 200 (432ms)
+  ✓  208 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 201 (442ms)
+  ✓  209 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 202 (434ms)
+  ✓  210 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 203 (441ms)
+  ✓  211 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 204 (435ms)
+  ✓  212 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 205 (448ms)
+  ✓  213 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 206 (427ms)
+  ✓  214 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 207 (431ms)
+  ✓  215 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 208 (426ms)
+  ✓  216 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 209 (418ms)
+  ✓  217 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 210 (423ms)
+  ✓  218 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 211 (435ms)
+  ✓  219 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 212 (423ms)
+  ✓  220 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 213 (418ms)
+  ✓  221 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 214 (428ms)
+  ✓  222 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 215 (426ms)
+  ✓  223 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 216 (428ms)
+  ✓  224 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 217 (428ms)
+  ✓  225 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 218 (424ms)
+  ✓  226 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 219 (433ms)
+  ✓  227 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 220 (421ms)
+  ✓  228 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 221 (420ms)
+  ✓  229 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 222 (421ms)
+  ✓  230 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 223 (422ms)
+  ✓  231 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 224 (427ms)
+  ✓  232 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 225 (430ms)
+  ✓  233 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 226 (417ms)
+  ✓  234 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 227 (432ms)
+  ✓  235 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 228 (426ms)
+  ✓  236 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 229 (430ms)
+  ✓  237 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 230 (434ms)
+  ✓  238 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 231 (436ms)
+  ✓  239 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 232 (426ms)
+  ✓  240 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 233 (428ms)
+  ✓  241 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 234 (418ms)
+  ✓  242 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 235 (445ms)
+  ✓  243 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 236 (419ms)
+  ✓  244 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 237 (441ms)
+  ✓  245 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 238 (438ms)
+  ✓  246 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 239 (427ms)
+  ✓  247 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 240 (462ms)
+  ✓  248 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 241 (425ms)
+  ✓  249 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 242 (418ms)
+  ✓  250 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 243 (416ms)
+  ✓  251 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 244 (436ms)
+  ✓  252 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 245 (425ms)
+  ✓  253 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 246 (432ms)
+  ✓  254 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 247 (421ms)
+  ✓  255 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 248 (420ms)
+  ✓  256 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 249 (421ms)
+  ✓  257 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 250 (432ms)
+  ✓  258 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 251 (429ms)
+  ✓  259 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 252 (425ms)
+  ✓  260 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 253 (433ms)
+  ✓  261 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 254 (416ms)
+  ✓  262 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 255 (417ms)
+  ✓  263 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 256 (418ms)
+  ✓  264 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 257 (420ms)
+  ✓  265 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 258 (424ms)
+  ✓  266 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 259 (429ms)
+  ✓  267 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 260 (419ms)
+  ✓  268 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 261 (459ms)
+  ✓  269 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 262 (433ms)
+  ✓  270 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 263 (448ms)
+  ✓  271 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 264 (439ms)
+  ✓  272 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 265 (423ms)
+  ✓  273 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 266 (448ms)
+  ✓  274 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 267 (446ms)
+  ✓  275 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 268 (470ms)
+  ✓  276 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 269 (432ms)
+  ✓  277 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 270 (443ms)
+  ✓  278 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 271 (419ms)
+  ✓  279 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 272 (416ms)
+  ✓  280 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 273 (420ms)
+  ✓  281 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 274 (420ms)
+  ✓  282 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 275 (430ms)
+  ✓  283 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 276 (425ms)
+  ✓  284 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 277 (419ms)
+  ✓  285 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 278 (422ms)
+  ✓  286 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 279 (433ms)
+  ✓  287 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 280 (426ms)
+  ✓  288 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 281 (423ms)
+  ✓  289 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 282 (425ms)
+  ✓  290 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 283 (421ms)
+  ✓  291 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 284 (435ms)
+  ✓  292 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 285 (423ms)
+  ✓  293 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 286 (424ms)
+  ✓  294 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 287 (438ms)
+  ✓  295 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 288 (414ms)
+  ✓  296 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 289 (419ms)
+  ✓  297 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 290 (473ms)
+  ✓  298 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 291 (447ms)
+  ✓  299 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 292 (424ms)
+  ✓  300 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 293 (452ms)
+  ✓  301 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 294 (418ms)
+  ✓  302 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 295 (425ms)
+  ✓  303 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 296 (437ms)
+  ✓  304 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 297 (427ms)
+  ✓  305 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 298 (426ms)
+  ✓  306 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 299 (437ms)
+  ✓  307 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 300 (418ms)
+  ✓  308 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 301 (455ms)
+  ✓  309 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 302 (446ms)
+  ✓  310 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 303 (420ms)
+  ✓  311 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 304 (469ms)
+  ✓  312 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 305 (435ms)
+  ✓  313 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 306 (432ms)
+  ✓  314 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 307 (425ms)
+  ✓  315 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 308 (441ms)
+  ✓  316 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 309 (416ms)
+  ✓  317 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 310 (423ms)
+  ✓  318 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 311 (430ms)
+  ✓  319 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 312 (491ms)
+  ✓  320 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 313 (426ms)
+  ✓  321 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 314 (426ms)
+  ✓  322 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 315 (416ms)
+  ✓  323 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 316 (426ms)
+  ✓  324 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 317 (428ms)
+  ✓  325 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 318 (438ms)
+  ✓  326 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 319 (425ms)
+  ✓  327 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 320 (424ms)
+  ✓  328 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 321 (459ms)
+  ✓  329 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 322 (451ms)
+  ✓  330 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 323 (421ms)
+  ✓  331 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 324 (434ms)
+  ✓  332 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 325 (418ms)
+  ✓  333 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 326 (428ms)
+  ✓  334 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 327 (422ms)
+  ✓  335 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 328 (446ms)
+  ✓  336 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 329 (446ms)
+  ✓  337 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 330 (418ms)
+  ✓  338 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 331 (440ms)
+  ✓  339 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 332 (422ms)
+  ✓  340 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 333 (417ms)
+  ✓  341 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 334 (453ms)
+  ✓  342 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 335 (423ms)
+  ✓  343 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 336 (419ms)
+  ✓  344 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 337 (437ms)
+  ✓  345 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 338 (422ms)
+  ✓  346 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 339 (442ms)
+  ✓  347 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 340 (425ms)
+  ✓  348 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 341 (423ms)
+  ✓  349 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 342 (414ms)
+  ✓  350 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 343 (414ms)
+  ✓  351 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 344 (433ms)
+  ✓  352 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 345 (425ms)
+  ✓  353 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 346 (449ms)
+  ✓  354 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 347 (423ms)
+  ✓  355 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 348 (437ms)
+  ✓  356 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 349 (427ms)
+  ✓  357 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 350 (424ms)
+  ✓  358 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 351 (422ms)
+  ✓  359 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 352 (442ms)
+  ✓  360 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 353 (416ms)
+  ✓  361 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 354 (420ms)
+  ✓  362 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 355 (421ms)
+  ✓  363 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 356 (423ms)
+  ✓  364 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 357 (420ms)
+  ✓  365 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 358 (433ms)
+  ✓  366 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 359 (421ms)
+  ✓  367 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 360 (505ms)
+  ✓  368 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 361 (437ms)
+  ✓  369 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 362 (426ms)
+  ✓  370 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 363 (418ms)
+  ✓  371 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 364 (412ms)
+  ✓  372 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 365 (425ms)
+  ✓  373 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 366 (441ms)
+  ✓  374 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 367 (443ms)
+  ✓  375 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 368 (433ms)
+  ✓  376 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 369 (423ms)
+  ✓  377 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 370 (415ms)
+  ✓  378 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 371 (434ms)
+  ✓  379 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 372 (428ms)
+  ✓  380 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 373 (417ms)
+  ✓  381 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 374 (430ms)
+  ✓  382 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 375 (422ms)
+  ✓  383 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 376 (420ms)
+  ✓  384 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 377 (421ms)
+  ✓  385 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 378 (424ms)
+  ✓  386 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 379 (436ms)
+  ✓  387 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 380 (421ms)
+  ✓  388 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 381 (419ms)
+  ✓  389 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 382 (429ms)
+  ✓  390 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 383 (423ms)
+  ✓  391 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 384 (421ms)
+  ✓  392 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 385 (423ms)
+  ✓  393 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 386 (426ms)
+  ✓  394 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 387 (436ms)
+  ✓  395 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 388 (424ms)
+  ✓  396 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 389 (426ms)
+  ✓  397 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 390 (433ms)
+  ✓  398 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 391 (428ms)
+  ✓  399 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 392 (419ms)
+  ✓  400 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 393 (431ms)
+  ✓  401 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 394 (426ms)
+  ✓  402 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 395 (417ms)
+  ✓  403 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 396 (419ms)
+  ✓  404 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 397 (434ms)
+  ✓  405 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 398 (442ms)
+  ✓  406 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 399 (423ms)
+
+
+  1) [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 7 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 323
+    Received: 322
+
+      21 |     const files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+      22 |     if (present) {
+    > 23 |       expect(list.quests.length + list.skipped.length).toBe(files);
+         |                                                        ^
+      24 |     } else {
+      25 |       expect(list.quests.length).toBe(0);
+      26 |       expect(list.skipped.length).toBe(1);
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/zz-p716-probe.spec.ts:23:56
+
+    Error Context: test-results/zz-p716-probe-corpus-arm-copy-7-chromium/error-context.md
+
+  2) [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 12 ─────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 323
+    Received: 322
+
+      21 |     const files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+      22 |     if (present) {
+    > 23 |       expect(list.quests.length + list.skipped.length).toBe(files);
+         |                                                        ^
+      24 |     } else {
+      25 |       expect(list.quests.length).toBe(0);
+      26 |       expect(list.skipped.length).toBe(1);
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/zz-p716-probe.spec.ts:23:56
+
+    Error Context: test-results/zz-p716-probe-corpus-arm-copy-12-chromium/error-context.md
+
+  3) [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 14 ─────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 323
+    Received: 322
+
+      21 |     const files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+      22 |     if (present) {
+    > 23 |       expect(list.quests.length + list.skipped.length).toBe(files);
+         |                                                        ^
+      24 |     } else {
+      25 |       expect(list.quests.length).toBe(0);
+      26 |       expect(list.skipped.length).toBe(1);
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/zz-p716-probe.spec.ts:23:56
+
+    Error Context: test-results/zz-p716-probe-corpus-arm-copy-14-chromium/error-context.md
+
+  3 failed
+    [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 7 ───────────────────────────
+    [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 12 ──────────────────────────
+    [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 14 ──────────────────────────
+  403 passed (3.2m)
+
+==================================================================
+== probe source, AFTER the fix (the arm's post-fix body, verbatim)
+==================================================================
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { expect, test } from '@playwright/test';
+
+import { lockClone } from '../helpers/clone-fixture';
+
+// p7-16 TEMPORARY race probe, AFTER the fix: the post-fix body of a11y.spec.ts's corpus arm,
+// verbatim, repeated beside p7-drafts.spec.ts on another worker.
+for (let i = 0; i < 400; i += 1) {
+  test(`corpus arm copy ${i}`, async ({ request }) => {
+    // The list and the directory are two readings of the clone; a clone-writing spec on another
+    // worker (`p7-drafts.spec.ts`) must not land a file between them (D183).
+    const release = await lockClone();
+    let settings: { spiraldb_path: string };
+    let list: { quests: unknown[]; skipped: Array<{ file: string; message: string }> };
+    let present: boolean;
+    let files: number;
+    try {
+      settings = (await (await request.get('/api/settings')).json()) as typeof settings;
+      list = (await (await request.get('/api/quests')).json()) as typeof list;
+      const dir = join(settings.spiraldb_path, 'QuestTemplates');
+      present = existsSync(dir);
+      files = present ? readdirSync(dir).filter((name) => name.endsWith('.json')).length : 0;
+    } finally {
+      release();
+    }
+    if (present) {
+      expect(list.quests.length + list.skipped.length).toBe(files);
+    } else {
+      expect(list.quests.length).toBe(0);
+      expect(list.skipped.length).toBe(1);
+    }
+  });
+}
+
+==================================================================
+== AFTER: npm run test:ui -- tests/ui/zz-p716-probe.spec.ts tests/ui/p7-drafts.spec.ts --workers=2 --reporter=list
+==================================================================
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/zz-p716-probe.spec.ts tests/ui/p7-drafts.spec.ts --workers=2 --reporter=list
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [client] [WebServer] 
+[WebServer] [client]   VITE v5.4.21  ready in 250 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [WebServer] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://127.0.0.1:3181 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 406 tests using 2 workers
+
+  ✓    1 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 0 (493ms)
+  ✓    2 [chromium] › tests/ui/p7-drafts.spec.ts:241:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (3.2s)
+  ✓    4 [chromium] › tests/ui/p7-drafts.spec.ts:354:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (2.3s)
+  ✓    3 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 1 (5.9s)
+  ✓    5 [chromium] › tests/ui/p7-drafts.spec.ts:411:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (3.4s)
+  ✓    6 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 2 (3.4s)
+  ✓    8 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 3 (411ms)
+  ✓    9 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 4 (410ms)
+  ✓   10 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 5 (427ms)
+  ✓   11 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 6 (474ms)
+  ✓   12 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 7 (421ms)
+  ✓   13 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 8 (416ms)
+  ✓   14 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 9 (419ms)
+  ✓   15 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 10 (409ms)
+  ✓    7 [chromium] › tests/ui/p7-drafts.spec.ts:453:1 › a rejection is immediate and survives a reload (6.5s)
+  ✓   17 [chromium] › tests/ui/p7-drafts.spec.ts:497:1 › accept-all from each source, then Save, validates and commits (2.7s)
+  ✓   16 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 11 (5.9s)
+  ✓   19 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 12 (486ms)
+  ✓   20 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 13 (446ms)
+  ✓   21 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 14 (410ms)
+  ✓   22 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 15 (428ms)
+  ✓   18 [chromium] › tests/ui/p7-drafts.spec.ts:595:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file (5.6s)
+  ✓   23 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 16 (3.9s)
+  ✓   24 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 17 (425ms)
+  ✓   25 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 18 (416ms)
+  ✓   26 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 19 (441ms)
+  ✓   27 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 20 (451ms)
+  ✓   28 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 21 (472ms)
+  ✓   29 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 22 (422ms)
+  ✓   30 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 23 (415ms)
+  ✓   31 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 24 (419ms)
+  ✓   32 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 25 (414ms)
+  ✓   33 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 26 (424ms)
+  ✓   34 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 27 (420ms)
+  ✓   35 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 28 (436ms)
+  ✓   36 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 29 (446ms)
+  ✓   37 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 30 (426ms)
+  ✓   38 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 31 (428ms)
+  ✓   39 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 32 (447ms)
+  ✓   40 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 33 (434ms)
+  ✓   41 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 34 (427ms)
+  ✓   42 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 35 (424ms)
+  ✓   43 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 36 (462ms)
+  ✓   44 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 37 (438ms)
+  ✓   45 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 38 (443ms)
+  ✓   46 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 39 (429ms)
+  ✓   47 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 40 (426ms)
+  ✓   48 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 41 (433ms)
+  ✓   49 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 42 (428ms)
+  ✓   50 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 43 (441ms)
+  ✓   51 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 44 (431ms)
+  ✓   52 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 45 (442ms)
+  ✓   53 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 46 (426ms)
+  ✓   54 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 47 (426ms)
+  ✓   55 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 48 (447ms)
+  ✓   56 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 49 (425ms)
+  ✓   57 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 50 (425ms)
+  ✓   58 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 51 (427ms)
+  ✓   59 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 52 (431ms)
+  ✓   60 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 53 (433ms)
+  ✓   61 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 54 (420ms)
+  ✓   62 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 55 (422ms)
+  ✓   63 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 56 (433ms)
+  ✓   64 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 57 (478ms)
+  ✓   65 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 58 (470ms)
+  ✓   66 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 59 (423ms)
+  ✓   67 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 60 (431ms)
+  ✓   68 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 61 (440ms)
+  ✓   69 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 62 (426ms)
+  ✓   70 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 63 (429ms)
+  ✓   71 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 64 (450ms)
+  ✓   72 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 65 (427ms)
+  ✓   73 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 66 (429ms)
+  ✓   74 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 67 (448ms)
+  ✓   75 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 68 (431ms)
+  ✓   76 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 69 (443ms)
+  ✓   77 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 70 (432ms)
+  ✓   78 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 71 (426ms)
+  ✓   79 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 72 (420ms)
+  ✓   80 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 73 (438ms)
+  ✓   81 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 74 (419ms)
+  ✓   82 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 75 (424ms)
+  ✓   83 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 76 (442ms)
+  ✓   84 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 77 (425ms)
+  ✓   85 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 78 (424ms)
+  ✓   86 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 79 (439ms)
+  ✓   87 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 80 (420ms)
+  ✓   88 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 81 (434ms)
+  ✓   89 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 82 (432ms)
+  ✓   90 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 83 (439ms)
+  ✓   91 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 84 (429ms)
+  ✓   92 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 85 (475ms)
+  ✓   93 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 86 (425ms)
+  ✓   94 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 87 (432ms)
+  ✓   95 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 88 (441ms)
+  ✓   96 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 89 (457ms)
+  ✓   97 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 90 (423ms)
+  ✓   98 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 91 (422ms)
+  ✓   99 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 92 (424ms)
+  ✓  100 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 93 (460ms)
+  ✓  101 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 94 (426ms)
+  ✓  102 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 95 (422ms)
+  ✓  103 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 96 (465ms)
+  ✓  104 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 97 (439ms)
+  ✓  105 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 98 (426ms)
+  ✓  106 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 99 (464ms)
+  ✓  107 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 100 (428ms)
+  ✓  108 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 101 (421ms)
+  ✓  109 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 102 (421ms)
+  ✓  110 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 103 (439ms)
+  ✓  111 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 104 (425ms)
+  ✓  112 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 105 (428ms)
+  ✓  113 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 106 (421ms)
+  ✓  114 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 107 (429ms)
+  ✓  115 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 108 (436ms)
+  ✓  116 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 109 (424ms)
+  ✓  117 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 110 (424ms)
+  ✓  118 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 111 (431ms)
+  ✓  119 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 112 (423ms)
+  ✓  120 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 113 (422ms)
+  ✓  121 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 114 (434ms)
+  ✓  122 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 115 (432ms)
+  ✓  123 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 116 (423ms)
+  ✓  124 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 117 (418ms)
+  ✓  125 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 118 (428ms)
+  ✓  126 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 119 (422ms)
+  ✓  127 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 120 (449ms)
+  ✓  128 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 121 (427ms)
+  ✓  129 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 122 (429ms)
+  ✓  130 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 123 (427ms)
+  ✓  131 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 124 (423ms)
+  ✓  132 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 125 (422ms)
+  ✓  133 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 126 (482ms)
+  ✓  134 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 127 (467ms)
+  ✓  135 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 128 (427ms)
+  ✓  136 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 129 (439ms)
+  ✓  137 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 130 (426ms)
+  ✓  138 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 131 (421ms)
+  ✓  139 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 132 (428ms)
+  ✓  140 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 133 (424ms)
+  ✓  141 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 134 (432ms)
+  ✓  142 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 135 (422ms)
+  ✓  143 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 136 (416ms)
+  ✓  144 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 137 (433ms)
+  ✓  145 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 138 (461ms)
+  ✓  146 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 139 (425ms)
+  ✓  147 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 140 (438ms)
+  ✓  148 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 141 (422ms)
+  ✓  149 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 142 (428ms)
+  ✓  150 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 143 (427ms)
+  ✓  151 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 144 (427ms)
+  ✓  152 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 145 (434ms)
+  ✓  153 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 146 (441ms)
+  ✓  154 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 147 (424ms)
+  ✓  155 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 148 (420ms)
+  ✓  156 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 149 (454ms)
+  ✓  157 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 150 (429ms)
+  ✓  158 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 151 (424ms)
+  ✓  159 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 152 (424ms)
+  ✓  160 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 153 (440ms)
+  ✓  161 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 154 (430ms)
+  ✓  162 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 155 (423ms)
+  ✓  163 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 156 (428ms)
+  ✓  164 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 157 (440ms)
+  ✓  165 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 158 (423ms)
+  ✓  166 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 159 (423ms)
+  ✓  167 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 160 (425ms)
+  ✓  168 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 161 (442ms)
+  ✓  169 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 162 (424ms)
+  ✓  170 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 163 (428ms)
+  ✓  171 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 164 (468ms)
+  ✓  172 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 165 (441ms)
+  ✓  173 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 166 (431ms)
+  ✓  174 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 167 (428ms)
+  ✓  175 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 168 (426ms)
+  ✓  176 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 169 (435ms)
+  ✓  177 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 170 (423ms)
+  ✓  178 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 171 (424ms)
+  ✓  179 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 172 (443ms)
+  ✓  180 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 173 (424ms)
+  ✓  181 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 174 (445ms)
+  ✓  182 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 175 (421ms)
+  ✓  183 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 176 (426ms)
+  ✓  184 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 177 (429ms)
+  ✓  185 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 178 (431ms)
+  ✓  186 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 179 (425ms)
+  ✓  187 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 180 (442ms)
+  ✓  188 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 181 (416ms)
+  ✓  189 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 182 (420ms)
+  ✓  190 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 183 (447ms)
+  ✓  191 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 184 (429ms)
+  ✓  192 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 185 (442ms)
+  ✓  193 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 186 (425ms)
+  ✓  194 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 187 (437ms)
+  ✓  195 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 188 (442ms)
+  ✓  196 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 189 (416ms)
+  ✓  197 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 190 (420ms)
+  ✓  198 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 191 (420ms)
+  ✓  199 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 192 (464ms)
+  ✓  200 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 193 (421ms)
+  ✓  201 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 194 (429ms)
+  ✓  202 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 195 (425ms)
+  ✓  203 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 196 (428ms)
+  ✓  204 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 197 (448ms)
+  ✓  205 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 198 (424ms)
+  ✓  206 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 199 (478ms)
+  ✓  207 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 200 (423ms)
+  ✓  208 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 201 (422ms)
+  ✓  209 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 202 (449ms)
+  ✓  210 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 203 (421ms)
+  ✓  211 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 204 (421ms)
+  ✓  212 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 205 (463ms)
+  ✓  213 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 206 (423ms)
+  ✓  214 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 207 (446ms)
+  ✓  215 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 208 (422ms)
+  ✓  216 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 209 (420ms)
+  ✓  217 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 210 (447ms)
+  ✓  218 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 211 (427ms)
+  ✓  219 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 212 (442ms)
+  ✓  220 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 213 (422ms)
+  ✓  221 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 214 (473ms)
+  ✓  222 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 215 (445ms)
+  ✓  223 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 216 (419ms)
+  ✓  224 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 217 (433ms)
+  ✓  225 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 218 (432ms)
+  ✓  226 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 219 (422ms)
+  ✓  227 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 220 (431ms)
+  ✓  228 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 221 (443ms)
+  ✓  229 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 222 (428ms)
+  ✓  230 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 223 (427ms)
+  ✓  231 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 224 (440ms)
+  ✓  232 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 225 (443ms)
+  ✓  233 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 226 (426ms)
+  ✓  234 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 227 (423ms)
+  ✓  235 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 228 (421ms)
+  ✓  236 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 229 (481ms)
+  ✓  237 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 230 (427ms)
+  ✓  238 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 231 (432ms)
+  ✓  239 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 232 (435ms)
+  ✓  240 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 233 (435ms)
+  ✓  241 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 234 (472ms)
+  ✓  242 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 235 (444ms)
+  ✓  243 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 236 (423ms)
+  ✓  244 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 237 (426ms)
+  ✓  245 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 238 (425ms)
+  ✓  246 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 239 (422ms)
+  ✓  247 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 240 (435ms)
+  ✓  248 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 241 (439ms)
+  ✓  249 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 242 (424ms)
+  ✓  250 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 243 (421ms)
+  ✓  251 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 244 (433ms)
+  ✓  252 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 245 (417ms)
+  ✓  253 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 246 (419ms)
+  ✓  254 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 247 (443ms)
+  ✓  255 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 248 (428ms)
+  ✓  256 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 249 (423ms)
+  ✓  257 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 250 (427ms)
+  ✓  258 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 251 (426ms)
+  ✓  259 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 252 (436ms)
+  ✓  260 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 253 (435ms)
+  ✓  261 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 254 (425ms)
+  ✓  262 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 255 (423ms)
+  ✓  263 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 256 (436ms)
+  ✓  264 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 257 (422ms)
+  ✓  265 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 258 (421ms)
+  ✓  266 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 259 (436ms)
+  ✓  267 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 260 (422ms)
+  ✓  268 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 261 (422ms)
+  ✓  269 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 262 (435ms)
+  ✓  270 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 263 (418ms)
+  ✓  271 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 264 (418ms)
+  ✓  272 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 265 (419ms)
+  ✓  273 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 266 (419ms)
+  ✓  274 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 267 (423ms)
+  ✓  275 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 268 (438ms)
+  ✓  276 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 269 (458ms)
+  ✓  277 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 270 (424ms)
+  ✓  278 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 271 (434ms)
+  ✓  279 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 272 (429ms)
+  ✓  280 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 273 (425ms)
+  ✓  281 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 274 (441ms)
+  ✓  282 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 275 (436ms)
+  ✓  283 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 276 (427ms)
+  ✓  284 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 277 (424ms)
+  ✓  285 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 278 (418ms)
+  ✓  286 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 279 (425ms)
+  ✓  287 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 280 (441ms)
+  ✓  288 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 281 (422ms)
+  ✓  289 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 282 (418ms)
+  ✓  290 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 283 (432ms)
+  ✓  291 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 284 (418ms)
+  ✓  292 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 285 (419ms)
+  ✓  293 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 286 (430ms)
+  ✓  294 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 287 (422ms)
+  ✓  295 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 288 (422ms)
+  ✓  296 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 289 (415ms)
+  ✓  297 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 290 (427ms)
+  ✓  298 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 291 (430ms)
+  ✓  299 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 292 (424ms)
+  ✓  300 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 293 (421ms)
+  ✓  301 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 294 (421ms)
+  ✓  302 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 295 (423ms)
+  ✓  303 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 296 (421ms)
+  ✓  304 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 297 (423ms)
+  ✓  305 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 298 (501ms)
+  ✓  306 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 299 (430ms)
+  ✓  307 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 300 (435ms)
+  ✓  308 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 301 (465ms)
+  ✓  309 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 302 (432ms)
+  ✓  310 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 303 (434ms)
+  ✓  311 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 304 (425ms)
+  ✓  312 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 305 (442ms)
+  ✓  313 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 306 (423ms)
+  ✓  314 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 307 (442ms)
+  ✓  315 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 308 (426ms)
+  ✓  316 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 309 (426ms)
+  ✓  317 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 310 (439ms)
+  ✓  318 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 311 (426ms)
+  ✓  319 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 312 (423ms)
+  ✓  320 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 313 (433ms)
+  ✓  321 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 314 (424ms)
+  ✓  322 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 315 (424ms)
+  ✓  323 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 316 (430ms)
+  ✓  324 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 317 (422ms)
+  ✓  325 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 318 (433ms)
+  ✓  326 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 319 (427ms)
+  ✓  327 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 320 (427ms)
+  ✓  328 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 321 (474ms)
+  ✓  329 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 322 (425ms)
+  ✓  330 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 323 (421ms)
+  ✓  331 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 324 (417ms)
+  ✓  332 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 325 (421ms)
+  ✓  333 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 326 (421ms)
+  ✓  334 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 327 (436ms)
+  ✓  335 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 328 (425ms)
+  ✓  336 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 329 (428ms)
+  ✓  337 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 330 (441ms)
+  ✓  338 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 331 (445ms)
+  ✓  339 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 332 (424ms)
+  ✓  340 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 333 (449ms)
+  ✓  341 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 334 (423ms)
+  ✓  342 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 335 (422ms)
+  ✓  343 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 336 (436ms)
+  ✓  344 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 337 (438ms)
+  ✓  345 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 338 (429ms)
+  ✓  346 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 339 (422ms)
+  ✓  347 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 340 (436ms)
+  ✓  348 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 341 (440ms)
+  ✓  349 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 342 (438ms)
+  ✓  350 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 343 (427ms)
+  ✓  351 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 344 (420ms)
+  ✓  352 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 345 (424ms)
+  ✓  353 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 346 (425ms)
+  ✓  354 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 347 (421ms)
+  ✓  355 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 348 (440ms)
+  ✓  356 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 349 (431ms)
+  ✓  357 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 350 (446ms)
+  ✓  358 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 351 (424ms)
+  ✓  359 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 352 (420ms)
+  ✓  360 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 353 (424ms)
+  ✓  361 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 354 (437ms)
+  ✓  362 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 355 (473ms)
+  ✓  363 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 356 (427ms)
+  ✓  364 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 357 (512ms)
+  ✓  365 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 358 (412ms)
+  ✓  366 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 359 (428ms)
+  ✓  367 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 360 (421ms)
+  ✓  368 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 361 (424ms)
+  ✓  369 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 362 (431ms)
+  ✓  370 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 363 (435ms)
+  ✓  371 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 364 (420ms)
+  ✓  372 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 365 (421ms)
+  ✓  373 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 366 (441ms)
+  ✓  374 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 367 (418ms)
+  ✓  375 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 368 (424ms)
+  ✓  376 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 369 (424ms)
+  ✓  377 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 370 (418ms)
+  ✓  378 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 371 (422ms)
+  ✓  379 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 372 (436ms)
+  ✓  380 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 373 (427ms)
+  ✓  381 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 374 (429ms)
+  ✓  382 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 375 (439ms)
+  ✓  383 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 376 (421ms)
+  ✓  384 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 377 (427ms)
+  ✓  385 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 378 (424ms)
+  ✓  386 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 379 (421ms)
+  ✓  387 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 380 (424ms)
+  ✓  388 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 381 (423ms)
+  ✓  389 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 382 (424ms)
+  ✓  390 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 383 (436ms)
+  ✓  391 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 384 (420ms)
+  ✓  392 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 385 (437ms)
+  ✓  393 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 386 (425ms)
+  ✓  394 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 387 (427ms)
+  ✓  395 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 388 (423ms)
+  ✓  396 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 389 (430ms)
+  ✓  397 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 390 (424ms)
+  ✓  398 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 391 (422ms)
+  ✓  399 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 392 (426ms)
+  ✓  400 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 393 (439ms)
+  ✓  401 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 394 (426ms)
+  ✓  402 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 395 (426ms)
+  ✓  403 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 396 (428ms)
+  ✓  404 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 397 (440ms)
+  ✓  405 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 398 (424ms)
+  ✓  406 [chromium] › tests/ui/zz-p716-probe.spec.ts:11:3 › corpus arm copy 399 (423ms)
+
+  406 passed (3.2m)
+
+==================================================================
+== (context) first attempt, discarded as a reproduction: --repeat-each=15 --workers=4 also split p7-drafts' serial groups across workers, so p7-drafts raced ITSELF on the shared DB — not a full-suite condition
+==================================================================
+
+> spiraldb-ui@0.1.0 test:ui
+> PLAYWRIGHT_BROWSERS_PATH=$PWD/tools/.playwright-browsers playwright test tests/ui/a11y.spec.ts:711 tests/ui/p7-drafts.spec.ts --repeat-each=15 --workers=4 --reporter=list
+
+[WebServer] 
+[WebServer] > spiraldb-ui@0.1.0 dev
+[WebServer] > concurrently -n server,client -c blue,magenta "npm:dev:server" "npm:dev:client"
+[WebServer] 
+[WebServer] [server] [WebServer] 
+[WebServer] [server] > spiraldb-ui@0.1.0 dev:server
+[WebServer] [server] > tsx watch server/src/index.ts
+[WebServer] [server] 
+[WebServer] [client] [WebServer] 
+[WebServer] [client] > spiraldb-ui@0.1.0 dev:client
+[WebServer] [client] > vite --config client/vite.config.ts
+[WebServer] [client] 
+[WebServer] [client] 
+[WebServer] [client]   VITE v5.4.21  ready in 197 ms
+[WebServer] [client] 
+[WebServer] [client]   ➜  Local:   http://localhost:5181/
+[WebServer] [client]   ➜  Network: use --host to expose
+[WebServer] [server] [WebServer] [spiraldb-ui] database ready at /home/jason/Documents/git-projects/spiraldb-ui/data/test-ui.db
+[WebServer] [server] [WebServer] [spiraldb-ui] API listening on http://127.0.0.1:3181 (loopback only)
+[WebServer] [server] [spiraldb-ui] serving built client from /home/jason/Documents/git-projects/spiraldb-ui/client/dist
+
+Running 105 tests using 4 workers
+
+  ✘    2 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (494ms)
+  -    5 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -    6 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -    7 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -    8 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -    9 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓    3 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.0s)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓    4 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.2s)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   10 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.5s)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   12 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.7s)
+  ✓    1 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (3.5s)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   15 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (1.0s)
+  ✘   14 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (1.5s)
+  -   17 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   18 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   19 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   20 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   21 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (873ms)
+  ✓   16 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (1.8s)
+  ✓   23 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (2.3s)
+  ✓   24 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (2.7s)
+  ✘   11 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (12.0s)
+  -   26 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   27 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   28 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   29 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   30 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+  ✘   13 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (11.2s)
+  -   32 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   33 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   34 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   35 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   36 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   31 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (454ms)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   38 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (469ms)
+  ✓   37 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (1.8s)
+  ✘   22 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (10.6s)
+  -   41 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   42 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   43 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   44 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   45 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+  ✘   40 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (1.4s)
+  -   47 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   48 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   49 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   50 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   46 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (464ms)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   52 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (495ms)
+  ✓   53 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (1.6s)
+  ✓   54 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (2.3s)
+  ✘   25 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload (12.6s)
+  -   56 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   57 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+  ✘   55 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (2.4s)
+  -   59 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   60 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   61 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":1,"skipMessage":"ENOENT: no such file or directory, open '/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb/QuestTemplates/questtemplates_FX-P708-NEW-001.json'"}
+  ✘   58 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (655ms)
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   63 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (481ms)
+  ✘   39 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (11.0s)
+  -   65 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   66 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   67 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   68 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   69 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   70 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (456ms)
+  ✓   71 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (1.6s)
+  ✘   51 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (10.9s)
+  -   73 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   74 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   75 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   76 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   77 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   78 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (443ms)
+  ✓   79 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (1.6s)
+  ✓   80 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (2.4s)
+  ✓   81 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (2.7s)
+  ✘   62 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (11.0s)
+  -   83 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   84 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   85 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   86 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   87 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+  ✘   64 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (11.0s)
+  -   89 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit
+  -   90 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -   91 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -   92 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -   93 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+[corpus] {"envSpiraldbPath":null,"servedSpiraldbPath":"/home/jason/Documents/git-projects/spiraldb-ui/data/test-spiraldb","templatesDirExists":true,"questFiles":322,"apiRows":322,"apiSkipped":0,"skipMessage":null}
+  ✓   88 [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports (902ms)
+  ✓   94 [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle (1.7s)
+  ✓   95 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (2.4s)
+  ✓   96 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit (2.7s)
+  ✓   97 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload (2.4s)
+  ✓   98 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits (2.7s)
+  ✓   99 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file (3.1s)
+  ✘   72 [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit (1.0m)
+  -  100 [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit
+  -  101 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload
+  -  102 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -  103 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+  ✘   82 [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload (1.0m)
+  -  104 [chromium] › tests/ui/p7-drafts.spec.ts:481:1 › accept-all from each source, then Save, validates and commits
+  -  105 [chromium] › tests/ui/p7-drafts.spec.ts:579:1 › an unnamed draft asks for a name pre-filled from its title key, refuses a duplicate and a path-escaping name writing nothing, then creates exactly one catalog row and one file
+
+
+  1) [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 322
+    Received: 323
+
+      737 |       // is a defect in the list, and a row with no file behind it would mean the list is not
+      738 |       // reading the path the settings name.
+    > 739 |       expect(list.quests.length + list.skipped.length).toBe(files);
+          |                                                        ^
+      740 |     } else {
+      741 |       // The CI condition, stated as its own contract: no directory, no rows, and the absence
+      742 |       // reported rather than swallowed.
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/a11y.spec.ts:739:56
+
+    Error Context: test-results/a11y-§4-the-corpus-conditi-a30f6-disk-at-the-path-it-reports-chromium-repeat10/error-context.md
+
+  2) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    SqliteError: UNIQUE constraint failed: quests.quest_name
+
+      106 |          VALUES (?, ?, ?, 'none', 'none', 0)`,
+      107 |       )
+    > 108 |       .run(name, title, hasDefinition),
+          |        ^
+      109 |   );
+      110 | }
+      111 |
+        at work (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:108:8)
+        at withDb (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:64:12)
+        at seedQuest (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:102:3)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:228:3
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium/error-context.md
+
+  3) [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit 
+
+    TypeError: Cannot read properties of undefined (reading 'status')
+
+      126 |       (id) =>
+      127 |         (
+    > 128 |           db.prepare('SELECT status FROM quest_suggestions WHERE id = ?').get(id) as {
+          |                                                                                  ^
+      129 |             status: string;
+      130 |           }
+      131 |         ).status,
+        at map (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:128:82)
+        at work (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:125:9)
+        at withDb (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:64:12)
+        at statusesOf (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:124:10)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:373:10
+
+    Error Context: test-results/p7-drafts-accepting-one-fi-cfdc3-flips-only-after-the-commit-chromium-repeat1/error-context.md
+
+  4) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 1
+    Received: 0
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      315 |     ]);
+      316 |     expect(response.ok()).toBe(true);
+    > 317 |     await expect(rows).toHaveCount(expected.length);
+          |                        ^
+      318 |     for (const [index, key] of expected.entries()) {
+      319 |       await expect(rows.nth(index)).toHaveAttribute('data-testid', `draft-row-${key}`);
+      320 |     }
+        at filtered (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:317:24)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:328:3
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat2/error-context.md
+
+  5) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 3
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      284 |   const rows = page.locator('[data-testid^="draft-row-"]');
+      285 |   // Ranked by evidence richness (3, 2, 1) — the server's order; zero-evidence hidden.
+    > 286 |   await expect(rows).toHaveCount(3);
+          |                      ^
+      287 |   await expect(rows.nth(0)).toHaveAttribute('data-testid', 'draft-row-FX-P708-RICH-001');
+      288 |   await expect(rows.nth(1)).toHaveAttribute('data-testid', 'draft-row-id-990001');
+      289 |   await expect(rows.nth(2)).toHaveAttribute('data-testid', 'draft-row-FX-P708-FILE-001');
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:286:22
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat3/error-context.md
+
+  6) [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('suggestion-37')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('suggestion-37') with timeout 10000ms
+      - waiting for getByTestId('suggestion-37')
+
+
+      472 |   await page.reload();
+      473 |   await openTab(page, 'Info');
+    > 474 |   await expect(page.getByTestId(`suggestion-${keepId}`)).toBeVisible();
+          |                                                          ^
+      475 |   await expect(page.getByTestId(`suggestion-${rejectId}`)).toHaveCount(0);
+      476 |   expect(statusesOf([rejectId])).toEqual(['rejected']);
+      477 |   // Nothing was written by a reject.
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:474:58
+
+    Error Context: test-results/p7-drafts-a-rejection-is-immediate-and-survives-a-reload-chromium-repeat4/error-context.md
+
+  7) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 4
+    Received: 0
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      303 |
+      304 |   await toggle.check();
+    > 305 |   await expect(rows).toHaveCount(4);
+          |                      ^
+      306 |   await expect(rows.nth(3)).toHaveAttribute('data-testid', 'draft-row-FX-P708-ZERO-001');
+      307 |   await toggle.uncheck();
+      308 |   await expect(rows).toHaveCount(3);
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:305:22
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat5/error-context.md
+
+  8) [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit 
+
+    TypeError: Cannot read properties of undefined (reading 'status')
+
+      126 |       (id) =>
+      127 |         (
+    > 128 |           db.prepare('SELECT status FROM quest_suggestions WHERE id = ?').get(id) as {
+          |                                                                                  ^
+      129 |             status: string;
+      130 |           }
+      131 |         ).status,
+        at map (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:128:82)
+        at work (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:125:9)
+        at withDb (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:64:12)
+        at statusesOf (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:124:10)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:373:10
+
+    Error Context: test-results/p7-drafts-accepting-one-fi-cfdc3-flips-only-after-the-commit-chromium-repeat6/error-context.md
+
+  9) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 1
+    Received: 0
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      315 |     ]);
+      316 |     expect(response.ok()).toBe(true);
+    > 317 |     await expect(rows).toHaveCount(expected.length);
+          |                        ^
+      318 |     for (const [index, key] of expected.entries()) {
+      319 |       await expect(rows.nth(index)).toHaveAttribute('data-testid', `draft-row-${key}`);
+      320 |     }
+        at filtered (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:317:24)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:322:3
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat7/error-context.md
+
+  10) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 1
+    Received: 0
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      315 |     ]);
+      316 |     expect(response.ok()).toBe(true);
+    > 317 |     await expect(rows).toHaveCount(expected.length);
+          |                        ^
+      318 |     for (const [index, key] of expected.entries()) {
+      319 |       await expect(rows.nth(index)).toHaveAttribute('data-testid', `draft-row-${key}`);
+      320 |     }
+        at filtered (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:317:24)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:328:3
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat8/error-context.md
+
+  11) [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 400
+
+      419 |     .getByRole('button', { name: /^Accept/ })
+      420 |     .click();
+    > 421 |   expect(await save(page, /^\/api\/quests\/scaffold$/)).toBe(200);
+          |                                                         ^
+      422 |   // The file exists now: the editor continues on it.
+      423 |   await expect(page).toHaveURL(new RegExp(`/quests/${NAME}$`));
+      424 |
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:421:57
+
+    Error Context: test-results/p7-drafts-a-missing-file-s-477b2-ield-in-one-scaffold-commit-chromium-repeat9/error-context.md
+
+  12) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 1
+    Received: 0
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      315 |     ]);
+      316 |     expect(response.ok()).toBe(true);
+    > 317 |     await expect(rows).toHaveCount(expected.length);
+          |                        ^
+      318 |     for (const [index, key] of expected.entries()) {
+      319 |       await expect(rows.nth(index)).toHaveAttribute('data-testid', `draft-row-${key}`);
+      320 |     }
+        at filtered (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:317:24)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:325:3
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat10/error-context.md
+
+  13) [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="draft-row-"]')
+    Expected: 1
+    Received: 0
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="draft-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="draft-row-"]')
+        24 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      315 |     ]);
+      316 |     expect(response.ok()).toBe(true);
+    > 317 |     await expect(rows).toHaveCount(expected.length);
+          |                        ^
+      318 |     for (const [index, key] of expected.entries()) {
+      319 |       await expect(rows.nth(index)).toHaveAttribute('data-testid', `draft-row-${key}`);
+      320 |     }
+        at filtered (/home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:317:24)
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:325:3
+
+    Error Context: test-results/p7-drafts-the-queue-ranks--3051a-fts-behind-a-counted-toggle-chromium-repeat11/error-context.md
+
+  14) [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByTestId('draft-row-WC-TUT-C08-001').getByRole('link')
+
+
+      360 |
+      361 |   await page.goto('/drafts');
+    > 362 |   await page.getByTestId(`draft-row-${EXISTING}`).getByRole('link').click();
+          |                                                                     ^
+      363 |   await expect(page).toHaveURL(new RegExp(`/quests/${EXISTING}$`));
+      364 |   await openTab(page, 'Info');
+      365 |   const line = page.getByTestId(`suggestion-${titleId}`);
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:362:69
+
+    Error Context: test-results/p7-drafts-accepting-one-fi-cfdc3-flips-only-after-the-commit-chromium-repeat12/error-context.md
+
+  15) [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 60000ms exceeded.
+
+      461 |   const line = page.getByTestId(`suggestion-${rejectId}`);
+      462 |   const [response] = await Promise.all([
+    > 463 |     page.waitForResponse(
+          |          ^
+      464 |       (res) => new URL(res.url()).pathname === `/api/suggestions/${rejectId}/reject`,
+      465 |     ),
+      466 |     line.getByRole('button', { name: /^Reject/ }).click(),
+        at /home/jason/Documents/git-projects/spiraldb-ui/tests/ui/p7-drafts.spec.ts:463:10
+
+    Error Context: test-results/p7-drafts-a-rejection-is-immediate-and-survives-a-reload-chromium-repeat13/error-context.md
+
+  15 failed
+    [chromium] › tests/ui/a11y.spec.ts:711:3 › §4 the corpus condition this suite is proven under (D81) › the server reads exactly the corpus on disk at the path it reports 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload ─
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:395:1 › a missing file saves as the D118 skeleton plus the accepted field, in one scaffold commit 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:225:1 › the queue ranks by evidence, filters on the server, shows the name pair, and hides zero-evidence drafts behind a counted toggle 
+    [chromium] › tests/ui/p7-drafts.spec.ts:338:1 › accepting one field on an existing file then saving commits a diff of exactly that field, and the status flips only after the commit 
+    [chromium] › tests/ui/p7-drafts.spec.ts:437:1 › a rejection is immediate and survives a reload ─
+  59 did not run
+  31 passed (1.6m)

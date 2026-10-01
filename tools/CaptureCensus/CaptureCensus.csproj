@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>capture-census</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CaptureCensus</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Deliberately no ProjectReference (task 7.2, D128): the census only reads the capture's
+       JSON envelopes ({"data":{"name":…,"fields":{F:{"value":V}}}}) with System.Text.Json and
+       compares them with a hand-kept table of what QuestBuilder and the wrapper read, so it needs
+       neither Imcodec ($(ImviewRoot)/submodule/Imcodec, which FixtureGen and PacketReaderCli
+       build against) nor Newtonsoft. It is built under the same D18 flags as the other tools. -->
+
+</Project>

@@ -1,0 +1,23 @@
+### control: acceptSuggestions moved BEFORE pipeline.saveObject in saveQuest
+ server/src/services/quests.ts | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+   ✓ p7-08 — accepted_suggestions parsing (D141) > reads absent/null as none, de-duplicates, and refuses anything but positive integer ids 2ms
+   ✓ p7-08 — POST /api/quests with accepted_suggestions (D141) > writes exactly the accepted field and flips its id only after the commit 231ms
+   ✓ p7-08 — POST /api/quests with accepted_suggestions (D141) > refuses an unknown, decided or foreign id with a 400 before writing anything 47ms
+   × p7-08 — POST /api/quests with accepted_suggestions (D141) > leaves every id pending when the commit fails 181ms
+   ✓ p7-08 — POST /api/quests/scaffold with a draft document (D142) > writes the skeleton plus the accepted field in the scaffold commit, then flips the id 185ms
+   ✓ p7-08 — POST /api/quests/scaffold with a draft document (D142) > refuses a document whose m_questName is not the save name, writing nothing 32ms
+   ✓ p7-08 — POST /api/quests/scaffold with a draft document (D142) > answers the unwritten skeleton read with 404 for an unknown name and 409 for a defined one 27ms
+   ✓ p7-08 — naming an unnamed draft (D137/D142) > creates exactly one catalog row and one file, links the id and names its suggestions 161ms
+   ✓ p7-08 — naming an unnamed draft (D137/D142) > refuses a duplicate name (409) and a path-escaping one (400), writing nothing 73ms
+   ✓ p7-08 — naming an unnamed draft (D137/D142) > refuses an id already linked to another quest, and an unknown id 29ms
+   ✓ p7-08 — acceptSuggestions inside an outer transaction > rolls back with the outer transaction when a later statement fails 4ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/unit/p7-accept.test.ts > p7-08 — POST /api/quests with accepted_suggestions (D141) > leaves every id pending when the commit fails
+AssertionError: expected 'accepted' to be 'pending' // Object.is equality
+Expected: [32m"pending"[39m
+Received: [31m"accepted"[39m
+      Tests  1 failed | 10 passed (11)
+### restored
+ ✓ tests/unit/p7-accept.test.ts (11 tests) 948ms
+      Tests  11 passed (11)

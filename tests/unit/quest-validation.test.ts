@@ -38,7 +38,7 @@ import { deleteGoalEdit } from '../../client/src/lib/quest-goals';
  *    numbers, so a rule that fires on real data, or an engine that misses it, fails here:
  *    re-measured at the owner's `f9a1055` baseline (D79/D80): **328** files (was 322), **0**
  *    findings of the six zero-instance rules, **3** quests with unreachable goals (**25** goal
- *    findings; was 5 quests / 35 findings), **94** zone warnings, and **0** reference warnings —
+ *    findings; was 5 quests / 35 findings), **94** zone warnings (0 since the D120 zones table, D145), and **0** reference warnings —
  *    the last one only under the dual-source handling of `ResDrawHand.m_templateID` (D63(c)),
  *    which is asserted directly too. The reference count needed the tool's own database to be
  *    **re-synced** to the owner's 328 quests (D80b): before that the sweep reported six
@@ -676,20 +676,15 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
       }
     });
 
-    it('emits exactly the 94 measured zone warnings and no other warning', () => {
+    it('emits exactly 0 zone warnings and no other warning than the 25 unreachable goals (D145)', () => {
+      // Re-measured at p7-02 (D145). The 94 zone warnings (31 m_cameraZoneName / 43 m_destinationZone /
+      // 20 m_zoneTag) were the quest zone references absent from a `zones` table of 1,241 rows, the
+      // distinct ZoneName + destination set of the ZoneTransfer files; the Phase 6 breadth sync (D120)
+      // made `zones` the 3,357 `WizardZoneData` rows, and all 1,510 zone-field values in the 330-file
+      // corpus resolve in it. The table size is asserted first so an empty set cannot pass as 0.
+      expect(references.zones?.size).toBe(3357);
       const zoneWarnings = results.flatMap((quest) => ofKind(quest.result, 'zone-not-known'));
-      expect(zoneWarnings).toHaveLength(94);
-      expect(zoneWarnings.every((finding) => finding.severity === 'warning')).toBe(true);
-      const byField = new Map<string, number>();
-      for (const finding of zoneWarnings) {
-        const key = String(finding.path[finding.path.length - 1]);
-        byField.set(key, (byField.get(key) ?? 0) + 1);
-      }
-      expect(Object.fromEntries([...byField].sort())).toEqual({
-        m_cameraZoneName: 31,
-        m_destinationZone: 43,
-        m_zoneTag: 20,
-      });
+      expect(zoneWarnings).toHaveLength(0);
       const other = results.flatMap((quest) =>
         quest.result.warnings.filter((finding) => finding.kind !== 'zone-not-known'),
       );
@@ -762,7 +757,7 @@ describe.runIf(CORPUS !== null && REFERENCES !== null)(
           `| 6 zero-instance rules = 0`,
       );
       expect(errors).toBe(0);
-      expect(warnings).toBe(119); // 94 zone + 25 unreachable (was 129 = 94 + 35)
+      expect(warnings).toBe(25); // 0 zone + 25 unreachable (was 119 = 94 + 25; D145)
     });
   },
 );

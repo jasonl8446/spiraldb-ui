@@ -769,7 +769,6 @@ export interface WriteBreadthOptions {
   collected: CollectedBreadth;
   /** The corpus rows the transaction just wrote (`buildZoneRows`) — the client's own zone keys. */
   corpusZones: readonly ZoneRow[];
-  /** Whole-statement list order for a caller that wants prepared statements reused. */
 }
 
 /** One row of the reconciliation, with the half of its label that still needs resolving. */
