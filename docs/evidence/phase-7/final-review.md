@@ -197,3 +197,41 @@ $ npm run test:ui   (FULL tier-1)
 The D17 clone is untouched (`git -C data/test-spiraldb status --short` empty, `18dc924`, `content/2026-09-27`); the
 owner's dev server on 3001/5173 was not stopped (its `tsx watch` reloads the changed server sources); ports
 12369/12500 were released.
+
+---
+
+## Round 2: the reviewer's re-review of f30fd70 (verbatim)
+
+## Re-review — round 1 (`final-gate-7` @ f30fd70): **APPROVE**
+
+All five findings (M1, M2, M3, m1, m2) are fixed. Every repro was re-run against the fix commit, and none of the fixes introduces a new defect at MAJOR or above; five NITs follow, none blocking. Read-only pass: nothing edited, committed or pushed. The D17 clone is unchanged (porcelain 0, `content/2026-09-27` @ `18dc924`), and the working tree is clean.
+
+### My reproductions, re-run against f30fd70
+(`/tmp/claude-1000/-home-jason-Documents-git-projects-spiraldb-ui/02fd355f-842d-451a-968b-024163d5c555/scratchpad/repro/`, 5 files / 7 tests, all passed)
+- **M1 — FIXED** (`scaffold.test.ts`): scaffold, then save authored values (`m_questLevel 42` and a title), then scaffold again. The second scaffold now answers **409** "already has a definition…", the file keeps `level 42` and the authored title, and the log shows only `create` then `update` (no third commit).
+- **M2 — FIXED** (`concurrent.test.ts`, 5 trials): in every trial both answers are 200 with **two real, distinct shas** (e.g. A=`63ea120…`, B=`03a26c6…`). There are two commits, each holding exactly its own template and metadata file, and the porcelain is empty. (Before the fix: one merged commit and `B commit ""` in 7/7 trials.)
+- **M3 — FIXED** (new `csrf2.test.ts`, the real `refuseCrossOriginWrites(appOrigins())` mounted ahead of the routers):
+  - Refused **403** with the row still pending: `https://evil.example`, `Origin: null`, `http://localhost:8080` (another local app), and `Sec-Fetch-Site: cross-site` with no Origin. Rebuild from the evil origin is 403 (`rebuilds=0`), and so is PATCH from it.
+  - Allowed (200): `http://localhost:5173`, `http://127.0.0.1:3001`, no Origin (curl/CLI), and `Sec-Fetch-Site: same-site` with no Origin.
+  - My old `csrf.test.ts` still shows 200, as expected: it mounts the routers without `createApp`'s middleware. `createApp` puts the guard on `/api` before `express.json()`, and `server/src/index.ts:113` uses `createApp`.
+- **m1 — FIXED** (`detached.test.ts` + `scaffold.test.ts` R2b): both saves on a detached HEAD answer **409** "detached HEAD … Check a branch out first", `git_branch` stays `''`, and no commit lands and no branch is created. The R2 branch guard is still green (tree on `main` with an existing `content/old` → 409, tree and main-only file untouched).
+- **m2 — FIXED (code path)**: `acceptCommittedSuggestions` (`server/src/services/drafts.ts`) turns a post-commit `SuggestionDecisionError` into a 200 with a warning. Naming now commits its own transaction before the flip, so a decision failure no longer rolls back the catalog row. Pinned by `save-write-safety.test.ts:299` and `:320` (both green).
+
+### Suites run fresh at f30fd70
+save-write-safety, server-security-posture, write-route-branch-guard, git-service, save-pipeline, p7-accept, quest-scaffold, objects-api, quests-api, p7-drafts: **10 files, 252 tests passed**. The gates sidecar records 108/2215 and `test:ui` 471.
+
+### Checks for new defects
+- **Origin allow-list vs how the owner reaches the UI: OK.** Vite runs with `strictPort: true` (`client/vite.config.ts:23-24`), so it cannot silently drift to 5174 outside the list. `npm run dev` starts the server with the same `VITE_PORT`/`PORT` defaults (5173/3001), `server/src/index.ts:9` defaults to 3001 to match `appOrigins`, and the built client on 3001 passes. `playwright.config.ts:71` and the altport config both pass `VITE_PORT`. A DNS-rebinding page now carries a foreign Origin, which closes D94(c)'s write half. Over-refusal (an SSH tunnel on a different local port, or a hostname alias) is the safe direction, and D196 states it.
+- **Corpus lock scope: OK.** `withCorpusLock` wraps only `saveObject`. `saveAll` calls `saveObject` sequentially rather than nesting, and there is no other `withCorpusLock` call site, so there is no nested acquisition or deadlock. A failed task does not poison the chain (the tail `.catch`). The lock is keyed by realpath. The rebuild still runs outside it by design, and m2's warning path covers that race. The cross-process (CLI) residual is stated, and `--only` narrows it.
+- **No-op re-save: OK.** It is detected before the commit by `git status --porcelain -- <paths>`, which is sound because the tree was clean at `assertClean` inside the lock. An empty sha after a *real* commit attempt raises `UncommittedSaveError`. Quests never take the no-op path, because the metadata `ModifiedAt` always changes.
+- **Post-commit warning path: OK.** Ids stay all-or-none. The client already prints `result.warnings` on success, and `scaffoldDraft`'s type gained `warnings`.
+
+### Remaining issues (all NIT, non-blocking)
+1. **[NIT]** When a rebuild deleted the pending row, the m2 warning still says "left undecided" although the row is gone. Better wording: "decided, rejected or removed".
+2. **[NIT]** All-or-none means one failed id after the commit leaves the other ids pending although their values are now in the file. Evidence rows are swept by the next rebuild, but `capture-*` rows linger in the queue. Either flip the still-valid ids or document this.
+3. **[NIT]** `nameUnnamedDraft` runs after the commit and outside the lock, so an unexpected DB error there (e.g. a concurrent sync inserting the same `quests` row) would be a 500 after a real commit. The window is very narrow.
+4. **[NIT]** With a non-numeric `PORT`, `appOrigins`'s `String(Number(env.PORT))` builds a `NaN` origin. Harmless, because the server would not bind that port anyway.
+5. **[NIT]** In `final-review-round1-origin-probe.txt`, the `about:blank` arm ("Failed to fetch") does not prove the server refused, because it could be the browser's own block. The curl arm (403) carries the claim, and the unit arm pins it.
+
+### Recommendation
+**APPROVE.** Nothing blocks.
