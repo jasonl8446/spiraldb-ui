@@ -60,11 +60,6 @@ import { parseQuestTitleKey, parseWizQstKey } from './sync/questRefs.js';
 /** Every source a suggestion may carry (D140) — its one home is `shared/suggestions.ts` (9i). */
 export { SUGGESTION_SOURCES, type SuggestionSource };
 
-/** The five sources the builder writes; a rebuild manages only these. */
-export const EVIDENCE_SOURCES: readonly SuggestionSource[] = SUGGESTION_SOURCES.filter((source) =>
-  source.startsWith('evidence-'),
-);
-
 export const SUGGESTION_STATUSES = ['pending', 'accepted', 'rejected'] as const;
 
 export type SuggestionStatus = (typeof SUGGESTION_STATUSES)[number];

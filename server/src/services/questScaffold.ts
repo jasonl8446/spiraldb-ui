@@ -225,7 +225,7 @@ export function resolveLink(
   return { kind, titleKey: candidates.length === 1 ? candidates[0].key : null };
 }
 
-export { resolveScaffoldBranch, type ScaffoldBranchDecision } from './git.js';
+export { resolveScaffoldBranch } from './git.js';
 
 export interface ScaffoldQuestOptions {
   db: Db;

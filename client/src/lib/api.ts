@@ -801,7 +801,7 @@ export type SuggestionsStoreOutcome =
   | { stored: true; inserted: number; unchanged: number; uncatalogued: number }
   | { stored: false; reason: string };
 
-/** `POST /api/extract/quests` success body (docs/spec-api.md L303-307; `census` only with `?census=1`, D139). */
+/** `POST /api/extract/quests` success body (docs/spec-api.md, that endpoint's section; `census` only with `?census=1`, D139). */
 export interface ExtractQuestsResult {
   quests: QuestObject[];
   count: number;
